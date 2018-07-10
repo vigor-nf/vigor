@@ -132,8 +132,8 @@ void nat_print_config(struct nat_config* config)
 {
 	NF_INFO("\n--- NAT Config ---\n");
 
-	NF_INFO("Main LAN device: %" PRIu8, config->lan_main_device);
-	NF_INFO("WAN device: %" PRIu8, config->wan_device);
+	NF_INFO("Main LAN device: %" PRIu16, config->lan_main_device);
+	NF_INFO("WAN device: %" PRIu16, config->wan_device);
 
 	char* ext_ip_str = nf_ipv4_to_str(config->external_addr);
 	NF_INFO("External IP: %s", ext_ip_str);
