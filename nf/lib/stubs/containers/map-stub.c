@@ -35,7 +35,7 @@ int map_allocate(map_keys_equality* keq, map_key_hash* khash,
   klee_trace_param_ptr(map_out, sizeof(struct Map*), "map_out");
   int allocation_succeeded = klee_int("map_allocation_succeeded");
   if (allocation_succeeded) {
-    *map_out = malloc(sizeof(struct Map));
+    *map_out = calloc(1, sizeof(struct Map));
     klee_assume(*map_out != NULL);
     klee_make_symbolic((*map_out), sizeof(struct Map), "map");
     klee_assert((*map_out) != NULL);
@@ -177,5 +177,6 @@ int map_size(struct Map* map) {
   //To avoid symbolic-pointer-dereference,
   // consciously trace "map" as a simple value.
   klee_trace_param_u64((uint64_t)map, "map");
-  klee_assert(0); //No support for retreiving size for now.
+
+  return map->keyp == NULL ? 0 : 1;
 }

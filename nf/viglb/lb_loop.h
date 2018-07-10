@@ -24,7 +24,7 @@ void lb_loop_invariant_consume(struct Map** buckets, struct Vector** heap, struc
 /*@ ensures *buckets |-> bucketsp &*& *heap |-> heapp &*& *indices |-> indicesp; @*/
 
 void lb_loop_invariant_produce(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
-                               time_t* time, uint32_t* flow_capacity);
+                               time_t* time, uint32_t flow_capacity);
 /*@ requires *buckets |-> ?bucketsp &*& *heap |-> ?heapp &*& *indices |-> ?indicesp &*&
              *time |-> _ &*& *flow_capacity |-> _; @*/
 /*@ ensures *buckets |-> bucketsp &*& *heap |-> heapp &*& *indices |-> indicesp &*&

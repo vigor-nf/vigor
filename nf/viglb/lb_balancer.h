@@ -13,7 +13,7 @@ struct LoadBalancedFlow {
 };
 
 struct LoadBalancer;
-struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity, uint32_t expiration_time, uint16_t backend_count);
+struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count);
 uint16_t lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, time_t now);
 void lb_expire_flows(struct LoadBalancer* balancer, time_t now);
 

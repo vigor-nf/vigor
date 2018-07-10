@@ -10,9 +10,32 @@
 #include <string.h>
 
 
+#ifdef KLEE_VERIFICATION
+#include <klee/klee.h>
+
+#include "lib/stubs/containers/map-stub-control.h"
+#include "lib/stubs/containers/vector-stub-control.h"
+
+#include "lib/stubs/containers/str-descr.h"
+
+struct str_field_descr lb_flow_fields[] = {
+  {offsetof(struct LoadBalancedFlow, src_ip), sizeof(uint32_t), "src_ip"},
+  {offsetof(struct LoadBalancedFlow, src_port), sizeof(uint16_t), "src_port"},
+  {offsetof(struct LoadBalancedFlow, dst_port), sizeof(uint16_t), "dst_port"},
+  {offsetof(struct LoadBalancedFlow, protocol), sizeof(uint8_t), "protocol"},
+};
+
+void lb_hack_concretize_backend(uint16_t backend_count, uint16_t* backend) {
+	klee_assume(*backend >= 0);
+	klee_assume(*backend < backend_count);
+	for(unsigned b = 0; b < backend_count; b++) if (*backend == b) { *backend = b; break; }
+}
+#endif
+
+
 struct LoadBalancer {
 	uint32_t flow_capacity;
-	uint32_t expiration_time;
+	uint32_t flow_expiration_time;
 	uint16_t backend_count;
 	struct Map* flow_buckets;
 	struct Vector* flow_heap;
@@ -34,7 +57,7 @@ lb_flow_equality(void* objA, void* objB) {
 int
 lb_flow_hash(void* obj) {
 	struct LoadBalancedFlow* flow = obj;
-	int hash = 31;
+	uint64_t hash = 31;
 
 	hash += flow->src_ip;
 	hash *= 17;
@@ -48,7 +71,7 @@ lb_flow_hash(void* obj) {
 	hash += flow->protocol;
 	hash *= 17;
 
-	return hash;
+	return (int) hash;
 }
 
 void
@@ -59,7 +82,7 @@ lb_flow_init(void* obj) {
 
 
 struct LoadBalancer*
-lb_allocate_balancer(uint32_t flow_capacity, uint32_t expiration_time, uint16_t backend_count) {
+lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count) {
 	struct LoadBalancer* balancer = calloc(1, sizeof(struct LoadBalancer));
 	if (balancer == NULL) {
 		goto err;
@@ -79,7 +102,12 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t expiration_time, uint16_t 
 
 	balancer->flow_capacity = flow_capacity;
 	balancer->backend_count = backend_count;
-	balancer->expiration_time = expiration_time;
+	balancer->flow_expiration_time = flow_expiration_time;
+
+#ifdef KLEE_VERIFICATION
+	map_set_layout(balancer->flow_buckets, lb_flow_fields, sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]), NULL, 0, "LoadBalancedFlow");
+	vector_set_layout(balancer->flow_heap, lb_flow_fields, sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]), NULL, 0, "LoadBalancedFlow");
+#endif
 
 	return balancer;
 
@@ -96,10 +124,10 @@ err:
 }
 
 uint16_t lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, time_t now) {
-	int bucket_int;
-	if (map_get(balancer->flow_buckets, flow, &bucket_int) == 0) {
+	int bucket;
+	if (map_get(balancer->flow_buckets, flow, &bucket) == 0) {
 		int hash = lb_flow_hash(flow);
-		bucket_int = hash % balancer->backend_count;
+		bucket = hash % balancer->backend_count;
 
 		int index;
 		if (map_size(balancer->flow_buckets) < balancer->flow_capacity &&
@@ -109,19 +137,35 @@ uint16_t lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* 
 
 			memcpy(own_flow, flow, sizeof(struct LoadBalancedFlow));
 
-			map_put(balancer->flow_buckets, own_flow, bucket_int);
+			map_put(balancer->flow_buckets, own_flow, bucket);
 
 			vector_return_full(balancer->flow_heap, index, own_flow);
 		}
 		// Doesn't matter if we can't insert
 	}
 
-	return (uint16_t) bucket_int;
+	uint16_t backend = (uint16_t) bucket;
+
+#ifdef KLEE_VERIFICATION
+	lb_hack_concretize_backend(balancer->backend_count, &backend);
+#endif
+
+	return backend;
 }
 
 void lb_expire_flows(struct LoadBalancer* balancer, time_t now) {
-	time_t time = now - balancer->expiration_time;
-	expire_items_single_map(balancer->flow_indices, balancer->flow_heap, balancer->flow_buckets, time);
+	if (now < balancer->flow_expiration_time) return;
+
+	// This is hacky - we want to make sure the sanitization doesn't
+	// extend our time_t value in 128 bits, which would confuse the validator.
+	// So we "prove" by hand that it's OK...
+	assert(sizeof(uint64_t) == sizeof(time_t));
+	if (now < 0) return; // we don't support the past
+	uint64_t now_u = (uint64_t) now; // OK since assert above passed and now > 0
+	uint64_t last_time_u = now_u - balancer->flow_expiration_time; // OK because now >= flow_expiration_time >= 0
+	time_t last_time = (time_t) last_time_u; // OK since the assert above passed
+
+	expire_items_single_map(balancer->flow_indices, balancer->flow_heap, balancer->flow_buckets, last_time);
 }
 
 #ifdef KLEE_VERIFICATION
