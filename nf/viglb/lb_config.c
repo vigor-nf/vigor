@@ -13,8 +13,8 @@
 #include <cmdline_parse_etheraddr.h>
 
 #include "lb_config.h"
-#include "nf_util.h"
-#include "nf_log.h"
+#include "lib/nf_util.h"
+#include "lib/nf_log.h"
 
 
 #define PARSE_ERROR(format, ...) \
@@ -28,7 +28,7 @@ void lb_config_init(struct lb_config* config,
 	struct option long_options[] = {
 		{"backend",		required_argument,	NULL, 'b'},
 		{"flow-expiration",	required_argument,	NULL, 'x'},
-		{"flow-count",		required_argument,	NULL, 'f'},
+		{"flow-capacity",	required_argument,	NULL, 'f'},
 		{NULL, 			0,			NULL,  0 }
 	};
 
@@ -66,9 +66,9 @@ void lb_config_init(struct lb_config* config,
 				break;
 
 			case 'f':
-				config->flow_count = nf_util_parse_int(optarg, "flow-count", 10, '\0');
-				if (config->flow_count <= 0) {
-					PARSE_ERROR("Flow count must be strictly positive.\n");
+				config->flow_capacity = nf_util_parse_int(optarg, "flow-capacity", 10, '\0');
+				if (config->flow_capacity <= 0) {
+					PARSE_ERROR("Flow capacity must be strictly positive.\n");
 				}
 				break;
 
@@ -88,7 +88,7 @@ void lb_config_cmdline_print_usage(void)
 		"[DPDK EAL options] --\n"
 		"\t--backend <mac>: backend MAC address (one per backend, configured sequentially).\n"
 		"\t--flow-expiration <time>: flow expiration time.\n"
-		"\t--flow-count <n>: flow table capacity.\n"
+		"\t--flow-capacity <n>: flow table capacity.\n"
 	);
 }
 
@@ -108,7 +108,7 @@ void lb_print_config(struct lb_config* config)
 	}
 
 	NF_INFO("Flow expiration time: %" PRIu32, config->flow_expiration_time);
-	NF_INFO("Flow count: %" PRIu32, config->flow_count);
+	NF_INFO("Flow capacity: %" PRIu32, config->flow_capacity);
 
 	NF_INFO("\n--- --- ------ ---\n");
 }

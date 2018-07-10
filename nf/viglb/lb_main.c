@@ -22,7 +22,7 @@ struct LoadBalancer* balancer;
 
 void nf_core_init()
 {
-	balancer = lb_allocate_balancer(config.backend_count, config.expiration_time);
+	balancer = lb_allocate_balancer(config.flow_capacity, config.flow_expiration_time, config.backend_count);
 	if (balancer == NULL) {
 		rte_exit(EXIT_FAILURE, "Could not allocate balancer");
 	}

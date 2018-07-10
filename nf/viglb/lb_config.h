@@ -17,7 +17,7 @@ struct lb_config {
 	struct ether_addr* backend_macs;
 
 	// Size of the flow table
-	uint32_t flow_count;
+	uint32_t flow_capacity;
 
 	// Expiration time of flows in seconds
 	uint32_t flow_expiration_time;

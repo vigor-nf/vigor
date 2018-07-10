@@ -2,7 +2,7 @@
 APP := lb
 
 # Runtime and verification files
-NF_FILES := lb_main.c lb_config.c \
+NF_FILES := lb_main.c lb_balancer.c lb_config.c \
             ../lib/flow.c ../lib/flow-log.c \
             ../lib/flowmanager.c ../lib/flowtable.c
 
