@@ -84,23 +84,20 @@ void nf_print_config() {
 
 void nf_loop_iteration_begin(unsigned lcore_id,
                              time_t time) {
-  lb_loop_iteration_begin(lb_get_map(balancer), lb_get_dchain(balancer),
-                          lcore_id, time,
-                          config.flow_count);
+  lb_loop_iteration_begin(lb_get_buckets(balancer), lb_get_heap(balancer), lb_get_indices(balancer),
+                          time);
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
                                        time_t time) {
-  lb_loop_iteration_assumptions(lb_get_map(balancer), lb_get_dchain(balancer),
-                                lcore_id, time,
-                                config.flow_count);
+  lb_loop_iteration_assumptions(lb_get_buckets(balancer), lb_get_heap(balancer), lb_get_indices(balancer),
+                                time);
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
                            time_t time) {
-  lb_loop_iteration_end(lb_get_map(balancer), lb_get_dchain(balancer),
-                        lcore_id, time,
-                        config.flow_count);
+  lb_loop_iteration_end(lb_get_buckets(balancer), lb_get_heap(balancer), lb_get_indices(balancer),
+                        time);
 }
 #endif
 

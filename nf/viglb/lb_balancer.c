@@ -126,12 +126,12 @@ void lb_expire_flows(struct LoadBalancer* balancer, time_t now) {
 
 #ifdef KLEE_VERIFICATION
 struct Map** lb_get_buckets(struct LoadBalancer* balancer) {
-	return balancer->vector_buckets;
+	return balancer->flow_buckets;
 }
 struct Vector** lb_get_heap(struct LoadBalancer* balancer) {
-	return balancer->vector_heap;
+	return balancer->flow_heap;
 }
 struct DoubleChain** lb_get_indices(struct LoadBalancer* balancer) {
-	return balancer->vector_indices;
+	return balancer->flow_indices;
 }
 #endif
