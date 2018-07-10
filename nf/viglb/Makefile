@@ -2,23 +2,20 @@
 APP := lb
 
 # Runtime and verification files
-NF_FILES := lb_main.c lb_balancer.c lb_config.c \
-            ../lib/flow.c ../lib/flow-log.c \
-            ../lib/flowmanager.c ../lib/flowtable.c
+NF_FILES := lb_main.c lb_balancer.c lb_config.c
 
 # Verification files
-NF_VERIF_FILES := lb_loop_stub.c
+NF_VERIF_FILES := lb_loop.c
+
+# Verification definitions
+# Need 3 devices otherwise the concept of a load-balancer doesn't make sense
+NF_VERIF_DEFS := -DSTUB_DEVICES_COUNT=3
 
 # Verification arguments
-NF_VERIF_ARGS := --dev-ext 0 \
-                 --dev-int 1 \
-                 --expire 10 \
-                 --starting-port 0 \
-                 --max-flows 65536 \
-                 --backend 0.0.0.0 \
-                 --backend 1.1.1.1 \
-                 --eth-dest 0,01:23:45:67:89:00 \
-                 --eth-dest 1,01:23:45:67:89:01
+NF_VERIF_ARGS := --backend 01:23:45:67:89:00 \
+                 --backend 01:23:45:67:89:01 \
+                 --flow-expiration 10 \
+                 --flow-capacity 65536
 
 # Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

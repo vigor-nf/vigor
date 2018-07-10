@@ -25,6 +25,9 @@
 void lb_config_init(struct lb_config* config,
                     int argc, char** argv)
 {
+	// Init
+	config->backend_count = 0;
+
 	struct option long_options[] = {
 		{"backend",		required_argument,	NULL, 'b'},
 		{"flow-expiration",	required_argument,	NULL, 'x'},
@@ -34,12 +37,14 @@ void lb_config_init(struct lb_config* config,
 
 	int opt;
 	while ((opt = getopt_long(argc, argv, "b:x:f:", long_options, NULL)) != EOF) {
-		unsigned device;
 		switch (opt) {
 			case 'b':
 				config->backend_count++;
 				if (config->backend_count == UINT16_MAX) {
 					PARSE_ERROR("Too many backends.\n");
+				}
+				if (config->backend_count >= rte_eth_dev_count()) {
+					PARSE_ERROR("Too many backend for the number of devices.\n");
 				}
 
 				if (config->backend_count == 1) {
@@ -51,9 +56,9 @@ void lb_config_init(struct lb_config* config,
 				}
 
 				// Own MAC is obtained from the device itself
-				rte_eth_macaddr_get(device, &(config->device_macs[device]));
+				rte_eth_macaddr_get(config->backend_count, &(config->device_macs[config->backend_count - 1]));
 
-				if (cmdline_parse_etheraddr(NULL, optarg, &(config->backend_macs[device]), sizeof(struct ether_addr)) < 0) {
+				if (cmdline_parse_etheraddr(NULL, optarg, &(config->backend_macs[config->backend_count - 1]), sizeof(struct ether_addr)) < 0) {
 					PARSE_ERROR("Invalid MAC address: %s\n", optarg);
 				}
 				break;
@@ -96,12 +101,11 @@ void lb_print_config(struct lb_config* config)
 {
 	NF_INFO("\n--- LoadBalancer Config ---\n");
 
-	uint16_t nb_devices = rte_eth_dev_count();
-	for (uint16_t dev = 0; dev < nb_devices; dev++) {
-		char* dev_mac_str = nf_mac_to_str(&(config->device_macs[dev]));
-		char* end_mac_str = nf_mac_to_str(&(config->backend_macs[dev]));
+	for (uint16_t b = 0; b < config->backend_count; b++) {
+		char* dev_mac_str = nf_mac_to_str(&(config->device_macs[b]));
+		char* end_mac_str = nf_mac_to_str(&(config->backend_macs[b]));
 
-		NF_INFO("Device %" PRIu16 " own-mac: %s, backend-mac: %s", dev, dev_mac_str, end_mac_str);
+		NF_INFO("Backend device %" PRIu16 " own-mac: %s, backend-mac: %s", b, dev_mac_str, end_mac_str);
 
 		free(dev_mac_str);
 		free(end_mac_str);

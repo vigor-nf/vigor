@@ -60,7 +60,7 @@ lb_flow_init(void* obj) {
 
 struct LoadBalancer*
 lb_allocate_balancer(uint32_t flow_capacity, uint32_t expiration_time, uint16_t backend_count) {
-	struct LoadBalancer* balancer = malloc(sizeof(struct LoadBalancer));
+	struct LoadBalancer* balancer = calloc(1, sizeof(struct LoadBalancer));
 	if (balancer == NULL) {
 		goto err;
 	}
@@ -126,12 +126,12 @@ void lb_expire_flows(struct LoadBalancer* balancer, time_t now) {
 
 #ifdef KLEE_VERIFICATION
 struct Map** lb_get_buckets(struct LoadBalancer* balancer) {
-	return balancer->flow_buckets;
+	return &(balancer->flow_buckets);
 }
 struct Vector** lb_get_heap(struct LoadBalancer* balancer) {
-	return balancer->flow_heap;
+	return &(balancer->flow_heap);
 }
 struct DoubleChain** lb_get_indices(struct LoadBalancer* balancer) {
-	return balancer->flow_indices;
+	return &(balancer->flow_indices);
 }
 #endif
