@@ -5,7 +5,6 @@
 #include "lib/containers/double-chain.h"
 #include "lib/expirator.h"
 
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -139,7 +138,7 @@ uint16_t lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* 
 
 			map_put(balancer->flow_buckets, own_flow, bucket);
 
-			vector_return_full(balancer->flow_heap, index, own_flow);
+			vector_return_half(balancer->flow_heap, index, own_flow);
 		}
 		// Doesn't matter if we can't insert
 	}

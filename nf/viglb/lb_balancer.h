@@ -2,6 +2,7 @@
 
 #include "lib/nf_time.h"
 
+#include <stdbool.h>
 #include <stdint.h>
 
 
@@ -11,6 +12,23 @@ struct LoadBalancedFlow {
 	int16_t dst_port;
 	uint8_t protocol;
 };
+
+bool lb_flow_equality(void* objA, void* objB);
+int lb_flow_hash(void* obj);
+
+/*@
+    inductive lb_flowi = lb_flowc(int, int, int, int);
+    predicate lb_flowp(struct LoadBalancedFlow* ptr; lb_flowi flow) =
+      struct_LoadBalancedFlow_padding(ptr) &*&
+      ptr->src_ip |-> ?sip &*&
+      ptr->src_port |-> ?sp &*&
+      ptr->dst_port |-> ?dp &*&
+      ptr->protocol |-> ?p &*&
+      flow == eaddrc(sip, sp, dp, p);
+
+  fixpoint int lb_flow_hash_2(lb_flowi ea);
+@*/
+
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count);

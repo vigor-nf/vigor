@@ -1,4 +1,4 @@
-all: validator.byte nat_fspec.cmo bridge_fspec.cmo dmz_fspec.cmo
+all: validator.byte nat_fspec.cmo bridge_fspec.cmo dmz_fspec.cmo lb_fspec.cmo
 
 validator.byte: .PHONY
 	corebuild -no-hygiene -use-menhir -lib dynlink -lib str validator.byte -use-ocamlfind -cflag -unsafe-string
@@ -12,6 +12,9 @@ bridge_fspec.cmo: _build/bridge_fspec.cmo
 dmz_fspec.cmo: _build/dmz_fspec.cmo
 	cp _build/dmz_fspec.cmo ./
 
+lb_fspec.cmo: _build/lb_fspec.cmo
+	cp _build/lb_fspec.cmo ./
+
 _build/nat_fspec.cmo: .PHONY
 	corebuild -no-hygiene -lib dynlink -lib str nat_fspec.cmo -cflag -unsafe-string
 
@@ -20,6 +23,9 @@ _build/bridge_fspec.cmo: .PHONY
 
 _build/dmz_fspec.cmo: .PHONY
 	corebuild -no-hygiene -lib dynlinc dmz_fspec.cmo -cflag -unsafe-string
+
+_build/lb_fspec.cmo: .PHONY
+	corebuild -no-hygiene -lib dynlinc lb_fspec.cmo -cflag -unsafe-string
 
 .PHONY:
 
@@ -38,6 +44,9 @@ validate-bridge: clean
 
 validate-dmz: clean
 	./test_all.sh ../nf/dmz/klee-last out ../nf dmz_fspec.cmo
+
+validate-lb: clean
+	./test_all.sh ../nf/viglb/klee-last out ../nf lb_fspec.cmo
 
 # Regression test suite
 test-results/%.done: regression-tests/%
