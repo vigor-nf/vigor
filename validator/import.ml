@@ -670,6 +670,12 @@ let rec get_sexp_value exp ?(at=Beginning) t =
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
     {v=Bop (And,(get_sexp_value lhs Boolean ~at),(get_sexp_value rhs Boolean ~at));t}
+  | Sexp.List [Sexp.Atom f; lhs; rhs]
+    when (String.equal f "Or") &&
+         ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
+    (*FIXME: and here, but really that is a bool expression, I know it*)
+    (*TODO: check t is really Boolean here*)
+    {v=Bop (Or,(get_sexp_value lhs Boolean ~at),(get_sexp_value rhs Boolean ~at));t}
   | Sexp.List [Sexp.Atom f; Sexp.Atom _; lhs; rhs]
     when (String.equal f "And") ->
     begin 

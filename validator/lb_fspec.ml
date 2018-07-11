@@ -179,7 +179,7 @@ let fun_types =
                                             "/*@ close lb_loop_invariant(*" ^
                                             (List.nth_exn args 0) ^ ", *" ^
                                             (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
+                                            (List.nth_exn args 2) ^ ", " ^
                                             (List.nth_exn args 3) ^ ", " ^
                                             (List.nth_exn args 4) ^ "); @*/");];
                                        lemmas_after = [];};
@@ -377,8 +377,8 @@ let fun_types =
                                        Ptr (Ptr map_struct)];
                       extra_ptr_types = [];
                       lemmas_before = [
-                        (fun {args;_} ->
-                            "/*@ produce_function_pointer_chunk \
+                        (fun {args;_} -> (* the if(true) is required to avoid VeriFast parse errors *)
+                            "/*@ if(true) {\nproduce_function_pointer_chunk \
                             map_keys_equality<lb_flowi>(lb_flow_equality)\
                             (lb_flowp)(a, b) \
                             {\
@@ -390,10 +390,10 @@ let fun_types =
                             {\
                             call();\
                             }\n\
-                            @*/ \n");];
+                            } @*/ \n");];
                       lemmas_after = [
-                        (fun params ->
-                            "/*@ assert [?" ^ (params.tmp_gen "imkedy") ^
+                        (fun params -> (* That if(true) is required to avoid a VeriFast parse error *)
+                            "/*@ if(true) {\n assert [?" ^ (params.tmp_gen "imkedy") ^
                            "]is_map_keys_equality(lb_flow_equality,\
                             lb_flowp);\n\
                             close [" ^ (params.tmp_gen "imkedy") ^
@@ -405,7 +405,7 @@ let fun_types =
                             close [" ^ (params.tmp_gen "imkhdy") ^
                            "]hide_is_map_key_hash(lb_flow_hash, \
                             lb_flowp, lb_flow_hash_2);\n\
-                            @*/")];};
+                            } @*/")];};
      "map_get", {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
                               Static (Ptr lb_flow_struct);
@@ -569,13 +569,13 @@ let fun_types =
                                           Ptr (Ptr vector_struct)];
                          extra_ptr_types = [];
                          lemmas_before = [
-                           tx_bl
-                              "produce_function_pointer_chunk \
-                              vector_init_elem<lb_flowi>(init_nothing_ea)\
+                           tx_bl (* that if(true) is required to avoid VeriFast parsing errors... *)
+                              "if(true) {\nproduce_function_pointer_chunk \
+                              vector_init_elem<lb_flowi>(lb_flow_init)\
                               (lb_flowp, sizeof(struct LoadBalancedFlow))(a) \
                               {\
                               call();\
-                              }\n\
+                              }\n}\n\
                               ";
                          ];
                          lemmas_after = [
@@ -664,9 +664,8 @@ struct
                   bool a_packet_flooded = false;\n\
                   uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n"
-                 ^
-                 "//TODO: this hack should be converted to a system \n\
-                  /*@ assume(sizeof(struct LoadBalancedFlow) == 9);\n@*/\n"
+                 ^ (* NOTE: looks like verifast pads the last uint8 with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
+                 "/*@ assume(sizeof(struct LoadBalancedFlow) == 12);\n@*/\n"
   let fun_types = fun_types
   let fixpoints = fixpoints
   let boundary_fun = "lb_loop_invariant_produce"

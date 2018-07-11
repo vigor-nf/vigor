@@ -15,21 +15,35 @@ struct LoadBalancedFlow {
 	uint8_t protocol;
 };
 
-bool lb_flow_equality(void* objA, void* objB);
-int lb_flow_hash(void* obj);
-
 /*@
-    inductive lb_flowi = lb_flowc(int, int, int, int);
-    predicate lb_flowp(struct LoadBalancedFlow* ptr; lb_flowi flow) =
-      struct_LoadBalancedFlow_padding(ptr) &*&
-      ptr->src_ip |-> ?sip &*&
-      ptr->src_port |-> ?sp &*&
-      ptr->dst_port |-> ?dp &*&
-      ptr->protocol |-> ?p &*&
-      flow == lb_flowc(sip, sp, dp, p);
+  inductive lb_flowi = lb_flowc(int, int, int, int);
+  predicate lb_flowp(struct LoadBalancedFlow* ptr; lb_flowi flow) =
+    struct_LoadBalancedFlow_padding(ptr) &*&
+    ptr->src_ip |-> ?sip &*&
+    ptr->src_port |-> ?sp &*&
+    ptr->dst_port |-> ?dp &*&
+    ptr->protocol |-> ?p &*&
+    flow == lb_flowc(sip, sp, dp, p);
 
   fixpoint int lb_flow_hash_2(lb_flowi ea);
 @*/
+
+
+bool lb_flow_equality(void* objA, void* objB);
+/*@ requires [?fr1]lb_flowp(objA, ?f1) &*&
+             [?fr2]lb_flowp(objB, ?f2); @*/
+/*@ ensures [fr1]lb_flowp(objA, f1) &*&
+            [fr2]lb_flowp(objB, f2) &*&
+            (result ? (f1 == f2) : (f1 != f2)); @*/
+
+int lb_flow_hash(void* obj);
+/*@ requires [?fr]lb_flowp(obj, ?f); @*/
+/*@ ensures [fr]lb_flowp(obj, f) &*&
+            result == lb_flow_hash_2(f); @*/
+
+void lb_flow_init(void* obj);
+/*@ requires chars(obj, sizeof(struct LoadBalancedFlow), _); @*/
+/*@ ensures lb_flowp(obj, _); @*/
 
 
 struct LoadBalancer;

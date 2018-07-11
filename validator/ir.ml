@@ -5,7 +5,7 @@ module Sexp = Core.Sexp
 
 type bop = Eq | Le | Lt | Ge | Gt
          | Add | Sub | Mul
-         | And | Bit_and [@@deriving sexp]
+         | And | Or | Bit_and [@@deriving sexp]
 
 
 type ttype = | Ptr of ttype
@@ -123,6 +123,7 @@ let render_bop = function
   | Sub -> "-"
   | Mul -> "*"
   | And -> "&&"
+  | Or -> "||"
   | Bit_and -> "&"
 
 let render_utility = function
