@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _LB_BALANCER_H_INCLUDED_ // cannot use pragma once, included by VeriFast
+#define _LB_BALANCER_H_INCLUDED_
+
 
 #include "lib/nf_time.h"
 
@@ -24,7 +26,7 @@ int lb_flow_hash(void* obj);
       ptr->src_port |-> ?sp &*&
       ptr->dst_port |-> ?dp &*&
       ptr->protocol |-> ?p &*&
-      flow == eaddrc(sip, sp, dp, p);
+      flow == lb_flowc(sip, sp, dp, p);
 
   fixpoint int lb_flow_hash_2(lb_flowi ea);
 @*/
@@ -40,3 +42,6 @@ struct Map** lb_get_buckets(struct LoadBalancer* balancer);
 struct Vector** lb_get_heap(struct LoadBalancer* balancer);
 struct DoubleChain** lb_get_indices(struct LoadBalancer* balancer);
 #endif
+
+
+#endif // _LB_BALANCER_H_INCLUDED_

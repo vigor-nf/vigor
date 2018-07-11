@@ -180,7 +180,7 @@ let fun_types =
                                             (List.nth_exn args 0) ^ ", *" ^
                                             (List.nth_exn args 1) ^ ", *" ^
                                             (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", *" ^
+                                            (List.nth_exn args 3) ^ ", " ^
                                             (List.nth_exn args 4) ^ "); @*/");];
                                        lemmas_after = [];};
      "lb_loop_invariant_produce", {ret_type = Static Void;
@@ -198,7 +198,7 @@ let fun_types =
                                             (List.nth_exn args 0) ^ ", *" ^
                                             (List.nth_exn args 1) ^ ", *" ^
                                             (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", *" ^
+                                            (List.nth_exn args 3) ^ ", " ^
                                             (List.nth_exn args 4) ^ "); @*/");
                                          (fun {tmp_gen;_} ->
                                             "\n/*@ {\n\
@@ -385,8 +385,8 @@ let fun_types =
                             call();\
                             }\n\
                             produce_function_pointer_chunk \
-                            map_key_hash<ether_addri>(lb_flow_hash)\
-                            (lb_flowp, lb_flow_hash)(a) \
+                            map_key_hash<lb_flowi>(lb_flow_hash)\
+                            (lb_flowp, lb_flow_hash_2)(a) \
                             {\
                             call();\
                             }\n\
@@ -401,10 +401,10 @@ let fun_types =
                             lb_flowp);\n\
                             assert [?" ^ (params.tmp_gen "imkhdy") ^
                            "]is_map_key_hash(lb_flow_hash,\
-                            lb_flowp, lb_flow_hash);\n\
+                            lb_flowp, lb_flow_hash_2);\n\
                             close [" ^ (params.tmp_gen "imkhdy") ^
                            "]hide_is_map_key_hash(lb_flow_hash, \
-                            lb_flowp, lb_flow_hash);\n\
+                            lb_flowp, lb_flow_hash_2);\n\
                             @*/")];};
      "map_get", {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
@@ -495,6 +495,11 @@ let fun_types =
                       ", time_for_allocated_index, " ^ (tmp_gen "ea") ^ ");\n\
                        } @*/"
                    );];};
+     "map_size", {ret_type = Static Sint32;
+                  arg_types = [Static (Ptr map_struct);];
+                  extra_ptr_types = [];
+                  lemmas_before = [];
+                  lemmas_after = [];};
      "stub_core_trace_rx", {
                  ret_type = Static Void;
                  arg_types = stt [Ptr (Ptr rte_mbuf_struct);];
@@ -567,7 +572,7 @@ let fun_types =
                            tx_bl
                               "produce_function_pointer_chunk \
                               vector_init_elem<lb_flowi>(init_nothing_ea)\
-                              (ether_addrp, sizeof(struct ether_addr))(a) \
+                              (lb_flowp, sizeof(struct LoadBalancedFlow))(a) \
                               {\
                               call();\
                               }\n\

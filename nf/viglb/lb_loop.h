@@ -6,12 +6,13 @@
 #include "lib/containers/double-chain.h"
 #include "lib/nf_time.h"
 
+// TODO check if we need flow_capacity
 /*@
-predicate lb_loop_invariant(struct Map* buckets, struct Vector* heap, struct DoubleChain* indices,
+predicate lb_loop_invariant(struct Map* buckets, struct Vector* heap, struct DoubleChain* indicesp,
                             time_t time, uint32_t flow_capacity) =
+          double_chainp(?indices, indicesp) &*&
           last_time(time) &*&
-          dchain_high_fp(indices) <= time &*&
-          dmap_cap_fp(indices) == flow_capacity;
+          dchain_high_fp(indices) <= time;
 @*/
 
 void lb_loop_iteration_assumptions(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
@@ -26,10 +27,10 @@ void lb_loop_invariant_consume(struct Map** buckets, struct Vector** heap, struc
 void lb_loop_invariant_produce(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
                                time_t* time, uint32_t flow_capacity);
 /*@ requires *buckets |-> ?bucketsp &*& *heap |-> ?heapp &*& *indices |-> ?indicesp &*&
-             *time |-> _ &*& *flow_capacity |-> _; @*/
+             *time |-> _; @*/
 /*@ ensures *buckets |-> bucketsp &*& *heap |-> heapp &*& *indices |-> indicesp &*&
-            *time |-> ?t &*& *flow_capacity |-> ?fc &*&
-            lb_loop_invariant(bucketsp, heapp, indicesp, t, fc); @*/
+            *time |-> ?t &*&
+            lb_loop_invariant(bucketsp, heapp, indicesp, t, flow_capacity); @*/
 
 void lb_loop_iteration_begin(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
                              time_t time, uint32_t flow_capacity);
