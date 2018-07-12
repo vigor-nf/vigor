@@ -58,7 +58,7 @@ let rec innermost_dereference tterm tmpgen =
   | Str_idx (x,fname) ->
     let (binding, x) = innermost_dereference x tmpgen in
     (binding, {v=Str_idx (x,fname);t=tterm.t})
-  | _ -> failwith ("unhandled in inn_deref: " ^ (render_tterm tterm))
+  | _ -> failwith ("unhandled in inn_deref: " ^ (render_tterm tterm) ^ " : " ^ (ttype_to_str tterm.t))
 
 let generate_2step_dereference tterm tmpgen =
   let (binding1,x) = self_dereference tterm tmpgen in
@@ -413,13 +413,7 @@ let fun_types =
                  extra_ptr_types = [];
                  lemmas_before = [
                    (fun ({arg_types;tmp_gen;args=_;arg_exps;_} as params) ->
-                        let (bindings,expr) =
-                          generate_2step_dereference
-                            (List.nth_exn arg_exps 1) tmp_gen
-                        in
-                        (String.concat ~sep:"\n" bindings) ^
-                        "\n" ^
-                        "//@ assert lb_flowp(" ^ (render_tterm expr) ^
+                        "//@ assert lb_flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
                         (capture_a_chain "dh" params ^
                          capture_a_map "lb_flowi" "dm" params ^

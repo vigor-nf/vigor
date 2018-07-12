@@ -9,9 +9,9 @@
 
 
 struct LoadBalancedFlow {
-	int32_t src_ip;
-	int16_t src_port;
-	int16_t dst_port;
+	uint32_t src_ip;
+	uint16_t src_port;
+	uint16_t dst_port;
 	uint8_t protocol;
 };
 

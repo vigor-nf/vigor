@@ -83,17 +83,17 @@ void vector_borrow_full(struct Vector* vector, int index, void** val_out) {
   //Avoid dumping the actual contents of vector.
   klee_trace_param_u64((uint64_t)vector, "vector");
   klee_trace_param_i32(index, "index");
-  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_BOTH);
+  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_OUT);
   void* cell = vector->data + vector->elems_claimed*vector->elem_size;
   klee_trace_extra_ptr(cell, vector->elem_size,
-                       "borrowed_cell", vector->cell_type, TD_BOTH);
+                       "borrowed_cell", vector->cell_type, TD_OUT);
   {
     for (int i = 0; i < vector->field_count; ++i) {
       klee_trace_extra_ptr_field(cell,
                                  vector->fields[i].offset,
                                  vector->fields[i].width,
                                  vector->fields[i].name,
-                                 TD_BOTH);
+                                 TD_OUT);
     }
     for (int i = 0; i < vector->nested_field_count; ++i) {
       klee_trace_extra_ptr_nested_field(cell,
@@ -101,7 +101,7 @@ void vector_borrow_full(struct Vector* vector, int index, void** val_out) {
                                         vector->nest_fields[i].offset,
                                         vector->nest_fields[i].width,
                                         vector->nest_fields[i].name,
-                                        TD_BOTH);
+                                        TD_OUT);
     }
   }
   klee_assert(vector->elems_claimed < NUM_ELEMS);
@@ -116,17 +116,17 @@ void vector_borrow_half(struct Vector* vector, int index, void** val_out) {
   //Avoid dumping the actual contents of vector.
   klee_trace_param_u64((uint64_t)vector, "vector");
   klee_trace_param_i32(index, "index");
-  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_BOTH);
+  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_OUT);
   void* cell = vector->data + vector->elems_claimed*vector->elem_size;
   klee_trace_extra_ptr(cell, vector->elem_size,
-                       "borrowed_cell", vector->cell_type, TD_BOTH);
+                       "borrowed_cell", vector->cell_type, TD_OUT);
   {
     for (int i = 0; i < vector->field_count; ++i) {
       klee_trace_extra_ptr_field(cell,
                                  vector->fields[i].offset,
                                  vector->fields[i].width,
                                  vector->fields[i].name,
-                                 TD_BOTH);
+                                 TD_OUT);
     }
     for (int i = 0; i < vector->nested_field_count; ++i) {
       klee_trace_extra_ptr_nested_field(cell,
@@ -134,7 +134,7 @@ void vector_borrow_half(struct Vector* vector, int index, void** val_out) {
                                         vector->nest_fields[i].offset,
                                         vector->nest_fields[i].width,
                                         vector->nest_fields[i].name,
-                                        TD_BOTH);
+                                        TD_OUT);
     }
   }
   klee_assert(vector->elems_claimed < NUM_ELEMS);
