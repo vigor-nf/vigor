@@ -596,7 +596,7 @@ let fun_types =
      "vector_borrow_full", {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Static (Ptr lb_flow_struct)];
+                                         Static (Ptr (Ptr lb_flow_struct))];
                             extra_ptr_types = ["borrowed_cell",
                                                Static (Ptr lb_flow_struct);];
                             lemmas_before = [
@@ -606,7 +606,7 @@ let fun_types =
      "vector_borrow_half", {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Static (Ptr lb_flow_struct)];
+                                         Static (Ptr (Ptr lb_flow_struct))];
                             extra_ptr_types = ["borrowed_cell",
                                                Static (Ptr lb_flow_struct);];
                             lemmas_before = [
@@ -616,7 +616,7 @@ let fun_types =
      "vector_return_full", {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Static (Ptr lb_flow_struct)];
+                                         Static (Ptr (Ptr lb_flow_struct))];
                             extra_ptr_types = [];
                             lemmas_before = [
                               (fun {arg_types;tmp_gen;args;_} ->
@@ -630,7 +630,7 @@ let fun_types =
        "vector_return_half", {ret_type = Static Void;
                               arg_types = [Static (Ptr vector_struct);
                                            Static Sint32;
-                                           Static (Ptr lb_flow_struct)];
+                                           Static (Ptr (Ptr lb_flow_struct))];
                               extra_ptr_types = [];
                               lemmas_before = [
                                 (fun {args;tmp_gen=_;arg_types;_} ->
