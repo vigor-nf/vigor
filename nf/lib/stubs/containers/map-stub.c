@@ -178,5 +178,5 @@ int map_size(struct Map* map) {
   // consciously trace "map" as a simple value.
   klee_trace_param_u64((uint64_t)map, "map");
 
-  return map->keyp == NULL ? 0 : 1;
+  return klee_int("map_size");
 }
