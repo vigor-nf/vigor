@@ -33,10 +33,10 @@ struct LoadBalancedBackend {
 
 
   inductive lb_backendi = lb_backendc(int);
-  predicate lb_flowp(struct LoadBalancedBackend* ptr; lb_backendi backend) =
+  predicate lb_backendp(struct LoadBalancedBackend* ptr; lb_backendi backend) =
     struct_LoadBalancedBackend_padding(ptr) &*&
     ptr->index |-> ?i &*&
-    flow == lb_backendc(i);
+    backend == lb_backendc(i);
 @*/
 
 
