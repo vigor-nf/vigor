@@ -968,7 +968,15 @@ let fixpoints =
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
 struct
-  let preamble = (In_channel.read_all "preamble.tmpl") ^
+  let preamble = "\
+#include \"lib/expirator.h\"\n\
+#include \"lib/stubs/time_stub_control.h\"\n\
+#include \"lib/containers/map.h\"\n\
+#include \"lib/containers/double-chain.h\"\n\
+#include \"bridge/bridge_loop.h\"\n\
+#include \"lib/bridge-abstract-state.h\"\n" ^
+                 (In_channel.read_all "preamble.tmpl") ^
+                 (In_channel.read_all "preamble_hide.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
