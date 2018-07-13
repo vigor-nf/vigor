@@ -181,7 +181,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 		}
 		// Doesn't matter if we can't insert
 	} else {
-		dchain_rejuvenate_index(balancer->flow_heap, index, now);
+		dchain_rejuvenate_index(balancer->flow_chain, index, now);
 
 		struct LoadBalancedBackend* vec_backend;
 		vector_borrow_full(balancer->flow_backends, index, (void**) &vec_backend);
