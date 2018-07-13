@@ -600,7 +600,9 @@ let fun_types =
                                  | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
                                    "/*@ if (!vector_backend_borrowed) { close hide_vector<lb_backendi>(_, _, _, _); } @*/\n"
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
-                                   "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n"
+                                   "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
+                                   "/*@ { assert vectorp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
+                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", snd);\n } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
