@@ -1,3 +1,39 @@
-assert mapp<lb_flowi>(_, lb_flowp, lb_flow_hash_2, nop_true, ?final_dyn_map);
-assert vectorp<lb_flowi>(_, lb_flowp, ?final_dyn_key_vec, _);
+assert mapp<lb_flowi>(_, lb_flowp, lb_flow_hash_2, nop_true, ?final_indices);
+assert vectorp<lb_flowi>(_, lb_flowp, ?final_heap, _);
+assert vectorp<lb_backendi>(_, lb_backendp, ?final_backends, _);
 assert double_chainp(?final_chain,_);
+
+
+
+bit_and_hack();
+
+// Consider only normal moments, remote from the start of the epoch
+if (10 < now) {
+
+  // 0x10 -> IPv4
+  if (a_packet_received && ((received_packet_type & 0x10) == 0x10)) {
+
+    // 6/17 -> TCP/UDP
+    if (the_received_packet.ipv4.next_proto_id == 6 ||
+        the_received_packet.ipv4.next_proto_id == 17) {
+
+      // 0 -> Packet received from the external network
+      if (received_on_port == 0) {
+
+         lb_flowi packet_flow = lb_flowc(the_received_packet.ipv4.src_addr,
+                                         the_received_packet.tcp.src_port,
+                                         the_received_packet.tcp.dst_port,
+                                         the_received_packet.ipv4.next_proto_id);
+      } else {
+        // Packet from a backend (should never happen)
+        assert false == a_packet_sent;
+      }
+    } else {
+      // Non-TCP/UDP packet
+      assert false == a_packet_sent;
+    }
+  } else {
+    // Non-IPv4 packet
+    assert false == a_packet_sent;
+  }
+}

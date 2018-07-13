@@ -207,23 +207,25 @@ let fun_types =
                                             (List.nth_exn args 5) ^ "); @*/");
                                          (fun {tmp_gen;_} ->
                                             "\n/*@ {\n\
-                                             assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                                            ", _));\n\
-                                             assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "dv") ^
-                                            ", _);\n\
-                                             assert vectorp<lb_backendi>(_, _, ?" ^ (tmp_gen "bk") ^
-                                            ", _);\n\
+                                             assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
+                                             assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
+                                             assert vectorp<lb_backendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
                                              assert map_vec_chain_coherent<lb_flowi>(" ^
-                                            (tmp_gen "dm") ^ ", " ^
-                                            (tmp_gen "dv") ^ ", ?" ^
-                                            (tmp_gen "dh") ^
+                                            (tmp_gen "fi") ^ ", " ^
+                                            (tmp_gen "fh") ^ ", ?" ^
+                                            (tmp_gen "ch") ^
                                             ");\n\
-                                             mvc_coherent_same_len<lb_flowi>(" ^ (tmp_gen "dm") ^
-                                            ", " ^ (tmp_gen "dv") ^
-                                            ", " ^ (tmp_gen "dh") ^
+                                             mvc_coherent_same_len<lb_flowi>(" ^ 
+                                                   (tmp_gen "fi") ^
+                                            ", " ^ (tmp_gen "fh") ^
+                                            ", " ^ (tmp_gen "ch") ^
                                             ");\n\
-                                             assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "dm_full") ^
-                                            ");\n} @*/");
+                                             assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n" ^ 
+                                            "initial_indices = " ^ (tmp_gen "fi_full") ^
+                                            ";\ninitial_heap = " ^ (tmp_gen "fh") ^
+                                            ";\ninitial_backends = " ^ (tmp_gen "fb") ^
+                                            ";\ninitial_chain = " ^ (tmp_gen "ch") ^
+                                            ";\n} @*/");
                                        ];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
@@ -359,22 +361,24 @@ let fun_types =
                                  ];
                                  lemmas_after = [
                                    (fun {tmp_gen;_} ->
-                                      "\n/*@ {\n\
-                                       assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                                      ", _));\n\
-                                       assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "dv") ^
-                                      ", _);\n\
+                                      "/*@ {\n\
+                                       assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
+                                       assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
+                                       assert vectorp<lb_backendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
                                        assert map_vec_chain_coherent<lb_flowi>(" ^
-                                      (tmp_gen "dm") ^ ", " ^
-                                      (tmp_gen "dv") ^ ", ?" ^
-                                      (tmp_gen "dh") ^
+                                      (tmp_gen "fi") ^ ", " ^
+                                      (tmp_gen "fh") ^ ", ?" ^
+                                      (tmp_gen "ch") ^
                                       ");\n\
-                                       assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "dm_full") ^
-                                      ");\n\
+                                       assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n\
                                       mvc_coherent_same_len<lb_flowi>(" ^
-                                      (tmp_gen "dm") ^ ", " ^
-                                      (tmp_gen "dv") ^ ", " ^
-                                      (tmp_gen "dh") ^ ");\n} @*/"
+                                      (tmp_gen "fi") ^ ", " ^
+                                      (tmp_gen "fh") ^ ", " ^
+                                      (tmp_gen "ch") ^ ");\n\
+                                      expired_indices = " ^ (tmp_gen "fi_full") ^ ";\n\
+                                      expired_heap = " ^ (tmp_gen "fh") ^ ";\n\
+                                      expired_backends = " ^ (tmp_gen "fb") ^ ";\n\
+                                      expired_chain = " ^ (tmp_gen "ch") ^ ";\n} @*/"
                                          );
                                  ];};
      "map_allocate", {ret_type = Static Sint32;
@@ -727,6 +731,14 @@ struct
                   bool a_packet_flooded = false;\n\
                   uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n"
+                 ^ "//@ mapi<lb_flowi> initial_indices;\n"
+                 ^ "//@ list<pair<lb_flowi, bool> > initial_heap;\n"
+                 ^ "//@ list<pair<lb_backendi, bool> > initial_backends;\n"
+                 ^ "//@ dchain initial_chain;\n"
+                 ^ "//@ mapi<lb_flowi> expired_indices;\n"
+                 ^ "//@ list<pair<lb_flowi, bool> > expired_heap;\n"
+                 ^ "//@ list<pair<lb_backendi, bool> > expired_backends;\n"
+                 ^ "//@ dchain expired_chain;\n"
                  ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
                  "/*@ assume(sizeof(struct LoadBalancedFlow) == 12); @*/\n"
                ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 2); @*/\n"
