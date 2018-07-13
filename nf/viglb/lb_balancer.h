@@ -15,6 +15,10 @@ struct LoadBalancedFlow {
 	uint8_t protocol;
 };
 
+struct LoadBalancedBackend {
+	uint16_t index;
+};
+
 /*@
   inductive lb_flowi = lb_flowc(int, int, int, int);
   predicate lb_flowp(struct LoadBalancedFlow* ptr; lb_flowi flow) =
@@ -26,6 +30,13 @@ struct LoadBalancedFlow {
     flow == lb_flowc(sip, sp, dp, p);
 
   fixpoint int lb_flow_hash_2(lb_flowi ea);
+
+
+  inductive lb_backendi = lb_backendc(int);
+  predicate lb_flowp(struct LoadBalancedBackend* ptr; lb_backendi backend) =
+    struct_LoadBalancedBackend_padding(ptr) &*&
+    ptr->index |-> ?i &*&
+    flow == lb_backendc(i);
 @*/
 
 
@@ -45,16 +56,21 @@ void lb_flow_init(void* obj);
 /*@ requires chars(obj, sizeof(struct LoadBalancedFlow), _); @*/
 /*@ ensures lb_flowp(obj, _); @*/
 
+void lb_backend_init(void* obj);
+/*@ requires chars(obj, sizeof(struct LoadBalancedBackend), _); @*/
+/*@ ensures lb_backendp(obj, _); @*/
+
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count);
-uint16_t lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, time_t now);
+struct LoadBalancedBackend lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, time_t now);
 void lb_expire_flows(struct LoadBalancer* balancer, time_t now);
 
 #ifdef KLEE_VERIFICATION
-struct Map** lb_get_buckets(struct LoadBalancer* balancer);
+struct Map** lb_get_indices(struct LoadBalancer* balancer);
 struct Vector** lb_get_heap(struct LoadBalancer* balancer);
-struct DoubleChain** lb_get_indices(struct LoadBalancer* balancer);
+struct Vector** lb_get_backends(struct LoadBalancer* balancer);
+struct DoubleChain** lb_get_chain(struct LoadBalancer* balancer);
 #endif
 
 

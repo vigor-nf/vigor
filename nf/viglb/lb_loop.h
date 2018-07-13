@@ -9,41 +9,41 @@
 
 #include "lb_balancer.h"
 
-// TODO check if we need flow_capacity
+
 /*@
-predicate lb_loop_invariant(struct Map* buckets, struct Vector* heap, struct DoubleChain* indices,
+predicate lb_loop_invariant(struct Map* indices, struct Vector* heap, struct Vector* backends, struct DoubleChain* chain,
                             time_t time, uint32_t flow_capacity) =
-          mapp<lb_flowi>(buckets, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?bucketsi, ?bucketsv)) &*&
+          mapp<lb_flowi>(indices, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?indicesi, ?indicesv)) &*&
           vectorp<lb_flowi>(heap, lb_flowp, ?heapv, ?heapa) &*&
-          double_chainp(?indicesv, indices) &*&
-          true == forall2(heapv, heapa, (kkeeper)(bucketsv)) &*&
+          double_chainp(?chainv, chain) &*&
+          true == forall2(heapv, heapa, (kkeeper)(indicesv)) &*&
           length(heapv) == flow_capacity &*&
-          map_vec_chain_coherent<lb_flowi>(bucketsi, heapv, indicesv) &*&
+          map_vec_chain_coherent<lb_flowi>(indicesi, heapv, chainv) &*&
           last_time(time) &*&
-          dchain_high_fp(indicesv) <= time;
+          dchain_high_fp(chainv) <= time;
 @*/
 
-void lb_loop_iteration_assumptions(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
+void lb_loop_iteration_assumptions(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
                                    time_t time, uint32_t flow_capacity);
 
-void lb_loop_invariant_consume(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
+void lb_loop_invariant_consume(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
                                time_t time, uint32_t flow_capacity);
-/*@ requires *buckets |-> ?bucketsp &*& *heap |-> ?heapp &*& *indices |-> ?indicesp &*&
-             lb_loop_invariant(bucketsp, heapp, indicesp, time, flow_capacity); @*/
-/*@ ensures *buckets |-> bucketsp &*& *heap |-> heapp &*& *indices |-> indicesp; @*/
+/*@ requires *indices |-> ?indicesp &*& *heap |-> ?heapp &*& *backends |-> ?backendsp &*& *chain |-> ?chainp &*&
+             lb_loop_invariant(indicesp, heapp, backendsp, chainp, time, flow_capacity); @*/
+/*@ ensures *indices |-> indicesp &*& *heap |-> heapp &*& *backends |-> backendsp &*& *chain |-> chainp; @*/
 
-void lb_loop_invariant_produce(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
+void lb_loop_invariant_produce(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
                                time_t* time, uint32_t flow_capacity);
-/*@ requires *buckets |-> ?bucketsp &*& *heap |-> ?heapp &*& *indices |-> ?indicesp &*&
+/*@ requires *indices |-> ?indicesp &*& *heap |-> ?heapp &*& *backends |-> ?backendsp &*& *chain |-> ?chainp &*&
              *time |-> _; @*/
-/*@ ensures *buckets |-> bucketsp &*& *heap |-> heapp &*& *indices |-> indicesp &*&
+/*@ ensures *indices |-> ?indicesp &*& *heap |-> ?heapp &*& *backends |-> ?backendsp &*& *chain |-> ?chainp &*&
             *time |-> ?t &*&
-            lb_loop_invariant(bucketsp, heapp, indicesp, t, flow_capacity); @*/
+            lb_loop_invariant(indicesp, heapp, backendsp, chainp, t, flow_capacity); @*/
 
-void lb_loop_iteration_begin(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
+void lb_loop_iteration_begin(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
                              time_t time, uint32_t flow_capacity);
 
-void lb_loop_iteration_end(struct Map** buckets, struct Vector** heap, struct DoubleChain** indices,
+void lb_loop_iteration_end(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
                            time_t time, uint32_t flow_capacity);
 
 

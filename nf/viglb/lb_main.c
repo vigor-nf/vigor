@@ -58,12 +58,12 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		.protocol = ipv4_header->next_proto_id
 	};
 
-	uint16_t backend = lb_get_backend(balancer, &flow, now);
+	struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now);
 
-	ether_header->s_addr = config.device_macs[backend];
-	ether_header->d_addr = config.backend_macs[backend];
+	ether_header->s_addr = config.device_macs[backend.index];
+	ether_header->d_addr = config.backend_macs[backend.index];
 
-	return backend + 1; // since 0 is the entry device
+	return backend.index + 1; // since 0 is the entry device
 }
 
 
@@ -84,19 +84,19 @@ void nf_print_config() {
 
 void nf_loop_iteration_begin(unsigned lcore_id,
                              time_t time) {
-  lb_loop_iteration_begin(lb_get_buckets(balancer), lb_get_heap(balancer), lb_get_indices(balancer),
+  lb_loop_iteration_begin(lb_get_indices(balancer), lb_get_heap(balancer), lb_get_backends(balancer), lb_get_chain(balancer),
                           time, config.flow_capacity);
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
                                        time_t time) {
-  lb_loop_iteration_assumptions(lb_get_buckets(balancer), lb_get_heap(balancer), lb_get_indices(balancer),
+  lb_loop_iteration_assumptions(lb_get_indices(balancer), lb_get_heap(balancer), lb_get_backends(balancer), lb_get_chain(balancer),
                                 time, config.flow_capacity);
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
                            time_t time) {
-  lb_loop_iteration_end(lb_get_buckets(balancer), lb_get_heap(balancer), lb_get_indices(balancer),
+  lb_loop_iteration_end(lb_get_indices(balancer), lb_get_heap(balancer), lb_get_backends(balancer), lb_get_chain(balancer),
                         time, config.flow_capacity);
 }
 #endif
