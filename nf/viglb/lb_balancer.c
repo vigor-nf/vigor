@@ -166,8 +166,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 	if (map_get(balancer->flow_indices, flow, &index) == 0) {
 		backend.index = lb_compute_backend(flow, balancer->backend_count);
 
-		if (map_size(balancer->flow_indices) < balancer->flow_capacity &&
-                    dchain_allocate_new_index(balancer->flow_chain, &index, now) != 0) {
+		if (dchain_allocate_new_index(balancer->flow_chain, &index, now) != 0) {
 			struct LoadBalancedFlow* vec_flow;
 			vector_borrow_full(balancer->flow_heap, index, (void**) &vec_flow);
 			memcpy(vec_flow, flow, sizeof(struct LoadBalancedFlow));
@@ -182,6 +181,8 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 		}
 		// Doesn't matter if we can't insert
 	} else {
+		dchain_rejuvenate_index(balancer->flow_heap, index, now);
+
 		struct LoadBalancedBackend* vec_backend;
 		vector_borrow_full(balancer->flow_backends, index, (void**) &vec_backend);
 		memcpy(&backend, vec_backend, sizeof(struct LoadBalancedBackend));
