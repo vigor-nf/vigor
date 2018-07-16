@@ -156,6 +156,13 @@
   ensures true == set_eq(add_lb_entry(lb_table1, flow, backend, time),
                          add_lb_entry(lb_table2, flow, backend, time));
 
+  lemma void lb_map_has(list<pair<lb_flowi, uint32_t> > map,
+                        list<pair<lb_backendi, bool> > values,
+                        dchain indices,
+                        lb_flowi key);
+  requires true;
+  ensures map_has_fp(map, key) == lb_table_has_key(gen_lb_entries(map, values, indices), key);
+
   lemma void lb_map_has_get(list<pair<lb_flowi, uint32_t> > map,
                             list<pair<lb_backendi, bool> > values,
                             dchain indices,

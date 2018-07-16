@@ -60,6 +60,10 @@ void lb_backend_init(void* obj);
 /*@ requires chars(obj, sizeof(struct LoadBalancedBackend), _); @*/
 /*@ ensures lb_backendp(obj, _); @*/
 
+uint16_t lb_compute_backend(struct LoadBalancedFlow* flow, uint16_t backend_count);
+/*@ requires true; @*/
+/*@ ensures result < backend_count; @*/
+
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count);

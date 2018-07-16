@@ -167,6 +167,11 @@ let fun_types =
                       lemmas_after = [
                         (fun params ->
                            "int64_t now = " ^ (params.ret_name) ^ ";\n")];};
+     "lb_compute_backend", {ret_type = Static Uint16;
+                            arg_types = stt [Ptr lb_flow_struct; Uint16];
+                            extra_ptr_types = [];
+                            lemmas_before = [];
+                            lemmas_after = [(fun params -> "uint16_t the_backend = " ^ params.ret_name ^ ";\n")];};
      "lb_loop_invariant_consume", {ret_type = Static Void;
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
@@ -388,7 +393,7 @@ let fun_types =
                                        Ptr (Ptr map_struct)];
                       extra_ptr_types = [];
                       lemmas_before = [
-                        (fun {args;_} -> (* VeriFast will syntax-error on produce_function_pointer_chunk if not within a block *)
+                        (fun _ -> (* VeriFast will syntax-error on produce_function_pointer_chunk if not within a block *)
                             "/*@ {\nproduce_function_pointer_chunk \
                             map_keys_equality<lb_flowi>(lb_flow_equality)\
                             (lb_flowp)(a, b) \
@@ -423,14 +428,14 @@ let fun_types =
                               Static (Ptr Sint32)];
                  extra_ptr_types = [];
                  lemmas_before = [
-                   (fun ({arg_types;tmp_gen;args=_;arg_exps;_} as params) ->
+                   (fun ({tmp_gen;arg_exps;_} as params) ->
                         "//@ assert lb_flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
                         (capture_a_chain "dh" params ^
                          capture_a_map "lb_flowi" "dm" params ^
                          capture_a_vector "lb_flowi" "dv" params));];
                  lemmas_after = [
-                   (fun {args;ret_name;arg_types;tmp_gen;_} ->
+                   (fun {ret_name;tmp_gen;_} ->
                         "/*@ if (" ^ ret_name ^
                         " != 0) {\n\
                          mvc_coherent_map_get_bounded(" ^
@@ -466,7 +471,7 @@ let fun_types =
                       (tmp_gen "dm") ^ ", " ^
                       (tmp_gen "dv") ^ ", " ^
                       (tmp_gen "dh") ^ ");\n} @*/");
-                   (fun {tmp_gen;args;_} ->
+                   (fun {args;_} ->
                       let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                    "/*@ { \n\
                     assert mapp<lb_flowi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\

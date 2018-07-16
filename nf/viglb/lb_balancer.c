@@ -33,12 +33,6 @@ struct str_field_descr lb_backend_fields[] = {
 #undef BFIELD
 #undef FFIELD
 #undef FIELD
-
-void lb_hack_concretize_backend(uint16_t backend_count, struct LoadBalancedBackend* backend) {
-	klee_assume(backend->index >= 0);
-	klee_assume(backend->index < backend_count);
-	for(unsigned b = 0; b < backend_count; b++) if (backend->index == b) { backend->index = b; break; }
-}
 #endif
 
 
@@ -97,18 +91,26 @@ lb_backend_init(void* obj) {
 }
 
 
-// We don't want the hash to show up in symbex, too complex to deal with
+// We don't want the hash to show up in symbex, too complex to deal with;
+// also, we need to make sure the contract is respected
 uint16_t
 lb_compute_backend(struct LoadBalancedFlow* flow, uint16_t backend_count) {
 #ifdef KLEE_VERIFICATION
+	klee_trace_ret();
+	klee_trace_param_ptr(flow, sizeof(struct LoadBalancedFlow), "flow");
+	for (int i = 0; i < sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]); i++) {                    \
+		klee_trace_param_ptr_field(flow, lb_flow_fields[i].offset, lb_flow_fields[i].width, lb_flow_fields[i].name);
+	}
+	klee_trace_param_u16(backend_count, "backend_count");
+
 	uint16_t backend;
 	klee_make_symbolic(&backend, sizeof(uint16_t), "backend");
+	klee_assume(backend < backend_count);
 	return backend;
 #else
 	return lb_flow_hash(flow) % backend_count;
 #endif
 }
-
 
 
 struct LoadBalancer*
@@ -190,7 +192,9 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 	}
 
 #ifdef KLEE_VERIFICATION
-	lb_hack_concretize_backend(balancer->backend_count, &backend);
+	// Concretize the backend, to avoid propagating a symbolic device
+	klee_assume(backend.index < balancer->backend_count);
+	for(uint16_t b = 0; b < balancer->backend_count; b++) if (backend.index == b) { backend.index = b; break; }
 #endif
 
 	return backend;
