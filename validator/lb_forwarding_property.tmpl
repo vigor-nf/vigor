@@ -35,19 +35,23 @@ if (10 < now) {
                                                       expired_backends,
                                                       expired_chain);
 
-        // Check that expiration was done properly
-        assert true == set_eq(get_lb_table(expired_table),
-                              expire_lb_entries(get_lb_table(initial_table), now - 10));
 
         // Check the maps' consistency
         switch(expired_indices) {
           case mapc(capacity, lb_map, flows):
-            lb_map_has(lb_map, expired_indices, expired_chain, packet_flow);
+            lb_map_has(lb_map, expired_backends, expired_chain, packet_flow);
         }
         switch(final_indices) {
           case mapc(capacity, lb_map, flows):
-            lb_map_has(lb_map, final_indices, final_chain, packet_flow);
+            lb_map_has(lb_map, final_backends, final_chain, packet_flow);
         }
+
+        // Check that expiration was done properly
+        switch(initial_indices) { case mapc(capacity, lb_map, addrs):
+          lb_expire_abstract(lb_map, initial_backends, initial_heap, initial_chain, now - 10);
+        }
+        assert true == set_eq(get_lb_table(expired_table),
+                              expire_lb_entries(get_lb_table(initial_table), now - 10));
 
 
         // State postcondition
@@ -61,22 +65,22 @@ if (10 < now) {
               assert true == set_eq(gen_lb_entries(lb_map,
                                                    expired_backends,
                                                    dchain_rejuvenate_fp(expired_chain, the_index_rejuvenated, now)),
-                                    rejuvenate_lb_entry(get_dyn_table(expired_table), packet_flow, now));
+                                    rejuvenate_lb_entry(get_lb_table(expired_table), packet_flow, now));
 
               assert true == set_eq(get_lb_table(final_table),
                                     rejuvenate_lb_entry(get_lb_table(expired_table), packet_flow, now));
           }
 
           lb_rejuv_entry_set_eq(get_lb_table(expired_table),
-                                expire_addresses(get_lb_table(initial_table), now - 10),
+                                expire_lb_entries(get_lb_table(initial_table), now - 10),
                                 packet_flow, now);
 
           set_eq_trans(get_lb_table(final_table),
                        rejuvenate_lb_entry(get_lb_table(expired_table), packet_flow, now),
-                       rejuvenate_lb_entry(expire_addresses(get_lb_table(initial_table), now - 10), packet_flow, now));
+                       rejuvenate_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10), packet_flow, now));
 
           assert true == set_eq(get_lb_table(final_table),
-                                rejuvenate_lb_entry(expire_addresses(get_lb_table(initial_table), now - 10), packet_flow, now));
+                                rejuvenate_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10), packet_flow, now));
 
         } else {
           chain_out_of_space_lb_out_of_space(expired_indices, expired_backends, expired_chain);
@@ -86,7 +90,7 @@ if (10 < now) {
 
           // Clearly, if the table is out of space, we can't have expired anything
           assert true == set_eq(get_lb_table(final_table),
-                                expire_addresses(get_lb_table(initial_table), now - 10));
+                                expire_lb_entries(get_lb_table(initial_table), now - 10));
         }
 
 
