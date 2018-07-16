@@ -171,7 +171,7 @@ let fun_types =
                             arg_types = stt [Ptr lb_flow_struct; Uint16];
                             extra_ptr_types = [];
                             lemmas_before = [];
-                            lemmas_after = [(fun params -> "uint16_t the_backend = " ^ params.ret_name ^ ";\n")];};
+                            lemmas_after = [(fun params -> "//@ lb_backendi the_backend = lb_backendc(" ^ params.ret_name ^ ");\n")];};
      "lb_loop_invariant_consume", {ret_type = Static Void;
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
@@ -741,8 +741,6 @@ struct
                   bool a_packet_received = false;\n\
                   struct stub_mbuf_content sent_packet;\n\
                   uint16_t sent_on_port;\n\
-                  uint16_t flooded_except_port;\n\
-                  bool a_packet_flooded = false;\n\
                   uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n"
                  ^ "//@ mapi<lb_flowi> initial_indices;\n"

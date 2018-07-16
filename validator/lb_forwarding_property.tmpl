@@ -58,7 +58,7 @@ if (10 < now) {
         if (lb_table_has_key(get_lb_table(expired_table), packet_flow)) {
           // The flow was in the table already
 
-          // Let's check that the other structures are consistent
+          // Let's check that the structures are consistent
 
           switch(expired_indices) {
             case mapc(capacity, lb_map, flows):
@@ -86,6 +86,38 @@ if (10 < now) {
 
         } else if (lb_table_has_key(get_lb_table(final_table), packet_flow)) {
           // The flow was not in the expired table but we added it
+
+          // Let's check that the structures are consistent
+
+          switch(expired_indices) { case mapc(capacity, lb_map, addrs):
+            lb_add_entry(lb_map, expired_backends, expired_chain,
+                         packet_flow, the_index_allocated, the_backend, time_for_allocated_index);
+
+            assert true == set_eq(gen_lb_entries(map_put_fp(lb_map, packet_flow, the_index_allocated),
+                                                 update(the_index_allocated, pair(the_backend, true), expired_backends),
+                                                 dchain_allocate_fp(expired_chain,
+                                                                    the_index_allocated,
+                                                                    time_for_allocated_index)),
+                                  add_lb_entry(get_lb_table(expired_table),
+                                               packet_flow, the_backend, time_for_allocated_index));
+
+            assert true == set_eq(get_lb_table(final_table),
+                                  add_lb_entry(get_lb_table(expired_table),
+                                               packet_flow, the_backend, time_for_allocated_index));
+          }
+
+          lb_add_entry_set_eq(get_lb_table(expired_table),
+                              expire_addresses(get_lb_table(initial_table), now - 10),
+                              packet_flow, the_backend, time_for_allocated_index);
+
+          set_eq_trans(get_lb_table(final_table),
+                       add_lb_entry(get_lb_table(expired_table), packet_flow, the_backend, now),
+                       add_lb_entry(expire_addresses(get_lb_table(initial_table), now - 10),
+                                    packet_flow, the_backend, now));
+
+          assert true == set_eq(get_lb_table(final_table),
+                                add_lb_entry(expire_addresses(get_lb_table(initial_table), now - 10),
+                                             packet_flow, the_backend, now));
         } else {
           // The flow could not be added
           chain_out_of_space_lb_out_of_space(expired_indices, expired_backends, expired_chain);
