@@ -56,9 +56,11 @@ if (10 < now) {
 
         // State postcondition
         if (lb_table_has_key(get_lb_table(expired_table), packet_flow)) {
-          // OK, the table contains the flow, let's check that the other structures are consistent
+          // The flow was in the table already
 
-          switch(expired_indices) { 
+          // Let's check that the other structures are consistent
+
+          switch(expired_indices) {
             case mapc(capacity, lb_map, flows):
               lb_rejuv_entry(lb_map, expired_backends, expired_chain, packet_flow, now);
 
@@ -82,7 +84,10 @@ if (10 < now) {
           assert true == set_eq(get_lb_table(final_table),
                                 rejuvenate_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10), packet_flow, now));
 
+        } else if (lb_table_has_key(get_lb_table(final_table), packet_flow)) {
+          // The flow was not in the expired table but we added it
         } else {
+          // The flow could not be added
           chain_out_of_space_lb_out_of_space(expired_indices, expired_backends, expired_chain);
 
           // We must have run out of space in the table
@@ -92,7 +97,6 @@ if (10 < now) {
           assert true == set_eq(get_lb_table(final_table),
                                 expire_lb_entries(get_lb_table(initial_table), now - 10));
         }
-
 
 
       } else {
