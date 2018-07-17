@@ -82,8 +82,7 @@ let ipv4_hdr_struct = Ir.Str ("ipv4_hdr", ["version_ihl", Uint8;
                                            "fragment_offset", Uint16;
                                            "time_to_live", Uint8;
                                            "next_proto_id", Uint8;
-                                           (* Too difficult to check
-                                              "hdr_checksum", Uint16; *)
+                                            "hdr_checksum", Uint16;
                                            "src_addr", Uint32;
                                            "dst_addr", Uint32;])
 let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
@@ -93,8 +92,7 @@ let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
                                          "data_off", Uint8;
                                          "tcp_flags", Uint8;
                                          "rx_win", Uint16;
-                                         (* too difficult to check
-                                            "cksum", Uint16; *)
+                                         "cksum", Uint16;
                                          "tcp_urp", Uint16;])
 
 let stub_mbuf_content_struct = Ir.Str ( "stub_mbuf_content",
@@ -120,8 +118,8 @@ let rte_mbuf_struct = Ir.Str ( "rte_mbuf",
                                 "buf_len", Uint16;
                                 "timestamp", Uint64;
                                 "udata64", Uint64;
-                                (*"pool", Ptr rte_mempool_struct;*)
-                                (*"next", Ptr Void;*)
+                                "pool", Ptr rte_mempool_struct;
+                                "next", Ptr Void;
                                 "tx_offload", Uint64;
                                 "priv_size", Uint16;
                                 "timesync", Uint16; 

@@ -147,7 +147,7 @@ if (10 < now) {
         assert pkt_sent.ipv4.fragment_offset == pkt_recv.ipv4.fragment_offset;
         assert pkt_sent.ipv4.time_to_live    == pkt_recv.ipv4.time_to_live;
         assert pkt_sent.ipv4.next_proto_id   == pkt_recv.ipv4.next_proto_id;
-        // TODO uncomment this but check with other NFs first assert pkt_sent.ipv4.hdr_checksum    == pkt_recv.ipv4.hdr_checksum;
+        assert pkt_sent.ipv4.hdr_checksum    == pkt_recv.ipv4.hdr_checksum;
         assert pkt_sent.ipv4.src_addr        == pkt_recv.ipv4.src_addr;
         assert pkt_sent.ipv4.dst_addr        == pkt_recv.ipv4.dst_addr;
         assert pkt_sent.tcp.src_port         == pkt_recv.tcp.src_port;
@@ -156,7 +156,7 @@ if (10 < now) {
         assert pkt_sent.tcp.data_off         == pkt_recv.tcp.data_off;
         assert pkt_sent.tcp.tcp_flags        == pkt_recv.tcp.tcp_flags;
         assert pkt_sent.tcp.rx_win           == pkt_recv.tcp.rx_win;
-        // TODO same as above assert pkt_sent.tcp.cksum            == pkt_recv.tcp.cksum;
+        assert pkt_sent.tcp.cksum            == pkt_recv.tcp.cksum;
         assert pkt_sent.tcp.tcp_urp          == pkt_recv.tcp.tcp_urp;
 
       } else {

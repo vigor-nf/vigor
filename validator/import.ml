@@ -615,8 +615,8 @@ let rec get_sexp_value exp ?(at=Beginning) t =
     when (String.equal f "Extract") && (String.equal offset "0") ->
     (*FIXME: make sure the typetransformation works.*)
     (*FIXME: pass a right type to get_sexp_value here*)
-    if (String.equal w "w16") then
-      get_sexp_value src t ~at
+    if (String.equal w "w16") then begin
+      lprintf "HELLO THERE %s\n" (Sexp.to_string exp); {v=Cast (Uint16, get_sexp_value src t ~at);t} end
     else if (String.equal w "w32") then
       get_sexp_value src t ~at
     else if (String.equal w "w64") then
