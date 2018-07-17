@@ -660,18 +660,20 @@ let fun_types =
      "vector_return_full", {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", (Ptr (Ptr lb_flow_struct));
-                                                  "LoadBalancedBackend", (Ptr (Ptr lb_backend_struct));];];
+                                         Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                                  "LoadBalancedBackend", (Ptr lb_backend_struct);];];
                             extra_ptr_types = [];
                             lemmas_before = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
+                              (fun {args;arg_types;tmp_gen;_} ->
+                                 match List.nth_exn arg_types 2 with
                                  | Ptr (Str ("LoadBalancedFlow", _)) -> (* VeriFast will syntax-error on update_id if not within a block *)
-                                   "/*@ { assert vector_accp<lb_flowi>(_, _, ?vectr, _, _, _); \n\
-                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", vectr); } @*/"
+                                   "/*@ { assert vector_accp<lb_flowi>(_, _, ?" ^ (tmp_gen "vec") ^ ", _, _, _); \n\
+                                          update_id(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "); } @*/"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?vectr, _, _, _); \n\
-                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", vectr); } @*/"
+                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?" ^ (tmp_gen "vec") ^ ", _, _, _); \n\
+                                          forall_update<pair<lb_backendi, bool> >(" ^ (tmp_gen "vec") ^ ", snd, " ^ (List.nth_exn args 1) ^
+                                                                                  ", pair(lb_backendc(" ^ (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 2)) ^ "->index), true));\n\
+                                          update_id(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                                  ];
@@ -679,18 +681,18 @@ let fun_types =
      "vector_return_half", {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", (Ptr (Ptr lb_flow_struct));
-                                                  "LoadBalancedBackend", (Ptr (Ptr lb_backend_struct));];];
+                                         Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                                  "LoadBalancedBackend", (Ptr lb_backend_struct);];];
                             extra_ptr_types = [];
                             lemmas_before = [
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Str ("LoadBalancedFlow", _)) -> (* see remark in return_full *)
-                                   "/*@ { assert vector_accp<lb_flowi>(_, _, ?vectr, _, _, _); \n\
-                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", vectr); } @*/"
+                                   "/*@ { assert vector_accp<lb_flowi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
+                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
                                    "/*@ { assert vector_accp<lb_backendi>(_, _, ?vectr, _, _, _); \n\
-                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", vectr); } @*/"
+                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");
                               (fun params ->

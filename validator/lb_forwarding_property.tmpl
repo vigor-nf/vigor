@@ -47,7 +47,7 @@ if (10 < now) {
         }
 
         // Check that expiration was done properly
-        switch(initial_indices) { case mapc(capacity, lb_map, addrs):
+        switch(initial_indices) { case mapc(capacity, lb_map, backends):
           lb_expire_abstract(lb_map, initial_backends, initial_heap, initial_chain, now - 10);
         }
         assert true == set_eq(get_lb_table(expired_table),
@@ -89,7 +89,7 @@ if (10 < now) {
 
           // Let's check that the structures are consistent
 
-          switch(expired_indices) { case mapc(capacity, lb_map, addrs):
+          switch(expired_indices) { case mapc(capacity, lb_map, backends):
             lb_add_entry(lb_map, expired_backends, expired_chain,
                          packet_flow, the_index_allocated, the_backend, time_for_allocated_index);
 
@@ -107,16 +107,16 @@ if (10 < now) {
           }
 
           lb_add_entry_set_eq(get_lb_table(expired_table),
-                              expire_addresses(get_lb_table(initial_table), now - 10),
+                              expire_lb_entries(get_lb_table(initial_table), now - 10),
                               packet_flow, the_backend, time_for_allocated_index);
 
           set_eq_trans(get_lb_table(final_table),
                        add_lb_entry(get_lb_table(expired_table), packet_flow, the_backend, now),
-                       add_lb_entry(expire_addresses(get_lb_table(initial_table), now - 10),
+                       add_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10),
                                     packet_flow, the_backend, now));
 
           assert true == set_eq(get_lb_table(final_table),
-                                add_lb_entry(expire_addresses(get_lb_table(initial_table), now - 10),
+                                add_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10),
                                              packet_flow, the_backend, now));
         } else {
           // The flow could not be added
