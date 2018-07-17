@@ -20,16 +20,16 @@ if (10 < now) {
   if (a_packet_received && ((received_packet_type & 0x10) == 0x10)) {
 
     // 6/17 -> TCP/UDP
-    if (the_received_packet.ipv4.next_proto_id == 6 ||
-        the_received_packet.ipv4.next_proto_id == 17) {
+    if (pkt_recv.ipv4.next_proto_id == 6 ||
+        pkt_recv.ipv4.next_proto_id == 17) {
 
       // 0 -> Packet received from the external network
       if (received_on_port == 0) {
 
-        lb_flowi packet_flow = lb_flowc(the_received_packet.ipv4.src_addr,
-                                        the_received_packet.tcp.src_port,
-                                        the_received_packet.tcp.dst_port,
-                                        the_received_packet.ipv4.next_proto_id);
+        lb_flowi packet_flow = lb_flowc(pkt_recv.ipv4.src_addr,
+                                        pkt_recv.tcp.src_port,
+                                        pkt_recv.tcp.dst_port,
+                                        pkt_recv.ipv4.next_proto_id);
 
         lb_table expired_table = lb_abstract_function(expired_indices,
                                                       expired_backends,
@@ -130,17 +130,34 @@ if (10 < now) {
                                 expire_lb_entries(get_lb_table(initial_table), now - 10));
         }
 
-        // Packet post-conditions
-        // TODO
-
         // Output device
         assert true == a_packet_sent;
-
         if (backend_computed) {
           assert sent_on_port == lb_backend_get_index(the_backend) + 1;
         } else {
           assert sent_on_port == lb_backend_get_index(fst(nth(backend_from_map, final_backends))) + 1;
         }
+
+        // Packet post-condition
+        assert pkt_sent.ether.ether_type     == pkt_recv.ether.ether_type;
+        assert pkt_sent.ipv4.version_ihl     == pkt_recv.ipv4.version_ihl;
+        assert pkt_sent.ipv4.type_of_service == pkt_recv.ipv4.type_of_service;
+        assert pkt_sent.ipv4.total_length    == pkt_recv.ipv4.total_length;
+        assert pkt_sent.ipv4.packet_id       == pkt_recv.ipv4.packet_id;
+        assert pkt_sent.ipv4.fragment_offset == pkt_recv.ipv4.fragment_offset;
+        assert pkt_sent.ipv4.time_to_live    == pkt_recv.ipv4.time_to_live;
+        assert pkt_sent.ipv4.next_proto_id   == pkt_recv.ipv4.next_proto_id;
+        // TODO uncomment this but check with other NFs first assert pkt_sent.ipv4.hdr_checksum    == pkt_recv.ipv4.hdr_checksum;
+        assert pkt_sent.ipv4.src_addr        == pkt_recv.ipv4.src_addr;
+        assert pkt_sent.ipv4.dst_addr        == pkt_recv.ipv4.dst_addr;
+        assert pkt_sent.tcp.src_port         == pkt_recv.tcp.src_port;
+        assert pkt_sent.tcp.sent_seq         == pkt_recv.tcp.sent_seq;
+        assert pkt_sent.tcp.recv_ack         == pkt_recv.tcp.recv_ack;
+        assert pkt_sent.tcp.data_off         == pkt_recv.tcp.data_off;
+        assert pkt_sent.tcp.tcp_flags        == pkt_recv.tcp.tcp_flags;
+        assert pkt_sent.tcp.rx_win           == pkt_recv.tcp.rx_win;
+        // TODO same as above assert pkt_sent.tcp.cksum            == pkt_recv.tcp.cksum;
+        assert pkt_sent.tcp.tcp_urp          == pkt_recv.tcp.tcp_urp;
 
       } else {
         // Packet from a backend (not allowed)

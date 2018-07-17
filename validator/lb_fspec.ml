@@ -526,7 +526,7 @@ let fun_types =
                                          "(*" ^ arg0 ^ ")->port;\n" ^
                                          "received_packet_type = " ^
                                          "(*" ^ arg0 ^ ")->packet_type;\n") ^
-                                         (copy_stub_mbuf_content "the_received_packet"
+                                         (copy_stub_mbuf_content "pkt_recv"
                                           ("*" ^ arg0)));
                                  ];};
      "stub_core_trace_tx", {
@@ -537,11 +537,11 @@ let fun_types =
                  lemmas_before = [
                      (fun params ->
                           let sent_pkt = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 0) in
-                            (copy_stub_mbuf_content "sent_packet"
+                            (copy_stub_mbuf_content "pkt_sent"
                              (sent_pkt)) ^ "\n" ^
                             simplify_c_string (
                               "sent_on_port = " ^ (List.nth_exn params.args 1) ^ ";\n" ^
-                              "sent_packet_type = (" ^
+                              "pkt_sent_type = (" ^
                               sent_pkt ^ ")->packet_type;"));];
                  lemmas_after = [(fun _ -> "a_packet_sent = true;\n");];
                  };
@@ -738,13 +738,13 @@ struct
                   /*@ ensures true; @*/\n{\n\
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
-                  struct stub_mbuf_content the_received_packet;\n\
+                  struct stub_mbuf_content pkt_recv;\n\
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
-                  struct stub_mbuf_content sent_packet;\n\
+                  struct stub_mbuf_content pkt_sent;\n\
                   uint16_t sent_on_port;\n\
-                  uint32_t sent_packet_type;\n\
+                  uint32_t pkt_sent_type;\n\
                   bool a_packet_sent = false;\n\
                   bool backend_computed = false;\n\
                   int32_t backend_from_map = -1;\n"
