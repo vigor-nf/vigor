@@ -130,6 +130,17 @@ if (10 < now) {
                                 expire_lb_entries(get_lb_table(initial_table), now - 10));
         }
 
+        // Packet post-conditions
+        // TODO
+
+        // Output device
+        assert true == a_packet_sent;
+
+        if (backend_computed) {
+          assert sent_on_port == lb_backend_get_index(the_backend) + 1;
+        } else {
+          assert sent_on_port == lb_backend_get_index(fst(nth(backend_from_map, final_backends))) + 1;
+        }
 
       } else {
         // Packet from a backend (not allowed)

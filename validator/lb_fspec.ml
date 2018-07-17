@@ -171,7 +171,7 @@ let fun_types =
                             arg_types = stt [Ptr lb_flow_struct; Uint16];
                             extra_ptr_types = [];
                             lemmas_before = [];
-                            lemmas_after = [(fun params -> "//@ lb_backendi the_backend = lb_backendc(" ^ params.ret_name ^ ");\n")];};
+                            lemmas_after = [(fun params -> "backend_computed = true;\n//@ lb_backendi the_backend = lb_backendc(" ^ params.ret_name ^ ");\n")];};
      "lb_loop_invariant_consume", {ret_type = Static Void;
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
@@ -450,7 +450,8 @@ let fun_types =
                         (tmp_gen "dh") ^ ", " ^
                         (tmp_gen "dk") ^
                         ");\n\
-                         } @*/");];};
+                         } @*/");
+                   (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_from_map = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
                               Static (Ptr lb_flow_struct);
@@ -744,7 +745,9 @@ struct
                   struct stub_mbuf_content sent_packet;\n\
                   uint16_t sent_on_port;\n\
                   uint32_t sent_packet_type;\n\
-                  bool a_packet_sent = false;\n"
+                  bool a_packet_sent = false;\n\
+                  bool backend_computed = false;\n\
+                  int32_t backend_from_map = -1;\n"
                  ^ "//@ mapi<lb_flowi> initial_indices;\n"
                  ^ "//@ list<pair<lb_flowi, bool> > initial_heap;\n"
                  ^ "//@ list<pair<lb_backendi, bool> > initial_backends;\n"

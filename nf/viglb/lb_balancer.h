@@ -37,6 +37,10 @@ struct LoadBalancedBackend {
     struct_LoadBalancedBackend_padding(ptr) &*&
     ptr->index |-> ?i &*&
     backend == lb_backendc(i);
+
+  fixpoint int lb_backend_get_index(lb_backendi b) {
+    switch(b) { case lb_backendc(i): return i; }
+  }
 @*/
 
 
