@@ -293,7 +293,7 @@ let fun_types =
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;
-                                   (fun {args=_;tmp_gen;_} ->
+                                   (fun {tmp_gen;_} ->
                                       "/*@ {\n\
                                         assert map_vec_chain_coherent<\
                                        lb_flowi>(?" ^
