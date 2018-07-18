@@ -1,2 +1,0 @@
-<beep>/w16-are-not-bools.c
-<beep>/w16-are-not-bools.c(578,60-66): Type mismatch. Actual: struct LoadBalancedBackend. Expected: uint16.
