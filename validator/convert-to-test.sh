@@ -62,6 +62,6 @@ echo "FSPEC_PLUGIN=$PLUGIN" > "$TEST_DIR/config"
 echo "ORIG_PREFIX=$PREFIX" >> "$TEST_DIR/config"
 
 # Canonicalize the file name in the VeriFast report.
-. canonicalize.verify.stdout.sh $PREFIX "$TEST_DIR/verify.stdout.expected"
+. canonicalize.verify.stdout.sh "$PREFIX.c" "$TEST_DIR/verify.stdout.expected"
 
 git add "$TEST_DIR"
