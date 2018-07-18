@@ -47,19 +47,18 @@ sudo apt-get install -y \
                      libpcap-dev libnuma-dev `# for DPDK` \
                      wget build-essential git python `# for more or less everything`
 
-# On the Linux subsystem for Windows, uname -r includes a "-Microsoft" token
-KERNEL_VER=$(uname -r | sed 's/-Microsoft//' | sed 's/-generic//')
-
-# Install the right headers; we do *not* install headers on Docker since it uses the underlying kernel
-if [ "$OS" = 'microsoft' ]; then
-  # Fix the kernel dir, since the Linux subsystem for Windows doesn't have an actual Linux kernel...
-  sudo apt install "linux-headers-$KERNEL_VER-generic"
-  export RTE_KERNELDIR="/usr/src/linux-headers-$KERNEL_VER-generic/"
+# Install the right headers
+if [ "$OS" = 'windows' ]; then
+  # Fix the kernel dir, WSL gives a weird version in uname -r
+  sudo apt install "linux-headers-4.4.0-43-generic"
+  export RTE_KERNELDIR="/usr/src/linux-headers-4.4.0-43-generic/"
 elif [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
   if [ "$OS" = 'docker' ]; then
       echo "Warning: the host($HOST_KERNEL_VER) and guest($KERNEL_VER)\
           OS kernels must be somewhat compatible (because the guest uses the host kernel)"
   fi
+
+  KERNEL_VER=$(uname -r | sed 's/-generic//')
   sudo apt-get install -y "linux-headers-$KERNEL_VER"
   sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
