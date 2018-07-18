@@ -56,7 +56,7 @@ assert_file_exists $ACTUAL_OUTCOME "the actual validation outcome"
 assert_file_exists $ACTUAL_VF_STDOUT "the actual VeriFast output"
 
 # Result check
-sed -i "s/$RUN_DIR/<beep>/g" $ACTUAL_VF_STDOUT
+. canonicalize.verify.stdout.sh $RUN_DIR $ACTUAL_VF_STDOUT
 
 OUTCOME_CORRECT=false
 cmp --silent $EXPECTED_OUTCOME $ACTUAL_OUTCOME && OUTCOME_CORRECT=true
