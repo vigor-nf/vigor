@@ -92,6 +92,7 @@ let render_assignment {lhs;rhs;} =
 let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
   else match rhs.t, rhs.v with
+  | _, Undef -> []
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
                           rhs=pointee}
@@ -110,29 +111,18 @@ let rec gen_plain_equalities {lhs;rhs} =
            gen_plain_equalities
              {lhs={v=Str_idx (lhs, name);t=ttype};
               rhs={v=Str_idx (rhs, name);t=ttype}}))
-  | Uint64, Int _
-  | Sint64, Str_idx _
-  | Sint64, Id _
-  | Sint64, Int _
-  | Sint32, Int _
-  | Sint32, Bop (Add, {v=Id _;t=_}, {v=Int _; t=_})
-  | Sint8, Int _
-  | Uint32, Int _
-  | Uint32, Str_idx _
-  | Uint16, Int _
-  | Uint16, Str_idx _
-  | Uint8, Int _
-  | Uint8, Str_idx _
-  | Sint32, Id _
-  | Sint8, Id _
-  | Uint64, Id _
-  | Uint32, Id _
-  | Uint16, Id _
-  | Uint8, Id _
+  | Sint64, _
+  | Sint32, _
+  | Sint16, _
+  | Sint8, _
+  | Uint64, _
+  | Uint32, _
+  | Uint16, _
+  | Uint8,  _
   | Boolean, Id _
   | Boolean, Bool _
   | Ptr _, Id _
-  | Ptr _, Int _ -> [{lhs;rhs}]
+  | Ptr _, Int _ -> [{lhs;rhs={v=Cast(lhs.t,rhs);t=lhs.t}}]
   | Boolean, Int 0 ->
     [{lhs;rhs={v=Bool false;
                t=Boolean}}]
@@ -144,9 +134,7 @@ let rec gen_plain_equalities {lhs;rhs} =
                              {v=Int 0;t=Sint32});
                       t=Boolean};
                t=Boolean}}]
-  | Uint16, Cast (Uint16, {v=Id _;t=_}) -> [{lhs;rhs}]
   | Ptr _, Zeroptr -> []
-  | _, Undef -> []
   | _ -> match lhs.v, rhs.v with
          | Deref lref, Deref rref -> gen_plain_equalities {lhs=lref; rhs=rref}
          | Id x, Deref {v=Addr {v=Id y;t=_};t=_} when x = y -> [{lhs;rhs}]
@@ -203,9 +191,12 @@ let make_assignments_for_eqs equalities =
       {lhs=rhs;rhs=lhs})
 
 let split_assignments assignments =
+  let rec unfold_casts v = match v with
+  | Cast (_, {v=v2;t=_}) -> unfold_casts v2
+  | _ -> v
+  in
   List.fold assignments ~init:([],[]) ~f:(fun (concrete,symbolic) assignment ->
-      match assignment.lhs.v with
-      | Cast (_,{v=Id _;t=_})
+      match unfold_casts assignment.lhs.v with
       | Id _ -> (concrete,assignment::symbolic)
       | Int _ -> (assignment::concrete,symbolic)
       | Bool _ -> (assignment::concrete,symbolic)

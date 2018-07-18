@@ -729,6 +729,7 @@ struct
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
+                  //@ modulo_hack();\n\
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
                   struct stub_mbuf_content pkt_recv;\n\

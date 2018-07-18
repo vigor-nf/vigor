@@ -28,4 +28,12 @@ ensures 0x00 == (0x00 & 0x10)
 {
   assume(false);
 }
+
+// VeriFast can't reason about modulo either, let's help it a bit...
+lemma void modulo_hack()
+requires true;
+ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
+{
+  assume(false);
+}
 @*/

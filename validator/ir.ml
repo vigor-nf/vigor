@@ -4,7 +4,7 @@ open Core
 module Sexp = Core.Sexp
 
 type bop = Eq | Le | Lt | Ge | Gt
-         | Add | Sub | Mul
+         | Add | Sub | Mul | Modulo
          | And | Or | Bit_and [@@deriving sexp]
 
 
@@ -122,6 +122,7 @@ let render_bop = function
   | Add -> "+"
   | Sub -> "-"
   | Mul -> "*"
+  | Modulo -> "%"
   | And -> "&&"
   | Or -> "||"
   | Bit_and -> "&"
@@ -166,7 +167,7 @@ let rec render_tterm (t:tterm) =
   | Fptr f -> f
   | Addr t -> "&(" ^ (render_tterm t) ^ ")"
   | Cast (t,v) -> "(" ^ ttype_to_str t ^ ")" ^ (render_tterm v)
-  | Zeroptr -> "0"(*"NULL"*)
+  | Zeroptr -> "0" (* "NULL" *)
   | Undef -> "???"
   | Utility util -> render_utility util
 and render_term t = render_tterm {v=t;t=Unknown} (*TODO: reformulate this coupled definition*)
