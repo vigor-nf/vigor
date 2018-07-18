@@ -444,7 +444,7 @@ let fun_types =
                         (tmp_gen "dk") ^
                         ");\n\
                          } @*/");
-                   (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_from_map = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
+                   (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
                               Static (Ptr lb_flow_struct);
@@ -498,7 +498,7 @@ let fun_types =
                       ", " ^ (List.nth_exn args 2) ^
                       ", time_for_allocated_index, " ^ (tmp_gen "ea") ^ ");\n\
                        } @*/");
-                   (fun params -> "backend_computed = true;\n//@ lb_backendi the_backend = lb_backendc(" ^ (List.nth_exn params.args 2) ^ ");\n");];};
+                   (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
      "map_size", {ret_type = Static Sint32;
                   arg_types = [Static (Ptr map_struct);];
                   extra_ptr_types = [];
@@ -739,8 +739,8 @@ struct
                   uint16_t sent_on_port;\n\
                   uint32_t pkt_sent_type;\n\
                   bool a_packet_sent = false;\n\
-                  bool backend_computed = false;\n\
-                  int32_t backend_from_map = -1;\n"
+                  bool backend_known = false;\n\
+                  int32_t backend_index = -1;\n"
                  ^ "//@ mapi<lb_flowi> initial_indices;\n"
                  ^ "//@ list<pair<lb_flowi, bool> > initial_heap;\n"
                  ^ "//@ list<pair<lb_backendi, bool> > initial_backends;\n"

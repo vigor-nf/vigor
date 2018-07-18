@@ -54,12 +54,12 @@ if (10 < now) {
                               expire_lb_entries(get_lb_table(initial_table), now - 10));
 
 
-        // State postcondition
         if (lb_table_has_key(get_lb_table(expired_table), packet_flow)) {
           // The flow was in the table already
 
-          // Let's check that the structures are consistent
+          assert true == backend_known;
 
+          // Let's check that the structures are consistent
           switch(expired_indices) {
             case mapc(capacity, lb_map, flows):
               lb_rejuv_entry(lb_map, expired_backends, expired_chain, packet_flow, now);
@@ -84,11 +84,17 @@ if (10 < now) {
           assert true == set_eq(get_lb_table(final_table),
                                 rejuvenate_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10), packet_flow, now));
 
+          // And now that the packet was sent properly
+          assert true == a_packet_sent;
+          assert sent_on_port == lb_backend_get_index(fst(nth(backend_index, final_backends))) + 1;
+
         } else if (lb_table_has_key(get_lb_table(final_table), packet_flow)) {
           // The flow was not in the expired table but we added it
 
-          // Let's check that the structures are consistent
+          assert true == backend_known;
+          lb_backendi the_backend = fst(nth(backend_index, final_backends));
 
+          // Let's check that the structures are consistent
           switch(expired_indices) { case mapc(capacity, lb_map, backends):
             lb_add_entry(lb_map, expired_backends, expired_chain,
                          packet_flow, the_index_allocated, the_backend, time_for_allocated_index);
@@ -118,6 +124,11 @@ if (10 < now) {
           assert true == set_eq(get_lb_table(final_table),
                                 add_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10),
                                              packet_flow, the_backend, now));
+
+          // And now that the packet was sent properly
+          assert true == a_packet_sent;
+          assert sent_on_port == lb_backend_get_index(the_backend) + 1;
+
         } else {
           // The flow could not be added
           chain_out_of_space_lb_out_of_space(expired_indices, expired_backends, expired_chain);
@@ -128,17 +139,13 @@ if (10 < now) {
           // Clearly, if the table is out of space, we can't have expired anything
           assert true == set_eq(get_lb_table(final_table),
                                 expire_lb_entries(get_lb_table(initial_table), now - 10));
-        }
 
-        // Output device
-        assert true == a_packet_sent;
-        if (backend_computed) {
-          assert sent_on_port == lb_backend_get_index(the_backend) + 1;
-        } else if (backend_from_map != -1) {
-          assert sent_on_port == lb_backend_get_index(fst(nth(backend_from_map, final_backends))) + 1;
-        } else {
+          assert false == backend_known;
+
+          // But we must have sent the packet anyway
+          assert true == a_packet_sent;
           assert sent_on_port > 0;
-          assert sent_on_port <= 2; // 3 devices in lb case
+          assert sent_on_port <= 2; // 3 devices for the LB; TODO make that a #define somewhere, common to dpdk/hardware
         }
 
         // Packet post-condition
