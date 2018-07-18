@@ -9,6 +9,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+// KLEE doesn't tolerate && in a klee_assume (see klee/klee#809),
+// so we replace them with & during symbex but interpret them as && in the validator
+#ifdef KLEE_VERIFICATION
+#  define AND &
+#else // KLEE_VERIFICATION
+#  define AND &&
+#endif // KLEE_VERIFICATION
+
+
+struct LoadBalancer {
+	uint32_t flow_capacity;
+	uint32_t flow_expiration_time;
+	uint16_t backend_count;
+	struct Map* flow_indices;
+	struct Vector* flow_heap;
+	struct Vector* flow_backends;
+	struct DoubleChain* flow_chain;
+};
+
 
 #ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
@@ -33,18 +52,17 @@ struct str_field_descr lb_backend_fields[] = {
 #undef BFIELD
 #undef FFIELD
 #undef FIELD
+
+bool
+lb_flow_condition(void* key, int value, void* state) {
+	return 0 <= value AND value < ((struct LoadBalancer*) state)->flow_capacity;
+}
+
+bool
+lb_backend_condition(void* key, void* state) {
+	return ((struct LoadBalancedBackend*) key)->index < ((struct LoadBalancer*) state)->backend_count;
+}
 #endif
-
-
-struct LoadBalancer {
-	uint32_t flow_capacity;
-	uint32_t flow_expiration_time;
-	uint16_t backend_count;
-	struct Map* flow_indices;
-	struct Vector* flow_heap;
-	struct Vector* flow_backends;
-	struct DoubleChain* flow_chain;
-};
 
 
 bool
@@ -80,38 +98,13 @@ lb_flow_hash(void* obj) {
 
 void
 lb_flow_init(void* obj) {
-	// Nothing.
-	(void) obj;
+	memset(obj, 0, sizeof(struct LoadBalancedFlow));
 }
 
 void
 lb_backend_init(void* obj) {
-	// Nothing.
-	(void) obj;
+	memset(obj, 0, sizeof(struct LoadBalancedBackend));
 }
-
-
-// We don't want the hash to show up in symbex, too complex to deal with;
-// also, we need to make sure the contract is respected
-uint16_t
-lb_compute_backend(struct LoadBalancedFlow* flow, uint16_t backend_count) {
-#ifdef KLEE_VERIFICATION
-	klee_trace_ret();
-	klee_trace_param_ptr(flow, sizeof(struct LoadBalancedFlow), "flow");
-	for (int i = 0; i < sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]); i++) {                    \
-		klee_trace_param_ptr_field(flow, lb_flow_fields[i].offset, lb_flow_fields[i].width, lb_flow_fields[i].name);
-	}
-	klee_trace_param_u16(backend_count, "backend_count");
-
-	uint16_t backend;
-	klee_make_symbolic(&backend, sizeof(uint16_t), "backend");
-	klee_assume(backend < backend_count);
-	return backend;
-#else
-	return lb_flow_hash(flow) % backend_count;
-#endif
-}
-
 
 struct LoadBalancer*
 lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count) {
@@ -142,8 +135,10 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint
 
 #ifdef KLEE_VERIFICATION
 	map_set_layout(balancer->flow_indices, lb_flow_fields, sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]), NULL, 0, "LoadBalancedFlow");
+	map_set_entry_condition(balancer->flow_indices, lb_flow_condition, balancer);
 	vector_set_layout(balancer->flow_heap, lb_flow_fields, sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]), NULL, 0, "LoadBalancedFlow");
 	vector_set_layout(balancer->flow_backends, lb_backend_fields, sizeof(lb_backend_fields)/sizeof(lb_backend_fields[0]), NULL, 0, "LoadBalancedBackend");
+	vector_set_entry_condition(balancer->flow_backends, lb_backend_condition, balancer);
 #endif
 
 	return balancer;
@@ -166,7 +161,9 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 	int index;
 	struct LoadBalancedBackend backend;
 	if (map_get(balancer->flow_indices, flow, &index) == 0) {
-		backend.index = lb_compute_backend(flow, balancer->backend_count);
+		// This is a bit weird, but unfortunately lb_flow_hash has to return an int...
+		// TODO consider making the map hashes return uint64_t instead
+		backend.index = (uint16_t) (((uint64_t) lb_flow_hash(flow)) % balancer->backend_count);
 
 		if (dchain_allocate_new_index(balancer->flow_chain, &index, now) != 0) {
 			struct LoadBalancedFlow* vec_flow;
@@ -193,7 +190,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 
 #ifdef KLEE_VERIFICATION
 	// Concretize the backend, to avoid propagating a symbolic device
-	klee_assume(backend.index < balancer->backend_count);
+	klee_assert(backend.index < balancer->backend_count);
 	for(uint16_t b = 0; b < balancer->backend_count; b++) if (backend.index == b) { backend.index = b; break; }
 #endif
 

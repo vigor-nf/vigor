@@ -18,6 +18,7 @@ struct Map {
   int key_field_count;
   int nested_key_field_count;
   map_entry_condition* ent_cond;
+  void* ent_cond_state;
   struct str_field_descr key_fields[PREALLOC_SIZE];
   struct nested_field_descr key_nests[PREALLOC_SIZE];
   char* key_type;
@@ -35,15 +36,15 @@ int map_allocate(map_keys_equality* keq, map_key_hash* khash,
   klee_trace_param_ptr(map_out, sizeof(struct Map*), "map_out");
   int allocation_succeeded = klee_int("map_allocation_succeeded");
   if (allocation_succeeded) {
-    *map_out = calloc(1, sizeof(struct Map));
-    klee_assume(*map_out != NULL);
+    *map_out = malloc(sizeof(struct Map));
     klee_make_symbolic((*map_out), sizeof(struct Map), "map");
-    klee_assert((*map_out) != NULL);
-    (*map_out)->entry_claimed = 0;
+    map_reset(*map_out);
     (*map_out)->keq = keq;
     (*map_out)->capacity = capacity;
+    (*map_out)->entry_claimed = 0;
     (*map_out)->has_layout = 0;
-    (*map_out)->ent_cond = 0;
+    (*map_out)->ent_cond = NULL;
+    (*map_out)->ent_cond_state = NULL;
     return 1;
   }
   return 0;
@@ -93,8 +94,9 @@ void map_set_layout(struct Map* map,
   map->key_type = key_type;
 }
 
-void map_set_entry_condition(struct Map* map, map_entry_condition* cond) {
+void map_set_entry_condition(struct Map* map, map_entry_condition* cond, void* state) {
   map->ent_cond = cond;
+  map->ent_cond_state = state;
 }
 
 
@@ -129,7 +131,7 @@ int map_get(struct Map* map, void* key, int* value_out) {
     klee_assert(!map->entry_claimed);
     map->entry_claimed = 1;
     if (map->ent_cond) {
-      klee_assume(map->ent_cond(key, map->allocated_index));
+      klee_assume(map->ent_cond(key, map->allocated_index, map->ent_cond_state));
     }
     *value_out = map->allocated_index;
     return 1;
@@ -148,7 +150,7 @@ void map_put(struct Map* map, void* key, int value) {
   klee_trace_param_i32(value, "value");
   TRACE_KEY_FIELDS(key, map);
   if (map->ent_cond) {
-    klee_assert(map->ent_cond(key, value));
+    klee_assert(map->ent_cond(key, value, map->ent_cond_state));
   }
   if (map->entry_claimed) {
     klee_assert(map->allocated_index == value);

@@ -486,10 +486,10 @@ let make_cmplx_val exp t =
 let eliminate_false_eq_0 exp t =
   match (exp,t) with
   | Sexp.List [Sexp.Atom eq1; Sexp.Atom fls;
-               Sexp.List [Sexp.Atom eq2; Sexp.List [Sexp.Atom _; Sexp.Atom zero]; e]],
+               Sexp.List [Sexp.Atom eq2; Sexp.List [Sexp.Atom width; Sexp.Atom zero]; e]],
     Boolean
     when (String.equal eq1 "Eq") && (String.equal fls "false") &&
-         (String.equal eq2 "Eq") && (String.equal zero "0") ->
+         (String.equal eq2 "Eq") && (String.equal width "w32") && (String.equal zero "0") ->
     e
   | _ -> exp
 
@@ -611,18 +611,17 @@ let rec get_sexp_value exp ?(at=Beginning) t =
                         | _ -> {v=Int n;t} end
           | None -> {v=Id v;t} end
     end
-  | Sexp.List [Sexp.Atom f; Sexp.Atom w; Sexp.Atom offset; src;]
-    when (String.equal f "Extract") && (String.equal offset "0") ->
     (*FIXME: make sure the typetransformation works.*)
     (*FIXME: pass a right type to get_sexp_value here*)
-    if (String.equal w "w16") then begin
-      lprintf "HELLO THERE %s\n" (Sexp.to_string exp); {v=Cast (Uint16, get_sexp_value src t ~at);t} end
-    else if (String.equal w "w32") then
-      get_sexp_value src t ~at
-    else if (String.equal w "w64") then
-      get_sexp_value src t ~at (*failwith "get_sexp_value extract w64 not supported"*)
-    else
-      {v=Cast (t, get_sexp_value src Sint32 ~at);t}
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
+    when t = Uint16 || t = Sint16 ->
+    get_sexp_value src t ~at
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w32"; Sexp.Atom "0"; src;]
+    when t = Uint32 || t = Sint32 ->
+    get_sexp_value src t ~at
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w64"; Sexp.Atom "0"; src;]
+    when t = Uint64 || t = Sint64 ->
+    get_sexp_value src t ~at
   | Sexp.List [Sexp.Atom f; Sexp.Atom offset; src;]
     when (String.equal f "Extract") && (String.equal offset "0") ->
     get_sexp_value src Boolean ~at

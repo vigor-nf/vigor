@@ -134,8 +134,11 @@ if (10 < now) {
         assert true == a_packet_sent;
         if (backend_computed) {
           assert sent_on_port == lb_backend_get_index(the_backend) + 1;
-        } else {
+        } else if (backend_from_map != -1) {
           assert sent_on_port == lb_backend_get_index(fst(nth(backend_from_map, final_backends))) + 1;
+        } else {
+          assert sent_on_port > 0;
+          assert sent_on_port <= 2; // 3 devices in lb case
         }
 
         // Packet post-condition

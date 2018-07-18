@@ -4,6 +4,8 @@
 #include "lib/containers/map.h"
 #include "str-descr.h"
 
+#include <stdbool.h>
+
 void map_set_layout(struct Map* map,
                     struct str_field_descr* key_fields,
                     int key_fields_count,
@@ -11,9 +13,9 @@ void map_set_layout(struct Map* map,
                     int nested_key_fields_count,
                     char* key_type);
 
-typedef int map_entry_condition(void* key, int index);
+typedef bool map_entry_condition(void* key, int index, void* state);
 
-void map_set_entry_condition(struct Map* map, map_entry_condition* cond);
+void map_set_entry_condition(struct Map* map, map_entry_condition* cond, void* state);
 
 void map_reset(struct Map* map);
 

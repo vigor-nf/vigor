@@ -165,11 +165,6 @@ let fun_types =
                       lemmas_after = [
                         (fun params ->
                            "int64_t now = " ^ (params.ret_name) ^ ";\n")];};
-     "lb_compute_backend", {ret_type = Static Uint16;
-                            arg_types = stt [Ptr lb_flow_struct; Uint16];
-                            extra_ptr_types = [];
-                            lemmas_before = [];
-                            lemmas_after = [(fun params -> "backend_computed = true;\n//@ lb_backendi the_backend = lb_backendc(" ^ params.ret_name ^ ");\n")];};
      "lb_loop_invariant_consume", {ret_type = Static Void;
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
@@ -502,8 +497,8 @@ let fun_types =
                       ", " ^ (tmp_gen "dh") ^
                       ", " ^ (List.nth_exn args 2) ^
                       ", time_for_allocated_index, " ^ (tmp_gen "ea") ^ ");\n\
-                       } @*/"
-                   );];};
+                       } @*/");
+                   (fun params -> "backend_computed = true;\n//@ lb_backendi the_backend = lb_backendc(" ^ (List.nth_exn params.args 2) ^ ");\n");];};
      "map_size", {ret_type = Static Sint32;
                   arg_types = [Static (Ptr map_struct);];
                   extra_ptr_types = [];
