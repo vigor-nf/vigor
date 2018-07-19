@@ -46,9 +46,21 @@ struct StaticFilterTable {
 
   fixpoint bool dynentry_right_offsets(void* ptr, void* eaddr);
 
-  fixpoint int eth_addr_hash(ether_addri ea);
 
-  fixpoint int st_key_hash(stat_keyi k);
+  fixpoint uint64_t _wrap(uint64_t x) { return x % UINT_MAX; }
+  fixpoint int eth_addr_hash(ether_addri ea) {
+    switch(ea) {
+      case eaddrc(lst):
+        return _wrap((((((nth(0,lst) * 31) + nth(1,lst)) * 31 + nth(2,lst)) * 31 + nth(3,lst)) * 31 + nth(4,lst)) * 31 + nth(5,lst));
+    }
+  }
+
+  fixpoint int st_key_hash(stat_keyi k) {
+    switch(k) {
+      case stkc(n, ea):
+        return _wrap(n + 31 * eth_addr_hash(ea));
+    }
+  }
   @*/
 
 
