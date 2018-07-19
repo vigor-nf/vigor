@@ -351,7 +351,7 @@ let rec get_var_decls_of_sexp exp guess (known_vars:typed_var String.Map.t) : ty
       | Some spec -> [update_var_spec spec {precise;s=guess.s;w=convert_str_to_width_confidence w}]
       | None -> [{vname = name; t={precise;s=guess.s;w=convert_str_to_width_confidence w}}]
     end
-  | _, _ ->
+  | Some _, None | None, Some _ | None, None ->
     begin
     match exp with
     | Sexp.List [Sexp.Atom f; lhs; rhs]
