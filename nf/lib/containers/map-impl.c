@@ -16,15 +16,15 @@
 
 
 /*@
-  fixpoint bool has_given_hash_fp<kt>(fixpoint (kt, int) hash,
-                                      int pos, int capacity,
+  fixpoint bool has_given_hash_fp<kt>(fixpoint (kt, unsigned) hash,
+                                      int pos, unsigned capacity,
                                       pair<kt, nat> chain) {
     return pos == loop_fp(hash(fst(chain)), capacity);
   }
 
   fixpoint bool key_chains_start_on_hash_fp<kt>(list<bucket<kt> > buckets,
-                                                int pos, int capacity,
-                                                fixpoint (kt, int) hash) {
+                                                int pos, unsigned capacity,
+                                                fixpoint (kt, unsigned) hash) {
     switch(buckets) {
       case nil: return true;
       case cons(h,t):
@@ -37,28 +37,34 @@
   @*/
 
 static
-int loop(int k, int capacity)
+unsigned loop(unsigned k, unsigned capacity)
 //@ requires 0 < capacity &*& 2*capacity < INT_MAX;
 /*@ ensures 0 <= result &*& result < capacity &*&
             result == loop_fp(k, capacity); @*/
 {
-  int g = k%capacity;
+  unsigned g = k%capacity;
   //@ div_mod(g, k, capacity);
   //@ assert(2*capacity< INT_MAX);
-  int res = (g + capacity)%capacity;
+
+  //FIXME: this step is unnecessary and expensive.
+  // It was semantically justified for negitive numbers.
+  // However, once we switched to unsigned hashes, it is just an expensive
+  // identity function. Remove it.
+
+  unsigned res = (g + capacity)%capacity;
   //@ div_mod_gt_0(res, g + capacity, capacity);
   return res;
 }
 
 /*@
-  inductive hmap<kt> = hmap(list<option<kt> >, list<int>);
+  inductive hmap<kt> = hmap(list<option<kt> >, list<unsigned>);
 
   predicate hmapping<kt>(predicate (void*; kt) keyp,
-                         fixpoint (kt, int) hash,
-                         int capacity,
+                         fixpoint (kt, unsigned) hash,
+                         unsigned capacity,
                          int* busybits,
                          list<void*> kps,
-                         int* k_hashes;
+                         unsigned* k_hashes;
                          hmap<kt> m);
 
   fixpoint list<option<kt> > hmap_ks_fp<kt>(hmap<kt> m) {
@@ -88,7 +94,7 @@ int loop(int k, int capacity)
     return index_of(some(k), hmap_ks_fp(m));
   }
 
-  fixpoint hmap<kt> hmap_put_key_fp<kt>(hmap<kt> m, int i, kt k, int hash) {
+  fixpoint hmap<kt> hmap_put_key_fp<kt>(hmap<kt> m, int i, kt k, unsigned hash) {
     switch(m) { case hmap(ks, khs):
       return hmap(update(i, some(k), ks), update(i, hash, khs));
     }
@@ -118,8 +124,8 @@ int loop(int k, int capacity)
     };
 
   fixpoint bool hash_list<kt>(list<option<kt> > vals,
-                             list<int> hashes,
-                             fixpoint (kt, int) hash) {
+                             list<unsigned> hashes,
+                             fixpoint (kt, unsigned) hash) {
     switch(vals) {
       case nil: return hashes == nil;
       case cons(h,t):
@@ -130,15 +136,15 @@ int loop(int k, int capacity)
   }
 
   predicate hmapping<kt>(predicate (void*; kt) keyp,
-                         fixpoint (kt, int) hash,
-                         int capacity,
+                         fixpoint (kt, unsigned) hash,
+                         unsigned capacity,
                          int* busybits,
                          list<void*> kps,
-                         int* k_hashes;
+                         unsigned* k_hashes;
                          hmap<kt> m) =
             0 < capacity &*& 2*capacity < INT_MAX &*&
             ints(busybits, capacity, ?bbs) &*&
-            ints(k_hashes, capacity, ?khs) &*&
+            uints(k_hashes, capacity, ?khs) &*&
             pred_mapping(kps, bbs, keyp, ?ks) &*&
             true == opt_no_dups(ks) &*&
             true == hash_list(ks, khs, hash) &*&
@@ -146,9 +152,9 @@ int loop(int k, int capacity)
 @*/
 
 /*@
-  predicate buckets_ks_insync<kt>(int* chns, int capacity,
+  predicate buckets_ks_insync<kt>(int* chns, unsigned capacity,
                                   list<bucket<kt> > buckets,
-                                  fixpoint (kt,int) hash;
+                                  fixpoint (kt,unsigned) hash;
                                   list<option<kt> > ks) =
     ints(chns, capacity, buckets_get_chns_fp(buckets)) &*&
     true == buckets_ok(buckets) &*&
@@ -165,8 +171,8 @@ int loop(int k, int capacity)
   }
 
   lemma void hmap_rem_preserves_hash_list<kt>(list<option<kt> > vals,
-                                              list<int> hashes,
-                                              fixpoint (kt, int) hash,
+                                              list<unsigned> hashes,
+                                              fixpoint (kt, unsigned) hash,
                                               int i)
   requires true == hash_list(vals, hashes, hash) &*& 0 <= i;
   ensures true == hash_list(update(i, none, vals), hashes, hash);
@@ -185,8 +191,8 @@ int loop(int k, int capacity)
 
 /*@
   lemma void hash_for_given_key<kt>(list<pair<kt, nat> > chains,
-                                    fixpoint (kt,int) hash,
-                                    int shift, int capacity,
+                                    fixpoint (kt,unsigned) hash,
+                                    unsigned shift, unsigned capacity,
                                     kt k)
   requires true == mem(k, map(fst, chains)) &*&
            true == forall(chains, (has_given_hash_fp)(hash, shift, capacity));
@@ -204,9 +210,9 @@ int loop(int k, int capacity)
   @*/
 
 /*@
-  lemma void overshoot_bucket<kt>(list<bucket<kt> > buckets, int shift,
-                                  int capacity,
-                                  fixpoint (kt,int) hash,
+  lemma void overshoot_bucket<kt>(list<bucket<kt> > buckets, unsigned shift,
+                                  unsigned capacity,
+                                  fixpoint (kt,unsigned) hash,
                                   kt k)
   requires true == key_chains_start_on_hash_fp(buckets, shift, capacity, hash) &*&
            loop_fp(hash(k), capacity) < shift &*& shift <= capacity &*&
@@ -231,8 +237,8 @@ int loop(int k, int capacity)
 
 /*@
   lemma void no_hash_not_in_this_bucket<kt>(list<pair<kt, nat> > chains, kt k,
-                                            int shift, int capacity,
-                                            fixpoint (kt,int) hash)
+                                            unsigned shift, unsigned capacity,
+                                            fixpoint (kt,unsigned) hash)
   requires true == forall(chains, (has_given_hash_fp)(hash, shift, capacity)) &&
            shift != loop_fp(hash(k), capacity);
   ensures false == mem(k, map(fst, chains));
@@ -250,8 +256,8 @@ int loop(int k, int capacity)
 
 /*@
   lemma void wrong_hash_no_key<kt>(kt k, bucket<kt> bh, list<bucket<kt> > bt,
-                                   int shift, int capacity,
-                                   fixpoint (kt,int) hash)
+                                   unsigned shift, unsigned capacity,
+                                   fixpoint (kt,unsigned) hash)
   requires true == key_chains_start_on_hash_fp(cons(bh,bt), shift, capacity, hash) &*&
            shift != loop_fp(hash(k), capacity);
   ensures false == bucket_has_key_fp(k, bh);
@@ -265,8 +271,8 @@ int loop(int k, int capacity)
 /*@
   lemma void key_is_contained_in_the_bucket_rec<kt>(list<bucket<kt> > buckets,
                                                     list<pair<kt, nat> > acc,
-                                                    int shift, int capacity,
-                                                    fixpoint (kt,int) hash,
+                                                    unsigned shift, unsigned capacity,
+                                                    fixpoint (kt,unsigned) hash,
                                                     kt k)
   requires true == key_chains_start_on_hash_fp(buckets, shift, capacity, hash) &*&
            true == buckets_ok_rec(acc, buckets, capacity) &*&
@@ -335,8 +341,8 @@ int loop(int k, int capacity)
 /*@
   lemma void
   bucket_has_key_correct_hash<kt>(list<bucket<kt> > buckets, kt k,
-                                  int start, int capacity,
-                                  fixpoint (kt,int) hash)
+                                  unsigned start, unsigned capacity,
+                                  fixpoint (kt,unsigned) hash)
   requires true == exists(buckets, (bucket_has_key_fp)(k)) &*&
            true == key_chains_start_on_hash_fp(buckets, start,
                                                capacity, hash) &*&
@@ -373,8 +379,8 @@ int loop(int k, int capacity)
 
 /*@
   lemma void key_is_contained_in_the_bucket<kt>(list<bucket<kt> > buckets,
-                                                int capacity,
-                                                fixpoint (kt,int) hash,
+                                                unsigned capacity,
+                                                fixpoint (kt,unsigned) hash,
                                                 kt k)
   requires true == key_chains_start_on_hash_fp(buckets, 0, capacity, hash) &*&
            0 < capacity &*&
@@ -553,8 +559,8 @@ int loop(int k, int capacity)
     ks_find_this_key(hmap_ks_fp(m), i, k);
   }
 
-  lemma void no_hash_no_key<kt>(list<option<kt> > ks, list<int> hashes,
-                                kt k, int i, fixpoint (kt,int) hash)
+  lemma void no_hash_no_key<kt>(list<option<kt> > ks, list<unsigned> hashes,
+                                kt k, int i, fixpoint (kt,unsigned) hash)
   requires true == hash_list(ks, hashes, hash) &*&
            nth(i, hashes) != hash(k) &*&
            0 <= i &*& i < length(ks);
@@ -632,9 +638,9 @@ int loop(int k, int capacity)
 @*/
 
 static
-int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
-                         void* keyp, map_keys_equality* eq, int key_hash,
-                         int capacity)
+int find_key/*@ <kt> @*/(int* busybits, void** keyps, unsigned* k_hashes, int* chns,
+                         void* keyp, map_keys_equality* eq, unsigned key_hash,
+                         unsigned capacity)
 /*@ requires hmapping<kt>(?kpr, ?hsh, capacity, busybits, ?kps, k_hashes, ?hm) &*&
              buckets_ks_insync(chns, capacity, ?buckets, hsh,
                                  hmap_ks_fp(hm)) &*&
@@ -657,12 +663,12 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
   //@ assert ints(chns, capacity, ?chnlist);
   //@ assert pred_mapping(kps, ?bbs, kpr, ?ks);
   //@ assert hm == hmap(ks, ?khs);
-  int start = loop(key_hash, capacity);
-  int i = 0;
+  unsigned start = loop(key_hash, capacity);
+  unsigned i = 0;
   for (; i < capacity; ++i)
     /*@ invariant pred_mapping(kps, bbs, kpr, ks) &*&
                   ints(busybits, capacity, bbs) &*&
-                  ints(k_hashes, capacity, khs) &*&
+                  uints(k_hashes, capacity, khs) &*&
                   ints(chns, capacity, chnlist) &*&
                   pointers(keyps, capacity, kps) &*&
                   0 <= i &*& i <= capacity &*&
@@ -680,9 +686,9 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
     //@ decreases capacity - i;
   {
     //@ pred_mapping_same_len(bbs, ks);
-    int index = loop(start + i, capacity);
+    unsigned index = loop(start + i, capacity);
     int bb = busybits[index];
-    int kh = k_hashes[index];
+    unsigned kh = k_hashes[index];
     int chn = chns[index];
     void* kp = keyps[index];
     if (bb != 0 && kh == key_hash) {
@@ -696,7 +702,7 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
         //@ hmap_find_this_key(hm, index, k);
         //@ close hmapping<kt>(kpr, hsh, capacity, busybits, kps, k_hashes, hm);
         //@ close buckets_ks_insync(chns, capacity, buckets, hsh, ks);
-        return index;
+        return (int)index;
       }
       //@ recover_pred_mapping(kps, bbs, ks, index);
     } else {
@@ -759,8 +765,8 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
 /*@
   lemma void
   buckets_remove_key_chains_still_start_on_hash_rec<kt>
-    (list<bucket<kt> > buckets, int capacity, kt k,
-     fixpoint (kt,int) hash, int start)
+    (list<bucket<kt> > buckets, unsigned capacity, kt k,
+     fixpoint (kt,unsigned) hash, int start)
   requires true == key_chains_start_on_hash_fp(buckets, start, capacity, hash);
   ensures true == key_chains_start_on_hash_fp
                     (buckets_remove_key_fp(buckets, k), start, capacity, hash);
@@ -780,8 +786,8 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
 
   lemma void
   buckets_remove_key_chains_still_start_on_hash<kt>
-    (list<bucket<kt> > buckets, int capacity, kt k,
-     fixpoint (kt,int) hash)
+    (list<bucket<kt> > buckets, unsigned capacity, kt k,
+     fixpoint (kt,unsigned) hash)
   requires true == key_chains_start_on_hash_fp(buckets, 0, capacity, hash);
   ensures true == key_chains_start_on_hash_fp
                     (buckets_remove_key_fp(buckets, k), 0, capacity, hash);
@@ -792,12 +798,12 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, int* k_hashes, int* chns,
   @*/
 
 static
-int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
-                                      int* k_hashes, int* chns,
-                                      void* keyp, map_keys_equality* eq,
-                                      int key_hash,
-                                      int capacity,
-                                      void** keyp_out)
+unsigned find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
+                                           unsigned* k_hashes, int* chns,
+                                           void* keyp, map_keys_equality* eq,
+                                           unsigned key_hash,
+                                           unsigned capacity,
+                                           void** keyp_out)
 /*@ requires hmapping<kt>(?kpr, ?hsh, capacity, busybits, ?kps, k_hashes, ?hm) &*&
              buckets_ks_insync(chns, capacity, ?buckets, hsh, hmap_ks_fp(hm)) &*&
              pointers(keyps, capacity, kps) &*&
@@ -826,8 +832,8 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
   //@ assert ints(chns, capacity, ?chnlist);
   //@ assert pred_mapping(kps, ?bbs, kpr, ?ks);
   //@ assert hm == hmap(ks, ?khs);
-  int i = 0;
-  int start = loop(key_hash, capacity);
+  unsigned i = 0;
+  unsigned start = loop(key_hash, capacity);
   //@ buckets_keys_chns_same_len(buckets);
   //@ assert true == hmap_exists_key_fp(hm, k);
   //@ assert start == loop_fp(hsh(k), capacity);
@@ -837,7 +843,7 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
   for (; i < capacity; ++i)
     /*@ invariant pred_mapping(kps, bbs, kpr, ks) &*&
                   ints(busybits, capacity, bbs) &*&
-                  ints(k_hashes, capacity, khs) &*&
+                  uints(k_hashes, capacity, khs) &*&
                   ints(chns, capacity, chnlist) &*&
                   pointers(keyps, capacity, kps) &*&
                   0 <= i &*& i <= capacity &*&
@@ -861,9 +867,9 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
     //@ decreases capacity - i;
   {
     //@ pred_mapping_same_len(bbs, ks);
-    int index = loop(start + i, capacity);
+    unsigned index = loop(start + i, capacity);
     int bb = busybits[index];
-    int kh = k_hashes[index];
+    unsigned kh = k_hashes[index];
     int chn = chns[index];
     void* kp = keyps[index];
     if (bb != 0 && kh == key_hash) {
@@ -1042,7 +1048,7 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
   @*/
 
 /*@
-  predicate buckets_ks_insync_Xchain<kt>(int* chns, int capacity,
+  predicate buckets_ks_insync_Xchain<kt>(int* chns, unsigned capacity,
                                          list<bucket<kt> > buckets,
                                          fixpoint (kt,int) hash,
                                          int start, int fin;
@@ -1058,10 +1064,10 @@ int find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
   @*/
 
 /*@
-  lemma void start_Xchain<kt>(int* chns, int capacity,
+  lemma void start_Xchain<kt>(int* chns, unsigned capacity,
                               list<bucket<kt> > buckets,
                               list<option<kt> > ks,
-                              fixpoint (kt,int) hsh,
+                              fixpoint (kt,unsigned) hsh,
                               int start)
   requires buckets_ks_insync(chns, capacity, buckets, hsh, ks) &*&
            0 <= start &*& start < capacity;
@@ -1081,8 +1087,8 @@ lemma void chains_depleted_no_hope<kt>(list<bucket<kt> > buckets,
                                        int i,
                                        int start,
                                        kt k,
-                                       int capacity,
-                                       fixpoint (kt,int) hash)
+                                       unsigned capacity,
+                                       fixpoint (kt,unsigned) hash)
 requires buckets != nil &*&
          true == up_to(nat_of_int(i + 1),
                        (byLoopNthProp)(buckets_get_keys_fp(buckets),
@@ -1111,7 +1117,7 @@ ensures false == bucket_has_key_fp(k, nth(start, buckets));
 @*/
 
 static
-int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
+unsigned find_empty/*@ <kt> @*/(int* busybits, int* chns, unsigned start, unsigned capacity)
 /*@ requires hmapping<kt>(?kp, ?hsh, capacity, busybits, ?kps, ?k_hashes, ?hm) &*&
              buckets_ks_insync(chns, capacity, ?buckets, hsh, hmap_ks_fp(hm)) &*&
              pointers(?keyps, capacity, kps) &*&
@@ -1129,11 +1135,11 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
   //@ assert hm == hmap(ks, ?khs);
   //@ start_Xchain(chns, capacity, buckets, ks, hsh, start);
   //@ loop_bijection(start, capacity);
-  int i = 0;
+  unsigned i = 0;
   for (; i < capacity; ++i)
     /*@ invariant pred_mapping(kps, bbs, kp, ks) &*&
                   ints(busybits, capacity, bbs) &*&
-                  ints(k_hashes, capacity, khs) &*&
+                  uints(k_hashes, capacity, khs) &*&
                   pointers(keyps, capacity, kps) &*&
                   0 <= i &*& i <= capacity &*&
                   true == up_to(nat_of_int(i),
@@ -1146,7 +1152,7 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
     //@ decreases capacity - i;
   {
     //@ pred_mapping_same_len(bbs, ks);
-    int index = loop(start + i, capacity);
+    unsigned index = loop(start + i, capacity);
     /*@ open buckets_ks_insync_Xchain(chns, capacity, buckets, hsh,
                                       start, index, ks);
       @*/
@@ -1258,7 +1264,7 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
     }
   }
 
-  fixpoint hmap<kt> empty_hmap_fp<kt>(int capacity, list<int> hashes) {
+  fixpoint hmap<kt> empty_hmap_fp<kt>(unsigned capacity, list<unsigned> hashes) {
     return hmap(none_list_fp<kt>(nat_of_int(capacity)),
                 hashes);
   }
@@ -1287,7 +1293,7 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
     }
   }
 
-  lemma void produce_pred_mapping<kt>(list<int> hashes,
+  lemma void produce_pred_mapping<kt>(list<unsigned> hashes,
                                       predicate (void*; kt) kp,
                                       list<void*> pts)
   requires length(hashes) == length(pts);
@@ -1324,8 +1330,8 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
     }
   }
 
-  lemma void confirm_hash_list_for_nones<kt>(list<int> hashes,
-                                             fixpoint (kt,int) hash)
+  lemma void confirm_hash_list_for_nones<kt>(list<unsigned> hashes,
+                                             fixpoint (kt,unsigned) hash)
   requires true;
   ensures true == hash_list(none_list_fp(nat_of_int(length(hashes))),
                             hashes, hash);
@@ -1373,11 +1379,11 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
                         list<pair<kt,void*> > addrs,
                         predicate (void*;kt) keyp,
                         fixpoint (kt,int,bool) recp,
-                        fixpoint (kt,int) hash,
-                        int capacity,
+                        fixpoint (kt,unsigned) hash,
+                        unsigned capacity,
                         int* busybits,
                         void** keyps,
-                        int* k_hashes,
+                        unsigned* k_hashes,
                         int* chns,
                         int* values) =
      pointers(keyps, capacity, ?kps) &*&
@@ -1423,8 +1429,8 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
 
 /*@
   lemma void empty_keychains_start_on_hash<kt>(nat len,
-                                               fixpoint (kt,int) hash,
-                                               int pos, int capacity)
+                                               fixpoint (kt,unsigned) hash,
+                                               int pos, unsigned capacity)
   requires 0 < capacity;
   ensures true == key_chains_start_on_hash_fp
                     (empty_buckets_fp<kt>(len),
@@ -1439,9 +1445,9 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
   @*/
 
 /*@
-  lemma void empty_buckets_hmap_insync<kt>(int* chns, int capacity,
-                                           list<int> khlist,
-                                           fixpoint (kt,int) hash)
+  lemma void empty_buckets_hmap_insync<kt>(int* chns, unsigned capacity,
+                                           list<unsigned> khlist,
+                                           fixpoint (kt,unsigned) hash)
   requires ints(chns, capacity, zero_list_fp(nat_of_int(capacity))) &*&
            0 < capacity;
   ensures buckets_ks_insync<kt>(chns, capacity,
@@ -1457,15 +1463,15 @@ int find_empty/*@ <kt> @*/(int* busybits, int* chns, int start, int capacity)
   @*/
 
 void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
-                               void** keyps, int* khs, int* chns,
-                               int* vals, int capacity)
+                               void** keyps, unsigned* khs, int* chns,
+                               int* vals, unsigned capacity)
 /*@ requires map_key_type<kt>() &*& map_key_hash<kt>(?hash) &*&
              [?fr]is_map_keys_equality<kt>(eq, ?keyp) &*&
              map_record_property<kt>(?recp) &*&
              ints(busybits, capacity, ?bbs) &*&
              pointers(keyps, capacity, ?kplist) &*&
              ints(vals, capacity, ?vallist) &*&
-             ints(khs, capacity, ?khlist) &*&
+             uints(khs, capacity, ?khlist) &*&
              ints(chns, capacity, ?chnlist) &*&
              0 < capacity &*& 2*capacity < INT_MAX; @*/
 /*@ ensures mapping<kt>(empty_map_fp(), empty_map_fp(),
@@ -1481,14 +1487,14 @@ void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
   //@ open map_key_type();
   //@ open map_key_hash<kt>(_);
   //@ open map_record_property(_);
-  int i = 0;
+  unsigned i = 0;
   for (; i < capacity; ++i)
     /*@ invariant [fr]is_map_keys_equality<kt>(eq, keyp) &*&
                   ints(busybits, i, zero_list_fp(nat_of_int(i))) &*&
                   ints(busybits + i, capacity - i, drop(i,bbs)) &*&
                   pointers(keyps, capacity, kplist) &*&
                   ints(vals, capacity, vallist) &*&
-                  ints(khs, capacity, khlist) &*&
+                  uints(khs, capacity, khlist) &*&
                   ints(chns, i, zero_list_fp(nat_of_int(i))) &*&
                   ints(chns + i, capacity - i, drop(i, chnlist)) &*&
                   0 < capacity &*& 2*capacity < INT_MAX &*&
@@ -1628,7 +1634,7 @@ void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
     }
   }
 
-  lemma void hmapping_ks_capacity<kt>(hmap<kt> hm, int capacity)
+  lemma void hmapping_ks_capacity<kt>(hmap<kt> hm, unsigned capacity)
   requires hmapping<kt>(?kp, ?hsh, capacity, ?busybits, ?kps,
                         ?khs, hm);
   ensures hmapping<kt>(kp, hsh, capacity, busybits, kps,
@@ -1833,11 +1839,11 @@ void map_impl_init/*@ <kt> @*/(int* busybits, map_keys_equality* eq,
   @*/
 
 int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
-                             int* k_hashes, int* chns,
+                             unsigned* k_hashes, int* chns,
                              int* values,
                              void* keyp, map_keys_equality* eq,
-                             int hash, int* value,
-                             int capacity)
+                             unsigned hash, int* value,
+                             unsigned capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
              kp(keyp, ?k) &*&
@@ -1966,9 +1972,9 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
   @*/
 
 /*@
-  lemma void hmap_coherent_hash_update<kt>(list<option<kt> > ks, list<int> khs,
-                                           fixpoint (kt,int) hash,
-                                           int index, kt nk, int nhsh)
+  lemma void hmap_coherent_hash_update<kt>(list<option<kt> > ks, list<unsigned> khs,
+                                           fixpoint (kt,unsigned) hash,
+                                           int index, kt nk, unsigned nhsh)
   requires true == hash_list(ks, khs, hash) &*& hash(nk) == nhsh &*&
            0 <= index;
   ensures true == hash_list(update(index, some(nk), ks),
@@ -2070,8 +2076,8 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
   buckets_put_chains_still_start_on_hash<kt>(list<bucket<kt> > buckets,
                                              kt k, int shift,
                                              int start, int dist,
-                                             fixpoint (kt,int) hash,
-                                             int capacity)
+                                             fixpoint (kt,unsigned) hash,
+                                             unsigned capacity)
   requires true == key_chains_start_on_hash_fp(buckets, shift,
                                                capacity, hash) &*&
            loop_fp(hash(k), capacity) == start + shift &*&
@@ -2100,8 +2106,8 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
   @*/
 
 /*@
-  lemma void buckets_ks_put_key_insync<kt>(int* chns, int capacity,
-                                           fixpoint (kt,int) hsh,
+  lemma void buckets_ks_put_key_insync<kt>(int* chns, unsigned capacity,
+                                           fixpoint (kt,unsigned) hsh,
                                            int start,
                                            int fin,
                                            kt k,
@@ -2155,10 +2161,10 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
   @*/
 
 void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
-                              int* k_hashes, int* chns,
+                              unsigned* k_hashes, int* chns,
                               int* values,
-                              void* keyp, int hash, int value,
-                              int capacity)
+                              void* keyp, unsigned hash, int value,
+                              unsigned capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
              [0.5]kp(keyp, ?k) &*& true == recp(k, value) &*&
@@ -2175,7 +2181,7 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
 {
   //@ open mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);
-  int start = loop(hash, capacity);
+  unsigned start = loop(hash, capacity);
   //@ close hmapping(kp, hsh, capacity, busybits, kps, k_hashes, hm);
   //@ hmap_map_size(hm, m);
   //@ assert buckets_ks_insync(chns, capacity, ?buckets, hsh, ?ks);
@@ -2185,7 +2191,7 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   //@ buckets_keys_chns_same_len(buckets);
   //@ close buckets_ks_insync(chns, capacity, buckets, hsh, ks);
   //@ assert length(buckets) == capacity;
-  int index = find_empty(busybits, chns, start, capacity);
+  unsigned index = find_empty(busybits, chns, start, capacity);
 
 
   //@ hmapping_ks_capacity(hm, capacity);
@@ -2413,9 +2419,9 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   @*/
 
 void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
-                                int* k_hashes, int* chns,
+                                unsigned* k_hashes, int* chns,
                                 void* keyp,
-                                map_keys_equality* eq, int hash, int capacity,
+                                map_keys_equality* eq, unsigned hash, unsigned capacity,
                                 void** keyp_out)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, ?values) &*&
@@ -2497,7 +2503,7 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
   }
   @*/
 
-int map_impl_size/*@ <kt> @*/(int* busybits, int capacity)
+unsigned map_impl_size/*@ <kt> @*/(int* busybits, unsigned capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          ?keyps, ?k_hashes, ?chns, ?values); @*/
 /*@ ensures mapping<kt>(m, addrs, kp, recp, hsh, capacity, busybits,
@@ -2508,16 +2514,16 @@ int map_impl_size/*@ <kt> @*/(int* busybits, int capacity)
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);
   //@ assert ints(busybits, capacity, ?bbs);
   //@ assert pointers(keyps, capacity, kps);
-  //@ assert ints(k_hashes, capacity, ?khs);
+  //@ assert uints(k_hashes, capacity, ?khs);
   //@ assert pred_mapping(kps, bbs, kp, ?ks);
-  int s = 0;
-  int i = 0;
+  unsigned s = 0;
+  unsigned i = 0;
   for (; i < capacity; ++i)
     /*@ invariant 0 <= i &*& i <= capacity &*&
                   0 < capacity &*& 2*capacity < INT_MAX &*&
                   ints(busybits, capacity, bbs) &*&
                   pointers(keyps, capacity, kps) &*&
-                  ints(k_hashes, capacity, khs) &*&
+                  uints(k_hashes, capacity, khs) &*&
                   pred_mapping(kps, bbs, kp, ks) &*&
                   true == opt_no_dups(ks) &*&
                   true == hash_list(ks, khs, hsh) &*&

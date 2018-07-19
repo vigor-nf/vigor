@@ -76,7 +76,7 @@ struct DoubleMap
 
   int *bbs_a;
   void **kps_a;
-  int *khs_a;
+  unsigned *khs_a;
   int *chns_a;
   int *inds_a;
   map_keys_equality *eq_a;
@@ -84,7 +84,7 @@ struct DoubleMap
 
   int *bbs_b;
   void **kps_b;
-  int *khs_b;
+  unsigned *khs_b;
   int *chns_b;
   int *inds_b;
   map_keys_equality *eq_b;
@@ -93,9 +93,9 @@ struct DoubleMap
   dmap_extract_keys *exk;
   dmap_pack_keys *pk;
 
-  int n_vals;
-  int capacity;
-  int keys_capacity;
+  unsigned n_vals;
+  unsigned capacity;
+  unsigned keys_capacity;
 }
 #endif
 ;
@@ -107,8 +107,8 @@ struct DoubleMap
   predicate dmappingp<t1,t2,vt>(dmap<t1,t2,vt> m,
                                 predicate (void*;t1) keyp1,
                                 predicate (void*;t2) keyp2,
-                                fixpoint (t1,int) hsh1,
-                                fixpoint (t2,int) hsh2,
+                                fixpoint (t1,unsigned) hsh1,
+                                fixpoint (t2,unsigned) hsh2,
                                 predicate (void*;vt) full_vp,
                                 predicate (void*,vt) bare_vp,
                                 fixpoint (void*,void*,void*,bool) right_offsets,
@@ -126,7 +126,7 @@ struct DoubleMap
     }
   }
 
-  fixpoint dmap<t1,t2,vt> empty_dmap_fp<t1,t2,vt>(int capacity) {
+  fixpoint dmap<t1,t2,vt> empty_dmap_fp<t1,t2,vt>(unsigned capacity) {
     return dmap(empty_map_fp(), empty_map_fp(),
                 empty_vals_fp(nat_of_int(capacity)));
   }
@@ -601,8 +601,8 @@ int dmap_allocate/*@ <K1,K2,V> @*/
                   uq_value_destr* v_destr,
                   dmap_extract_keys* dexk,
                   dmap_pack_keys* dpk,
-                  int capacity,
-                  int keys_capacity,
+                  unsigned capacity,
+                  unsigned keys_capacity,
                   struct DoubleMap** map_out);
 /*@ requires dmap_key_val_types<K1,K2,V>(_, _, _) &*&
              [_]is_map_keys_equality<K1>(eq_a, ?keyp1) &*&
@@ -755,7 +755,7 @@ int dmap_erase/*@ <K1,K2,V> @*/(struct DoubleMap* map, int index);
    @param map - pointer to the hash table.
    @returns the number of entries in the table.
  */
-int dmap_size/*@ <K1,K2,V> @*/(struct DoubleMap* map);
+unsigned dmap_size/*@ <K1,K2,V> @*/(struct DoubleMap* map);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map); @*/
