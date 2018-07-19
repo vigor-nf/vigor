@@ -57,14 +57,14 @@ bool ether_addr_eq(void* k1, void* k2);
              [?fr2]ether_addrp(k2, ?ea2); @*/
 /*@ ensures [fr1]ether_addrp(k1, ea1) &*&
             [fr2]ether_addrp(k2, ea2) &*&
-            (result == false ? (ea1 != ea2) : ea1 == ea2); @*/
+            (result ? ea1 == ea2 : ea1 != ea2); @*/
 
 bool static_key_eq(void* k1, void* k2);
 /*@ requires [?fr1]static_keyp(k1, ?sk1) &*&
              [?fr2]static_keyp(k2, ?sk2); @*/
 /*@ ensures [fr1]static_keyp(k1, sk1) &*&
             [fr2]static_keyp(k2, sk2) &*&
-            (result == false ? (sk1 != sk2) : sk1 == sk2); @*/
+            (result ? sk1 == sk2 : sk1 != sk2); @*/
 
 
 unsigned ether_addr_hash(void* k);

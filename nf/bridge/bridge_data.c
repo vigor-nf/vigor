@@ -6,13 +6,22 @@ bool ether_addr_eq(void* k1, void* k2)
              [?fr2]ether_addrp(k2, ?ea2); @*/
 /*@ ensures [fr1]ether_addrp(k1, ea1) &*&
             [fr2]ether_addrp(k2, ea2) &*&
-            (result ? (ea1 != ea2) : ea1 == ea2); @*/
+            (result ? ea1 == ea2 : ea1 != ea2); @*/
 {
-  struct ether_addr* a = (struct ether_addr*)k1;
-  struct ether_addr* b = (struct ether_addr*)k2;
-  return 0 == memcmp(a,
-                     b,
-                     sizeof(struct ether_addr));
+  struct ether_addr* a = (struct ether_addr*) k1;
+  struct ether_addr* b = (struct ether_addr*) k2;
+
+  //@ open ether_addrp(a, _);
+  //@ open ether_addrp(b, _);
+  bool res = a->addr_bytes[0] == b->addr_bytes[0]
+          && a->addr_bytes[1] == b->addr_bytes[1]
+          && a->addr_bytes[2] == b->addr_bytes[2]
+          && a->addr_bytes[3] == b->addr_bytes[3]
+          && a->addr_bytes[4] == b->addr_bytes[4]
+          && a->addr_bytes[5] == b->addr_bytes[5];
+  //@ close ether_addrp(a, _);
+  //@ close ether_addrp(b, _);
+  return res;
 }
 
 bool static_key_eq(void* k1, void* k2)
@@ -20,7 +29,7 @@ bool static_key_eq(void* k1, void* k2)
              [?fr2]static_keyp(k2, ?sk2); @*/
 /*@ ensures [fr1]static_keyp(k1, sk1) &*&
             [fr2]static_keyp(k2, sk2) &*&
-            (result ? (sk1 != sk2) : sk1 == sk2); @*/
+            (result ? sk1 == sk2 : sk1 != sk2); @*/
 {
   struct StaticKey* a = (struct StaticKey*) k1;
   struct StaticKey* b = (struct StaticKey*) k2;
@@ -39,10 +48,11 @@ unsigned ether_addr_hash(void* k)
 }
 
 unsigned static_key_hash(void* key)
-/*@ requires chars(entry, sizeof(struct ether_addr), _); @*/
-/*@ ensures ether_addrp(entry, _); @*/
+/*@ requires [?fr]static_keyp(key, ?sk); @*/
+/*@ ensures [fr]static_keyp(key, sk) &*&
+            result == st_key_hash(sk); @*/
 {
-  struct StaticKey *k = (struct StaticKey*)key;
+  struct StaticKey *k = (struct StaticKey*) key;
   return (ether_addr_hash(&k->addr) << 2) ^ k->device;
 }
 

@@ -1,1 +1,0 @@
-array-bat-impl.h
