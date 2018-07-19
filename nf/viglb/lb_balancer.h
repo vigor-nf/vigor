@@ -7,6 +7,11 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef KLEE_VERIFICATION
+#include <klee/klee.h>
+#include "lib/stubs/containers/str-descr.h"
+#endif//KLEE_VERIFICATION
+
 
 struct LoadBalancedFlow {
 	uint32_t src_ip;
@@ -18,6 +23,7 @@ struct LoadBalancedFlow {
 struct LoadBalancedBackend {
 	uint16_t index;
 };
+
 
 /*@
   inductive lb_flowi = lb_flowc(int, int, int, int);
@@ -51,7 +57,7 @@ bool lb_flow_equality(void* objA, void* objB);
             [fr2]lb_flowp(objB, f2) &*&
             (result ? (f1 == f2) : (f1 != f2)); @*/
 
-int lb_flow_hash(void* obj);
+uint32_t lb_flow_hash(void* obj);
 /*@ requires [?fr]lb_flowp(obj, ?f); @*/
 /*@ ensures [fr]lb_flowp(obj, f) &*&
             result == lb_flow_hash_2(f); @*/
@@ -64,10 +70,6 @@ void lb_backend_init(void* obj);
 /*@ requires chars(obj, sizeof(struct LoadBalancedBackend), _); @*/
 /*@ ensures lb_backendp(obj, _); @*/
 
-uint16_t lb_compute_backend(struct LoadBalancedFlow* flow, uint16_t backend_count);
-/*@ requires true; @*/
-/*@ ensures result < backend_count; @*/
-
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count);
@@ -75,11 +77,17 @@ struct LoadBalancedBackend lb_get_backend(struct LoadBalancer* balancer, struct 
 void lb_expire_flows(struct LoadBalancer* balancer, time_t now);
 
 #ifdef KLEE_VERIFICATION
+
 struct Map** lb_get_indices(struct LoadBalancer* balancer);
 struct Vector** lb_get_heap(struct LoadBalancer* balancer);
 struct Vector** lb_get_backends(struct LoadBalancer* balancer);
 struct DoubleChain** lb_get_chain(struct LoadBalancer* balancer);
-#endif
+
+extern struct str_field_descr lb_flow_fields[];
+extern struct str_field_descr lb_backend_fields[];
+int lb_flow_fields_number();
+int lb_backend_fields_number();
+#endif//KLEE_VERIFICATION
 
 
 #endif // _LB_BALANCER_H_INCLUDED_

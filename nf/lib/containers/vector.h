@@ -90,7 +90,7 @@ typedef void vector_init_elem/*@ <t> (predicate (void*;t) entp,
 /*@ requires chars(elem, elem_size, _); @*/
 /*@ ensures entp(elem, _); @*/
 
-int vector_allocate/*@ <t> @*/(int elem_size, int capacity,
+int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                                vector_init_elem* init_elem,
                                struct Vector** vector_out);
 /*@ requires 0 < elem_size &*& 0 < capacity &*&

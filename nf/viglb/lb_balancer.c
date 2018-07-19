@@ -37,22 +37,6 @@ struct LoadBalancer {
 
 #include "lib/stubs/containers/str-descr.h"
 
-#define FIELD(struct_name, name, size) { offsetof(struct struct_name, name), sizeof(size), #name }
-#define FFIELD(name, size) FIELD(LoadBalancedFlow, name, size)
-#define BFIELD(name, size) FIELD(LoadBalancedBackend, name, size)
-
-struct str_field_descr lb_flow_fields[] = {
-	FFIELD(src_ip, uint32_t), FFIELD(src_port, uint16_t), FFIELD(dst_port, uint16_t), FFIELD(protocol, uint8_t)
-};
-
-struct str_field_descr lb_backend_fields[] = {
-	BFIELD(index, uint16_t)
-};
-
-#undef BFIELD
-#undef FFIELD
-#undef FIELD
-
 bool
 lb_flow_condition(void* key, int value, void* state) {
 	return 0 <= value AND value < ((struct LoadBalancer*) state)->flow_capacity;
@@ -62,49 +46,8 @@ bool
 lb_backend_condition(void* key, void* state) {
 	return ((struct LoadBalancedBackend*) key)->index < ((struct LoadBalancer*) state)->backend_count;
 }
-#endif
+#endif//KLEE_VERIFICATION
 
-
-bool
-lb_flow_equality(void* objA, void* objB) {
-	struct LoadBalancedFlow* flowA = objA;
-	struct LoadBalancedFlow* flowB = objB;
-
-	return flowA->src_ip == flowB->src_ip
-	    && flowA->src_port == flowB->src_port
-	    && flowA->dst_port == flowB->dst_port
-	    && flowA->protocol == flowB->protocol;
-}
-
-int
-lb_flow_hash(void* obj) {
-	struct LoadBalancedFlow* flow = obj;
-	uint64_t hash = 31;
-
-	hash += flow->src_ip;
-	hash *= 17;
-
-	hash += flow->src_port;
-	hash *= 17;
-
-	hash += flow->dst_port;
-	hash *= 17;
-
-	hash += flow->protocol;
-	hash *= 17;
-
-	return (int) hash;
-}
-
-void
-lb_flow_init(void* obj) {
-	memset(obj, 0, sizeof(struct LoadBalancedFlow));
-}
-
-void
-lb_backend_init(void* obj) {
-	memset(obj, 0, sizeof(struct LoadBalancedBackend));
-}
 
 struct LoadBalancer*
 lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint16_t backend_count) {
@@ -134,12 +77,12 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t flow_expiration_time, uint
 	balancer->flow_expiration_time = flow_expiration_time;
 
 #ifdef KLEE_VERIFICATION
-	map_set_layout(balancer->flow_indices, lb_flow_fields, sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]), NULL, 0, "LoadBalancedFlow");
+	map_set_layout(balancer->flow_indices, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
 	map_set_entry_condition(balancer->flow_indices, lb_flow_condition, balancer);
-	vector_set_layout(balancer->flow_heap, lb_flow_fields, sizeof(lb_flow_fields)/sizeof(lb_flow_fields[0]), NULL, 0, "LoadBalancedFlow");
-	vector_set_layout(balancer->flow_backends, lb_backend_fields, sizeof(lb_backend_fields)/sizeof(lb_backend_fields[0]), NULL, 0, "LoadBalancedBackend");
+	vector_set_layout(balancer->flow_heap, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
+	vector_set_layout(balancer->flow_backends, lb_backend_fields, lb_backend_fields_number(), NULL, 0, "LoadBalancedBackend");
 	vector_set_entry_condition(balancer->flow_backends, lb_backend_condition, balancer);
-#endif
+#endif//KLEE_VERIFICATION
 
 	return balancer;
 
@@ -192,7 +135,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 	// Concretize the backend, to avoid propagating a symbolic device
 	klee_assert(backend.index < balancer->backend_count);
 	for(uint16_t b = 0; b < balancer->backend_count; b++) if (backend.index == b) { backend.index = b; break; }
-#endif
+#endif//KLEE_VERIFICATION
 
 	return backend;
 }
@@ -225,4 +168,4 @@ struct Vector** lb_get_backends(struct LoadBalancer* balancer) {
 struct DoubleChain** lb_get_chain(struct LoadBalancer* balancer) {
 	return &(balancer->flow_chain);
 }
-#endif
+#endif//KLEE_VERIFICATION

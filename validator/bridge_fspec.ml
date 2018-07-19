@@ -440,7 +440,7 @@ let fun_types =
      "map_allocate", {ret_type = Static Sint32;
                       arg_types = stt [Fptr "map_keys_equality";
                                        Fptr "map_key_hash";
-                                       Sint32;
+                                       Uint32;
                                        Ptr (Ptr map_struct)];
                       extra_ptr_types = [];
                       lemmas_before = [
@@ -685,7 +685,7 @@ let fun_types =
                     lemmas_after = [];};
      "vector_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32;
-                                          Sint32;
+                                          Uint32;
                                           Fptr "vector_init_elem";
                                           Ptr (Ptr vector_struct)];
                          extra_ptr_types = [];

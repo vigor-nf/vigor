@@ -232,12 +232,12 @@ int flow_consistency(void* key_a, void* key_b,
 
   fixpoint long long _wrap(long long x) { return x % INT_MAX; }
 
-  fixpoint int int_hash(int_k ik) {
+  fixpoint unsigned int_hash(int_k ik) {
     switch(ik) {case ikc(x1, x2, x3, x4, x5, x6):
                      return _wrap((((((x1 * 31) + x2) * 31 + x3) * 31 + x4) * 31 + x5) * 31 + x6);}
   }
 
-  fixpoint int ext_hash(ext_k ek) {
+  fixpoint unsigned ext_hash(ext_k ek) {
     switch(ek) {case ekc(x1, x2, x3, x4, x5, x6):
                       return _wrap((((((x1 * 31) + x2) * 31 + x3) * 31 + x4) * 31 + x5) * 31 + x6);}
   }
@@ -274,7 +274,7 @@ bool ext_key_eq(void* a, void* b);
   @returns integer - a hash computed for *ik. For equal keys the hash values are
   guaranteed to be equal.
 */
-int int_key_hash(void* ik);
+unsigned int_key_hash(void* ik);
 //@ requires [?f]int_k_p(ik, ?k);
 //@ ensures [f]int_k_p(ik, k) &*& result == int_hash(k);
 
@@ -286,7 +286,7 @@ int int_key_hash(void* ik);
    @returns integer - a hash computed for *ek. For equal keys the hash values are
    guaranteed to be equal.
 */
-int ext_key_hash(void* ek);
+unsigned ext_key_hash(void* ek);
 //@ requires [?f]ext_k_p(ek, ?k);
 //@ ensures [f]ext_k_p(ek, k) &*& result == ext_hash(k);
 

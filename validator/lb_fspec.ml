@@ -165,6 +165,11 @@ let fun_types =
                       lemmas_after = [
                         (fun params ->
                            "int64_t now = " ^ (params.ret_name) ^ ";\n")];};
+     "lb_flow_hash", {ret_type = Static Uint32;
+                      arg_types = stt [Ptr lb_flow_struct];
+                      extra_ptr_types = [];
+                      lemmas_before = [];
+                      lemmas_after = [];};
      "lb_loop_invariant_consume", {ret_type = Static Void;
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
@@ -382,7 +387,7 @@ let fun_types =
      "map_allocate", {ret_type = Static Sint32;
                       arg_types = stt [Fptr "map_keys_equality";
                                        Fptr "map_key_hash";
-                                       Sint32;
+                                       Uint32;
                                        Ptr (Ptr map_struct)];
                       extra_ptr_types = [];
                       lemmas_before = [
@@ -552,7 +557,7 @@ let fun_types =
                     lemmas_after = [];};
      "vector_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32;
-                                          Sint32;
+                                          Uint32;
                                           Fptr "vector_init_elem";
                                           Ptr (Ptr vector_struct)];
                          extra_ptr_types = [];

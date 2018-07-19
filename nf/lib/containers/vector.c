@@ -8,7 +8,7 @@
 struct Vector {
   char* data;
   int elem_size;
-  int capacity;
+  unsigned capacity;
 };
 
 /*@
@@ -119,7 +119,7 @@ struct Vector {
   predicate upperbounded_ptr(void* p) = true == ((p) <= (char *)UINTPTR_MAX);
   @*/
 
-int vector_allocate/*@ <t> @*/(int elem_size, int capacity,
+int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                                vector_init_elem* init_elem,
                                struct Vector** vector_out)
 /*@ requires 0 < elem_size &*& 0 < capacity &*&
@@ -140,7 +140,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, int capacity,
   if (vector_alloc == 0) return 0;
   *vector_out = (struct Vector*) vector_alloc;
   //@ mul_bounds(elem_size, 4096, capacity, VECTOR_CAPACITY_UPPER_LIMIT);
-  char* data_alloc = malloc(elem_size*capacity);
+  char* data_alloc = malloc(elem_size*(int)capacity);
   if (data_alloc == 0) {
     free(vector_alloc);
     *vector_out = old_vector_val;
@@ -154,7 +154,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, int capacity,
   /*@ close entsp<t>((*vector_out)->data + elem_size*0, elem_size,
                      entp, 0, elems);
     @*/
-  for (int i = 0; i < capacity; ++i)
+  for (unsigned i = 0; i < capacity; ++i)
     /*@
       invariant 0 <= i &*& i <= capacity &*&
                 *vector_out |-> ?vec &*&
@@ -179,7 +179,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, int capacity,
     //@ assert 0 < elem_size;
     //@ mul_mono(0, i, elem_size);
     //@ assert 0 <= elem_size*i;
-    init_elem((*vector_out)->data + elem_size*i);
+    init_elem((*vector_out)->data + elem_size*(int)i);
     //@ assert entp(data + elem_size*i, ?x);
     //@ close upperbounded_ptr(data + elem_size*(i + 1));
     //@ append_to_entsp(data, data + elem_size*i);

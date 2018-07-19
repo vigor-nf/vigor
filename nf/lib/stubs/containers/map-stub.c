@@ -27,12 +27,12 @@ struct Map {
 
 __attribute__((noinline))
 int map_allocate(map_keys_equality* keq, map_key_hash* khash,
-                 int capacity,
+                 unsigned capacity,
                  struct Map** map_out) {
   klee_trace_ret();
   klee_trace_param_fptr(keq, "keq");
   klee_trace_param_fptr(khash, "khash");
-  klee_trace_param_i32(capacity, "capacity");
+  klee_trace_param_u32(capacity, "capacity");
   klee_trace_param_ptr(map_out, sizeof(struct Map*), "map_out");
   int allocation_succeeded = klee_int("map_allocation_succeeded");
   if (allocation_succeeded) {
@@ -174,7 +174,7 @@ void map_erase(struct Map* map, void* key, void** trash) {
 }
 
 __attribute__((noinline))
-int map_size(struct Map* map) {
+unsigned map_size(struct Map* map) {
   klee_trace_ret();
   //To avoid symbolic-pointer-dereference,
   // consciously trace "map" as a simple value.

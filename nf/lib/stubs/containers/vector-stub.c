@@ -26,7 +26,7 @@ struct Vector {
   void* ent_cond_state;
 };
 
-int vector_allocate(int elem_size, int capacity,
+int vector_allocate(int elem_size, unsigned capacity,
                     vector_init_elem* init_elem,
                     struct Vector** vector_out) {
   klee_trace_ret();

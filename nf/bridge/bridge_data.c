@@ -28,17 +28,17 @@ bool static_key_eq(void* k1, void* k2)
 
 }
 
-int ether_addr_hash(void* k)
+unsigned ether_addr_hash(void* k)
 /*@ requires [?fr]ether_addrp(k, ?ea); @*/
 /*@ ensures [fr]ether_addrp(k, ea) &*&
             result == eth_addr_hash(ea); @*/
 {
   struct ether_addr* addr = (struct ether_addr*)k;
-  return (int)((*(uint32_t*)addr) ^
-               (*(uint32_t*)((char*)addr + 2)));
+  return ((*(uint32_t*)addr) ^
+          (*(uint32_t*)((char*)addr + 2)));
 }
 
-int static_key_hash(void* key)
+unsigned static_key_hash(void* key)
 /*@ requires chars(entry, sizeof(struct ether_addr), _); @*/
 /*@ ensures ether_addrp(entry, _); @*/
 {

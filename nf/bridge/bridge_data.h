@@ -67,12 +67,12 @@ bool static_key_eq(void* k1, void* k2);
             (result == false ? (sk1 != sk2) : sk1 == sk2); @*/
 
 
-int ether_addr_hash(void* k);
+unsigned ether_addr_hash(void* k);
 /*@ requires [?fr]ether_addrp(k, ?ea); @*/
 /*@ ensures [fr]ether_addrp(k, ea) &*&
             result == eth_addr_hash(ea); @*/
 
-int static_key_hash(void* key);
+unsigned static_key_hash(void* key);
 /*@ requires [?fr]static_keyp(key, ?sk); @*/
 /*@ ensures [fr]static_keyp(key, sk) &*&
             result == st_key_hash(sk); @*/

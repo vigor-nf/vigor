@@ -60,7 +60,6 @@ int bridge_get_device(struct ether_addr* dst,
   struct StaticKey k;
   memcpy(&k.addr, dst, sizeof(struct ether_addr));
   k.device = src_device;
-  int hash = static_key_hash(&k);
   int present = map_get(static_ft.map,
                         &k, &device);
   if (present) {
@@ -71,7 +70,6 @@ int bridge_get_device(struct ether_addr* dst,
 #endif//KLEE_VERIFICATION
 
   int index = -1;
-  hash = ether_addr_hash(dst);
   present = map_get(dynamic_ft.map, dst, &index);
   if (present) {
     struct DynamicValue* value = 0;
@@ -112,7 +110,7 @@ void bridge_put_update_entry(struct ether_addr* src,
   }
 }
 
-void allocate_static_ft(int capacity) {
+void allocate_static_ft(unsigned capacity) {
   assert(0 < capacity);
   assert(capacity < CAPACITY_UPPER_LIMIT);
   int happy = map_allocate(static_key_eq, static_key_hash,
@@ -174,7 +172,7 @@ bool stat_map_condition(void* key, int index, void* state) {
 //TODO: this function must appear in the traces.
 // let's see if we notice that it does not
 void read_static_ft_from_file() {
-  int static_capacity = klee_range(1, CAPACITY_UPPER_LIMIT, "static_capacity");
+  unsigned static_capacity = klee_range(1, CAPACITY_UPPER_LIMIT, "static_capacity");
   allocate_static_ft(static_capacity);
   map_set_layout(static_ft.map, static_map_key_fields,
                  sizeof(static_map_key_fields)/sizeof(static_map_key_fields[0]),
@@ -207,7 +205,7 @@ void read_static_ft_from_file() {
              config.static_config_fname);
   }
 
-  int number_of_lines = 0;
+  unsigned number_of_lines = 0;
   char ch;
   do {
     ch = fgetc(cfg_file);
@@ -216,7 +214,7 @@ void read_static_ft_from_file() {
   } while (ch != EOF);
 
   // Make sure the hash table is occupied only by 50%
-  int capacity = number_of_lines * 2;
+  unsigned capacity = number_of_lines * 2;
   rewind(cfg_file);
   if (CAPACITY_UPPER_LIMIT <= capacity) {
     rte_exit(EXIT_FAILURE, "Too many static rules (%d), max: %d",
@@ -309,7 +307,7 @@ void read_static_ft_from_file() {
 void nf_core_init(void) {
   read_static_ft_from_file();
 
-  int capacity = config.dyn_capacity;
+  unsigned capacity = config.dyn_capacity;
   int happy = map_allocate(ether_addr_eq, ether_addr_hash,
                            capacity, &dynamic_ft.map);
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic map");

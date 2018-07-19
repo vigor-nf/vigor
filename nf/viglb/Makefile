@@ -2,7 +2,7 @@
 APP := lb
 
 # Runtime and verification files
-NF_FILES := lb_main.c lb_balancer.c lb_config.c
+NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_data.c
 
 # Verification files
 NF_VERIF_FILES := lb_loop.c
