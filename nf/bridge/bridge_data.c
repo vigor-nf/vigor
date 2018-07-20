@@ -1,14 +1,58 @@
 #include "bridge_data.h"
 
-// Required to make VeriFast realize that if all items of a list are equal, the lists are equal
-/*@ lemma void last_of_list_is_nil<t>(list<t> lst, int index)
-    requires lst == cons(_, ?tail)
-         &*& 0 <= index &*& index < length(lst);
-    ensures (index == length(lst) - 1) == (tail == nil);
-    {
-      assume(false); // TODO
-    }
+// This is stupid, but it's the easiest thing to make VeriFast realize that a list has as many items as it claims.
+// There are some nice formulations using forall_(), but it seems VeriFast can't infer much from quantifications...
+/*@
+lemma void list_with_length_6_has_6_items<t>(list<t> lst)
+requires length(lst) == 6;
+ensures lst == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, nil))))));
+{
+  switch(lst) {
+    case nil:
+      assert(length(lst) == 0);
+
+    case cons(h1, t1):
+      switch(t1) {
+        case nil:
+          assert(length(lst) == 1);
+
+        case cons(h2, t2):
+          switch(t2) {
+            case nil:
+              assert(length(lst) == 2);
+
+            case cons(h3, t3):
+              switch(t3) {
+                case nil:
+                  assert(length(lst) == 3);
+
+                case cons(h4, t4):
+                  switch(t4) {
+                    case nil:
+                      assert(length(lst) == 4);
+
+                    case cons(h5, t5):
+                      switch(t5) {
+                        case nil:
+                          assert(length(lst) == 5);
+
+                        case cons(h6, t6):
+                          switch(t6) {
+                            case nil:
+                              assert(length(lst) == 6);
+
+                            case cons(h7, t7):
+                              assert(length(lst) >= 7);
+                          }
+                      }
+                  }
+              }
+          }
+      }
+  }
+}
 @*/
+
 
 // Required for VeriFast to not complain about underflows
 static uint64_t wrap(uint64_t x)
@@ -34,8 +78,8 @@ bool ether_addr_eq(void* k1, void* k2)
   //@ open [fr1]ether_addrp(a, eaddrc(?la));
   //@ open [fr2]ether_addrp(b, eaddrc(?lb));
 
-  //@ last_of_list_is_nil(la, 5);
-  //@ last_of_list_is_nil(lb, 5);
+  //@ list_with_length_6_has_6_items(la);
+  //@ list_with_length_6_has_6_items(lb);
 
   bool res = a->addr_bytes[0] == b->addr_bytes[0]
           && a->addr_bytes[1] == b->addr_bytes[1]
@@ -44,8 +88,8 @@ bool ether_addr_eq(void* k1, void* k2)
           && a->addr_bytes[4] == b->addr_bytes[4]
           && a->addr_bytes[5] == b->addr_bytes[5];
 
-  //@ close [fa]ether_addrp(a, _);
-  //@ close [fb]ether_addrp(b, _);
+  //@ close [fr1]ether_addrp(a, _);
+  //@ close [fr2]ether_addrp(b, _);
 
   return res;
 }
