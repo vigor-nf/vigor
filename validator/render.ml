@@ -87,12 +87,21 @@ let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
 let render_assignment {lhs;rhs;} =
   match rhs.v with
   | Undef -> "";
-  | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";"
+  | _ -> begin match rhs.t with
+         | Array (_, size) -> "//@ uchars_to_chars(" ^ (render_tterm lhs) ^ ");\n\
+                               //@ uchars_to_chars(" ^ (render_tterm rhs) ^ ");\n\
+                               memcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");\n\
+                               //@ chars_to_uchars(" ^ (render_tterm lhs) ^ ");\n\
+                               //@ chars_to_uchars(" ^ (render_tterm rhs) ^ ");"
+         | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
 
 let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
   else match rhs.t, rhs.v with
   | _, Undef -> []
+  | Array (_, s), _ -> begin match lhs.t with
+                  | Array (_, s2) when s = s2 -> [{lhs;rhs}]
+                  | _ -> failwith "arrays must be compared to arrays of the same size" end
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
                           rhs=pointee}
@@ -514,6 +523,7 @@ let render_vars_declarations ( vars : var_spec list ) =
   String.concat ~sep:"\n"
     (List.map vars ~f:(fun v ->
          match v.value.t with
+         | Array (at, size) -> (ttype_to_str at) ^ " " ^ v.name ^ "[" ^ (Int.to_string size) ^ "];"
          | Unknown | Sunknown | Uunknown -> failwith ("Cannot render var decl '" ^ v.name ^ "' for type " ^ (ttype_to_str v.value.t))
          | _ -> ttype_to_str v.value.t ^ " " ^ v.name ^ ";")) ^ "\n"
 
@@ -522,8 +532,9 @@ let render_hist_calls hist_funs =
 
 let render_cmplexes cmplxes =
   String.concat ~sep:"\n" (List.map (String.Map.data cmplxes) ~f:(fun var ->
-      (ttype_to_str var.value.t) ^ " " ^ var.name ^ ";//" ^
-      (render_tterm var.value))) ^ "\n"
+      match var.value.t with
+      | Array (at, size) -> (ttype_to_str at) ^ " " ^ var.name ^ "[" ^ (Int.to_string size) ^ "]; //" ^ (render_tterm var.value)
+      | _ -> (ttype_to_str var.value.t) ^ " " ^ var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
 
 let render_context_assumptions assumptions  =
   render_assumptions assumptions

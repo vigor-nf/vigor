@@ -66,12 +66,7 @@ let flw_struct = Ir.Str ("flow", ["ik", int_key_struct;
                                   "ext_device_id", Uint8;
                                   "protocol", Uint8;])
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["a", Uint8;
-                                                "b", Uint8;
-                                                "c", Uint8;
-                                                "d", Uint8;
-                                                "e", Uint8;
-                                                "f", Uint8;])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
                                              "s_addr", ether_addr_struct;
                                              "ether_type", Uint16;])

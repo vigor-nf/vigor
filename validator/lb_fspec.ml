@@ -76,12 +76,7 @@ let lb_flow_struct = Ir.Str ( "LoadBalancedFlow", ["src_ip", Uint32;
                                                    "protocol", Uint8;])
 let lb_backend_struct = Ir.Str ( "LoadBalancedBackend", ["index", Uint16;])
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["a", Uint8;
-                                                "b", Uint8;
-                                                "c", Uint8;
-                                                "d", Uint8;
-                                                "e", Uint8;
-                                                "f", Uint8;])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
                                              "s_addr", ether_addr_struct;
                                              "ether_type", Uint16;])

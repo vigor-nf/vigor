@@ -99,12 +99,7 @@ let reveal_the_other_mapp : lemma = fun {arg_types;tmp_gen;_} ->
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
-let ether_addr_struct = Ir.Str ( "ether_addr", ["a", Uint8;
-                                                "b", Uint8;
-                                                "c", Uint8;
-                                                "d", Uint8;
-                                                "e", Uint8;
-                                                "f", Uint8;])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let static_key_struct = Ir.Str ( "StaticKey", ["addr", ether_addr_struct;
                                                "device", Uint16] )
 let dynamic_value_struct = Ir.Str ( "DynamicValue", ["device", Uint16] )
@@ -587,13 +582,8 @@ let fun_types =
                     assert mapp<ether_addri>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
                     assert vector_accp<ether_addri>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
                     assert map_vec_chain_coherent<ether_addri>(?the_dm, the_dv, ?the_dh);\n\
-                    ether_addri vvv = eaddrc(" ^ arg1 ^
-                   "->a, " ^ arg1 ^
-                   "->b, " ^ arg1 ^
-                   "->c, " ^ arg1 ^
-                   "->d, " ^ arg1 ^
-                   "->e, " ^ arg1 ^
-                   "->f); \n\
+                    assert chars(" ^ arg1 ^ "->addr_bytes, 6, ?abs);\n\
+                    ether_addri vvv = eaddrc(abs); \n\
                     mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                     kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
                    "); \n\
@@ -606,13 +596,8 @@ let fun_types =
                       ", ?" ^ (tmp_gen "dv") ^
                       ", ?" ^ (tmp_gen "dh") ^
                       ");\n\
-                       ether_addri " ^ (tmp_gen "ea") ^ " = eaddrc(" ^ arg1 ^
-                      "->a, " ^ arg1 ^
-                      "->b, " ^ arg1 ^
-                      "->c, " ^ arg1 ^
-                      "->d, " ^ arg1 ^
-                      "->e, " ^ arg1 ^
-                      "->f);\n\
+                       assert chars(" ^ arg1 ^ "->addr_bytes, 6, ?abs2);\n\
+                       ether_addri " ^ (tmp_gen "ea") ^ " = eaddrc(abs2);\n\
                        mvc_coherent_put<ether_addri>(" ^ (tmp_gen "dm") ^
                       ", " ^ (tmp_gen "dv") ^
                       ", " ^ (tmp_gen "dh") ^

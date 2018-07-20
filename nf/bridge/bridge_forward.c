@@ -130,30 +130,15 @@ struct str_field_descr static_map_key_fields[] = {
 };
 
 struct nested_field_descr static_map_key_nested_fields[] = {
-  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t), "a"},
-  {offsetof(struct StaticKey, addr), 1, sizeof(uint8_t), "b"},
-  {offsetof(struct StaticKey, addr), 2, sizeof(uint8_t), "c"},
-  {offsetof(struct StaticKey, addr), 3, sizeof(uint8_t), "d"},
-  {offsetof(struct StaticKey, addr), 4, sizeof(uint8_t), "e"},
-  {offsetof(struct StaticKey, addr), 5, sizeof(uint8_t), "f"},
+  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t) * 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint8_t), "a"},
-  {1, sizeof(uint8_t), "b"},
-  {2, sizeof(uint8_t), "c"},
-  {3, sizeof(uint8_t), "d"},
-  {4, sizeof(uint8_t), "e"},
-  {5, sizeof(uint8_t), "f"}
+  {0, sizeof(uint8_t) * 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint8_t), "a"},
-  {1, sizeof(uint8_t), "b"},
-  {2, sizeof(uint8_t), "c"},
-  {3, sizeof(uint8_t), "d"},
-  {4, sizeof(uint8_t), "e"},
-  {5, sizeof(uint8_t), "f"},
+  {0, sizeof(uint8_t) * 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_value_fields[] = {
