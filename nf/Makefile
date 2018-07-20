@@ -45,6 +45,7 @@ verifast:
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
                 $(SELF_DIR)/bridge/abstract-state.c \
                 $(SELF_DIR)/bridge/bridge_data.c \
+                $(SELF_DIR)/viglb/lb_abstract.c \
 		$(SELF_DIR)/lib/assumptions_stubs.c \
 		$(SELF_DIR)/lib/flow.c \
 		$(SELF_DIR)/lib/containers/double-chain-impl.c \
