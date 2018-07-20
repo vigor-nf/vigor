@@ -1,5 +1,7 @@
 #include "bridge_data.h"
 
+#include <limits.h>
+
 // This is stupid, but it's the easiest thing to make VeriFast realize that a list has as many items as it claims.
 // There are some nice formulations using forall_(), but it seems VeriFast can't infer much from quantifications...
 /*@
