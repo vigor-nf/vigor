@@ -578,11 +578,12 @@ let fun_types =
                       (tmp_gen "dh") ^ ");\n} @*/");
                    (fun {args;_} ->
                       let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                   arg1 ^ "bis = " ^ arg1 ^ ";\n" ^
                    "/*@ { \n\
                     assert mapp<ether_addri>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
                     assert vector_accp<ether_addri>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
                     assert map_vec_chain_coherent<ether_addri>(?the_dm, the_dv, ?the_dh);\n\
-                    assert chars(" ^ arg1 ^ "->addr_bytes, 6, ?abs);\n\
+                    assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?abs);\n\
                     ether_addri vvv = eaddrc(abs); \n\
                     mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                     kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
@@ -596,7 +597,7 @@ let fun_types =
                       ", ?" ^ (tmp_gen "dv") ^
                       ", ?" ^ (tmp_gen "dh") ^
                       ");\n\
-                       assert chars(" ^ arg1 ^ "->addr_bytes, 6, ?abs2);\n\
+                       assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?abs2);\n\
                        ether_addri " ^ (tmp_gen "ea") ^ " = eaddrc(abs2);\n\
                        mvc_coherent_put<ether_addri>(" ^ (tmp_gen "dm") ^
                       ", " ^ (tmp_gen "dv") ^

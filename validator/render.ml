@@ -88,11 +88,7 @@ let render_assignment {lhs;rhs;} =
   match rhs.v with
   | Undef -> "";
   | _ -> begin match rhs.t with
-         | Array (_, size) -> "//@ uchars_to_chars(" ^ (render_tterm lhs) ^ ");\n\
-                               //@ uchars_to_chars(" ^ (render_tterm rhs) ^ ");\n\
-                               memcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");\n\
-                               //@ chars_to_uchars(" ^ (render_tterm lhs) ^ ");\n\
-                               //@ chars_to_uchars(" ^ (render_tterm rhs) ^ ");"
+         | Array (_, size) -> "memcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");"
          | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
 
 let rec gen_plain_equalities {lhs;rhs} =

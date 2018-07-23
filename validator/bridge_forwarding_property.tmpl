@@ -7,7 +7,6 @@ assert double_chainp(?final_chain,_);
 
 //TODO: check that the packet is intact
 #define PACKETS_EQUAL(pkta, pktb) true
-#define ETHERNET_ADDR(addr) eaddrc(addr.a, addr.b, addr.c, addr.d, addr.e, addr.f)
 
 ml_table initial_table = bridge_abstract_function(initial_dyn_map,
                                                   initial_dyn_val_vec,
@@ -27,8 +26,8 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
                                                      exprnd_chain,
                                                      stat_map);
 
-    ether_addri dst_addr = ETHERNET_ADDR(the_received_packet.ether.d_addr);
-    ether_addri src_addr = ETHERNET_ADDR(the_received_packet.ether.s_addr);
+    assert ether_addrp(&(the_received_packet.ether.d_addr), ?dst_addr);
+    assert ether_addrp(&(the_received_packet.ether.s_addr), ?src_addr);
     stat_keyi static_key = stkc(received_on_port, dst_addr);
 
     switch(stat_map) { case mapc(capacity, st_map, addrs):

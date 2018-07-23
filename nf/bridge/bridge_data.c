@@ -55,6 +55,34 @@ ensures lst == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, nil))))));
 }
 @*/
 
+/*@
+fixpoint list<uint8_t> convert_chars_to_uchars(list<int8_t> lst) {
+  switch(lst) {
+    case nil: return nil;
+    case cons(h, t): return cons((int8_t) h, convert_chars_to_uchars(t));
+  }
+}
+
+lemma void true_chars_to_uchars(void* value);
+requires [?f]chars(value, ?n, ?c);
+ensures [f]uchars(value, n, convert_chars_to_uchars(c));
+
+fixpoint list<int8_t> convert_uchars_to_chars(list<uint8_t> lst) {
+  switch(lst) {
+    case nil: return nil;
+    case cons(h, t): return cons((uint8_t) h, convert_uchars_to_chars(t));
+  }
+}
+
+lemma void true_uchars_to_chars(void* value);
+requires [?f]uchars(value, ?n, ?c);
+ensures [f]chars(value, n, convert_uchars_to_chars(c));
+
+lemma void uchars_chars_same(list<int8_t> lst);
+requires true;
+ensures convert_uchars_to_chars(convert_chars_to_uchars(lst)) == lst;
+@*/
+
 
 // Required for VeriFast to not complain about underflows
 static uint64_t wrap(uint64_t x)
@@ -83,12 +111,18 @@ bool ether_addr_eq(void* k1, void* k2)
   //@ list_with_length_6_has_6_items(la);
   //@ list_with_length_6_has_6_items(lb);
 
+  //@ true_chars_to_uchars(a->addr_bytes);
+  //@ true_chars_to_uchars(b->addr_bytes);
+
   bool res = a->addr_bytes[0] == b->addr_bytes[0]
           && a->addr_bytes[1] == b->addr_bytes[1]
           && a->addr_bytes[2] == b->addr_bytes[2]
           && a->addr_bytes[3] == b->addr_bytes[3]
           && a->addr_bytes[4] == b->addr_bytes[4]
           && a->addr_bytes[5] == b->addr_bytes[5];
+
+  //@ true_uchars_to_chars(a->addr_bytes);
+  //@ true_uchars_to_chars(b->addr_bytes);
 
   //@ close [fr1]ether_addrp(a, _);
   //@ close [fr2]ether_addrp(b, _);
@@ -122,7 +156,9 @@ unsigned ether_addr_hash(void* k)
 {
   struct ether_addr* addr = (struct ether_addr*) k;
 
-  //@ open [fr]ether_addrp(addr, _);
+  //@ open [fr]ether_addrp(addr, eaddrc(?bs));
+
+  //@ true_chars_to_uchars(addr->addr_bytes);
 
   // Yes, this is necessary for VeriFast to understand that this cannot underflow...
 
@@ -139,7 +175,10 @@ unsigned ether_addr_hash(void* k)
   uint8_t f = addr->addr_bytes[5];
   //@ produce_limits(f);
 
-  //@ close [fr]ether_addrp(addr, _);
+  //@ true_uchars_to_chars(addr->addr_bytes);
+  //@ uchars_chars_same(bs);
+
+  //@ close [fr]ether_addrp(addr, eaddrc(bs));
 
   uint64_t hash = 0;
   hash += a;

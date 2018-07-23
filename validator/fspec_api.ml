@@ -38,11 +38,7 @@ let rec render_deep_assignment {lhs;rhs} =
              render_deep_assignment {lhs={v=Str_idx (lhs, name);t};
                                      rhs={v=Str_idx (rhs, name);t}}))
   | Unknown -> "";
-  | Array (_, s) -> "//@ uchars_to_chars(" ^ (render_tterm lhs) ^ ");\n\
-                     //@ uchars_to_chars(" ^ (render_tterm rhs) ^ ");\n\
-                     memcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string s) ^ ");\n\
-                     //@ chars_to_uchars(" ^ (render_tterm lhs) ^ ");\n\
-                     //@ chars_to_uchars(" ^ (render_tterm rhs) ^ ");"
+  | Array (_, s) -> "memcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string s) ^ ");"
   | _ -> (render_tterm lhs) ^ " = " ^
          (render_tterm rhs) ^ ";"
 
