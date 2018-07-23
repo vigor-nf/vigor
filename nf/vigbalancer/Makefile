@@ -11,10 +11,11 @@ NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_data.c
 NF_VERIF_FILES := lb_loop.c
 
 # Verification arguments
-NF_VERIF_ARGS := --backend 01:23:45:67:89:00 \
-                 --backend 01:23:45:67:89:01 \
-                 --flow-expiration 10 \
-                 --flow-capacity 65536
+NF_VERIF_ARGS := --flow-expiration 10 \
+                 --flow-capacity 65536 \
+                 --backend-capacity 20 \
+                 --cht-height 100 \
+                 --backend-expiration 60
 
 # Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

@@ -825,6 +825,16 @@ int dchain_expire_one_index(struct DoubleChain* chain,
   return 0;
 }
 
+
+int dchain_is_index_allocated(struct DoubleChain* chain, int index)
+/*@ requires double_chainp(?ch, chain) &*&
+             0 <= index &*& index < dchain_index_range_fp(ch); @*/
+/*@ ensures double_chainp(ch, chain) &*&
+            result == dchain_allocated_fp(ch, index); @*/
+{
+  return dchain_impl_is_index_allocated(chain->cells, index);
+}
+
 /*@
   lemma void remove_by_index_decreases(list<pair<int, time_t> > alist,
                                        int i)

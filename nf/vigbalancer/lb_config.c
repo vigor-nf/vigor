@@ -26,43 +26,18 @@ void lb_config_init(struct lb_config* config,
                     int argc, char** argv)
 {
 	// Init
-	config->backend_count = 0;
-
 	struct option long_options[] = {
-		{"backend",		required_argument,	NULL, 'b'},
 		{"flow-expiration",	required_argument,	NULL, 'x'},
 		{"flow-capacity",	required_argument,	NULL, 'f'},
+    {"backend-capacity", required_argument, NULL, 's'},
+    {"cht-height", required_argument, NULL, 'h'},
+    {"backend-expiration", required_argument, NULL, 't'},
 		{NULL, 			0,			NULL,  0 }
 	};
 
 	int opt;
 	while ((opt = getopt_long(argc, argv, "b:x:f:", long_options, NULL)) != EOF) {
 		switch (opt) {
-			case 'b':
-				config->backend_count++;
-				if (config->backend_count == UINT16_MAX) {
-					PARSE_ERROR("Too many backends.\n");
-				}
-				if (config->backend_count >= rte_eth_dev_count()) {
-					PARSE_ERROR("Too many backend for the number of devices.\n");
-				}
-
-				if (config->backend_count == 1) {
-					config->device_macs = malloc(sizeof(struct ether_addr));
-					config->backend_macs = malloc(sizeof(struct ether_addr));
-				} else {
-					config->device_macs = realloc(config->device_macs, config->backend_count * sizeof(struct ether_addr));
-					config->backend_macs = realloc(config->backend_macs, config->backend_count * sizeof(struct ether_addr));
-				}
-
-				// Own MAC is obtained from the device itself
-				rte_eth_macaddr_get(config->backend_count, &(config->device_macs[config->backend_count - 1]));
-
-				if (cmdline_parse_etheraddr(NULL, optarg, &(config->backend_macs[config->backend_count - 1]), sizeof(struct ether_addr)) < 0) {
-					PARSE_ERROR("Invalid MAC address: %s\n", optarg);
-				}
-				break;
-
 			case 'x':
 				config->flow_expiration_time = nf_util_parse_int(optarg, "flow-expiration", 10, '\0');
 				if (config->flow_expiration_time == 0) {
@@ -77,14 +52,43 @@ void lb_config_init(struct lb_config* config,
 				}
 				break;
 
-			default:
-				PARSE_ERROR("Unknown option.\n");
-				break;
+      case 's':
+        config->backend_capacity =
+          nf_util_parse_int(optarg, "backend-capacity", 10, '\0');
+        if (config->flow_capacity <= 0) {
+          PARSE_ERROR("Flow capacity must be strictly positive.\n");
+        }
+        break;
+
+      case 'h':
+        config->cht_height = nf_util_parse_int(optarg, "cht-height", 10, '\0');
+        if (config->flow_capacity <= 0) {
+          PARSE_ERROR("Flow capacity must be strictly positive.\n");
+        }
+        break;
+
+      case 't':
+        config->backend_expiration_time = nf_util_parse_int(optarg, "backend-expiration", 10, '\0');
+        if (config->flow_expiration_time == 0) {
+          PARSE_ERROR("Flow expiration time must be strictly positive.\n");
+        }
+        break;
+
+
+      default:
+        PARSE_ERROR("Unknown option.\n");
+        break;
 		}
 	}
 
 	// Reset getopt
 	optind = 1;
+
+  // Fill in the mac addresses
+  config->device_macs = malloc(sizeof(struct ether_addr) * rte_eth_dev_count());
+  for (int i = 0; i < rte_eth_dev_count(); ++i) {
+    rte_eth_macaddr_get(i, &config->device_macs[i]);
+  }
 }
 
 void lb_config_cmdline_print_usage(void)
@@ -103,12 +107,10 @@ void lb_print_config(struct lb_config* config)
 
 	for (uint16_t b = 0; b < config->backend_count; b++) {
 		char* dev_mac_str = nf_mac_to_str(&(config->device_macs[b]));
-		char* end_mac_str = nf_mac_to_str(&(config->backend_macs[b]));
 
-		NF_INFO("Backend device %" PRIu16 " own-mac: %s, backend-mac: %s", b, dev_mac_str, end_mac_str);
+		NF_INFO("Backend device %" PRIu16 " own-mac: %s", b, dev_mac_str);
 
 		free(dev_mac_str);
-		free(end_mac_str);
 	}
 
 	NF_INFO("Flow expiration time: %" PRIu32, config->flow_expiration_time);

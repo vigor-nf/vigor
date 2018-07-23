@@ -22,7 +22,9 @@ struct LoadBalancer* balancer;
 
 void nf_core_init()
 {
-	balancer = lb_allocate_balancer(config.flow_capacity, config.flow_expiration_time, config.backend_count);
+	balancer = lb_allocate_balancer(config.flow_capacity, config.backend_capacity,
+                                  config.cht_height, config.backend_expiration_time,
+                                  config.flow_expiration_time);
 	if (balancer == NULL) {
 		rte_exit(EXIT_FAILURE, "Could not allocate balancer");
 	}
@@ -31,11 +33,7 @@ void nf_core_init()
 int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 {
 	lb_expire_flows(balancer, now);
-
-	if (mbuf->port != 0) {
-		NF_DEBUG("Wrong device, dropping");
-		return mbuf->port;
-	}
+  lb_expire_backends(balancer, now);
 
 	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
 
@@ -53,17 +51,24 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 
 	struct LoadBalancedFlow flow = {
 		.src_ip = ipv4_header->src_addr,
+		.dst_ip = ipv4_header->dst_addr,
 		.src_port = tcpudp_header->src_port,
 		.dst_port = tcpudp_header->dst_port,
 		.protocol = ipv4_header->next_proto_id
 	};
 
+	if (mbuf->port != 0) {
+    lb_process_heartbit(balancer, &flow, ether_header->s_addr, mbuf->port, now);
+		return mbuf->port;
+	}
+
+
 	struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now);
 
-	ether_header->s_addr = config.device_macs[backend.index];
-	ether_header->d_addr = config.backend_macs[backend.index];
+	ether_header->s_addr = config.device_macs[backend.nic];
+	ether_header->d_addr = backend.mac;
 
-	return backend.index + 1; // since 0 is the entry device
+	return backend.nic;
 }
 
 

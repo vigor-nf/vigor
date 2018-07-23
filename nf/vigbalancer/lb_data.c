@@ -8,11 +8,15 @@
 #define BFIELD(name, size) FIELD(LoadBalancedBackend, name, size)
 
 struct str_field_descr lb_flow_fields[] = {
-	FFIELD(src_ip, uint32_t), FFIELD(src_port, uint16_t), FFIELD(dst_port, uint16_t), FFIELD(protocol, uint8_t)
+	FFIELD(src_ip, uint32_t), FFIELD(dst_ip, uint32_t),
+  FFIELD(src_port, uint16_t), FFIELD(dst_port, uint16_t),
+  FFIELD(protocol, uint8_t)
 };
 
 struct str_field_descr lb_backend_fields[] = {
-	BFIELD(index, uint16_t)
+	BFIELD(nic, uint16_t),
+  {offsetof(struct LoadBalancedBackend, mac), 6 * sizeof(uint8_t), "mac"},
+	BFIELD(ip, uint32_t)
 };
 
 #undef BFIELD
@@ -103,4 +107,22 @@ lb_backend_init(void* obj)
 /*@ ensures lb_backendp(obj, _); @*/
 {
 	memset(obj, 0, sizeof(struct LoadBalancedBackend));
+}
+
+bool lb_ip_equality(void* objA, void* objB)
+/*@ requires [?fr1]u_integer(objA, ?f1) &*&
+             [?fr2]u_integer(objB, ?f2); @*/
+/*@ ensures [fr1]u_integer(objA, f1) &*&
+            [fr2]u_integer(objB, f2) &*&
+            (result ? (f1 == f2) : (f1 != f2)); @*/
+{
+  return *(uint32_t*)objA == *(uint32_t*)objB;
+}
+
+uint32_t lb_ip_hash(void* obj)
+/*@ requires [?fr]u_integer(obj, ?f); @*/
+/*@ ensures [fr]u_integer(obj, f) &*&
+            result == lb_ip_hash_fp(f); @*/
+{
+  return *(uint32_t*)obj;
 }

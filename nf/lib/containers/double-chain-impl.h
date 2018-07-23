@@ -196,4 +196,10 @@ int dchain_impl_rejuvenate_index(struct dchain_cell *cells, int index);
              (dchainip(dc, cells) &*&
               result == 0)); @*/
 
+int dchain_impl_is_index_allocated(struct dchain_cell *cells, int index);
+/*@ requires dchainip(?dc, cells) &*&
+             0 <= index &*& index < dchaini_irange_fp(dc); @*/
+/*@ ensures dchainip(dc, cells) &*&
+             result == dchaini_allocated_fp(dc, index); @*/
+
 #endif //_DOUBLE_CHAIN_IMPL_H_INCLUDED_
