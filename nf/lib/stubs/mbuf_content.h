@@ -21,11 +21,17 @@ struct stub_mbuf_content {
 
 // VeriFast definitions used in the tracing contracts
 /*@
-    inductive ether_addri = eaddrc(int, int, int, int, int, int);
+    lemma void hack_isnil<t>(list<t> xs)
+      requires switch (xs) { case nil: return true; case cons(h, t): return false; };
+      ensures true;
+    {}
+
+    inductive ether_addri = eaddrc(list<uint8_t>);
     predicate ether_addrp(struct ether_addr* ptr; ether_addri addr) =
       struct_ether_addr_padding(ptr) &*&
       chars(ptr->addr_bytes, 6, ?bytes) &*&
-      addr == eaddrc(nth(0, bytes), nth(1, bytes), nth(2, bytes), nth(3, bytes), nth(4, bytes), nth(5, bytes));
+      bytes == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?_nil)))))) &*& _nil == nil &*&
+      addr == eaddrc(bytes);
 
     inductive ether_hdri = ether_hdrc(ether_addri, ether_addri, int);
     predicate ether_hdrp(struct ether_hdr *ether; ether_hdri hdr) =
