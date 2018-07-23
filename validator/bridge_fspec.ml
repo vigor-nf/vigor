@@ -583,8 +583,8 @@ let fun_types =
                     assert mapp<ether_addri>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
                     assert vector_accp<ether_addri>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
                     assert map_vec_chain_coherent<ether_addri>(?the_dm, the_dv, ?the_dh);\n\
-                    assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?abs);\n\
-                    ether_addri vvv = eaddrc(abs); \n\
+                    assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?bytes);\n\
+                    ether_addri vvv = eaddrc(nth(0, bytes), nth(1, bytes), nth(2, bytes), nth(3, bytes), nth(4, bytes), nth(5, bytes));\n\
                     mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                     kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
                    "); \n\
@@ -597,8 +597,8 @@ let fun_types =
                       ", ?" ^ (tmp_gen "dv") ^
                       ", ?" ^ (tmp_gen "dh") ^
                       ");\n\
-                       assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?abs2);\n\
-                       ether_addri " ^ (tmp_gen "ea") ^ " = eaddrc(abs2);\n\
+                       assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?bs);\n\
+                       ether_addri " ^ (tmp_gen "ea") ^ " = eaddrc(nth(0, bs), nth(1, bs), nth(2, bs), nth(3, bs), nth(4, bs), nth(5, bs));\n\
                        mvc_coherent_put<ether_addri>(" ^ (tmp_gen "dm") ^
                       ", " ^ (tmp_gen "dv") ^
                       ", " ^ (tmp_gen "dh") ^

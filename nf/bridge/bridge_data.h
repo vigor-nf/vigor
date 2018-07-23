@@ -50,8 +50,8 @@ struct StaticFilterTable {
   fixpoint uint64_t _wrap(uint64_t x) { return x % UINT_MAX; }
   fixpoint int eth_addr_hash(ether_addri ea) {
     switch(ea) {
-      case eaddrc(lst):
-        return _wrap((((((nth(0,lst) * 31) + nth(1,lst)) * 31 + nth(2,lst)) * 31 + nth(3,lst)) * 31 + nth(4,lst)) * 31 + nth(5,lst));
+      case eaddrc(a, b, c, d, e, f):
+        return _wrap((((((a * 31) + b) * 31 + c) * 31 + d) * 31 + e) * 31 + f);
     }
   }
 
