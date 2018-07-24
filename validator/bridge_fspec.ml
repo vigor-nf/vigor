@@ -519,7 +519,7 @@ let fun_types =
                         "//@ assert " ^ (tmp_gen "dkbytes") ^ " == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?" ^ (tmp_gen "nil") ^ "))))));\n" ^
                         "//@ hack_isnil(" ^ (tmp_gen "nil") ^ ");\n" ^
                         "//@ ether_addri " ^ (tmp_gen "dk") ^ " = eaddrc(" ^ (tmp_gen "dkbytes") ^ ");\n" ^
-                        "//@ assert ether_addrp(" ^ (render_tterm expr) ^ ", " ^ (tmp_gen "dk") ^ ");\n" ^
+                        "//@ close ether_addrp(" ^ (render_tterm expr) ^ ", " ^ (tmp_gen "dk") ^ ");\n" ^
                         (capture_a_chain "dh" params ^
                          capture_a_map "ether_addri" "dm" params ^
                          capture_a_vector "ether_addri" "dv" params);
