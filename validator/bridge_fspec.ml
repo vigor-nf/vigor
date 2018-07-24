@@ -534,6 +534,7 @@ let fun_types =
                    (fun {args;ret_name;arg_types;tmp_gen;_} ->
                       match List.nth_exn arg_types 1 with
                       | Ptr (Str ("ether_addr", _)) ->
+                        "//@ open ether_addrp(" ^ (List.nth_exn args 1) ^ ", _);\n" ^
                         "/*@ if (" ^ ret_name ^
                         " != 0) {\n\
                          mvc_coherent_map_get_bounded(" ^
