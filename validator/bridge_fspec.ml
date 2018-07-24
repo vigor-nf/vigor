@@ -524,6 +524,9 @@ let fun_types =
                          capture_a_map "ether_addri" "dm" params ^
                          capture_a_vector "ether_addri" "dv" params);
                       | Ptr (Str ("StaticKey", _)) ->
+                        "//@ assert chars((" ^ (List.nth_exn params.args 1) ^ ")->addr.addr_bytes, 6, ?" ^ (tmp_gen "skab") ^ ");\n" ^
+                        "//@ assert " ^ (tmp_gen "skab") ^ " == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?" ^ (tmp_gen "nil") ^ "))))));\n" ^
+                        "//@ hack_isnil(" ^ (tmp_gen "nil") ^ ");\n" ^
                         (capture_a_map "stat_keyi" "stm" params)
                       | _ -> "#error unexpected key type")];
                  lemmas_after = [
