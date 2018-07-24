@@ -21,11 +21,6 @@ struct stub_mbuf_content {
 
 // VeriFast definitions used in the tracing contracts
 /*@
-    lemma void hack_isnil<t>(list<t> xs)
-      requires switch (xs) { case nil: return true; case cons(h, t): return false; };
-      ensures true;
-    {}
-
     inductive ether_addri = eaddrc(list<uint8_t>);
     predicate ether_addrp(struct ether_addr* ptr; ether_addri addr) =
       struct_ether_addr_padding(ptr) &*&

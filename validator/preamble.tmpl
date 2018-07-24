@@ -37,4 +37,10 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 {
   assume(false);
 }
+
+// Used to help VeriFast infer a list's shape, see https://github.com/verifast/verifast/issues/133#issuecomment-407018182
+lemma void hack_isnil<t>(list<t> xs)
+requires switch (xs) { case nil: return true; case cons(h, t): return false; };
+ensures true;
+{}
 @*/
