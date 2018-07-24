@@ -80,9 +80,9 @@ lemma void bridge_add_entry_set_eq(list<dyn_entry> dyn_table1,
                                     time_t time)
 requires true == set_eq(dyn_table1, dyn_table2);
 ensures true == set_eq(add_dyn_entry(dyn_table1, addr, port, time),
-                        add_dyn_entry(dyn_table2, addr, port, time));
+                       add_dyn_entry(dyn_table2, addr, port, time));
 {
-  assume(false);//TODO
+  set_eq_cons(dyn_table1, dyn_table2, dyn_entry(addr, port, time));
 }
 
 @*/
