@@ -124,7 +124,17 @@ requires true == dyn_table_has_key(gen_dyn_entries(map, values, indices), key);
 ensures true == map_has_fp(map, key) &*&
         fst(nth(map_get_fp(map, key), values)) == dyn_table_get(gen_dyn_entries(map, values, indices), key);
 {
-  assume(false);//TODO
+  switch(map) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(l,r):
+          if (l == key) {
+          } else {
+            dyn_map_has_get(t, values, indices, key);
+          }
+      }
+  }
 }
 
 @*/
