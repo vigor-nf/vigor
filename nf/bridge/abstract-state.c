@@ -16,7 +16,7 @@ ensures set_eq(gen_dyn_entries(map_erase_all_fp
                                             (indices, time))),
                                 vals,
                                 dchain_expire_old_indexes_fp(indices, time)),
-                expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
+               expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
                                 time)) == true;
 {
   assume(false);//TODO
@@ -128,16 +128,46 @@ ensures true == map_has_fp(map, key) &*&
 }
 
 @*/
+
+/*@
+  lemma void gen_dyn_entries_same_len(list<pair<ether_addri, int> > table,
+                                      list<pair<uint16_t, bool> > values,
+                                      dchain indices)
+  requires true;
+  ensures length(gen_dyn_entries(table, values, indices)) == length(table);
+  {
+    switch(table) {
+      case nil: return;
+      case cons(h, t):
+        switch(h) { case pair(addr, index):
+          gen_dyn_entries_same_len(t, values, indices);
+        }
+    }
+  }
+  @*/
+
 /*@
 lemma void chain_out_of_space_ml_out_of_space(mapi<ether_addri> dyn_map,
                                               list<pair<uint16_t, bool> > vals,
                                               dchain indices,
                                               mapi<stat_keyi> stat_map)
-requires true;
-ensures dchain_out_of_space_fp(indices) ==
+requires dyn_map == mapc(?dyn_capacity, ?dm, ?daddrs) &*&
+         map_vec_chain_coherent(dm, ?heap, indices) &*&
+         dyn_capacity == dchain_index_range_fp(indices);
+ensures map_vec_chain_coherent(dm, heap, indices) &*&
+        dchain_out_of_space_fp(indices) ==
         dyn_table_out_of_space(bridge_abstract_function(dyn_map, vals, indices, stat_map));
 {
-  assume(false);//TODO
+  switch(indices) {
+    case dchain(alist, size, low, high):
+      switch(dyn_map) { case mapc(dyn_capacity2, dm2, daddrs2):
+        gen_dyn_entries_same_len(dm2, vals, indices);
+        mvc_coherent_same_len(dm2, heap, indices);
+        map_preserves_length(fst, alist);
+
+        switch(stat_map) { case mapc(stat_capacity, sm, saddrs):}
+      }
+  }
 }
 
 @*/

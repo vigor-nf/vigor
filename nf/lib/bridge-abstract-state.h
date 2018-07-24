@@ -223,7 +223,10 @@
                                                 list<pair<uint16_t, bool> > vals,
                                                 dchain indices,
                                                 mapi<stat_keyi> stat_map);
-  requires true;
-  ensures dchain_out_of_space_fp(indices) ==
+  requires dyn_map == mapc(?dyn_capacity, ?dm, ?daddrs) &*&
+           map_vec_chain_coherent(dm, ?heap, indices) &*&
+           dyn_capacity == dchain_index_range_fp(indices);
+  ensures map_vec_chain_coherent(dm, heap, indices) &*&
+          dchain_out_of_space_fp(indices) ==
           dyn_table_out_of_space(bridge_abstract_function(dyn_map, vals, indices, stat_map));
 @*/

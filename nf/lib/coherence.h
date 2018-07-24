@@ -104,7 +104,8 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
                                        list<pair<kt, bool> > v, dchain ch);
   requires map_vec_chain_coherent<kt>(m, v, ch);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          length(v) == dchain_index_range_fp(ch);
+          length(v) == dchain_index_range_fp(ch) &*&
+          length(m) == length(dchain_indexes_fp(ch));
   @*/
 
 /*@
