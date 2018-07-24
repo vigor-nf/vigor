@@ -111,7 +111,16 @@ requires true == map_has_fp(map, key);
 ensures true == stat_table_has_key(gen_stat_entries(map), key) &*&
         map_get_fp(map, key) == stat_table_get(gen_stat_entries(map), key);
 {
-  assume(false);//TODO
+  switch(map) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(l,r):
+          if (l != key) {
+            stat_map_has_get(t, key);
+          }
+      }
+  }
 }
 
 @*/
@@ -129,8 +138,7 @@ ensures true == map_has_fp(map, key) &*&
     case cons(h,t):
       switch(h) {
         case pair(l,r):
-          if (l == key) {
-          } else {
+          if (l != key) {
             dyn_map_has_get(t, values, indices, key);
           }
       }
