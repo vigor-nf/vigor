@@ -91,7 +91,16 @@ lemma void stat_map_has(list<pair<stat_keyi, uint16_t> > map, stat_keyi key)
 requires true;
 ensures map_has_fp(map, key)== stat_table_has_key(gen_stat_entries(map), key);
 {
-  assume(false);//TODO
+  switch(map) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(l,r):
+          if (l != key) {
+            stat_map_has(t, key);
+          }
+      }
+  }
 }
 @*/
 /*@
