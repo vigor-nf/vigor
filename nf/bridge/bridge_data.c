@@ -5,53 +5,19 @@
 // This is stupid, but it's the easiest thing to make VeriFast realize that a list has as many items as it claims.
 // There are some nice formulations using forall_(), but it seems VeriFast can't infer much from quantifications...
 /*@
+// Used to help VeriFast infer a list's shape, see https://github.com/verifast/verifast/issues/133#issuecomment-407018182
+lemma void hack_isnil<t>(list<t> xs)
+requires switch (xs) { case nil: return true; case cons(h, t): return false; };
+ensures true;
+{}
+
 lemma void list_with_length_6_has_6_items<t>(list<t> lst)
 requires length(lst) == 6;
 ensures lst == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, nil))))));
 {
-  switch(lst) {
-    case nil:
-      assert(length(lst) == 0);
-
-    case cons(h1, t1):
-      switch(t1) {
-        case nil:
-          assert(length(lst) == 1);
-
-        case cons(h2, t2):
-          switch(t2) {
-            case nil:
-              assert(length(lst) == 2);
-
-            case cons(h3, t3):
-              switch(t3) {
-                case nil:
-                  assert(length(lst) == 3);
-
-                case cons(h4, t4):
-                  switch(t4) {
-                    case nil:
-                      assert(length(lst) == 4);
-
-                    case cons(h5, t5):
-                      switch(t5) {
-                        case nil:
-                          assert(length(lst) == 5);
-
-                        case cons(h6, t6):
-                          switch(t6) {
-                            case nil:
-                              assert(length(lst) == 6);
-
-                            case cons(h7, t7):
-                              assert(length(lst) >= 7);
-                          }
-                      }
-                  }
-              }
-          }
-      }
-  }
+  assert lst == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?_nil))))));
+  hack_isnil(_nil);
+  assert _nil == nil;
 }
 @*/
 
