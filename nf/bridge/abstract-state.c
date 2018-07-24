@@ -102,7 +102,16 @@ lemma void dyn_map_has(list<pair<ether_addri, int> > map,
 requires true;
 ensures map_has_fp(map, key) == dyn_table_has_key(gen_dyn_entries(map, values, indices), key);
 {
-  assume(false);//TODO
+  switch(map) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(l,r):
+          if (l != key) {
+            dyn_map_has(t, values, indices, key);
+          }
+      }
+  }
 }
 @*/
 /*@
