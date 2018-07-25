@@ -2,25 +2,6 @@
 
 #include <limits.h>
 
-// This is stupid, but it's the easiest thing to make VeriFast realize that a list has as many items as it claims.
-// There are some nice formulations using forall_(), but it seems VeriFast can't infer much from quantifications...
-/*@
-// Used to help VeriFast infer a list's shape, see https://github.com/verifast/verifast/issues/133#issuecomment-407018182
-lemma void hack_isnil<t>(list<t> xs)
-requires switch (xs) { case nil: return true; case cons(h, t): return false; };
-ensures true;
-{}
-
-lemma void list_with_length_6_has_6_items<t>(list<t> lst)
-requires length(lst) == 6;
-ensures lst == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, nil))))));
-{
-  assert lst == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?_nil))))));
-  hack_isnil(_nil);
-  assert _nil == nil;
-}
-@*/
-
 /*@
 fixpoint list<uint8_t> convert_chars_to_uchars(list<int8_t> lst) {
   switch(lst) {
@@ -29,9 +10,12 @@ fixpoint list<uint8_t> convert_chars_to_uchars(list<int8_t> lst) {
   }
 }
 
-lemma void true_chars_to_uchars(void* value);
+lemma void true_chars_to_uchars(void* value)
 requires [?f]chars(value, ?n, ?c);
 ensures [f]uchars(value, n, convert_chars_to_uchars(c));
+{
+  assume(false); // TODO
+}
 
 fixpoint list<int8_t> convert_uchars_to_chars(list<uint8_t> lst) {
   switch(lst) {
@@ -40,13 +24,12 @@ fixpoint list<int8_t> convert_uchars_to_chars(list<uint8_t> lst) {
   }
 }
 
-lemma void true_uchars_to_chars(void* value);
+lemma void true_uchars_to_chars(void* value)
 requires [?f]uchars(value, ?n, ?c);
 ensures [f]chars(value, n, convert_uchars_to_chars(c));
-
-lemma void uchars_chars_same(list<int8_t> lst);
-requires true;
-ensures convert_uchars_to_chars(convert_chars_to_uchars(lst)) == lst;
+{
+  assume(false); // TODO
+}
 @*/
 
 
@@ -71,11 +54,8 @@ bool ether_addr_eq(void* k1, void* k2)
   struct ether_addr* a = (struct ether_addr*) k1;
   struct ether_addr* b = (struct ether_addr*) k2;
 
-  //@ open [fr1]ether_addrp(a, eaddrc(?la));
-  //@ open [fr2]ether_addrp(b, eaddrc(?lb));
-
-  //@ list_with_length_6_has_6_items(la);
-  //@ list_with_length_6_has_6_items(lb);
+  //@ open [fr1]ether_addrp(a, ea1);
+  //@ open [fr2]ether_addrp(b, ea2);
 
   //@ true_chars_to_uchars(a->addr_bytes);
   //@ true_chars_to_uchars(b->addr_bytes);
@@ -90,8 +70,8 @@ bool ether_addr_eq(void* k1, void* k2)
   //@ true_uchars_to_chars(a->addr_bytes);
   //@ true_uchars_to_chars(b->addr_bytes);
 
-  //@ close [fr1]ether_addrp(a, _);
-  //@ close [fr2]ether_addrp(b, _);
+  //@ close [fr1]ether_addrp(a, ea1);
+  //@ close [fr2]ether_addrp(b, ea2);
 
   return res;
 }
@@ -122,7 +102,7 @@ unsigned ether_addr_hash(void* k)
 {
   struct ether_addr* addr = (struct ether_addr*) k;
 
-  //@ open [fr]ether_addrp(addr, eaddrc(?bs));
+  //@ open [fr]ether_addrp(addr, ea);
 
   //@ true_chars_to_uchars(addr->addr_bytes);
 
@@ -142,9 +122,8 @@ unsigned ether_addr_hash(void* k)
   //@ produce_limits(f);
 
   //@ true_uchars_to_chars(addr->addr_bytes);
-  //@ uchars_chars_same(bs);
 
-  //@ close [fr]ether_addrp(addr, eaddrc(bs));
+  //@ close [fr]ether_addrp(addr, ea);
 
   uint64_t hash = 0;
   hash += a;

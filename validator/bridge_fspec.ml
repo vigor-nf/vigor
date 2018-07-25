@@ -515,18 +515,11 @@ let fun_types =
                         in
                         (String.concat ~sep:"\n" bindings) ^
                         "\n" ^
-                        "//@ assert chars((" ^ (render_tterm expr) ^ ")->addr_bytes, 6, ?" ^ (tmp_gen "dkbytes") ^ ");\n" ^
-                        "//@ assert " ^ (tmp_gen "dkbytes") ^ " == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?" ^ (tmp_gen "nil") ^ "))))));\n" ^
-                        "//@ hack_isnil(" ^ (tmp_gen "nil") ^ ");\n" ^
-                        "//@ ether_addri " ^ (tmp_gen "dk") ^ " = eaddrc(" ^ (tmp_gen "dkbytes") ^ ");\n" ^
-                        "//@ close ether_addrp(" ^ (render_tterm expr) ^ ", " ^ (tmp_gen "dk") ^ ");\n" ^
+                        "//@ assert ether_addrp(" ^ (render_tterm expr) ^ ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
                         (capture_a_chain "dh" params ^
                          capture_a_map "ether_addri" "dm" params ^
                          capture_a_vector "ether_addri" "dv" params);
                       | Ptr (Str ("StaticKey", _)) ->
-                        "//@ assert chars((" ^ (List.nth_exn params.args 1) ^ ")->addr.addr_bytes, 6, ?" ^ (tmp_gen "skab") ^ ");\n" ^
-                        "//@ assert " ^ (tmp_gen "skab") ^ " == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?" ^ (tmp_gen "nil") ^ "))))));\n" ^
-                        "//@ hack_isnil(" ^ (tmp_gen "nil") ^ ");\n" ^
                         (capture_a_map "stat_keyi" "stm" params)
                       | _ -> "#error unexpected key type")];
                  lemmas_after = [
@@ -534,7 +527,6 @@ let fun_types =
                    (fun {args;ret_name;arg_types;tmp_gen;_} ->
                       match List.nth_exn arg_types 1 with
                       | Ptr (Str ("ether_addr", _)) ->
-                        "//@ open ether_addrp(" ^ (List.nth_exn args 1) ^ ", _);\n" ^
                         "/*@ if (" ^ ret_name ^
                         " != 0) {\n\
                          mvc_coherent_map_get_bounded(" ^
@@ -590,10 +582,7 @@ let fun_types =
                     assert mapp<ether_addri>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
                     assert vector_accp<ether_addri>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
                     assert map_vec_chain_coherent<ether_addri>(?the_dm, the_dv, ?the_dh);\n\
-                    assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?bytes);\n\
-                    assert bytes == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?_nil))))));\n\
-                    hack_isnil(_nil);
-                    ether_addri vvv = eaddrc(bytes);\n\
+                    assert ether_addrp(" ^ arg1 ^ "bis->addr_bytes, ?vvv);\n\
                     mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                     kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
                    "); \n\
@@ -601,15 +590,13 @@ let fun_types =
                    hide_the_other_mapp];
                  lemmas_after = [
                    (fun {tmp_gen;args;_} -> let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                      "\n/*@ {\n\
+                      arg1 ^ "bis = " ^ arg1 ^ ";\n" ^ 
+                      "/*@ {\n\
                        assert map_vec_chain_coherent<ether_addri>(" ^ (tmp_gen "dm") ^
                       ", ?" ^ (tmp_gen "dv") ^
                       ", ?" ^ (tmp_gen "dh") ^
                       ");\n\
-                       assert chars(" ^ arg1 ^ "bis->addr_bytes, 6, ?bs);\n\
-                       assert bs == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?_nil2))))));\n\
-                       hack_isnil(_nil2);
-                       ether_addri " ^ (tmp_gen "ea") ^ " = eaddrc(bs);\n\
+                       assert [_]ether_addrp(" ^ arg1 ^ "bis->addr_bytes, ?" ^ (tmp_gen "ea") ^ ");\n\
                        mvc_coherent_put<ether_addri>(" ^ (tmp_gen "dm") ^
                       ", " ^ (tmp_gen "dv") ^
                       ", " ^ (tmp_gen "dh") ^
