@@ -33,10 +33,10 @@ lemma void bridge_add_entry(list<pair<ether_addri, uint32_t> > dyn_map,
                             time_t time)
 requires true;
 ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
-                                update(index, pair(port, true), vals),
-                                dchain_allocate_fp(indices, index, time)),
-                add_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
-                              addr, port, time)) == true;
+                               update(index, pair(port, true), vals),
+                               dchain_allocate_fp(indices, index, time)),
+               add_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                             addr, port, time)) == true;
 {
   assume(false);//TODO
 }
@@ -50,27 +50,120 @@ lemma void bridge_rejuv_entry(list<pair<ether_addri, uint32_t> > dyn_map,
                               time_t time)
 requires true;
 ensures set_eq(gen_dyn_entries(dyn_map,
-                                vals,
-                                dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
-                rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                               vals,
+                               dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
+               rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
                                     addr, time)) == true;
 {
   assume(false);//TODO
 }
 
 @*/
+
 /*@
-lemma void bridge_rejuv_entry_set_eq(list<dyn_entry> dyn_table1,
-                                      list<dyn_entry> dyn_table2,
-                                      ether_addri addr,
-                                      time_t time)
-requires true == set_eq(dyn_table1, dyn_table2);
-ensures true == set_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
-                        rejuvenate_dyn_entry(dyn_table2, addr, time));
+lemma void rejuv_unrelated_keep_mem(list<dyn_entry> dyn_table,
+                                    ether_addri addr, time_t time,
+                                    dyn_entry entry)
+requires entry == dyn_entry(?e_addr, _, _) &*& addr != e_addr;
+ensures mem(entry, dyn_table) == mem(entry, rejuvenate_dyn_entry(dyn_table, addr, time));
 {
-  assume(false);//TODO
+  switch(dyn_table) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(cur_addr, cur_port, cur_time):
+        if (cur_addr != addr)
+          rejuv_unrelated_keep_mem(t, addr, time, entry);
+      }
+  }
+                    
 }
 
+lemma void bridge_rejuv_entry_is_mem(list<dyn_entry> dyn_table, dyn_entry entry, time_t new_time)
+requires true == mem(entry, dyn_table) &*& entry == dyn_entry(?cur_addr, ?cur_port, ?cur_time) &*&
+         true == distinct(map(get_dyn_addr, dyn_table));
+ensures true == mem(dyn_entry(cur_addr, cur_port, new_time),
+                    rejuvenate_dyn_entry(dyn_table, cur_addr, new_time));
+{
+  switch(dyn_table) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(h_addr, h_port, h_time):
+        if (cur_addr != h_addr)
+          bridge_rejuv_entry_is_mem(t, entry, new_time);
+        else {
+          if (h_port != cur_port) {
+            mem_map(entry, t, get_dyn_addr);
+          }
+          assert h_port == cur_port;
+          assert true == mem(dyn_entry(cur_addr, cur_port, new_time), rejuvenate_dyn_entry(dyn_table, cur_addr, new_time));
+        }
+      }
+  }
+}
+
+lemma void bridge_rejuv_unrelated_keep_subset(list<dyn_entry> dyn_table1,
+                                              list<dyn_entry> dyn_table2,
+                                              ether_addri addr,
+                                              time_t time)
+requires false == mem(addr, map(get_dyn_addr, dyn_table1)) &*&
+         true == subset(dyn_table1, dyn_table2);
+ensures true == subset(dyn_table1, rejuvenate_dyn_entry(dyn_table2, addr, time));
+{
+  switch(dyn_table1) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(h_addr, h_port, h_time):
+        assert true == mem(h, dyn_table2);
+        rejuv_unrelated_keep_mem(dyn_table2, addr, time, h); 
+        bridge_rejuv_unrelated_keep_subset(t, dyn_table2, addr, time);
+      }
+  }
+}
+
+lemma void bridge_rejuv_entry_subset(list<dyn_entry> dyn_table1,
+                                     list<dyn_entry> dyn_table2,
+                                     ether_addri addr,
+                                     time_t time)
+requires true == subset(dyn_table1, dyn_table2) &*&
+         true == distinct(map(get_dyn_addr, dyn_table1)) &*&
+         true == distinct(map(get_dyn_addr, dyn_table2));
+ensures true == subset(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                       rejuvenate_dyn_entry(dyn_table2, addr, time));
+{
+  switch(dyn_table1) {
+    case nil:
+    case cons(h,t):
+      assert true == subset(t, dyn_table2);
+      assert true == mem(h, dyn_table2);
+      switch(h) { case dyn_entry(cur_addr, cur_port, cur_time):
+        if (addr != cur_addr) {
+          bridge_rejuv_entry_subset(t, dyn_table2, addr, time);
+          assert true == subset(rejuvenate_dyn_entry(t, addr, time), rejuvenate_dyn_entry(dyn_table2, addr, time));
+          rejuv_unrelated_keep_mem(dyn_table2, addr, time, h);
+          assert true == mem(h, rejuvenate_dyn_entry(dyn_table2, addr, time));
+        } else {
+          bridge_rejuv_unrelated_keep_subset(t, dyn_table2, addr, time);
+          assert true == subset(t, rejuvenate_dyn_entry(dyn_table2, addr, time));
+          bridge_rejuv_entry_is_mem(dyn_table2, h, time);
+          assert true == mem(dyn_entry(addr, cur_port, time), rejuvenate_dyn_entry(dyn_table2, addr, time));
+        }
+      }
+  }
+}
+
+lemma void bridge_rejuv_entry_set_eq(list<dyn_entry> dyn_table1,
+                                     list<dyn_entry> dyn_table2,
+                                     ether_addri addr,
+                                     time_t time)
+requires true == set_eq(dyn_table1, dyn_table2) &*&
+         true == distinct(map(get_dyn_addr, dyn_table1)) &*&
+         true == distinct(map(get_dyn_addr, dyn_table2));
+ensures true == set_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                       rejuvenate_dyn_entry(dyn_table2, addr, time));
+{
+  bridge_rejuv_entry_subset(dyn_table1, dyn_table2, addr, time);
+  bridge_rejuv_entry_subset(dyn_table2, dyn_table1, addr, time);
+}
 @*/
 /*@
 lemma void bridge_add_entry_set_eq(list<dyn_entry> dyn_table1,

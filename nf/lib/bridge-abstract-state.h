@@ -16,6 +16,10 @@
     }
   }
 
+  fixpoint ether_addri get_dyn_addr(dyn_entry e) {
+    switch(e) { case dyn_entry(addr, port, time): return addr; }
+  }
+
   fixpoint list<stat_entry> get_stat_table(ml_table table) {
     switch(table) {
       case ml_table(dyn_table, stat_table, capacity):
@@ -182,7 +186,9 @@
                                        list<dyn_entry> dyn_table2,
                                        ether_addri addr,
                                        time_t time);
-  requires true == set_eq(dyn_table1, dyn_table2);
+  requires true == set_eq(dyn_table1, dyn_table2) &*&
+           true == distinct(map(get_dyn_addr, dyn_table1)) &*&
+           true == distinct(map(get_dyn_addr, dyn_table2));
   ensures true == set_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
                          rejuvenate_dyn_entry(dyn_table2, addr, time));
 
