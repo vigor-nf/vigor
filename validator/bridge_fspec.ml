@@ -524,9 +524,14 @@ let fun_types =
                       | _ -> "#error unexpected key type")];
                  lemmas_after = [
                    reveal_the_other_mapp;
-                   (fun {args;ret_name;arg_types;tmp_gen;_} ->
+                   (fun {args;ret_name;arg_types;tmp_gen;arg_exps;_} ->
                       match List.nth_exn arg_types 1 with
                       | Ptr (Str ("ether_addr", _)) ->
+                        let (bindings,expr) =
+                          generate_2step_dereference
+                            (List.nth_exn arg_exps 1) tmp_gen
+                        in
+                        "//@ open [_]ether_addrp(" ^ (render_tterm expr) ^ ", " ^ (tmp_gen "dk") ^ ");\n" ^
                         "/*@ if (" ^ ret_name ^
                         " != 0) {\n\
                          mvc_coherent_map_get_bounded(" ^

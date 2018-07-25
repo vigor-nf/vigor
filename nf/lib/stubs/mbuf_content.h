@@ -20,6 +20,7 @@ struct stub_mbuf_content {
 ;
 
 // VeriFast definitions used in the tracing contracts
+// The switch statement for ether_addrp is there to make VeriFast understand that the list has *exactly* 6 elements
 /*@
     inductive ether_addri = eaddrc(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
     predicate ether_addrp(struct ether_addr* ptr; ether_addri addr) =
