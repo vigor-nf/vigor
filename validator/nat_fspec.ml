@@ -308,7 +308,6 @@ let fun_types =
                          "/*@ close ext_k_p(" ^ List.nth_exn args 1 ^
                          ", ?ext_key_dgb); @*/"); ];
                     lemmas_after = [
-                      tx_l "open (ext_k_p(_,_));";
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
@@ -356,7 +355,6 @@ let fun_types =
                          ", ?int_key_dga); @*/"
                       );];
                     lemmas_after = [
-                      tx_l "open (int_k_p(_,_));";
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
