@@ -2,36 +2,6 @@
 
 #include <limits.h>
 
-/*@
-fixpoint list<uint8_t> convert_chars_to_uchars(list<int8_t> lst) {
-  switch(lst) {
-    case nil: return nil;
-    case cons(h, t): return cons((int8_t) h, convert_chars_to_uchars(t));
-  }
-}
-
-lemma void true_chars_to_uchars(void* value)
-requires [?f]chars(value, ?n, ?c);
-ensures [f]uchars(value, n, convert_chars_to_uchars(c));
-{
-  assume(false); // TODO
-}
-
-fixpoint list<int8_t> convert_uchars_to_chars(list<uint8_t> lst) {
-  switch(lst) {
-    case nil: return nil;
-    case cons(h, t): return cons((uint8_t) h, convert_uchars_to_chars(t));
-  }
-}
-
-lemma void true_uchars_to_chars(void* value)
-requires [?f]uchars(value, ?n, ?c);
-ensures [f]chars(value, n, convert_uchars_to_chars(c));
-{
-  assume(false); // TODO
-}
-@*/
-
 
 // Required for VeriFast to not complain about underflows
 static uint64_t wrap(uint64_t x)
@@ -57,18 +27,12 @@ bool ether_addr_eq(void* k1, void* k2)
   //@ open [fr1]ether_addrp(a, ea1);
   //@ open [fr2]ether_addrp(b, ea2);
 
-  //@ true_chars_to_uchars(a->addr_bytes);
-  //@ true_chars_to_uchars(b->addr_bytes);
-
   bool res = a->addr_bytes[0] == b->addr_bytes[0]
           && a->addr_bytes[1] == b->addr_bytes[1]
           && a->addr_bytes[2] == b->addr_bytes[2]
           && a->addr_bytes[3] == b->addr_bytes[3]
           && a->addr_bytes[4] == b->addr_bytes[4]
           && a->addr_bytes[5] == b->addr_bytes[5];
-
-  //@ true_uchars_to_chars(a->addr_bytes);
-  //@ true_uchars_to_chars(b->addr_bytes);
 
   //@ close [fr1]ether_addrp(a, ea1);
   //@ close [fr2]ether_addrp(b, ea2);
@@ -104,8 +68,6 @@ unsigned ether_addr_hash(void* k)
 
   //@ open [fr]ether_addrp(addr, ea);
 
-  //@ true_chars_to_uchars(addr->addr_bytes);
-
   // Yes, this is necessary for VeriFast to understand that this cannot underflow...
 
   uint8_t a = addr->addr_bytes[0];
@@ -120,8 +82,6 @@ unsigned ether_addr_hash(void* k)
   //@ produce_limits(e);
   uint8_t f = addr->addr_bytes[5];
   //@ produce_limits(f);
-
-  //@ true_uchars_to_chars(addr->addr_bytes);
 
   //@ close [fr]ether_addrp(addr, ea);
 
