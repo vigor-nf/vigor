@@ -175,7 +175,9 @@
                                 dchain indices,
                                 ether_addri addr,
                                 time_t time);
-  requires true;
+  requires true == distinct(map(snd, dyn_map)) &*&
+           true == distinct(dchain_indexes_fp(indices)) &*&
+           true == mem(addr, map(fst, dyn_map));
   ensures set_eq(gen_dyn_entries(dyn_map,
                                  vals,
                                  dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),

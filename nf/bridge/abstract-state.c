@@ -42,20 +42,300 @@ ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
 }
 
 @*/
+
 /*@
+lemma void alist_get_append_unrelevant(list<pair<int, time_t> > l,
+                                       int i1, time_t time,
+                                       int i2)
+requires i1 != i2;
+ensures alist_get_fp(append(l, cons(pair(i1, time), nil)), i2) == alist_get_fp(l, i2);
+{
+  switch(l) {
+    case nil:
+    case cons(h, t):
+      switch(h) { case pair(idx,tm):
+        if (idx != i2) alist_get_append_unrelevant(t, i1, time, i2);
+      }
+  }
+}
+
+lemma void dchaini_rejuv_other_keeps_time(list<pair<int, time_t> > alist,
+                                          uint32_t index, time_t time,
+                                          uint32_t cur_index)
+requires index != cur_index;
+ensures alist_get_fp(append(remove_by_index_fp(alist, index),
+                            cons(pair(index, time), nil)), cur_index) ==
+        alist_get_fp(alist, cur_index);
+{
+  switch(alist) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(idx,cur_time):
+        if (idx != cur_index) {
+          if (idx == index) {
+            assert remove_by_index_fp(alist, index) == t;
+            alist_get_append_unrelevant(t, index, time, cur_index);
+            assert alist_get_fp(append(t, cons(pair(index, time), nil)), cur_index) ==
+                   alist_get_fp(t, cur_index);
+          } else {
+            dchaini_rejuv_other_keeps_time(t, index, time, cur_index);
+          }
+        }
+      }
+  }
+}
+
+lemma void dchain_rejuv_other_keeps_time(dchain indices, uint32_t index,
+                                         time_t time, uint32_t cur_index)
+requires index != cur_index;
+ensures dchain_get_time_fp(dchain_rejuvenate_fp(indices, index, time), cur_index) ==
+        dchain_get_time_fp(indices, cur_index);
+{
+  switch(indices) {
+    case dchain(alist, size, l, h):
+      dchaini_rejuv_other_keeps_time(alist, index, time, cur_index);
+  }
+}
+
+lemma void alist_get_the_last_fp(list<pair<int, time_t> > alist, int index, time_t time)
+requires false == mem(index, map(fst, alist));
+ensures alist_get_fp(append(alist, cons(pair(index, time), nil)), index) == time;
+{
+  switch(alist) {
+    case nil:
+    case cons(h,t):
+      alist_get_the_last_fp(t, index, time);
+  }
+}
+
+lemma void dchaini_rejuv_time(list<pair<int, time_t> > alist, int index, time_t time)
+requires true == distinct(map(fst, alist));
+ensures alist_get_fp(append(remove_by_index_fp(alist, index),
+                            cons(pair(index, time), nil)),
+                     index) ==
+        time;
+{
+  switch(alist) {
+    case nil:
+    case cons(h,t):
+      if (fst(h) != index)
+        dchaini_rejuv_time(t, index, time);
+      else
+        alist_get_the_last_fp(t, index, time);
+  }
+}
+
+lemma void dchain_rejuv_time(dchain indices, int index, time_t time)
+requires true == distinct(dchain_indexes_fp(indices));
+ensures dchain_get_time_fp(dchain_rejuvenate_fp(indices, index, time), index) == time;
+{
+  switch(indices) {
+    case dchain(alist, size, l, h):
+      dchaini_rejuv_time(alist, index, time);
+  }
+}
+
+lemma void bridge_dchain_rejuv_unrelevant_subset(list<pair<ether_addri, uint32_t> > dyn_map,
+                                                 list<pair<uint16_t, bool> > vals,
+                                                 dchain indices,
+                                                 int index,
+                                                 time_t time)
+requires false == mem(index, map(snd, dyn_map));
+ensures true == subset(gen_dyn_entries(dyn_map, vals,
+                                       dchain_rejuvenate_fp(indices, index, time)),
+                       gen_dyn_entries(dyn_map, vals, indices));
+{
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(cur_addr, cur_index):
+        dchain_rejuv_other_keeps_time(indices, index, time, cur_index);
+        bridge_dchain_rejuv_unrelevant_subset(t, vals, indices, index, time);
+        add_extra_preserves_subset
+          (gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices, index, time)),
+           gen_dyn_entries(t, vals, indices),
+           dyn_entry(cur_addr, fst(nth(cur_index, vals)),
+                     dchain_get_time_fp(indices, cur_index)));
+
+      }
+  }
+}
+
+lemma void bridge_dchain_rejuv_unrelevant_superset(list<pair<ether_addri, uint32_t> > dyn_map,
+                                                   list<pair<uint16_t, bool> > vals,
+                                                   dchain indices,
+                                                   int index,
+                                                   time_t time)
+requires false == mem(index, map(snd, dyn_map));
+ensures true == subset(gen_dyn_entries(dyn_map, vals, indices),
+                       gen_dyn_entries(dyn_map, vals,
+                                       dchain_rejuvenate_fp(indices, index, time)));
+{
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(cur_addr, cur_index):
+        dchain_rejuv_other_keeps_time(indices, index, time, cur_index);
+        bridge_dchain_rejuv_unrelevant_superset(t, vals, indices, index, time);
+        add_extra_preserves_subset
+          (gen_dyn_entries(t, vals, indices),
+           gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices, index, time)),
+           dyn_entry(cur_addr, fst(nth(cur_index, vals)),
+                     dchain_get_time_fp(dchain_rejuvenate_fp(indices,
+                                                             index, time),
+                                        cur_index)));
+
+      }
+  }
+}
+                     
+
+lemma void map_get_contains_value<kt>(list<pair<kt, uint32_t> > m, kt k, uint32_t v)
+requires map_get_fp(m, k) == v &*&
+         true == mem(k, map(fst, m));
+ensures true == mem(v, map(snd, m));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key, value):
+        if (key != k) map_get_contains_value(t, k, v);
+      }
+  }
+}
+
+lemma void bridge_dchain_rejuv_entry_subset
+             (list<pair<ether_addri, uint32_t> > dyn_map,
+              list<pair<uint16_t, bool> > vals,
+              dchain indices,
+              ether_addri addr,
+              time_t time)
+requires true == distinct(map(snd, dyn_map)) &*&
+         true == distinct(dchain_indexes_fp(indices)) &*&
+         true == mem(addr, map(fst, dyn_map));
+ensures true == subset(gen_dyn_entries(dyn_map,
+                                       vals,
+                                       dchain_rejuvenate_fp(indices,
+                                                            map_get_fp(dyn_map,
+                                                                       addr),
+                                                            time)),
+                       rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
+                                                            indices),
+                                            addr, time));
+{
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(cur_addr,cur_index):
+          if (cur_addr == addr) {
+            dchain_rejuv_time(indices, cur_index, time);
+            bridge_dchain_rejuv_unrelevant_subset(t, vals, indices,
+                                                  cur_index, time);
+            add_extra_preserves_subset
+              (gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices,
+                                                             cur_index, time)),
+               gen_dyn_entries(t, vals, indices),
+               dyn_entry(cur_addr, fst(nth(cur_index, vals)), time));
+          } else {
+            bridge_dchain_rejuv_entry_subset(t, vals, indices, addr, time);
+            add_extra_preserves_subset(gen_dyn_entries(t,
+                                        vals,
+                                        dchain_rejuvenate_fp
+                                          (indices, map_get_fp(dyn_map, addr),
+                                           time)),
+                                       rejuvenate_dyn_entry
+                                         (gen_dyn_entries(t, vals, indices),
+                                          addr, time),
+                                       dyn_entry(cur_addr,
+                                                 fst(nth(cur_index, vals)),
+                                                 dchain_get_time_fp(indices,
+                                                                    cur_index)));
+            if (map_get_fp(dyn_map, addr) != cur_index) {
+              dchain_rejuv_other_keeps_time(indices, map_get_fp(dyn_map, addr),
+                                            time, cur_index);
+            } else {
+              map_get_contains_value(t, addr, cur_index);
+            }
+          }
+
+      }
+  }
+}
+
+lemma void bridge_dchain_rejuv_entry_superset
+             (list<pair<ether_addri, uint32_t> > dyn_map,
+              list<pair<uint16_t, bool> > vals,
+              dchain indices,
+              ether_addri addr,
+              time_t time)
+requires true == distinct(map(snd, dyn_map)) &*&
+         true == distinct(dchain_indexes_fp(indices)) &*&
+         true == mem(addr, map(fst, dyn_map));
+ensures true == subset(rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
+                                                            indices),
+                                            addr, time),
+                       gen_dyn_entries(dyn_map,
+                                       vals,
+                                       dchain_rejuvenate_fp(indices,
+                                                            map_get_fp(dyn_map,
+                                                                       addr),
+                                                            time)));
+{
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(cur_addr, cur_index):
+        if (cur_addr == addr) {
+          dchain_rejuv_time(indices, cur_index, time);
+          bridge_dchain_rejuv_unrelevant_superset(t, vals, indices,
+                                                  cur_index, time);
+          add_extra_preserves_subset
+            (gen_dyn_entries(t, vals, indices),
+             gen_dyn_entries(t, vals, dchain_rejuvenate_fp
+                                        (indices, map_get_fp(dyn_map, addr),
+                                         time)),
+             dyn_entry(cur_addr, fst(nth(cur_index, vals)), time));
+        } else {
+          if (cur_index == map_get_fp(dyn_map, addr)) {
+            map_get_contains_value(t, addr, cur_index);
+          }
+          dchain_rejuv_other_keeps_time(indices, map_get_fp(dyn_map, addr),
+                                        time, cur_index);
+          bridge_dchain_rejuv_entry_superset(t, vals, indices, addr, time);
+          add_extra_preserves_subset
+            (rejuvenate_dyn_entry(gen_dyn_entries(t, vals, indices),
+                                  addr, time),
+             gen_dyn_entries(t, vals,
+                             dchain_rejuvenate_fp(indices,
+                                                  map_get_fp(dyn_map, addr),
+                                                  time)),
+             dyn_entry(cur_addr, fst(nth(cur_index, vals)),
+                       dchain_get_time_fp
+                         (dchain_rejuvenate_fp
+                           (indices, map_get_fp(dyn_map, addr), time),
+                          cur_index)));
+        }
+      }
+  }
+}
+
 lemma void bridge_rejuv_entry(list<pair<ether_addri, uint32_t> > dyn_map,
                               list<pair<uint16_t, bool> > vals,
                               dchain indices,
                               ether_addri addr,
                               time_t time)
-requires true;
+requires true == distinct(map(snd, dyn_map)) &*&
+         true == distinct(dchain_indexes_fp(indices)) &*&
+         true == mem(addr, map(fst, dyn_map));
 ensures set_eq(gen_dyn_entries(dyn_map,
                                vals,
                                dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
                rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
                                     addr, time)) == true;
 {
-  assume(false);//TODO
+  bridge_dchain_rejuv_entry_subset(dyn_map, vals, indices, addr, time);
+  bridge_dchain_rejuv_entry_superset(dyn_map, vals, indices, addr, time);
 }
 
 @*/
