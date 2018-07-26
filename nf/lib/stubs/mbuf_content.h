@@ -25,7 +25,7 @@ struct stub_mbuf_content {
     inductive ether_addri = eaddrc(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
     predicate ether_addrp(struct ether_addr* ptr; ether_addri addr) =
       struct_ether_addr_padding(ptr) &*&
-      chars(ptr->addr_bytes, 6, ?bytes) &*&
+      uchars(ptr->addr_bytes, 6, ?bytes) &*&
       bytes == cons(?a, cons(?b, cons(?c, cons(?d, cons(?e, cons(?f, ?_nil)))))) &*&
       switch(_nil) { case nil: return true; case cons(nh, nt): return false; } &*&
       _nil == nil &*&

@@ -44,3 +44,7 @@ requires switch (xs) { case nil: return true; case cons(h, t): return false; };
 ensures true;
 {}
 @*/
+
+void umemcpy(void *array, void *array0, size_t count);
+    //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
+    //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);

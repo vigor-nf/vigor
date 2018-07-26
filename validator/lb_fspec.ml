@@ -26,46 +26,6 @@ let capture_a_map t name {tmp_gen;_} =
 let capture_a_vector t name {tmp_gen;_} =
   "//@ assert vectorp<" ^ t ^ ">(_, _, ?" ^ (tmp_gen name) ^ ", _);\n"
 
-let rec self_dereference tterm tmpgen =
-  match tterm.v with
-  | Id x -> ("//@ assert *&" ^ x ^ "|-> ?" ^
-             (tmpgen ("pp" ^ x) ^ ";"),
-             {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
-  | Str_idx (x,fname) ->
-    let (binding, x) = self_dereference x tmpgen in
-    (binding,{v=Str_idx (x,fname);t=tterm.t})
-  | Addr x ->
-    let (binding, x) = self_dereference x tmpgen in
-    (binding,{v=Addr x;t=tterm.t})
-  | Deref x ->
-    let (binding, x) = self_dereference x tmpgen in
-    (binding,{v=Deref x;t=tterm.t})
-  | _ -> failwith ("unhandled in self_deref: " ^ (render_tterm tterm))
-
-let rec innermost_dereference tterm tmpgen =
-  match tterm.v with
-  | Str_idx ({v=Deref {v=Id x;t=_};t=_},fname) ->
-    let tmpname = (tmpgen ("stp" ^ x ^ "_" ^ fname)) in
-    ("//@ assert " ^ (render_tterm tterm) ^ " |-> ?" ^
-     tmpname ^ ";",
-     {v=Id tmpname;t=tterm.t})
-  | Addr x ->
-    let (binding, x) = innermost_dereference x tmpgen in
-    (binding, {v=Addr x;t=tterm.t})
-  | Deref x ->
-    let (binding, x) = innermost_dereference x tmpgen in
-    (binding, {v=Deref x;t=tterm.t})
-  | Str_idx (x,fname) ->
-    let (binding, x) = innermost_dereference x tmpgen in
-    (binding, {v=Str_idx (x,fname);t=tterm.t})
-  | _ -> failwith ("unhandled in inn_deref: " ^ (render_tterm tterm) ^ " : " ^ (ttype_to_str tterm.t))
-
-let generate_2step_dereference tterm tmpgen =
-  let (binding1,x) = self_dereference tterm tmpgen in
-  let (binding2,x) = innermost_dereference x tmpgen in
-  ([binding1;binding2],x)
-
-
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
