@@ -829,6 +829,30 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void remove_small_idx_still_consistent_pairs<kt>(list<pair<kt, int> > m,
+                                                         list<pair<kt, bool> > v,
+                                                         dchain ch,
+                                                         int start_idx,
+                                                         int shift)
+  requires 0 < shift &*&
+           true == forall_idx(v, start_idx + shift, (consistent_pair)(m, ch));
+  ensures true == forall_idx(v, start_idx + shift, (consistent_pair)(m, dchain_remove_index_fp(ch, start_idx)));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(key, present):
+        remove_small_idx_still_consistent_pairs(m, t, ch, start_idx, shift + 1);
+        dchain_remove_idx_from_indexes(ch, start_idx);
+        dchain_indexes_contain_index(ch, start_idx + shift);
+        dchain_indexes_contain_index(dchain_remove_index_fp(ch, start_idx), start_idx + shift);
+        neq_mem_remove(start_idx + shift, start_idx, dchain_indexes_fp(ch));
+      }
+    }
+  }
+
+  @*/
+
+/*@
   lemma void filter_engaged_len<kt>(list<pair<kt, int> > m,
                                     list<pair<kt, bool> > v,
                                     dchain ch, int start_idx)
@@ -838,9 +862,9 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     switch(v) {
       case nil:
       case cons(h, t):
-        switch(h) { case pair(car,cdr):
-          if (!cdr) {
-            assume(true == forall_idx(v, start_idx, (consistent_pair)(m, dchain_remove_index_fp(ch, start_idx))));
+        switch(h) { case pair(key,present):
+          if (!present) {
+            remove_small_idx_still_consistent_pairs(m, t, ch, start_idx, 1);
             dchain_remove_idx_from_indexes(ch, start_idx);
             dchain_indexes_contain_index(ch, start_idx);
             assert length(dchain_indexes_fp(dchain_remove_index_fp(ch, start_idx))) <
