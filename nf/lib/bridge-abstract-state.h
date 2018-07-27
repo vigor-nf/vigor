@@ -163,7 +163,9 @@
                               uint32_t index,
                               uint16_t port,
                               time_t time);
-  requires true;
+  requires false == mem(index, map(snd, dyn_map)) &*&
+           false == mem(index, dchain_indexes_fp(indices)) &*&
+           0 <= index &*& index < length(vals);
   ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
                                  update(index, pair(port, true), vals),
                                  dchain_allocate_fp(indices, index, time)),

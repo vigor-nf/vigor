@@ -23,27 +23,7 @@ ensures set_eq(gen_dyn_entries(map_erase_all_fp
 }
 @*/
 /*@
-
-lemma void bridge_add_entry(list<pair<ether_addri, uint32_t> > dyn_map,
-                            list<pair<uint16_t, bool> > vals,
-                            dchain indices,
-                            ether_addri addr,
-                            uint32_t index,
-                            uint16_t port,
-                            time_t time)
-requires true;
-ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
-                               update(index, pair(port, true), vals),
-                               dchain_allocate_fp(indices, index, time)),
-               add_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
-                             addr, port, time)) == true;
-{
-  assume(false);//TODO
-}
-
-@*/
-
-/*@
+                                          
 lemma void alist_get_append_unrelevant(list<pair<int, time_t> > l,
                                        int i1, time_t time,
                                        int i2)
@@ -59,12 +39,14 @@ ensures alist_get_fp(append(l, cons(pair(i1, time), nil)), i2) == alist_get_fp(l
   }
 }
 
-lemma void dchaini_rejuv_other_keeps_time(list<pair<int, time_t> > alist,
-                                          uint32_t index, time_t time,
-                                          uint32_t cur_index)
+lemma void dchaini_rejuv_alloc_other_keeps_time(list<pair<int, time_t> > alist,
+                                                uint32_t index, time_t time,
+                                                uint32_t cur_index)
 requires index != cur_index;
 ensures alist_get_fp(append(remove_by_index_fp(alist, index),
                             cons(pair(index, time), nil)), cur_index) ==
+        alist_get_fp(alist, cur_index) &*&
+        alist_get_fp(append(alist, cons(pair(index, time), nil)), cur_index) ==
         alist_get_fp(alist, cur_index);
 {
   switch(alist) {
@@ -73,29 +55,124 @@ ensures alist_get_fp(append(remove_by_index_fp(alist, index),
       switch(h) { case pair(idx,cur_time):
         if (idx != cur_index) {
           if (idx == index) {
-            assert remove_by_index_fp(alist, index) == t;
             alist_get_append_unrelevant(t, index, time, cur_index);
             assert alist_get_fp(append(t, cons(pair(index, time), nil)), cur_index) ==
                    alist_get_fp(t, cur_index);
           } else {
-            dchaini_rejuv_other_keeps_time(t, index, time, cur_index);
+            dchaini_rejuv_alloc_other_keeps_time(t, index, time, cur_index);
           }
         }
       }
   }
 }
 
-lemma void dchain_rejuv_other_keeps_time(dchain indices, uint32_t index,
-                                         time_t time, uint32_t cur_index)
+lemma void dchain_rejuv_alloc_other_keeps_time(dchain indices, uint32_t index,
+                                               time_t time, uint32_t cur_index)
 requires index != cur_index;
 ensures dchain_get_time_fp(dchain_rejuvenate_fp(indices, index, time), cur_index) ==
+        dchain_get_time_fp(indices, cur_index) &*&
+        dchain_get_time_fp(dchain_allocate_fp(indices, index, time), cur_index) ==
         dchain_get_time_fp(indices, cur_index);
 {
   switch(indices) {
     case dchain(alist, size, l, h):
-      dchaini_rejuv_other_keeps_time(alist, index, time, cur_index);
+      dchaini_rejuv_alloc_other_keeps_time(alist, index, time, cur_index);
   }
 }
+
+lemma void bridge_add_val_keep_dyn_entries(list<pair<ether_addri, uint32_t> > dyn_map,
+                                           list<pair<uint16_t, bool> > vals,
+                                           dchain indices,
+                                           uint32_t index,
+                                           uint16_t port,
+                                           time_t time)
+requires false == mem(index, map(snd, dyn_map));
+ensures true == set_eq(gen_dyn_entries(dyn_map,
+                                       update(index, pair(port, true), vals),
+                                       dchain_allocate_fp(indices, index, time)),
+                       gen_dyn_entries(dyn_map, vals, indices));
+{
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(cur_addr, cur_index):
+        assert cur_index != index;
+        bridge_add_val_keep_dyn_entries(t, vals, indices, index, port, time);
+        nth_update_unrelevant(cur_index, index, pair(port, true), vals);
+        dchain_rejuv_alloc_other_keeps_time(indices, index, time, cur_index);
+        add_extra_preserves_subset
+          (gen_dyn_entries(t,
+                           update(index, pair(port, true), vals),
+                           dchain_allocate_fp(indices, index, time)),
+           gen_dyn_entries(t, vals, indices),
+           dyn_entry(cur_addr,
+                     fst(nth(cur_index, vals)),
+                     dchain_get_time_fp(indices, cur_index)));
+        add_extra_preserves_subset
+          (gen_dyn_entries(t, vals, indices),
+           gen_dyn_entries(t,
+                           update(index, pair(port, true), vals),
+                           dchain_allocate_fp(indices, index, time)),
+           dyn_entry(cur_addr,
+                     fst(nth(cur_index, vals)),
+                     dchain_get_time_fp(indices, cur_index)));
+      }
+  }
+}
+
+lemma void dchaini_alloc_get_time_same(list<pair<int, time_t> > alist, int index, time_t time)
+requires false == mem(index, map(fst, alist));
+ensures alist_get_fp(append(alist, cons(pair(index, time), nil)), index) == time;
+{
+  switch(alist) {
+    case nil:
+    case cons(h,t): dchaini_alloc_get_time_same(t, index, time);
+  }
+}
+
+lemma void dchain_alloc_get_time_same(dchain indices, int index, time_t time)
+requires false == mem(index, dchain_indexes_fp(indices));
+ensures dchain_get_time_fp(dchain_allocate_fp(indices, index, time), index) == time;
+{
+  switch(indices) { case dchain(alist, range, x1, x2):
+    dchaini_alloc_get_time_same(alist, index, time);
+  }
+}
+
+lemma void bridge_add_entry(list<pair<ether_addri, uint32_t> > dyn_map,
+                            list<pair<uint16_t, bool> > vals,
+                            dchain indices,
+                            ether_addri addr,
+                            uint32_t index,
+                            uint16_t port,
+                            time_t time)
+requires false == mem(index, map(snd, dyn_map)) &*&
+         false == mem(index, dchain_indexes_fp(indices)) &*&
+         0 <= index &*& index < length(vals);
+ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
+                               update(index, pair(port, true), vals),
+                               dchain_allocate_fp(indices, index, time)),
+               add_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                             addr, port, time)) == true;
+{
+  bridge_add_val_keep_dyn_entries(dyn_map, vals, indices, index, port, time);
+  add_extra_preserves_subset(gen_dyn_entries(dyn_map,
+                                        update(index, pair(port, true), vals),
+                                        dchain_allocate_fp(indices, index, time)),
+                             gen_dyn_entries(dyn_map, vals, indices),
+                             dyn_entry(addr, port, time));
+  nth_update(index, index, pair(port, true), vals);
+  dchain_alloc_get_time_same(indices, index, time);
+  add_extra_preserves_subset(gen_dyn_entries(dyn_map, vals, indices),
+                             gen_dyn_entries(dyn_map,
+                               update(index, pair(port, true), vals),
+                               dchain_allocate_fp(indices, index, time)),
+                             dyn_entry(addr, port, time));
+}
+
+@*/
+
+/*@
 
 lemma void alist_get_the_last_fp(list<pair<int, time_t> > alist, int index, time_t time)
 requires false == mem(index, map(fst, alist));
@@ -149,7 +226,7 @@ ensures true == subset(gen_dyn_entries(dyn_map, vals,
     case nil:
     case cons(h,t):
       switch(h) { case pair(cur_addr, cur_index):
-        dchain_rejuv_other_keeps_time(indices, index, time, cur_index);
+        dchain_rejuv_alloc_other_keeps_time(indices, index, time, cur_index);
         bridge_dchain_rejuv_unrelevant_subset(t, vals, indices, index, time);
         add_extra_preserves_subset
           (gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices, index, time)),
@@ -175,7 +252,7 @@ ensures true == subset(gen_dyn_entries(dyn_map, vals, indices),
     case nil:
     case cons(h,t):
       switch(h) { case pair(cur_addr, cur_index):
-        dchain_rejuv_other_keeps_time(indices, index, time, cur_index);
+        dchain_rejuv_alloc_other_keeps_time(indices, index, time, cur_index);
         bridge_dchain_rejuv_unrelevant_superset(t, vals, indices, index, time);
         add_extra_preserves_subset
           (gen_dyn_entries(t, vals, indices),
@@ -252,8 +329,8 @@ ensures true == subset(gen_dyn_entries(dyn_map,
                                                  dchain_get_time_fp(indices,
                                                                     cur_index)));
             if (map_get_fp(dyn_map, addr) != cur_index) {
-              dchain_rejuv_other_keeps_time(indices, map_get_fp(dyn_map, addr),
-                                            time, cur_index);
+              dchain_rejuv_alloc_other_keeps_time(indices, map_get_fp(dyn_map, addr),
+                                                  time, cur_index);
             } else {
               map_get_contains_value(t, addr, cur_index);
             }
@@ -300,8 +377,8 @@ ensures true == subset(rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
           if (cur_index == map_get_fp(dyn_map, addr)) {
             map_get_contains_value(t, addr, cur_index);
           }
-          dchain_rejuv_other_keeps_time(indices, map_get_fp(dyn_map, addr),
-                                        time, cur_index);
+          dchain_rejuv_alloc_other_keeps_time(indices, map_get_fp(dyn_map, addr),
+                                              time, cur_index);
           bridge_dchain_rejuv_entry_superset(t, vals, indices, addr, time);
           add_extra_preserves_subset
             (rejuvenate_dyn_entry(gen_dyn_entries(t, vals, indices),
