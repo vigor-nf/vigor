@@ -913,17 +913,256 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void add_unrelevant_entry_consistent_pairs<kt>(list<pair<kt, int> > m,
+                                                       list<pair<kt, bool> > v, dchain ch,
+                                                       int index, time_t time,
+                                                       kt key,
+                                                       int start_idx)
+  requires index < start_idx &*&
+           true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           false == mem(key, map(fst, m));
+  ensures true == forall_idx(v,
+                             start_idx,
+                             (consistent_pair)(map_put_fp(m, key, index),
+                                               dchain_allocate_fp(ch, index, time)));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(cur_key, present):
+        dchain_allocate_append_to_indexes(ch, index, time);
+        dchain_indexes_contain_index(ch, start_idx);
+        dchain_indexes_contain_index(dchain_allocate_fp(ch, index, time), start_idx);
+        map_has_to_mem(m, key);
+        add_unrelevant_entry_consistent_pairs(m, t, ch, index, time, key, start_idx + 1);
+      }
+    }
+  }
+
+  lemma void add_entry_consistent_pairs<kt>(list<pair<kt, int> > m,
+                                            list<pair<kt, bool> > v, dchain ch,
+                                            int index, time_t time,
+                                            kt key,
+                                            int start_idx)
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           false == mem(key, map(fst, m));
+  ensures true == forall_idx(update(index - start_idx, pair(key, false), v),
+                             start_idx,
+                             (consistent_pair)(map_put_fp(m, key, index),
+                                               dchain_allocate_fp(ch, index, time)));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(cur_key, present):
+        dchain_allocate_append_to_indexes(ch, index, time);
+        dchain_indexes_contain_index(ch, start_idx);
+        dchain_indexes_contain_index(dchain_allocate_fp(ch, index, time), start_idx);
+        if (index == start_idx) {
+          add_unrelevant_entry_consistent_pairs(m, t, ch, index, time, key, start_idx + 1);
+        } else {
+          map_has_to_mem(m, key);
+          add_entry_consistent_pairs(m, t, ch, index, time, key, start_idx + 1);
+        }
+      }
+    }
+  }
+
+  lemma void remove_key_from_vec<kt>(list<pair<kt, bool> > v, kt key)
+  requires true;
+  ensures remove(key, map(fst, filter(engaged_cell, v))) ==
+          map(fst, filter(engaged_cell, remove(pair(key, false), v)));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(k,eng):
+        if (h != pair(key, false)) remove_key_from_vec(t, key);
+      }
+    }
+  }
+
+  lemma void update_remove<t>(int i, t el1, t el2, list<t> l)
+  requires true;
+  ensures (index_of(el2, l) <= i) ?
+             update(i, el1, remove(el2, l)) == remove(el2, update(i + 1, el1, l)) :
+             update(i, el1, remove(el2, l)) == remove(el2, update(i, el1, l)) ;
+  {
+    assume(false);//TODO
+  }
+
+  lemma void filter_remove<t>(fixpoint (t,bool) f, t el, list<t> l)
+  requires true == f(el);
+  ensures filter(f, remove(el, l)) == remove(el, filter(f, l));
+  {
+    assume(false);//TODO
+  }
+
+  lemma void particular_map_remove<t>(t key, list<pair<t, bool> > l)
+  requires true == forall(l, engaged_cell);
+  ensures map(fst, remove(pair(key, false), l)) == remove(key, map(fst, l));
+  {
+    assume(false);//TODO
+  }
+
+  lemma void nth_remove<t>(int i, t el, list<t> l)
+  requires true == mem(el, l) &*& index_of(el, l) != i;
+  ensures nth(i, l) == ((index_of(el, l) < i) ?
+                          nth(i - 1, remove(el, l)) :
+                          nth(i, remove(el, l)));
+  {
+    assume(false);//TODO
+  }
+
+  lemma void particular_mem_map_filter<t>(t el, list<pair<t, bool> > l)
+  requires true == mem(el, map(fst, filter(engaged_cell, l)));
+  ensures true == mem(pair(el, false), filter(engaged_cell, l));
+  {
+    assume(false);//TODO
+  }
+
+  lemma void mem_unfilter<t>(t el, fixpoint (t, bool) f, list<t> l)
+  requires true == mem(el, filter(f, l));
+  ensures true == mem(el, l);
+  {
+    assume(false);//TODO
+  }
+
+  lemma void mem_update_unrelevant<t>(t el1, int index, t el2, list<t> l)
+  requires true == mem(el1, l) &*& index_of(el1, l) != index;
+  ensures true == mem(el1, update(index, el2, l));
+  {
+    assume(false);//TODO
+  }
+
+  lemma void index_of_bounds<t>(t el, list<t> l)
+  requires true == mem(el, l);
+  ensures 0 <= index_of(el, l) &*& index_of(el, l) < length(l);
+  {
+    assume(false);//TODO
+  }
+
+  lemma void add_entry_preserves_msubset_tail<kt>(list<pair<kt, int> > m,
+                                                  list<pair<kt, bool> > v,
+                                                  int index,
+                                                  kt key)
+  requires true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+           0 <= index &*& index < length(v) &*&
+           true == snd(nth(index, v));
+  ensures true == msubset(map(fst, m),
+                          map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
+  {
+    switch(m) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(cur_key, cur_val):
+        assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, v))));
+        assume(msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), v)))));//TODO
+        assume(0 <= index_of(pair(cur_key, false), v));//TODO
+        assume(cur_key != key);//TODO
+        assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
+        particular_mem_map_filter(cur_key, v);
+        assert true == mem(pair(cur_key, false), filter(engaged_cell, v));
+        mem_unfilter(pair(cur_key, false), engaged_cell, v);
+        assert true == mem(pair(cur_key, false), v);
+        if (index_of(pair(cur_key, false), v) == index) {
+          mem_nth_index_of(pair(cur_key, false), v);
+          assert nth(index_of(pair(cur_key, false), v), v) == pair(cur_key, false);
+          assert nth(index, v) == pair(cur_key, false);
+          assert true == snd(nth(index, v));
+          assert false;
+        }
+        assert index_of(pair(cur_key, false), v) != index;
+        mem_update_unrelevant(pair(cur_key, false), index, pair(key, false), v);
+        assert true == mem(pair(cur_key, false), update(index, pair(key, false), v));
+        filter_mem(pair(cur_key, false), update(index, pair(key, false), v), engaged_cell);
+        assert true == mem(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)));
+        mem_map(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)), fst);
+        assert true == mem(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
+        assert true == mem(pair(cur_key, false), v);
+        nth_remove(index, pair(cur_key, false), v);
+        if (index_of(pair(cur_key, false), v) < index) {
+          assert nth(index, v) == nth(index - 1, remove(pair(cur_key, false), v));
+          add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index - 1, key);
+          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)))));
+          update_remove(index - 1, pair(key, false), pair(cur_key, false), v);
+          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
+          filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
+          assert true == msubset(map(fst, t), map(fst, remove(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)))));
+          filter_forall(engaged_cell, update(index, pair(key, false), v));
+          particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
+          assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v)))));
+        } else {
+          assert length(v) - 1 <= length(remove(pair(cur_key, false), v));
+          assert index < index_of(pair(cur_key, false), v);
+          index_of_bounds(pair(cur_key, false), v);
+          assert index_of(pair(cur_key, false), v) < length(v);
+          add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index, key);
+          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v)))));
+          update_remove(index, pair(key, false), pair(cur_key, false), v);
+          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
+          filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
+          assert true == msubset(map(fst, t), map(fst, remove(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)))));
+          filter_forall(engaged_cell, update(index, pair(key, false), v));
+          particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
+          assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v)))));
+        }
+      }
+    }
+  }
+  lemma void add_entry_preserves_msubset<kt>(list<pair<kt, int> > m,
+                                             list<pair<kt, bool> > v,
+                                             int index,
+                                             kt key)
+  requires true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+           0 <= index &*& index < length(v) &*&
+           false == mem(key, map(fst, m)) &*&
+           true == snd(nth(index, v));
+  ensures true == msubset(map(fst, map_put_fp(m, key, index)),
+                          map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
+  {
+    add_entry_preserves_msubset_tail(m, v, index, key);
+    mem_update(pair(key, false), index, v);
+    filter_mem(pair(key, false), update(index, pair(key, false), v), engaged_cell);
+    mem_map(pair(key, false), filter(engaged_cell, update(index, pair(key, false), v)), fst);
+    msubset_remove(map(fst, m), map(fst, filter(engaged_cell, update(index, pair(key, false), v))), key);
+    remove_nonmem(key, map(fst,m));
+  }
+
   lemma void mvc_coherent_put<kt>(list<pair<kt, int> > m,
                                   list<pair<kt, bool> > v, dchain ch,
                                   int index, time_t time,
                                   kt key)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
-           false == dchain_allocated_fp(ch, index);
+           false == dchain_allocated_fp(ch, index) &*&
+           false == map_has_fp(m, key) &*&
+           true == snd(nth(index, v)) &*&
+           0 <= index &*& index < length(v);
   ensures map_vec_chain_coherent<kt>(map_put_fp(m, key, index),
                                      update(index, pair(key, false), v),
                                      dchain_allocate_fp(ch, index, time));
   {
-    assume(false);//TODO
+    open map_vec_chain_coherent(m, v, ch);
+
+    assert dchain_index_range_fp(ch) == length(v) &*&
+           true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+           true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+           map_size_fp(m) == length(dchain_indexes_fp(ch));
+
+    allocate_preserves_index_range(ch, index, time);
+    dchain_allocate_append_to_indexes(ch, index, time);
+    assert dchain_index_range_fp(dchain_allocate_fp(ch, index, time)) == length(update(index, pair(key, false), v));
+    assert map_size_fp(map_put_fp(m, key, index)) == length(dchain_indexes_fp(dchain_allocate_fp(ch, index, time)));
+
+    map_has_to_mem(m, key);
+    assert false == mem(key, map(fst, m));
+    add_entry_consistent_pairs(m, v, ch, index, time, key, 0);
+    assert true == forall_idx(update(index, pair(key, false), v), 0,
+                              (consistent_pair)(map_put_fp(m, key, index), dchain_allocate_fp(ch, index, time)));
+
+    add_entry_preserves_msubset(m, v, index, key);
+    assert true == msubset(map(fst, map_put_fp(m, key, index)),
+                           map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
+
+    close map_vec_chain_coherent(map_put_fp(m, key, index),
+                                 update(index, pair(key, false), v),
+                                 dchain_allocate_fp(ch, index, time));
   }
   @*/
 

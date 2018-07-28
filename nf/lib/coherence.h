@@ -130,7 +130,10 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
                                   int index, time_t time,
                                   kt key);
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
-           false == dchain_allocated_fp(ch, index);
+           false == dchain_allocated_fp(ch, index) &*&
+           false == map_has_fp(m, key) &*&
+           true == snd(nth(index, v)) &*&
+           0 <= index &*& index < length(v);
   ensures map_vec_chain_coherent<kt>(map_put_fp(m, key, index),
                                      update(index, pair(key, false), v),
                                      dchain_allocate_fp(ch, index, time));
