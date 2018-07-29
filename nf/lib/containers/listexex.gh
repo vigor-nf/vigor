@@ -1078,6 +1078,59 @@ ensures remove(el, filter(f, l)) == filter(f, remove(el, l));
   }
 }
 
+lemma void index_of_positive<t>(t el, list<t> l)
+requires true;
+ensures 0 <= index_of(el, l);
+{
+  switch(l) {
+    case nil:
+    case cons(h,t): index_of_positive(el, t);
+  }
+}
+
+lemma void nth_remove<t>(int i, t el, list<t> l)
+requires 0 <= i &*&
+          true == mem(el, l) &*&
+          index_of(el, l) != i;
+ensures nth(i, l) == ((index_of(el, l) < i) ?
+                        nth(i - 1, remove(el, l)) :
+                        nth(i, remove(el, l)));
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      if (i != 0) {
+        if (h != el) {
+          nth_remove(i - 1, el, t);
+          if (index_of(el, l) < i) {
+            index_of_positive(el, t);
+          }
+        }
+      }
+  }
+}
+ 
+lemma void update_remove<t>(int i, t el1, t el2, list<t> l)
+requires 0 <= i &*& el1 != el2;
+ensures (index_of(el2, l) <= i)                 ?
+           (update(i, el1, remove(el2, l)) ==
+            remove(el2, update(i + 1, el1, l))) :
+           (update(i, el1, remove(el2, l)) ==
+            remove(el2, update(i, el1, l)))     ;
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      if (i != 0) {
+        update_remove(i - 1, el1, el2, t);
+      } else {
+        if (h != el2) {
+          index_of_positive(el2, t);
+        }
+      }
+  }
+}
+
 fixpoint t nth2<t>(list<t> lst, int index) { return nth(index, lst); }
 
 #endif//LISTEXEX_GH

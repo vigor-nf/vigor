@@ -981,51 +981,6 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 @*/
 
 /*@
-  lemma void index_of_positive<t>(t el, list<t> l)
-  requires true;
-  ensures 0 <= index_of(el, l);
-  {
-    switch(l) {
-      case nil:
-      case cons(h,t): index_of_positive(el, t);
-    }
-  }
-  @*/
-/*@
-  lemma void update_remove<t>(int i, t el1, t el2, list<t> l)
-  requires 0 <= i &*& el1 != el2;
-  ensures (index_of(el2, l) <= i) ?
-             update(i, el1, remove(el2, l)) == remove(el2, update(i + 1, el1, l)) :
-             update(i, el1, remove(el2, l)) == remove(el2, update(i, el1, l)) ;
-  {
-    switch(l) {
-      case nil:
-      case cons(h,t):
-        if (i != 0) {
-          update_remove(i - 1, el1, el2, t);
-          if (h == el2) {
-            assert remove(el2, l) == t;
-            assert update(i, el1, remove(el2, l)) == update(i, el1, t);
-            assert remove(el2, update(i + 1, el1, l)) == update(i, el1, t);
-          } else {
-          
-          }
-        } else {
-          if (h == el2) {
-            assert remove(el2, l) == t;
-            assert update(i, el1, remove(el2, l)) == update(0, el1, t);
-            assert remove(el2, update(i, el1, l)) == remove(el2, cons(el1, t));
-            assert remove(el2, update(i+1, el1, l)) == update(0, el1, t);
-          } else {
-            index_of_positive(el2, t);
-            assert i < index_of(el2, l);
-            assert update(i, el1, remove(el2, l)) == cons(el1, remove(el2, t));
-            assert remove(el2, update(i, el1, l)) == remove(el2, cons(el1, t));
-          }
-        }
-    }
-  }
-
   lemma void update_remove_same_msubset<t>(int i, t el, list<t> l)
   requires 0 <= i &*& true == mem(el, l);
   ensures (index_of(el, l) <= i) ?
@@ -1090,33 +1045,17 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     }
   }
 
-  lemma void nth_remove<t>(int i, t el, list<t> l)
-  requires 0 <= i &*&
-           true == mem(el, l) &*&
-           index_of(el, l) != i;
-  ensures nth(i, l) == ((index_of(el, l) < i) ?
-                          nth(i - 1, remove(el, l)) :
-                          nth(i, remove(el, l)));
-  {
-    switch(l) {
-      case nil:
-      case cons(h,t):
-        if (i != 0) {
-          if (h != el) {
-            nth_remove(i - 1, el, t);
-            if (index_of(el, l) < i) {
-              index_of_positive(el, t);
-            }
-          }
-        }
-    }
-  }
-
   lemma void particular_mem_map_filter<t>(t el, list<pair<t, bool> > l)
   requires true == mem(el, map(fst, filter(engaged_cell, l)));
   ensures true == mem(pair(el, false), filter(engaged_cell, l));
   {
-    assume(false);//TODO
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(lhs,rhs): }
+        if (pair(el, false) != h)
+          particular_mem_map_filter(el, t);
+    }
   }
 
   lemma void mem_unfilter<t>(t el, fixpoint (t, bool) f, list<t> l)
