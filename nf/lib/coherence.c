@@ -1091,12 +1091,25 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   }
 
   lemma void nth_remove<t>(int i, t el, list<t> l)
-  requires true == mem(el, l) &*& index_of(el, l) != i;
+  requires 0 <= i &*&
+           true == mem(el, l) &*&
+           index_of(el, l) != i;
   ensures nth(i, l) == ((index_of(el, l) < i) ?
                           nth(i - 1, remove(el, l)) :
                           nth(i, remove(el, l)));
   {
-    assume(false);//TODO
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        if (i != 0) {
+          if (h != el) {
+            nth_remove(i - 1, el, t);
+            if (index_of(el, l) < i) {
+              index_of_positive(el, t);
+            }
+          }
+        }
+    }
   }
 
   lemma void particular_mem_map_filter<t>(t el, list<pair<t, bool> > l)
