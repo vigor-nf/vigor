@@ -1058,18 +1058,26 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     }
   }
 
-
   lemma void msubset_remove_map_filter<t1,t2>(list<t2> l1,
                                               t1 el,
                                               fixpoint(t1,t2) f1,
                                               fixpoint(t1,bool) f2,
                                               list<t1> l2)
-  requires true == f2(el) &*& true == msubset(l1, remove(f1(el), map(f1, filter(f2, l2))));
+  requires true == f2(el) &*&
+           true == mem(el, l2) &*&
+           true == msubset(l1, remove(f1(el), map(f1, filter(f2, l2))));
   ensures  true == msubset(l1, map(f1, filter(f2, remove(el, l2))));
   {
-    assume(false);//TODO
+    filter_remove(f2, el, l2);
+    filter_mem(el, l2, f2);
+    multiset_eq_map_remove_swap(f1, el, filter(f2, l2));
+    multiset_eq_msubset(map(f1, filter(f2, remove(el, l2))),
+                        remove(f1(el), map(f1, filter(f2, l2))));
+    msubset_trans(l1, remove(f1(el), map(f1, filter(f2, l2))),
+                  map(f1, filter(f2, remove(el, l2))));
   }
-
+@*/
+/*@
   lemma void add_entry_preserves_msubset_tail<kt>(list<pair<kt, int> > m,
                                                   list<pair<kt, bool> > v,
                                                   int index,
@@ -1083,8 +1091,6 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     switch(m) {
       case nil:
       case cons(h,t): switch(h) { case pair(cur_key, cur_val):
-        assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, v))));
-        msubset_remove_map_filter(map(fst, t), pair(cur_key, false), fst, engaged_cell, v);
         assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
         particular_mem_map_filter(cur_key, v);
         assert true == mem(pair(cur_key, false), filter(engaged_cell, v));
@@ -1105,6 +1111,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
         mem_map(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)), fst);
         assert true == mem(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
         assert true == mem(pair(cur_key, false), v);
+        assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, v))));
+        msubset_remove_map_filter(map(fst, t), pair(cur_key, false), fst, engaged_cell, v);
         nth_remove(index, pair(cur_key, false), v);
         if (index_of(pair(cur_key, false), v) < index) {
           assert nth(index, v) == nth(index - 1, remove(pair(cur_key, false), v));
