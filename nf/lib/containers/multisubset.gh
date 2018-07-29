@@ -514,4 +514,23 @@ ensures true == msubset(cons(el, remove(el, xs)), xs);
   }
 }
 
+lemma void msubset_filter<t>(fixpoint (t,bool) f, list<t> l1, list<t> l2)
+requires true == msubset(l1, l2);
+ensures true == msubset(filter(f, l1), filter(f, l2));
+{
+  switch(l1) {
+    case nil:
+    case cons(h,t):
+      msubset_filter(f, t, remove(h, l2));
+      if (f(h)) {
+        filter_mem(h, l2, f);
+        filter_remove(f, h, l2);
+      } else {
+        filter_remove(f, h, l2);
+        filter_unmem(h, l2, f);
+        remove_nonmem(h, filter(f, l2));
+      }
+  }
+}
+
 #endif// MULTISUBSET_GH

@@ -1074,20 +1074,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
       update_remove_same_msubset(i, el1, l);
     }
   }
-
-  lemma void msubset_filter<t>(fixpoint (t,bool) f, list<t> l1, list<t> l2)
-  requires true == msubset(l1, l2);
-  ensures true == msubset(filter(f, l1), filter(f, l2));
-  {
-    assume(false);//TODO
-  }
-
-  lemma void filter_remove<t>(fixpoint (t,bool) f, t el, list<t> l)
-  requires true == f(el);
-  ensures filter(f, remove(el, l)) == remove(el, filter(f, l));
-  {
-    assume(false);//TODO
-  }
+@*/
+/*@
 
   lemma void particular_map_remove<t>(t key, list<pair<t, bool> > l)
   requires true == forall(l, engaged_cell);
