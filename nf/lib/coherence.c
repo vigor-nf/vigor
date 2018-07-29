@@ -1081,7 +1081,13 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires true == forall(l, engaged_cell);
   ensures map(fst, remove(pair(key, false), l)) == remove(key, map(fst, l));
   {
-    assume(false);//TODO
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(f,s): }
+        if (h != pair(key, false))
+          particular_map_remove(key, t);
+    }
   }
 
   lemma void nth_remove<t>(int i, t el, list<t> l)
