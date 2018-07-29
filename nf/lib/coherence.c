@@ -978,12 +978,106 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
       }
     }
   }
+@*/
 
-  lemma void update_remove<t>(int i, t el1, t el2, list<t> l)
+/*@
+  lemma void index_of_positive<t>(t el, list<t> l)
   requires true;
+  ensures 0 <= index_of(el, l);
+  {
+    switch(l) {
+      case nil:
+      case cons(h,t): index_of_positive(el, t);
+    }
+  }
+  @*/
+/*@
+  lemma void update_remove<t>(int i, t el1, t el2, list<t> l)
+  requires 0 <= i &*& el1 != el2;
   ensures (index_of(el2, l) <= i) ?
              update(i, el1, remove(el2, l)) == remove(el2, update(i + 1, el1, l)) :
              update(i, el1, remove(el2, l)) == remove(el2, update(i, el1, l)) ;
+  {
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        if (i != 0) {
+          update_remove(i - 1, el1, el2, t);
+          if (h == el2) {
+            assert remove(el2, l) == t;
+            assert update(i, el1, remove(el2, l)) == update(i, el1, t);
+            assert remove(el2, update(i + 1, el1, l)) == update(i, el1, t);
+          } else {
+          
+          }
+        } else {
+          if (h == el2) {
+            assert remove(el2, l) == t;
+            assert update(i, el1, remove(el2, l)) == update(0, el1, t);
+            assert remove(el2, update(i, el1, l)) == remove(el2, cons(el1, t));
+            assert remove(el2, update(i+1, el1, l)) == update(0, el1, t);
+          } else {
+            index_of_positive(el2, t);
+            assert i < index_of(el2, l);
+            assert update(i, el1, remove(el2, l)) == cons(el1, remove(el2, t));
+            assert remove(el2, update(i, el1, l)) == remove(el2, cons(el1, t));
+          }
+        }
+    }
+  }
+
+  lemma void update_remove_same_msubset<t>(int i, t el, list<t> l)
+  requires 0 <= i &*& true == mem(el, l);
+  ensures (index_of(el, l) <= i) ?
+             true == msubset(update(i, el, remove(el, l)),
+                             remove(el, update(i + 1, el, l))) :
+             true == msubset(update(i, el, remove(el, l)),
+                             remove(el, update(i, el, l)));
+  {
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        if (i == 0) {
+          if (h == el) {
+            assert update(i, el, remove(el, l)) == update(0, el, t);
+            assert remove(el, update(i + 1, el, l)) == update(0, el, t);
+            msubset_refl(update(i, el, remove(el, l)));
+          } else {
+            assert remove(el, update(i, el, l)) == t;
+            assert update(i, el, remove(el, l)) == cons(el, remove(el, t));
+            pull_to_start_msubset2(t, el);
+            index_of_positive(el, t);
+          }
+        } else {
+          if (h == el) {
+            msubset_refl(update(i, el, t));
+          } else {
+            update_remove_same_msubset(i - 1, el, t);
+          }
+        }
+    }
+  }
+
+  lemma void update_remove_msubset<t>(int i, t el1, t el2, list<t> l)
+  requires 0 <= i &*& true == mem(el2, l);
+  ensures (index_of(el2, l) <= i) ?
+             true == msubset(update(i, el1, remove(el2, l)),
+                             remove(el2, update(i + 1, el1, l))) :
+             true == msubset(update(i, el1, remove(el2, l)),
+                             remove(el2, update(i, el1, l)));
+  {
+    if (el1 != el2) {
+      update_remove(i, el1, el2, l);
+      msubset_refl(update(i, el1, remove(el2, l)));
+      return;
+    } else {
+      update_remove_same_msubset(i, el1, l);
+    }
+  }
+
+  lemma void msubset_filter<t>(fixpoint (t,bool) f, list<t> l1, list<t> l2)
+  requires true == msubset(l1, l2);
+  ensures true == msubset(filter(f, l1), filter(f, l2));
   {
     assume(false);//TODO
   }
@@ -1032,9 +1126,13 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     assume(false);//TODO
   }
 
-  lemma void index_of_bounds<t>(t el, list<t> l)
-  requires true == mem(el, l);
-  ensures 0 <= index_of(el, l) &*& index_of(el, l) < length(l);
+  lemma void msubset_remove_map_filter<t1,t2>(list<t2> l1,
+                                              t1 el,
+                                              fixpoint(t1,t2) f1,
+                                              fixpoint(t1,bool) f2,
+                                              list<t1> l2)
+  requires true == f2(el) &*& true == msubset(l1, remove(f1(el), map(f1, filter(f2, l2))));
+  ensures  true == msubset(l1, map(f1, filter(f2, remove(el, l2))));
   {
     assume(false);//TODO
   }
@@ -1053,9 +1151,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
       case nil:
       case cons(h,t): switch(h) { case pair(cur_key, cur_val):
         assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, v))));
-        assume(msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), v)))));//TODO
-        assume(0 <= index_of(pair(cur_key, false), v));//TODO
-        assume(cur_key != key);//TODO
+        msubset_remove_map_filter(map(fst, t), pair(cur_key, false), fst, engaged_cell, v);
         assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
         particular_mem_map_filter(cur_key, v);
         assert true == mem(pair(cur_key, false), filter(engaged_cell, v));
@@ -1081,31 +1177,43 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           assert nth(index, v) == nth(index - 1, remove(pair(cur_key, false), v));
           add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index - 1, key);
           assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)))));
-          update_remove(index - 1, pair(key, false), pair(cur_key, false), v);
-          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
-          filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
-          assert true == msubset(map(fst, t), map(fst, remove(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)))));
-          filter_forall(engaged_cell, update(index, pair(key, false), v));
-          particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
-          assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v)))));
+          update_remove_msubset(index - 1, pair(key, false), pair(cur_key, false), v);
+          msubset_filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)),remove(pair(cur_key, false), update(index, pair(key, false), v)));
+          msubset_map(fst,
+                      filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v))),
+                      filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v))));
+          msubset_trans(map(fst, t),
+                        map(fst, filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)))),
+                        map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
         } else {
           assert length(v) - 1 <= length(remove(pair(cur_key, false), v));
           assert index < index_of(pair(cur_key, false), v);
-          index_of_bounds(pair(cur_key, false), v);
+          mem_index_of(pair(cur_key, false), v);
           assert index_of(pair(cur_key, false), v) < length(v);
           add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index, key);
           assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v)))));
-          update_remove(index, pair(key, false), pair(cur_key, false), v);
-          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
-          filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
-          assert true == msubset(map(fst, t), map(fst, remove(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)))));
-          filter_forall(engaged_cell, update(index, pair(key, false), v));
-          particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
-          assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v)))));
+          update_remove_msubset(index, pair(key, false), pair(cur_key, false), v);
+          msubset_filter(engaged_cell,
+                         update(index, pair(key, false), remove(pair(cur_key, false), v)),
+                         remove(pair(cur_key, false), update(index, pair(key, false), v)));
+          msubset_map(fst,
+                      filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v))),
+                      filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v))));
+          msubset_trans(map(fst, t),
+                        map(fst, filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v)))),
+                        map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
         }
+
+        assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
+        filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
+        assert true == msubset(map(fst, t), map(fst, remove(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)))));
+        filter_forall(engaged_cell, update(index, pair(key, false), v));
+        particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
+        assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v)))));
       }
     }
   }
+
   lemma void add_entry_preserves_msubset<kt>(list<pair<kt, int> > m,
                                              list<pair<kt, bool> > v,
                                              int index,

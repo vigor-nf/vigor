@@ -483,4 +483,35 @@ ensures true == msubset(append(remove(el, xs), cons(el, nil)), ys);
       }
   }
 }
+
+lemma void pull_to_start_msubset<t>(list<t> xs, t el)
+requires true;
+ensures true == msubset(xs, cons(el, remove(el, xs)));
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (h == el) {
+        msubset_refl(xs);
+      } else {
+        pull_to_start_msubset(t, el);
+      }
+  }
+}
+
+lemma void pull_to_start_msubset2<t>(list<t> xs, t el)
+requires true == mem(el, xs);
+ensures true == msubset(cons(el, remove(el, xs)), xs);
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (h == el) {
+        msubset_refl(xs);
+      } else {
+        pull_to_start_msubset2(t, el);
+      }
+  }
+}
+
 #endif// MULTISUBSET_GH
