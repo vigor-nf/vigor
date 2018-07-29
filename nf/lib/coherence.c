@@ -1091,33 +1091,18 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     switch(m) {
       case nil:
       case cons(h,t): switch(h) { case pair(cur_key, cur_val):
-        assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
         particular_mem_map_filter(cur_key, v);
-        assert true == mem(pair(cur_key, false), filter(engaged_cell, v));
         mem_unfilter(pair(cur_key, false), engaged_cell, v);
-        assert true == mem(pair(cur_key, false), v);
         if (index_of(pair(cur_key, false), v) == index) {
           mem_nth_index_of(pair(cur_key, false), v);
-          assert nth(index_of(pair(cur_key, false), v), v) == pair(cur_key, false);
-          assert nth(index, v) == pair(cur_key, false);
-          assert true == snd(nth(index, v));
-          assert false;
         }
-        assert index_of(pair(cur_key, false), v) != index;
         mem_update_unrelevant(pair(cur_key, false), index, pair(key, false), v);
-        assert true == mem(pair(cur_key, false), update(index, pair(key, false), v));
         filter_mem(pair(cur_key, false), update(index, pair(key, false), v), engaged_cell);
-        assert true == mem(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)));
         mem_map(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)), fst);
-        assert true == mem(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
-        assert true == mem(pair(cur_key, false), v);
-        assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, v))));
         msubset_remove_map_filter(map(fst, t), pair(cur_key, false), fst, engaged_cell, v);
         nth_remove(index, pair(cur_key, false), v);
         if (index_of(pair(cur_key, false), v) < index) {
-          assert nth(index, v) == nth(index - 1, remove(pair(cur_key, false), v));
           add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index - 1, key);
-          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)))));
           update_remove_msubset(index - 1, pair(key, false), pair(cur_key, false), v);
           msubset_filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)),remove(pair(cur_key, false), update(index, pair(key, false), v)));
           msubset_map(fst,
@@ -1127,12 +1112,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                         map(fst, filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)))),
                         map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
         } else {
-          assert length(v) - 1 <= length(remove(pair(cur_key, false), v));
-          assert index < index_of(pair(cur_key, false), v);
           mem_index_of(pair(cur_key, false), v);
-          assert index_of(pair(cur_key, false), v) < length(v);
           add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index, key);
-          assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v)))));
           update_remove_msubset(index, pair(key, false), pair(cur_key, false), v);
           msubset_filter(engaged_cell,
                          update(index, pair(key, false), remove(pair(cur_key, false), v)),
@@ -1145,12 +1126,9 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                         map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
         }
 
-        assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
         filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
-        assert true == msubset(map(fst, t), map(fst, remove(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)))));
         filter_forall(engaged_cell, update(index, pair(key, false), v));
         particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
-        assert true == msubset(map(fst, t), remove(cur_key, map(fst, filter(engaged_cell, update(index, pair(key, false), v)))));
       }
     }
   }
@@ -1196,19 +1174,9 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
     allocate_preserves_index_range(ch, index, time);
     dchain_allocate_append_to_indexes(ch, index, time);
-    assert dchain_index_range_fp(dchain_allocate_fp(ch, index, time)) == length(update(index, pair(key, false), v));
-    assert map_size_fp(map_put_fp(m, key, index)) == length(dchain_indexes_fp(dchain_allocate_fp(ch, index, time)));
-
     map_has_to_mem(m, key);
-    assert false == mem(key, map(fst, m));
     add_entry_consistent_pairs(m, v, ch, index, time, key, 0);
-    assert true == forall_idx(update(index, pair(key, false), v), 0,
-                              (consistent_pair)(map_put_fp(m, key, index), dchain_allocate_fp(ch, index, time)));
-
     add_entry_preserves_msubset(m, v, index, key);
-    assert true == msubset(map(fst, map_put_fp(m, key, index)),
-                           map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
-
     close map_vec_chain_coherent(map_put_fp(m, key, index),
                                  update(index, pair(key, false), v),
                                  dchain_allocate_fp(ch, index, time));
