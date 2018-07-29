@@ -1086,7 +1086,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
            0 <= index &*& index < length(v) &*&
            true == snd(nth(index, v));
   ensures true == msubset(map(fst, m),
-                          map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
+                          map(fst, filter(engaged_cell,
+                                          update(index, pair(key, false), v))));
   {
     switch(m) {
       case nil:
@@ -1097,38 +1098,89 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           mem_nth_index_of(pair(cur_key, false), v);
         }
         mem_update_unrelevant(pair(cur_key, false), index, pair(key, false), v);
-        filter_mem(pair(cur_key, false), update(index, pair(key, false), v), engaged_cell);
-        mem_map(pair(cur_key, false), filter(engaged_cell, update(index, pair(key, false), v)), fst);
-        msubset_remove_map_filter(map(fst, t), pair(cur_key, false), fst, engaged_cell, v);
+        filter_mem(pair(cur_key, false),
+                   update(index, pair(key, false), v), engaged_cell);
+        mem_map(pair(cur_key, false),
+                filter(engaged_cell, update(index, pair(key, false), v)), fst);
+        msubset_remove_map_filter(map(fst, t),
+                                  pair(cur_key, false),
+                                  fst,
+                                  engaged_cell,
+                                  v);
         nth_remove(index, pair(cur_key, false), v);
         if (index_of(pair(cur_key, false), v) < index) {
-          add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index - 1, key);
-          update_remove_msubset(index - 1, pair(key, false), pair(cur_key, false), v);
-          msubset_filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)),remove(pair(cur_key, false), update(index, pair(key, false), v)));
+          add_entry_preserves_msubset_tail(t,
+                                           remove(pair(cur_key, false), v),
+                                           index - 1,
+                                           key);
+          update_remove_msubset(index - 1,
+                                pair(key, false),
+                                pair(cur_key, false),
+                                v);
+          msubset_filter(engaged_cell,
+                         update(index - 1,
+                                pair(key, false),
+                                remove(pair(cur_key, false), v)),
+                         remove(pair(cur_key, false),
+                                update(index, pair(key, false), v)));
           msubset_map(fst,
-                      filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v))),
-                      filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v))));
+                      filter(engaged_cell,
+                             update(index - 1, pair(key, false),
+                                    remove(pair(cur_key, false), v))),
+                      filter(engaged_cell,
+                             remove(pair(cur_key, false),
+                                    update(index, pair(key, false), v))));
           msubset_trans(map(fst, t),
-                        map(fst, filter(engaged_cell, update(index - 1, pair(key, false), remove(pair(cur_key, false), v)))),
-                        map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
+                        map(fst, filter(engaged_cell,
+                                        update(index - 1,
+                                               pair(key, false),
+                                               remove(pair(cur_key, false),
+                                                      v)))),
+                        map(fst, filter(engaged_cell,
+                                        remove(pair(cur_key, false),
+                                               update(index,
+                                                      pair(key, false),
+                                                      v)))));
         } else {
           mem_index_of(pair(cur_key, false), v);
-          add_entry_preserves_msubset_tail(t, remove(pair(cur_key, false), v), index, key);
-          update_remove_msubset(index, pair(key, false), pair(cur_key, false), v);
+          add_entry_preserves_msubset_tail
+            (t, remove(pair(cur_key, false), v), index, key);
+          update_remove_msubset
+            (index, pair(key, false), pair(cur_key, false), v);
           msubset_filter(engaged_cell,
-                         update(index, pair(key, false), remove(pair(cur_key, false), v)),
-                         remove(pair(cur_key, false), update(index, pair(key, false), v)));
+                         update(index,
+                                pair(key, false),
+                                remove(pair(cur_key, false), v)),
+                         remove(pair(cur_key, false),
+                                update(index, pair(key, false), v)));
           msubset_map(fst,
-                      filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v))),
-                      filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v))));
+                      filter(engaged_cell,
+                             update(index,
+                                    pair(key, false),
+                                    remove(pair(cur_key, false), v))),
+                      filter(engaged_cell,
+                             remove(pair(cur_key, false),
+                                    update(index, pair(key, false), v))));
           msubset_trans(map(fst, t),
-                        map(fst, filter(engaged_cell, update(index, pair(key, false), remove(pair(cur_key, false), v)))),
-                        map(fst, filter(engaged_cell, remove(pair(cur_key, false), update(index, pair(key, false), v)))));
+                        map(fst, filter(engaged_cell,
+                                        update(index,
+                                               pair(key, false),
+                                               remove(pair(cur_key, false),
+                                                      v)))),
+                        map(fst, filter(engaged_cell,
+                                        remove(pair(cur_key, false),
+                                               update(index,
+                                                      pair(key, false),
+                                                      v)))));
         }
 
-        filter_remove(engaged_cell, pair(cur_key, false), update(index, pair(key, false), v));
-        filter_forall(engaged_cell, update(index, pair(key, false), v));
-        particular_map_remove(cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
+        filter_remove(engaged_cell,
+                      pair(cur_key, false),
+                      update(index, pair(key, false), v));
+        filter_forall(engaged_cell,
+                      update(index, pair(key, false), v));
+        particular_map_remove
+          (cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
       }
     }
   }
@@ -1142,13 +1194,20 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
            false == mem(key, map(fst, m)) &*&
            true == snd(nth(index, v));
   ensures true == msubset(map(fst, map_put_fp(m, key, index)),
-                          map(fst, filter(engaged_cell, update(index, pair(key, false), v))));
+                          map(fst, filter(engaged_cell,
+                                          update(index, pair(key, false), v))));
   {
     add_entry_preserves_msubset_tail(m, v, index, key);
     mem_update(pair(key, false), index, v);
-    filter_mem(pair(key, false), update(index, pair(key, false), v), engaged_cell);
-    mem_map(pair(key, false), filter(engaged_cell, update(index, pair(key, false), v)), fst);
-    msubset_remove(map(fst, m), map(fst, filter(engaged_cell, update(index, pair(key, false), v))), key);
+    filter_mem(pair(key, false),
+               update(index, pair(key, false), v),
+               engaged_cell);
+    mem_map(pair(key, false),
+            filter(engaged_cell, update(index, pair(key, false), v)), fst);
+    msubset_remove(map(fst, m),
+                   map(fst, filter(engaged_cell,
+                                   update(index, pair(key, false), v))),
+                   key);
     remove_nonmem(key, map(fst,m));
   }
 
