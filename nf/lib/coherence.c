@@ -1058,13 +1058,6 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     }
   }
 
-  lemma void mem_unfilter<t>(t el, fixpoint (t, bool) f, list<t> l)
-  requires true == mem(el, filter(f, l));
-  ensures true == mem(el, l);
-  {
-    assume(false);//TODO
-  }
-
   lemma void mem_update_unrelevant<t>(t el1, int index, t el2, list<t> l)
   requires true == mem(el1, l) &*& index_of(el1, l) != index;
   ensures true == mem(el1, update(index, el2, l));

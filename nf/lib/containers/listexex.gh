@@ -1131,6 +1131,17 @@ ensures (index_of(el2, l) <= i)                 ?
   }
 }
 
+lemma void mem_unfilter<t>(t el, fixpoint (t, bool) f, list<t> l)
+requires true == mem(el, filter(f, l));
+ensures true == mem(el, l);
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      if (h != el) mem_unfilter(el, f, t);
+  }
+}
+
 fixpoint t nth2<t>(list<t> lst, int index) { return nth(index, lst); }
 
 #endif//LISTEXEX_GH
