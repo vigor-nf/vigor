@@ -499,7 +499,8 @@ let fun_types =
                   lemmas_after = [
                     (fun params ->
                        "/*@ {\n\
-                         close flw_p(_, ?flw);\n\
+                        close flw_p(" ^ (List.nth_exn params.args 1) ^
+                       ", ?flw);\n\
                          open flw_p(_, flw);\n\
                          open int_k_p(_,?ik);\n\
                          open ext_k_p(_,?ek);\n\
