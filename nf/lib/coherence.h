@@ -145,6 +145,7 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
                                          int index,
                                          kt key);
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
+           0 <= index &*& index < length(v) &*&
            nth(index, v) == pair(key, false);
   ensures map_vec_chain_coherent<kt>(map_erase_fp(m, key),
                                      vector_erase_fp(v, index),

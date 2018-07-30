@@ -1246,13 +1246,22 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   lemma void consistent_pairs_has_key<kt>(list<pair<kt, int> > m,
                                           list<pair<kt, bool> > v, dchain ch,
                                           int index,
+                                          int start_idx,
                                           kt key)
-  requires true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
-           nth(index, v) == pair(key, false);
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           nth(index - start_idx, v) == pair(key, false) &*&
+           0 <= start_idx &*& start_idx <= index &*&
+           index - start_idx < length(v);
   ensures true == map_has_fp(m, key) &*&
           true == dchain_allocated_fp(ch, index);
   {
-    assume(false);//TODO
+    switch(v) {
+      case nil:
+      case cons(h,t):
+        if (index != start_idx) {
+          consistent_pairs_has_key(m, t, ch, index, start_idx + 1, key);
+        }
+    }
   }
   @*/
 
@@ -1302,7 +1311,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                          list<pair<kt, bool> > v, dchain ch,
                                          int index,
                                          kt key)
-  requires map_vec_chain_coherent<kt>(m, v, ch) &*&
+  requires map_vec_chain_coherent<kt>(m, v, ch)  &*&
+           0 <= index &*& index < length(v) &*&
            nth(index, v) == pair(key, false);
   ensures map_vec_chain_coherent<kt>(map_erase_fp(m, key),
                                      vector_erase_fp(v, index),
@@ -1321,7 +1331,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     assert true == forall_idx(vector_erase_fp(v, index), 0,
                               (consistent_pair)(map_erase_fp(m, key),
                                                dchain_remove_index_fp(ch, index)));
-    consistent_pairs_has_key(m, v, ch, index, key);
+    consistent_pairs_has_key(m, v, ch, index, 0, key);
     erase_entry_preserves_msubset(m, v, ch, index, key);
     assert true == msubset(map(fst, map_erase_fp(m, key)),
                            map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
