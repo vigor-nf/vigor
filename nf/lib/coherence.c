@@ -1243,6 +1243,61 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void consistent_pairs_has_key<kt>(list<pair<kt, int> > m,
+                                          list<pair<kt, bool> > v, dchain ch,
+                                          int index,
+                                          kt key)
+  requires true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+           nth(index, v) == pair(key, false);
+  ensures true == map_has_fp(m, key) &*&
+          true == dchain_allocated_fp(ch, index);
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+
+/*@
+  lemma void erase_entry_consistent_pairs<kt>(list<pair<kt, int> > m,
+                                              list<pair<kt, bool> > v, dchain ch,
+                                              int index,
+                                              kt key)
+  requires true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+           nth(index, v) == pair(key, false);
+  ensures true == forall_idx(vector_erase_fp(v, index), 0,
+                             (consistent_pair)(map_erase_fp(m, key),
+                                               dchain_remove_index_fp(ch, index)));
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
+  lemma void erase_entry_preserves_msubset<kt>(list<pair<kt, int> > m,
+                                               list<pair<kt, bool> > v, dchain ch,
+                                               int index,
+                                               kt key)
+  requires true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+           nth(index, v) == pair(key, false) &*&
+           true == map_has_fp(m, key);
+  ensures true == msubset(map(fst, map_erase_fp(m, key)),
+                          map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
+  lemma void map_erase_size<kt>(list<pair<kt, int> > m, kt key)
+  requires true;
+  ensures map_size_fp(m) == map_size_fp(map_erase_fp(m, key)) +
+                            (map_has_fp(m, key) ? 1 : 0);
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
   lemma void mvc_coherent_expire_one<kt>(list<pair<kt, int> > m,
                                          list<pair<kt, bool> > v, dchain ch,
                                          int index,
@@ -1253,6 +1308,34 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                      vector_erase_fp(v, index),
                                      dchain_remove_index_fp(ch, index));
   {
-    assume(false);//TODO
+    open map_vec_chain_coherent(m, v, ch);
+
+    assert dchain_index_range_fp(ch) == length(v) &*&
+           true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+           true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+           map_size_fp(m) == length(dchain_indexes_fp(ch));
+
+    dchain_remove_keeps_ir(ch, index);
+    assert dchain_index_range_fp(dchain_remove_index_fp(ch, index)) == length(vector_erase_fp(v, index));
+    erase_entry_consistent_pairs(m, v, ch, index, key);
+    assert true == forall_idx(vector_erase_fp(v, index), 0,
+                              (consistent_pair)(map_erase_fp(m, key),
+                                               dchain_remove_index_fp(ch, index)));
+    consistent_pairs_has_key(m, v, ch, index, key);
+    erase_entry_preserves_msubset(m, v, ch, index, key);
+    assert true == msubset(map(fst, map_erase_fp(m, key)),
+                           map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+    dchain_remove_idx_from_indexes(ch, index);
+    dchain_indexes_contain_index(ch, index);
+    length_remove(index, dchain_indexes_fp(ch));
+    map_erase_size(m, key);
+    assert map_size_fp(map_erase_fp(m, key)) == map_size_fp(m) - 1;
+    assert length(dchain_indexes_fp(dchain_remove_index_fp(ch, index))) ==
+           length(dchain_indexes_fp(ch)) - 1;
+    assert map_size_fp(map_erase_fp(m, key)) == length(dchain_indexes_fp(dchain_remove_index_fp(ch, index)));
+
+    close map_vec_chain_coherent(map_erase_fp(m, key),
+                                 vector_erase_fp(v, index),
+                                 dchain_remove_index_fp(ch, index));
   }
   @*/
