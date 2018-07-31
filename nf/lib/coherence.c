@@ -1265,19 +1265,79 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   }
   @*/
 
+/*@
+  lemma void pairs_consistent_map_get<kt>(list<pair<kt, int> > m,
+                                          list<pair<kt, bool> > v, dchain ch,
+                                          int index,
+                                          int start_idx,
+                                          kt key)
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           0 <= start_idx &*& start_idx <= index &*& index - start_idx < length(v) &*&
+           nth(index - start_idx, v) == pair(key, false);
+  ensures map_get_fp(m, key) == index;
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(cur_key,owned):
+          if (index == start_idx) {
+          } else {
+            pairs_consistent_map_get(m, t, ch, index, start_idx + 1, key);
+          }
+        }
+    }
+  }
+  @*/
 
 /*@
   lemma void erase_entry_consistent_pairs<kt>(list<pair<kt, int> > m,
                                               list<pair<kt, bool> > v, dchain ch,
                                               int index,
+                                              int start_idx,
                                               kt key)
-  requires true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
-           nth(index, v) == pair(key, false);
-  ensures true == forall_idx(vector_erase_fp(v, index), 0,
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           nth(index - start_idx, v) == pair(key, false) &*&
+           0 <= start_idx &*& start_idx <= index &*& index - start_idx < length(v);
+  ensures true == forall_idx(vector_erase_fp(v, index - start_idx), start_idx,
                              (consistent_pair)(map_erase_fp(m, key),
                                                dchain_remove_index_fp(ch, index)));
   {
-    assume(false);//TODO
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(cur_key, owned):
+        if (index == start_idx) {
+          assume(false);//TODO
+        } else {
+          erase_entry_consistent_pairs(m, t, ch, index, start_idx + 1, key);
+          dchain_remove_idx_from_indexes(ch, index);
+          dchain_indexes_contain_index(ch, start_idx);
+          dchain_indexes_contain_index(dchain_remove_index_fp(ch, index), start_idx);
+          neq_mem_remove(start_idx, index, dchain_indexes_fp(ch));
+          if (owned) {
+            assert false == dchain_allocated_fp(ch, start_idx);
+            assert false == dchain_allocated_fp(dchain_remove_index_fp(ch, index), start_idx);
+          } else {
+            assert true == map_has_fp(m, cur_key);
+            assert map_get_fp(m, cur_key) == start_idx;
+            assert true == dchain_allocated_fp(ch, start_idx);
+
+            if (key == cur_key) {
+              assert map_get_fp(m, cur_key) == start_idx;
+              //pairs_consistent_get_index(m, v, ch, key, start_idx);
+              pairs_consistent_map_get(m, v, ch, index, start_idx, key);
+              //assume(map_get_fp(m, key) == index);//TODO
+              assert map_get_fp(m, key) == index;
+              assert index == start_idx;
+            }
+
+            map_erase_keeps_others(m, key, cur_key);
+            assert true == map_has_fp(map_erase_fp(m, key), cur_key);
+            assert map_get_fp(m, cur_key) == start_idx;
+            assert true == dchain_allocated_fp(ch, start_idx);
+          }
+        }
+      }
+    }
   }
   @*/
 
@@ -1327,7 +1387,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
     dchain_remove_keeps_ir(ch, index);
     assert dchain_index_range_fp(dchain_remove_index_fp(ch, index)) == length(vector_erase_fp(v, index));
-    erase_entry_consistent_pairs(m, v, ch, index, key);
+    erase_entry_consistent_pairs(m, v, ch, index, 0, key);
     assert true == forall_idx(vector_erase_fp(v, index), 0,
                               (consistent_pair)(map_erase_fp(m, key),
                                                dchain_remove_index_fp(ch, index)));
