@@ -1396,7 +1396,11 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   ensures map_size_fp(m) == map_size_fp(map_erase_fp(m, key)) +
                             (map_has_fp(m, key) ? 1 : 0);
   {
-    assume(false);//TODO
+    switch(m) {
+      case nil:
+      case cons(h,t):
+        if (fst(h) != key) map_erase_size(t, key);
+    }
   }
   @*/
 
