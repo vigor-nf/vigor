@@ -1290,6 +1290,37 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void erase_unrelevant_key_consistent_pairs<kt>(list<pair<kt, int> > m,
+                                                       list<pair<kt, bool> > v, dchain ch,
+                                                       int index,
+                                                       int start_idx,
+                                                       kt key)
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           0 <= index &*& index < start_idx &*&
+           true == map_has_fp(m, key) &*&
+           map_get_fp(m, key) == index;
+  ensures true == forall_idx(v, start_idx,
+                             (consistent_pair)(map_erase_fp(m, key),
+                                               dchain_remove_index_fp(ch, index)));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(cur_key, owned):
+          erase_unrelevant_key_consistent_pairs(m, t, ch, index, start_idx + 1, key);
+          dchain_remove_idx_from_indexes(ch, index);
+          dchain_indexes_contain_index(ch, start_idx);
+          dchain_indexes_contain_index(dchain_remove_index_fp(ch, index), start_idx);
+          neq_mem_remove(start_idx, index, dchain_indexes_fp(ch));
+          if (!owned) {
+            map_erase_keeps_others(m, key, cur_key);
+          }
+        }
+    }
+  }
+  @*/
+
+/*@
   lemma void erase_entry_consistent_pairs<kt>(list<pair<kt, int> > m,
                                               list<pair<kt, bool> > v, dchain ch,
                                               int index,
@@ -1297,7 +1328,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                               kt key)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
            nth(index - start_idx, v) == pair(key, false) &*&
-           0 <= start_idx &*& start_idx <= index &*& index - start_idx < length(v);
+           0 <= start_idx &*& start_idx <= index &*& index - start_idx < length(v) &*&
+           true == distinct(dchain_indexes_fp(ch));
   ensures true == forall_idx(vector_erase_fp(v, index - start_idx), start_idx,
                              (consistent_pair)(map_erase_fp(m, key),
                                                dchain_remove_index_fp(ch, index)));
@@ -1305,13 +1337,17 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     switch(v) {
       case nil:
       case cons(h,t): switch(h) { case pair(cur_key, owned):
+        dchain_remove_idx_from_indexes(ch, index);
+        dchain_indexes_contain_index(ch, start_idx);
+        dchain_indexes_contain_index(dchain_remove_index_fp(ch, index), start_idx);
         if (index == start_idx) {
-          assume(false);//TODO
+          distinct_mem_remove(index, dchain_indexes_fp(ch));
+          assert false == dchain_allocated_fp(dchain_remove_index_fp(ch, index), index);
+          assert true == forall_idx(t, start_idx + 1, (consistent_pair)(m, ch));
+          erase_unrelevant_key_consistent_pairs(m, t, ch, index, start_idx + 1, key);
+          assert true == forall_idx(t, start_idx + 1, (consistent_pair)(map_erase_fp(m, key), dchain_remove_index_fp(ch, index)));
         } else {
           erase_entry_consistent_pairs(m, t, ch, index, start_idx + 1, key);
-          dchain_remove_idx_from_indexes(ch, index);
-          dchain_indexes_contain_index(ch, start_idx);
-          dchain_indexes_contain_index(dchain_remove_index_fp(ch, index), start_idx);
           neq_mem_remove(start_idx, index, dchain_indexes_fp(ch));
           if (owned) {
             assert false == dchain_allocated_fp(ch, start_idx);
@@ -1323,9 +1359,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
             if (key == cur_key) {
               assert map_get_fp(m, cur_key) == start_idx;
-              //pairs_consistent_get_index(m, v, ch, key, start_idx);
               pairs_consistent_map_get(m, v, ch, index, start_idx, key);
-              //assume(map_get_fp(m, key) == index);//TODO
               assert map_get_fp(m, key) == index;
               assert index == start_idx;
             }
@@ -1367,6 +1401,17 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
+                                       list<pair<kt, bool> > v, dchain ch)
+  requires map_vec_chain_coherent<kt>(m, v, ch);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          true == distinct(dchain_indexes_fp(ch));
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
   lemma void mvc_coherent_expire_one<kt>(list<pair<kt, int> > m,
                                          list<pair<kt, bool> > v, dchain ch,
                                          int index,
@@ -1378,6 +1423,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                      vector_erase_fp(v, index),
                                      dchain_remove_index_fp(ch, index));
   {
+    mvc_coherent_distinct(m, v, ch);
     open map_vec_chain_coherent(m, v, ch);
 
     assert dchain_index_range_fp(ch) == length(v) &*&
