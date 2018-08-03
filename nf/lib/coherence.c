@@ -1509,6 +1509,121 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void consistent_pairs_key_index<kt>(list<pair<kt, int> > m, list<pair<kt, bool> > v, dchain ch, int start_idx, kt key)
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
+           true == mem(pair(key, false), v);
+  ensures map_get_fp(m, key) == start_idx + index_of(pair(key, false), v);
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(cur_key, owned):
+        if (owned || cur_key != key) {
+          consistent_pairs_key_index(m, t, ch, start_idx + 1, key);
+        }
+      }
+    }
+  }
+  @*/
+
+/*@
+  lemma void consistent_pairs_msubset_distinct<kt>(list<pair<kt, int> > m,
+                                                   list<pair<kt, bool> > v,
+                                                   dchain ch,
+                                                   int start_idx)
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch));
+  ensures true == msubset(map(fst, filter(engaged_cell, v)), map(fst, m)) &*&
+          true == distinct(map(fst, filter(engaged_cell, v)));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(key,owned):
+        consistent_pairs_msubset_distinct(m, t, ch, start_idx + 1);
+        assert true == msubset(map(fst, filter(engaged_cell, t)), map(fst, m));
+        if (!owned) {
+          map_has_to_mem(m, key);
+          assert true == mem(key, map(fst, m));
+          assert map_get_fp(m, key) == start_idx;
+          if (mem(key, map(fst, filter(engaged_cell, t)))) {
+            particular_mem_map_filter(key, t);
+            consistent_pairs_key_index(m, t, ch, start_idx + 1, key);
+            assert map_get_fp(m, key) == start_idx + 1 + index_of(key, map(fst, filter(engaged_cell, t)));
+            assert index_of(key, map(fst, filter(engaged_cell, t))) != 0;
+          }
+          assert false == mem(key, map(fst, filter(engaged_cell, t)));
+          msubset_remove(map(fst, filter(engaged_cell, t)), map(fst, m), key);
+          remove_nonmem(key, map(fst, filter(engaged_cell, t)));
+          assert true == msubset(map(fst, filter(engaged_cell, t)), remove(key, map(fst, m)));
+        }
+      }
+    }
+  }
+  @*/
+
+/*@
+  fixpoint list<int> filter_idx<t>(fixpoint (t,bool) f, int idx, list<t> l) {
+    switch(l) {
+      case nil: return nil;
+      case cons(h,t):
+        return (f(h)) ?
+               cons(idx, filter_idx(f, idx + 1, t)) :
+               filter_idx(f, idx + 1, t);
+    }
+  }
+  @*/
+
+/*@
+  lemma void distinct_subset_msubset<t>(list<t> l1, list<t> l2)
+  requires true == subset(l1, l2) &*& true == distinct(l1);
+  ensures true == msubset(l1, l2);
+  {
+    switch(l1) {
+      case nil:
+      case cons(h,t):
+        remove_subset(t, h, l2);
+        distinct_subset_msubset(t, remove(h, l2));
+    }
+  }
+  @*/
+
+/*@
+  lemma void msubset_same_len_eq<t>(list<t> l1, list<t> l2)
+  requires true == msubset(l1, l2) &*& length(l1) == length(l2);
+  ensures true == multiset_eq(l1, l2) &*& true == msubset(l2, l1);
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
+  lemma void filter_idx_is_distinct<t>(fixpoint (t,bool) f, int idx, list<t> l)
+  requires true;
+  ensures true == distinct(filter_idx(f, idx, l)) &*&
+          true == forall(filter_idx(f, idx, l), (ge)(idx));
+  {
+    assume(false);//TODO
+  }
+
+  lemma void filter_idx_filter_same_len<t>(fixpoint (t,bool) f, int idx, list<t> l)
+  requires true;
+  ensures length(filter_idx(f, idx, l)) == length(filter(f, l));
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
+  lemma void consistent_pairs_indexes_subset<kt>(list<pair<kt, int> > m,
+                                                 list<pair<kt, bool> > v,
+                                                 dchain ch,
+                                                 int start_idx)
+  requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch));
+  ensures true == subset(filter_idx(engaged_cell, start_idx, v), dchain_indexes_fp(ch));
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
   lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
                                        list<pair<kt, bool> > v, dchain ch)
   requires map_vec_chain_coherent<kt>(m, v, ch);
@@ -1516,7 +1631,32 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           true == distinct(dchain_indexes_fp(ch)) &*&
           true == distinct(map(fst, m));
   {
-    assume(false);//TODO
+    open map_vec_chain_coherent(m, v, ch);
+
+    assert true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+           true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+           map_size_fp(m) == length(dchain_indexes_fp(ch));
+
+    consistent_pairs_msubset_distinct(m, v, ch, 0);
+    assert true == msubset(map(fst, filter(engaged_cell, v)), map(fst, m));
+    msubset_distinct(map(fst, m), map(fst, filter(engaged_cell, v)));
+    assert true == distinct(map(fst, m));
+    msubset_length(map(fst, m), map(fst, filter(engaged_cell, v)));
+    msubset_length(map(fst, filter(engaged_cell, v)), map(fst, m));
+    assert length(map(fst, filter(engaged_cell, v))) == length(map(fst, m));
+    map_preserves_length(fst, filter(engaged_cell, v));
+    map_preserves_length(fst, m);
+    assert length(filter(engaged_cell, v)) == length(m);
+    assert length(filter(engaged_cell, v)) == length(dchain_indexes_fp(ch));
+    consistent_pairs_indexes_subset(m, v, ch, 0);
+    filter_idx_is_distinct(engaged_cell, 0, v);
+    distinct_subset_msubset(filter_idx(engaged_cell, 0, v), dchain_indexes_fp(ch));
+    filter_idx_filter_same_len(engaged_cell, 0, v);
+    msubset_same_len_eq(filter_idx(engaged_cell, 0, v), dchain_indexes_fp(ch));
+    msubset_distinct(dchain_indexes_fp(ch), filter_idx(engaged_cell, 0, v));
+    assert true == distinct(dchain_indexes_fp(ch));
+
+    close map_vec_chain_coherent(m, v, ch);
   }
   @*/
 
