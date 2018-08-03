@@ -1572,12 +1572,33 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void ge_nonmem(int x, int y, list<int> l)
+  requires true == forall(l, (ge)(y)) &*& x < y;
+  ensures false == mem(x, l);
+  {
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        ge_nonmem(x, y, t);
+    }
+  }
+  @*/
+
+/*@
   lemma void filter_idx_is_distinct<t>(fixpoint (t,bool) f, int idx, list<t> l)
   requires true;
   ensures true == distinct(filter_idx(f, idx, l)) &*&
           true == forall(filter_idx(f, idx, l), (ge)(idx));
   {
-    assume(false);//TODO
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        filter_idx_is_distinct(f, idx + 1, t);
+        if (f(h)) {
+          ge_nonmem(idx, idx + 1, filter_idx(f, idx + 1, t));
+        }
+        ge_le_ge(filter_idx(f, idx + 1, t), idx + 1, idx);
+    }
   }
 
   lemma void filter_idx_filter_same_len<t>(fixpoint (t,bool) f, int idx, list<t> l)
