@@ -1572,29 +1572,6 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
-  lemma void distinct_subset_msubset<t>(list<t> l1, list<t> l2)
-  requires true == subset(l1, l2) &*& true == distinct(l1);
-  ensures true == msubset(l1, l2);
-  {
-    switch(l1) {
-      case nil:
-      case cons(h,t):
-        remove_subset(t, h, l2);
-        distinct_subset_msubset(t, remove(h, l2));
-    }
-  }
-  @*/
-
-/*@
-  lemma void msubset_same_len_eq<t>(list<t> l1, list<t> l2)
-  requires true == msubset(l1, l2) &*& length(l1) == length(l2);
-  ensures true == multiset_eq(l1, l2) &*& true == msubset(l2, l1);
-  {
-    assume(false);//TODO
-  }
-  @*/
-
-/*@
   lemma void filter_idx_is_distinct<t>(fixpoint (t,bool) f, int idx, list<t> l)
   requires true;
   ensures true == distinct(filter_idx(f, idx, l)) &*&

@@ -533,4 +533,28 @@ ensures true == msubset(filter(f, l1), filter(f, l2));
   }
 }
 
+lemma void distinct_subset_msubset<t>(list<t> l1, list<t> l2)
+requires true == subset(l1, l2) &*& true == distinct(l1);
+ensures true == msubset(l1, l2);
+{
+  switch(l1) {
+    case nil:
+    case cons(h,t):
+      remove_subset(t, h, l2);
+      distinct_subset_msubset(t, remove(h, l2));
+  }
+}
+
+lemma void msubset_same_len_eq<t>(list<t> l1, list<t> l2)
+requires true == msubset(l1, l2) &*& length(l1) == length(l2);
+ensures true == msubset(l2, l1);
+{
+  switch(l1) {
+    case nil:
+      length_0_nil(l2);
+    case cons(h,t):
+      msubset_same_len_eq(t, remove(h, l2));
+      msubset_unremove(l2, l1, h);
+  }
+}
 #endif// MULTISUBSET_GH
