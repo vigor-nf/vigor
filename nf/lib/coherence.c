@@ -1605,7 +1605,11 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires true;
   ensures length(filter_idx(f, idx, l)) == length(filter(f, l));
   {
-    assume(false);//TODO
+    switch(l) {
+      case nil:
+      case cons(h,t):
+        filter_idx_filter_same_len(f, idx + 1, t);
+    }
   }
   @*/
 
