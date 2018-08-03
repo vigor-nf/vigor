@@ -1621,7 +1621,14 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch));
   ensures true == subset(filter_idx(engaged_cell, start_idx, v), dchain_indexes_fp(ch));
   {
-    assume(false);//TODO
+    switch(v) {
+      case nil:
+      case cons(h,t): switch(h) { case pair(key,owned): }
+        consistent_pairs_indexes_subset(m, t, ch, start_idx + 1);
+        if (engaged_cell(h)) {
+          dchain_indexes_contain_index(ch, start_idx);
+        }
+    }
   }
   @*/
 
