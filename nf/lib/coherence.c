@@ -1047,7 +1047,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
   lemma void particular_mem_map_filter<t>(t el, list<pair<t, bool> > l)
   requires true == mem(el, map(fst, filter(engaged_cell, l)));
-  ensures true == mem(pair(el, false), filter(engaged_cell, l));
+  ensures true == mem(pair(el, false), filter(engaged_cell, l)) &*&
+          true == mem(pair(el, false), l);
   {
     switch(l) {
       case nil:
@@ -1376,17 +1377,120 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+  lemma void erase_key_msubset<kt>(list<pair<kt, bool> > v, int index, kt key)
+  requires nth(index, v) == pair(key, false);
+  ensures true == msubset(filter(engaged_cell, v),
+                          cons(pair(key, false), filter(engaged_cell, vector_erase_fp(v, index))));
+  {
+    switch(v) {
+      case nil:
+      case cons(h,t):
+        if (index == 0) {
+          msubset_refl(filter(engaged_cell, t));
+        } else {
+          erase_key_msubset(t, index - 1, key);
+        }
+    }
+  }
+  @*/
+
+/*@
+  lemma void erase_unrelevant_preserves_msubset<kt>(list<kt> keys, list<pair<kt, bool> > v,
+                                                    int index, kt key)
+  requires true == msubset(keys, map(fst, filter(engaged_cell, v))) &*&
+           nth(index, v) == pair(key, false) &*&
+           false == mem(key, keys);
+  ensures true == msubset(keys, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+  {
+    switch(keys) {
+      case nil:
+      case cons(h,t):
+        msubset_unremove_outer(t, map(fst, filter(engaged_cell, v)), h);
+        erase_unrelevant_preserves_msubset(t, v, index, key);
+        assert true == mem(h, map(fst, filter(engaged_cell, v)));
+        assert key != h;
+        particular_mem_map_filter(h, v);
+        if (index_of(pair(h, false), v) == index) {
+          mem_nth_index_of(pair(h, false), v);
+        }
+        mem_update_unrelevant(pair(h, false), index, pair(fst(nth(index, v)), true), v);
+        filter_mem(pair(h, false), vector_erase_fp(v, index), engaged_cell);
+        mem_map(pair(h, false), filter(engaged_cell, vector_erase_fp(v, index)), fst);
+        assert true == mem(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+
+        assert true == msubset(t, remove(h, map(fst, filter(engaged_cell, v))));
+        erase_key_msubset(v, index, key);
+        assert true == msubset(filter(engaged_cell, v), cons(pair(key, false), filter(engaged_cell, vector_erase_fp(v, index))));
+        msubset_map(fst, filter(engaged_cell, v), cons(pair(key, false), filter(engaged_cell, vector_erase_fp(v, index))));
+        assert true == msubset(map(fst, filter(engaged_cell, v)), cons(key, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))));
+        msubset_remove(map(fst, filter(engaged_cell, v)),
+                       cons(key, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))),
+                       h);
+        assert true == msubset(remove(h, map(fst, filter(engaged_cell, v))), cons(key, remove(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index))))));
+        msubset_trans(t, remove(h, map(fst, filter(engaged_cell, v))), cons(key, remove(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index))))));
+        msubset_remove(t,
+                       cons(key, remove(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index))))),
+                       key);
+        remove_nonmem(key, t);
+        assert true == msubset(t, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+        assert true == msubset(t, remove(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))));
+    }
+  }
+  @*/
+
+/*@
   lemma void erase_entry_preserves_msubset<kt>(list<pair<kt, int> > m,
                                                list<pair<kt, bool> > v, dchain ch,
                                                int index,
                                                kt key)
   requires true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
            nth(index, v) == pair(key, false) &*&
-           true == map_has_fp(m, key);
+           true == map_has_fp(m, key) &*&
+           true == distinct(map(fst, m));
   ensures true == msubset(map(fst, map_erase_fp(m, key)),
                           map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
   {
-    assume(false);//TODO
+    switch(m) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(cur_key,cur_idx):
+          msubset_unremove_outer(map(fst, t), map(fst, filter(engaged_cell, v)), cur_key);
+          if (cur_key != key) {
+            assert true == msubset(map(fst, t), map(fst, filter(engaged_cell, v)));
+            erase_entry_preserves_msubset(t, v, ch, index, key);
+            assert true == msubset(map(fst, m),
+                                   map(fst, filter(engaged_cell, v)));
+            assert true == msubset(map(fst, map_erase_fp(t, key)),
+                                   map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+            assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
+            particular_mem_map_filter(cur_key, v);
+            assert true == mem(pair(cur_key, false), v);
+            if (index_of(pair(cur_key, false), v) == index) {
+              mem_nth_index_of(pair(cur_key, false), v);
+            }
+            mem_update_unrelevant(pair(cur_key, false), index, pair(fst(nth(index, v)), true), v);
+            assert true == mem(pair(cur_key, false), vector_erase_fp(v, index));
+            filter_mem(pair(cur_key, false), vector_erase_fp(v, index), engaged_cell);
+            assert true == mem(pair(cur_key, false), filter(engaged_cell, vector_erase_fp(v, index)));
+            mem_map(pair(cur_key, false), filter(engaged_cell, vector_erase_fp(v, index)), fst);
+            assert true == mem(cur_key, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+            assert false == mem(cur_key, map(fst, t));
+            map_has_to_mem(t, cur_key);
+            map_erase_keeps_others(t, key, cur_key);
+            map_has_to_mem(map_erase_fp(t, key), cur_key);
+            assert false == mem(cur_key, map(fst, map_erase_fp(t, key)));
+            msubset_remove(map(fst, map_erase_fp(t, key)),
+                           map(fst, filter(engaged_cell, vector_erase_fp(v, index))),
+                           cur_key);
+            remove_nonmem(cur_key, map(fst, map_erase_fp(t, key)));
+            assert true == msubset(map(fst, map_erase_fp(t, key)),
+                                   remove(cur_key, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))));
+          } else {
+            assert false == mem(key, map(fst, t));
+            erase_unrelevant_preserves_msubset(map(fst, t), v, index, key);
+          }
+        }
+    }
   }
   @*/
 
@@ -1409,7 +1513,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                        list<pair<kt, bool> > v, dchain ch)
   requires map_vec_chain_coherent<kt>(m, v, ch);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          true == distinct(dchain_indexes_fp(ch));
+          true == distinct(dchain_indexes_fp(ch)) &*&
+          true == distinct(map(fst, m));
   {
     assume(false);//TODO
   }
