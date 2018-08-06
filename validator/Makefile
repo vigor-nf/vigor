@@ -9,9 +9,6 @@ nat_fspec.cmo: _build/nat_fspec.cmo
 bridge_fspec.cmo: _build/bridge_fspec.cmo
 	cp _build/bridge_fspec.cmo ./
 
-dmz_fspec.cmo: _build/dmz_fspec.cmo
-	cp _build/dmz_fspec.cmo ./
-
 balancer_fspec.cmo: _build/balancer_fspec.cmo
 	cp _build/balancer_fspec.cmo ./
 
@@ -20,9 +17,6 @@ _build/nat_fspec.cmo: .PHONY
 
 _build/bridge_fspec.cmo: .PHONY
 	corebuild -no-hygiene -lib dynlink -lib str bridge_fspec.cmo -cflag -unsafe-string
-
-_build/dmz_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlinc dmz_fspec.cmo -cflag -unsafe-string
 
 _build/balancer_fspec.cmo: .PHONY
 	corebuild -no-hygiene -lib dynlinc balancer_fspec.cmo -cflag -unsafe-string
@@ -41,9 +35,6 @@ validate-nat: clean
 
 validate-bridge: clean
 	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cmo
-
-validate-dmz: clean
-	./test_all.sh ../nf/dmz/klee-last out ../nf dmz_fspec.cmo
 
 validate-balancer: clean
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cmo
