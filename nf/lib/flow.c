@@ -1,3 +1,5 @@
+#include "flow.h"
+
 #include <stdbool.h>
 #include <string.h>
 #include <limits.h>
@@ -5,14 +7,9 @@
 // for RTE_MAX_ETHPORTS
 #include <rte_config.h>
 
-// for logging
-#include <stdio.h>
-#include "lib/nf_log.h"
+#include "lib/ignore.h"
 
 #include "include_ignored_by_verifast.h"
-
-#include "flow.h"
-#include "ignore.h"
 
 // KLEE doesn't tolerate && in a klee_assume (see klee/klee#809),
 // so we replace them with & during symbex but interpret them as && in the validator
@@ -305,10 +302,11 @@ int flow_consistency(void* key_a, void* key_b,
 }
 #endif//KLEE_VERIFICATION
 
-inline void log_ip(uint32_t addr) {
-#if !ENABLE_LOG
-  (void)addr;
-#endif//NOLOG
+#ifdef ENABLE_LOG
+#include "lib/nf_log.h"
+#include <rte_byteorder.h>
+
+void log_ip(uint32_t addr) {
   NF_DEBUG( "%d.%d.%d.%d",
             addr&0xff, (addr>>8)&0xff,
             (addr>>16)&0xff, (addr>>24)&0xff);
@@ -353,3 +351,20 @@ void log_flow(const struct flow *f) {
             " protocol: %d}",
             f->int_device_id, f->ext_device_id, f->protocol);
 }
+#else
+void log_ip(uint32_t addr) {
+	IGNORE(addr);
+}
+
+void log_int_key(const struct int_key* key) {
+	IGNORE(key);
+}
+
+void log_ext_key(const struct ext_key* key) {
+	IGNORE(key);
+}
+
+void log_flow(const struct flow* f) {
+	IGNORE(f);
+}
+#endif
