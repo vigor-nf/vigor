@@ -6,9 +6,9 @@
 #include <rte_ethdev.h>
 #include <rte_mbuf.h>
 
-#include "../lib/nat_config.h"
-#include "../lib/nf_forward.h"
-#include "../lib/nf_util.h"
+#include "nat_config.h"
+#include "lib/nf_forward.h"
+#include "lib/nf_util.h"
 
 struct nat_config config;
 

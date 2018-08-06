@@ -8,7 +8,7 @@ CC = g++
 
 # sources
 # pick one map of: ruby, DPDK, stdlib
-SRCS-y := nat_forward_nat.c ../nf_main.c ../lib/nat_config.c ../lib/nf_time.c ../lib/nf_util.c \
+SRCS-y := nat_main.c nat_config.c ../nf_main.c ../lib/nf_time.c ../lib/nf_util.c \
           ruby/st.c nat_map_ruby.c
 #          nat_map_dpdk.c
 #          nat_map_cppstl.c

@@ -12,12 +12,12 @@
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
-#include "../lib/nat_config.h"
-#include "../lib/nf_forward.h"
-#include "../lib/nf_log.h"
-#include "../lib/nf_time.h"
-#include "../lib/nf_util.h"
+#include "lib/nf_forward.h"
+#include "lib/nf_log.h"
+#include "lib/nf_time.h"
+#include "lib/nf_util.h"
 
+#include "nat_config.h"
 #include "nat_flow.h"
 #include "nat_map.h"
 
