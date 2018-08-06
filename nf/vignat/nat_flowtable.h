@@ -1,7 +1,7 @@
 #ifndef _FLOWTABLE_H_INCLUDED_
 #define _FLOWTABLE_H_INCLUDED_
 
-#include "lib/flow.h"
+#include "nat_flow.h"
 
 struct DoubleMap;
 

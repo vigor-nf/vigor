@@ -1,6 +1,6 @@
 #include "lib/containers/double-map.h"
 #include "lib/containers/double-chain.h"
-#include "lib/flow.h"
+#include "nat_flow.h"
 #include "lib/coherence.h"
 
 /*@

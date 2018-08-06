@@ -1,7 +1,7 @@
 #ifndef _FLOWMANAGER_H_INCLUDED_
 #define _FLOWMANAGER_H_INCLUDED_
 
-#include "lib/flow.h"
+#include "nat_flow.h"
 #include "lib/nf_time.h"
 
 struct FlowManager;

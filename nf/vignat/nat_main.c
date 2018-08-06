@@ -9,9 +9,8 @@
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
-#include "lib/flow.h"
-#include "lib/flowmanager.h"
-
+#include "nat_flow.h"
+#include "nat_flowmanager.h"
 #include "nat_config.h"
 #include "lib/nf_forward.h"
 #include "lib/nf_log.h"

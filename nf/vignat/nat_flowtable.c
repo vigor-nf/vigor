@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #include "lib/containers/double-map.h"
-#include "flowtable.h"
+#include "nat_flowtable.h"
 
 #include "lib/nf_log.h"
 

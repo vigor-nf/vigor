@@ -43,7 +43,6 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 # we use DPDK stubs in there (e.g. rte_config.h)
 verifast:
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
-		$(SELF_DIR)/lib/flow.c \
 		$(SELF_DIR)/lib/containers/double-chain-impl.c \
 		$(SELF_DIR)/lib/containers/double-chain.c \
 		$(SELF_DIR)/lib/containers/map-impl.c \
@@ -52,6 +51,7 @@ verifast:
 		$(SELF_DIR)/lib/coherence.c \
 		$(SELF_DIR)/lib/containers/map.c \
 		$(SELF_DIR)/lib/expirator.c \
+		$(SELF_DIR)/vignat/nat_flow.c \
 		$(SELF_DIR)/vignat/nat_abstract.c \
 		$(SELF_DIR)/vigbridge/bridge_abstract.c \
 		$(SELF_DIR)/vigbridge/bridge_data.c \

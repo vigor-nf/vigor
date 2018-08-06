@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "flowtable.h"
+#include "nat_flowtable.h"
 #include "lib/containers/double-chain.h"
-#include "flowmanager.h"
+#include "nat_flowmanager.h"
 #include "lib/expirator.h"
 
 #ifdef KLEE_VERIFICATION
