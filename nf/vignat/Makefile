@@ -2,12 +2,11 @@
 APP := nat
 
 # Runtime and verification files
-NF_FILES := nat_forward_vignat.c ../lib/nat_config.c \
-            ../lib/flow.c ../lib/flow-log.c \
-            ../lib/flowmanager.c ../lib/flowtable.c
+NF_FILES := nat_main.c nat_config.c \
+            nat_flow.c nat_flowmanager.c nat_flowtable.c
 
 # Verification files
-NF_VERIF_FILES := loop-stub.c
+NF_VERIF_FILES := nat_loop.c
 
 # Verification arguments
 NF_VERIF_ARGS := --lan-dev 0 \

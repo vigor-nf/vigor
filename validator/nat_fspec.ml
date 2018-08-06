@@ -813,8 +813,8 @@ struct
 #include \"lib/containers/double-map.h\"\n\
 #include \"lib/containers/double-chain.h\"\n\
 #include \"lib/stubs/containers/double-map-stub-control.h\"\n\
-#include \"vignat/loop.h\"\n\
-//@ #include \"lib/abstract-state.h\"\n" ^
+#include \"vignat/nat_loop.h\"\n\
+//@ #include \"vignat/nat_abstract.h\"\n" ^
                   (In_channel.read_all "preamble.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
