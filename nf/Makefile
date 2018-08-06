@@ -43,7 +43,6 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 # we use DPDK stubs in there (e.g. rte_config.h)
 verifast:
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
-		$(SELF_DIR)/lib/assumptions_stubs.c \
 		$(SELF_DIR)/lib/flow.c \
 		$(SELF_DIR)/lib/containers/double-chain-impl.c \
 		$(SELF_DIR)/lib/containers/double-chain.c \
