@@ -1,7 +1,7 @@
-#include "containers/double-map.h"
-#include "containers/double-chain.h"
-#include "flow.h"
-#include "coherence.h"
+#include "lib/containers/double-map.h"
+#include "lib/containers/double-chain.h"
+#include "lib/flow.h"
+#include "lib/coherence.h"
 
 /*@
 

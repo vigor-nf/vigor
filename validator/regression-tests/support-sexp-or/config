@@ -1,2 +1,2 @@
-FSPEC_PLUGIN=lb_fspec.cmo
+FSPEC_PLUGIN=balancer_fspec.cmo
 ORIG_PREFIX=out/000047

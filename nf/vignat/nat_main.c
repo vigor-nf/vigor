@@ -12,7 +12,7 @@
 #include "lib/flow.h"
 #include "lib/flowmanager.h"
 
-#include "lib/nat_config.h"
+#include "nat_config.h"
 #include "lib/nf_forward.h"
 #include "lib/nf_log.h"
 #include "lib/nf_util.h"
@@ -142,7 +142,7 @@ void nf_print_config() {
 }
 
 #ifdef KLEE_VERIFICATION
-#include "loop.h"
+#include "nat_loop.h"
 
 void nf_loop_iteration_begin(unsigned lcore_id,
                              time_t time) {

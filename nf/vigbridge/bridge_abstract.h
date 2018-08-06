@@ -1,7 +1,7 @@
-#include "containers/double-map.h"
-#include "containers/double-chain.h"
-#include "coherence.h"
-#include "bridge/bridge_data.h"
+#include "lib/containers/double-map.h"
+#include "lib/containers/double-chain.h"
+#include "lib/coherence.h"
+#include "bridge_data.h"
 
 /*@
   inductive dyn_entry = dyn_entry(ether_addri, uint16_t, uint32_t);

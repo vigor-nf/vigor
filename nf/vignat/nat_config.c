@@ -14,8 +14,8 @@
 #include <cmdline_parse_ipaddr.h>
 
 #include "nat_config.h"
-#include "nf_util.h"
-#include "nf_log.h"
+#include "lib/nf_util.h"
+#include "lib/nf_log.h"
 
 
 #define PARSE_ERROR(format, ...) \

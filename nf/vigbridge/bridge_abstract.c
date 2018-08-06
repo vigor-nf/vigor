@@ -1,4 +1,4 @@
-#include "lib/bridge-abstract-state.h"
+#include "bridge_abstract.h"
 
 
 /*@

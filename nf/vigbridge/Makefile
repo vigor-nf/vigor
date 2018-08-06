@@ -2,7 +2,7 @@
 APP := bridge
 
 # Runtime and verification files
-NF_FILES := bridge_forward.c bridge_config.c bridge_data.c
+NF_FILES := bridge_main.c bridge_config.c bridge_data.c
 
 # Verification files
 NF_VERIF_FILES := bridge_loop.c bridge_stub.c
