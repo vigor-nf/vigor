@@ -3,7 +3,7 @@ APP := nat
 
 # Runtime and verification files
 NF_FILES := nat_main.c nat_config.c \
-            ../lib/flow.c ../lib/flow-log.c \
+            ../lib/flow.c \
             ../lib/flowmanager.c ../lib/flowtable.c
 
 # Verification files
