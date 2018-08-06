@@ -20,16 +20,15 @@ struct stub_mbuf_content {
 ;
 
 // VeriFast definitions used in the tracing contracts
+// The switch statement for ether_addrp is there to make VeriFast understand that the list has *exactly* 6 elements
 /*@
-    inductive ether_addri = eaddrc(int, int, int, int, int, int);
+    inductive ether_addri = eaddrc(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
     predicate ether_addrp(struct ether_addr* ptr; ether_addri addr) =
       struct_ether_addr_padding(ptr) &*&
-      ptr->a |-> ?a &*&
-      ptr->b |-> ?b &*&
-      ptr->c |-> ?c &*&
-      ptr->d |-> ?d &*&
-      ptr->e |-> ?e &*&
-      ptr->f |-> ?f &*&
+      uchars(ptr->addr_bytes, 6, ?bytes) &*&
+      bytes == cons(?a, cons(?b, cons(?c, cons(?d, cons(?e, cons(?f, ?_nil)))))) &*&
+      switch(_nil) { case nil: return true; case cons(nh, nt): return false; } &*&
+      _nil == nil &*&
       addr == eaddrc(a, b, c, d, e, f);
 
     inductive ether_hdri = ether_hdrc(ether_addri, ether_addri, int);
@@ -39,7 +38,7 @@ struct stub_mbuf_content {
       ether->ether_type |-> ?et &*&
       hdr == ether_hdrc(saddr, daddr, et);
 
-    inductive ipv4_hdri = ipv4_hdrc(int, int, int, int, int, int, int, int, int);
+    inductive ipv4_hdri = ipv4_hdrc(int, int, int, int, int, int, int, int, int, int);
     predicate ipv4_hdrp(struct ipv4_hdr* hdr; ipv4_hdri val) =
       hdr->version_ihl |-> ?vihl &*&
       hdr->type_of_service |-> ?tos &*&
@@ -48,14 +47,14 @@ struct stub_mbuf_content {
       hdr->fragment_offset |-> ?foff &*&
       hdr->time_to_live |-> ?ttl &*&
       hdr->next_proto_id |-> ?npid &*&
-      // no checksum
+      hdr->hdr_checksum |-> ?cksum &*&
       hdr->src_addr |-> ?saddr &*&
       hdr->dst_addr |-> ?daddr &*&
-      val == ipv4_hdrc(vihl, tos, len, pid, foff, ttl, npid, saddr, daddr) &*&
+      val == ipv4_hdrc(vihl, tos, len, pid, foff, ttl, npid, cksum, saddr, daddr) &*&
       len == 10240;
       //FIXME: ^^ generalize for all values
 
-    inductive tcp_hdri = tcp_hdrc(int, int, int, int, int, int, int, int);
+    inductive tcp_hdri = tcp_hdrc(int, int, int, int, int, int, int, int, int);
     predicate tcp_hdrp(struct tcp_hdr* hdr; tcp_hdri val) =
       hdr->src_port |-> ?srcp &*&
       hdr->dst_port |-> ?dstp &*&
@@ -64,9 +63,9 @@ struct stub_mbuf_content {
       hdr->data_off |-> ?doff &*&
       hdr->tcp_flags |-> ?flags &*&
       hdr->rx_win |-> ?win &*&
-      // no checksum
+      hdr->cksum |-> ?cksum &*&
       hdr->tcp_urp |-> ?urp &*&
-      val == tcp_hdrc(srcp, dstp, seq, ack, doff, flags, win, urp);
+      val == tcp_hdrc(srcp, dstp, seq, ack, doff, flags, win, cksum, urp);
 
     inductive user_bufi = user_bufc(ether_hdri, ipv4_hdri, tcp_hdri);
     predicate user_bufferp(struct stub_mbuf_content *buf; user_bufi ub) =

@@ -46,7 +46,7 @@ bool ext_key_eq(void* a, void* b)
      AND k1->protocol      == k2->protocol;
 }
 
-static long long wrap(long long x)
+static unsigned long long wrap(unsigned long long x)
 //@ requires true;
 //@ ensures result == _wrap(x) &*& INT_MIN <= result &*& result <= INT_MAX;
 {
@@ -54,13 +54,13 @@ static long long wrap(long long x)
   return x % INT_MAX;
 }
 
-int int_key_hash(void* key)
+unsigned int_key_hash(void* key)
 //@ requires [?f]int_k_p(key, ?k);
 //@ ensures [f]int_k_p(key, k) &*& result == int_hash(k);
 {
   struct int_key* ik = key;
 
-  long long hash = ik->int_src_port;
+  unsigned long long hash = ik->int_src_port;
   hash *= 31;
 
   hash += ik->dst_port;
@@ -79,16 +79,16 @@ int int_key_hash(void* key)
 
   hash = wrap(hash);
 
-  return (int) hash;
+  return (unsigned) hash;
 }
 
-int ext_key_hash(void* key)
+unsigned ext_key_hash(void* key)
 //@ requires [?f]ext_k_p(key, ?k);
 //@ ensures [f]ext_k_p(key, k) &*& result == ext_hash(k);
 {
   struct ext_key* ek = key;
 
-  long long hash = ek->ext_src_port;
+  unsigned long long hash = ek->ext_src_port;
   hash *= 31;
 
   hash += ek->dst_port;
@@ -107,7 +107,7 @@ int ext_key_hash(void* key)
 
   hash = wrap(hash);
 
-  return (int) hash;
+  return (unsigned) hash;
 }
 
 //@ fixpoint bool my_offset(struct flow* fp, struct int_key* ik, struct ext_key* ek) { return &(fp->ik) == ik && &(fp->ek) == ek; }

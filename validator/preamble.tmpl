@@ -1,17 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include "lib/stubs/core_stub.h"
-#include "lib/expirator.h"
-#include "lib/stubs/time_stub_control.h"
-#include "lib/containers/double-map.h"
-#include "lib/containers/double-chain.h"
-#include "lib/stubs/containers/double-map-stub-control.h"
-#include "vignat/loop.h"
-#include "dmz/dmz_loop.h"
-#include "bridge/bridge_loop.h"
-#include "lib/bridge-abstract-state.h"
-
-//@ #include "lib/abstract-state.h"
 
 int flow_consistency(void* key_a, void* key_b, int index, void* value)
 /*@ requires true; @*/
@@ -39,33 +29,16 @@ ensures 0x00 == (0x00 & 0x10)
 {
   assume(false);
 }
+
+// VeriFast can't reason about modulo either, let's help it a bit...
+lemma void modulo_hack()
+requires true;
+ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
+{
+  assume(false);
+}
 @*/
 
-/*@ predicate hide_is_map_keys_equality<t>(map_keys_equality* fun,
-                                           predicate (void*;t) keyp) =
-      is_map_keys_equality<t>(fun, keyp);
- @*/
-
-/*@ predicate hide_is_map_key_hash<t>(map_key_hash* fun,
-                                      predicate (void*;t) keyp,
-                                      fixpoint (t,int) hsh) =
-      is_map_key_hash<t>(fun, keyp, hsh);
- @*/
-
-/*@ predicate hide_mapp<t>(struct Map* p,
-                           predicate (void*;t) kp,
-                           fixpoint (t,int) hsh,
-                           fixpoint (t,int,bool) recp,
-                           mapi<t> m) = mapp<t>(p, kp, hsh, recp, m); @*/
-
-/*@ predicate hide_vector<t>(struct Vector* vector,
-                             predicate (void*;t) entp,
-                             list<pair<t, bool> > values,
-                             list<void*> addrs) = vectorp<t>(vector, entp, values, addrs); @*/
-
-/*@ predicate hide_vector_acc<t>(struct Vector* vector,
-                                 predicate (void*;t) entp,
-                                 list<pair<t, bool> > values,
-                                 list<void*> addrs,
-                                 int accessed_idx,
-                                 void* entry) = vector_accp<t>(vector, entp, values, addrs, accessed_idx, entry); @*/
+void umemcpy(void *array, void *array0, size_t count);
+    //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
+    //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);

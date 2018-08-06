@@ -66,12 +66,7 @@ let flw_struct = Ir.Str ("flow", ["ik", int_key_struct;
                                   "ext_device_id", Uint8;
                                   "protocol", Uint8;])
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["a", Uint8;
-                                                "b", Uint8;
-                                                "c", Uint8;
-                                                "d", Uint8;
-                                                "e", Uint8;
-                                                "f", Uint8;])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
                                              "s_addr", ether_addr_struct;
                                              "ether_type", Uint16;])
@@ -82,8 +77,7 @@ let ipv4_hdr_struct = Ir.Str ("ipv4_hdr", ["version_ihl", Uint8;
                                            "fragment_offset", Uint16;
                                            "time_to_live", Uint8;
                                            "next_proto_id", Uint8;
-                                           (* Too difficult to check
-                                              "hdr_checksum", Uint16; *)
+                                            "hdr_checksum", Uint16;
                                            "src_addr", Uint32;
                                            "dst_addr", Uint32;])
 let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
@@ -93,8 +87,7 @@ let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
                                          "data_off", Uint8;
                                          "tcp_flags", Uint8;
                                          "rx_win", Uint16;
-                                         (* too difficult to check
-                                            "cksum", Uint16; *)
+                                         "cksum", Uint16;
                                          "tcp_urp", Uint16;])
 
 let stub_mbuf_content_struct = Ir.Str ( "stub_mbuf_content",
@@ -120,8 +113,8 @@ let rte_mbuf_struct = Ir.Str ( "rte_mbuf",
                                 "buf_len", Uint16;
                                 "timestamp", Uint64;
                                 "udata64", Uint64;
-                                (*"pool", Ptr rte_mempool_struct;*)
-                                (*"next", Ptr Void;*)
+                                "pool", Ptr rte_mempool_struct;
+                                "next", Ptr Void;
                                 "tx_offload", Uint64;
                                 "priv_size", Uint16;
                                 "timesync", Uint16; 
@@ -166,7 +159,7 @@ let fun_types =
                           Sint32; Ptr (Ctm "uq_value_copy");
                           Ptr (Ctm "uq_value_destr");
                           Ptr (Ctm "dmap_extract_keys"); Ptr (Ctm "dmap_pack_keys");
-                          Sint32; Sint32;
+                          Uint32; Uint32;
                           Ptr (Ptr dmap_struct)];
                        extra_ptr_types = [];
                        lemmas_before = [
@@ -315,7 +308,6 @@ let fun_types =
                          "/*@ close ext_k_p(" ^ List.nth_exn args 1 ^
                          ", ?ext_key_dgb); @*/"); ];
                     lemmas_after = [
-                      tx_l "open (ext_k_p(_,_));";
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
@@ -363,7 +355,6 @@ let fun_types =
                          ", ?int_key_dga); @*/"
                       );];
                     lemmas_after = [
-                      tx_l "open (int_k_p(_,_));";
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
@@ -508,7 +499,9 @@ let fun_types =
                   lemmas_after = [
                     (fun params ->
                        "/*@ {\n\
-                         open flw_p(_, ?flw);\n\
+                        close flw_p(" ^ (List.nth_exn params.args 1) ^
+                       ", ?flw);\n\
+                         open flw_p(_, flw);\n\
                          open int_k_p(_,?ik);\n\
                          open ext_k_p(_,?ek);\n\
                         if (" ^ params.ret_name ^
@@ -814,7 +807,15 @@ let fixpoints =
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
 struct
-  let preamble = (In_channel.read_all "preamble.tmpl") ^
+  let preamble = "\
+#include \"lib/expirator.h\"\n\
+#include \"lib/stubs/time_stub_control.h\"\n\
+#include \"lib/containers/double-map.h\"\n\
+#include \"lib/containers/double-chain.h\"\n\
+#include \"lib/stubs/containers/double-map-stub-control.h\"\n\
+#include \"vignat/loop.h\"\n\
+//@ #include \"lib/abstract-state.h\"\n" ^
+                  (In_channel.read_all "preamble.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\

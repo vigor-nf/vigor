@@ -13,6 +13,6 @@ void set_flow(struct DoubleMap* map, int index, struct flow* flow);
 int add_flow(struct DoubleMap* map, struct flow *f, int index);
 int remove_flow(struct DoubleMap* map, int index);
 
-int allocate_flowtables(uint16_t nb_ports, int max_flows, struct DoubleMap** map_out);
+int allocate_flowtables(int max_flows, struct DoubleMap** map_out);
 
 #endif //_FLOWTABLE_H_INCLUDED_

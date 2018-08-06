@@ -67,8 +67,7 @@ int add_flow(struct DoubleMap* map, struct flow *f, int index) {
     return dmap_put(map, f, index);
 }
 
-int allocate_flowtables(uint16_t nb_ports, int max_flows, struct DoubleMap** map_out) {
-    (void)nb_ports;
+int allocate_flowtables(int max_flows, struct DoubleMap** map_out) {
     int alloc_result = dmap_allocate(int_key_eq, int_key_hash,
                                      ext_key_eq, ext_key_hash,
                                      sizeof(struct flow), flow_cpy,

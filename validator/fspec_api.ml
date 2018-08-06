@@ -38,6 +38,7 @@ let rec render_deep_assignment {lhs;rhs} =
              render_deep_assignment {lhs={v=Str_idx (lhs, name);t};
                                      rhs={v=Str_idx (rhs, name);t}}))
   | Unknown -> "";
+  | Array (_, s) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string s) ^ ");"
   | _ -> (render_tterm lhs) ^ " = " ^
          (render_tterm rhs) ^ ";"
 
@@ -45,6 +46,59 @@ let deep_copy (var : var_spec) =
   (render_deep_assignment {lhs={v=Id var.name;t=var.value.t};
                              rhs=var.value}) ^
   "\n"
+
+let rec self_dereference tterm tmpgen =
+  match tterm.v with
+  | Id x -> ("//@ assert *&" ^ x ^ "|-> ?" ^
+             (tmpgen ("pp" ^ x) ^ ";"),
+             {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
+  | Str_idx (x,fname) ->
+    let (binding, x) = self_dereference x tmpgen in
+    (binding,{v=Str_idx (x,fname);t=tterm.t})
+  | Addr x ->
+    let (binding, x) = self_dereference x tmpgen in
+    (binding,{v=Addr x;t=tterm.t})
+  | Deref x ->
+    let (binding, x) = self_dereference x tmpgen in
+    (binding,{v=Deref x;t=tterm.t})
+  | _ -> failwith ("unhandled in self_deref: " ^ (render_tterm tterm))
+
+let rec innermost_dereference tterm tmpgen =
+  match tterm.v with
+  | Str_idx ({v=Deref {v=Id x;t=_};t=_},fname) ->
+    let tmpname = (tmpgen ("stp" ^ x ^ "_" ^ fname)) in
+    ("//@ assert " ^ (render_tterm tterm) ^ " |-> ?" ^
+     tmpname ^ ";",
+     {v=Id tmpname;t=tterm.t})
+  | Addr x ->
+    let (binding, x) = innermost_dereference x tmpgen in
+    (binding, {v=Addr x;t=tterm.t})
+  | Deref x ->
+    let (binding, x) = innermost_dereference x tmpgen in
+    (binding, {v=Deref x;t=tterm.t})
+  | Str_idx (x,fname) ->
+    let (binding, x) = innermost_dereference x tmpgen in
+    (binding, {v=Str_idx (x,fname);t=tterm.t})
+  | _ -> failwith ("unhandled in inn_deref: " ^ (render_tterm tterm) ^ " : " ^ (ttype_to_str tterm.t))
+
+let generate_2step_dereference tterm tmpgen =
+  let rec tterm_has_no_derefs = function
+  | {v=Deref _;t=_} -> false
+  | {v=Str_idx (x, _);t=_} -> tterm_has_no_derefs x
+  | {v=Addr x;t=_} -> tterm_has_no_derefs x
+  | _ -> true
+  in
+  match tterm.v with
+  | Str_idx ({v=Deref {v=Id x;t=xt};t=dt}, fname) -> (* don't 2step-deref if there is only 1 step *)
+    let binding = "//@ assert *&" ^ x ^ "|-> ?" ^ (tmpgen ("pp" ^ x)) ^ ";" in
+    ([binding],{v=Str_idx ({v=Deref {v=Id (tmpgen ("pp" ^ x));t=xt};t=dt}, fname);t=tterm.t})
+  | _ when tterm_has_no_derefs tterm -> (* don't do anything, can't use points-to if no derefs *)
+    ([], tterm)
+  | _ ->
+    let (binding1,x) = self_dereference tterm tmpgen in
+    let (binding2,x) = innermost_dereference x tmpgen in
+    ([binding1;binding2],x)
+
 
 type type_set = Static of ttype | Dynamic of (string*ttype) list
 

@@ -91,8 +91,8 @@ int dmap_allocate(map_keys_equality eq_a,
                   uq_value_destr v_destr,
                   dmap_extract_keys dexk,
                   dmap_pack_keys dpk,
-                  int capacity,
-                  int keys_capacity,
+                  unsigned capacity,
+                  unsigned keys_capacity,
                   struct DoubleMap** map_out) {
   klee_trace_ret();
   klee_trace_param_fptr(eq_a, "eq_a");
@@ -104,8 +104,8 @@ int dmap_allocate(map_keys_equality eq_a,
   klee_trace_param_fptr(v_destr, "v_destr");
   klee_trace_param_fptr(dexk, "dexk");
   klee_trace_param_fptr(dpk, "dpk");
-  klee_trace_param_i32(capacity, "capacity");
-  klee_trace_param_i32(keys_capacity, "keys_capacity");
+  klee_trace_param_u32(capacity, "capacity");
+  klee_trace_param_u32(keys_capacity, "keys_capacity");
   klee_trace_param_ptr_directed(map_out, sizeof(struct DoubleMap*), "map_out", TD_OUT);
 
   // TODO no need for this if malloc can fail
@@ -315,7 +315,7 @@ void dmap_get_value(struct DoubleMap* map, int index, void* value_out) {
 }
 
 __attribute__((noinline))
-int dmap_size(struct DoubleMap* map) {
+unsigned dmap_size(struct DoubleMap* map) {
   klee_trace_ret();
   //To avoid symbolic-pointer-dereference,
   // consciously trace "map" as a simple value.

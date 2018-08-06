@@ -46,9 +46,21 @@ struct StaticFilterTable {
 
   fixpoint bool dynentry_right_offsets(void* ptr, void* eaddr);
 
-  fixpoint int eth_addr_hash(ether_addri ea);
 
-  fixpoint int st_key_hash(stat_keyi k);
+  fixpoint uint64_t _wrap(uint64_t x) { return x % UINT_MAX; }
+  fixpoint int eth_addr_hash(ether_addri ea) {
+    switch(ea) {
+      case eaddrc(a, b, c, d, e, f):
+        return _wrap((((((a * 31) + b) * 31 + c) * 31 + d) * 31 + e) * 31 + f);
+    }
+  }
+
+  fixpoint int st_key_hash(stat_keyi k) {
+    switch(k) {
+      case stkc(n, ea):
+        return _wrap(n + 31 * eth_addr_hash(ea));
+    }
+  }
   @*/
 
 
@@ -57,22 +69,22 @@ bool ether_addr_eq(void* k1, void* k2);
              [?fr2]ether_addrp(k2, ?ea2); @*/
 /*@ ensures [fr1]ether_addrp(k1, ea1) &*&
             [fr2]ether_addrp(k2, ea2) &*&
-            (result == false ? (ea1 != ea2) : ea1 == ea2); @*/
+            (result ? ea1 == ea2 : ea1 != ea2); @*/
 
 bool static_key_eq(void* k1, void* k2);
 /*@ requires [?fr1]static_keyp(k1, ?sk1) &*&
              [?fr2]static_keyp(k2, ?sk2); @*/
 /*@ ensures [fr1]static_keyp(k1, sk1) &*&
             [fr2]static_keyp(k2, sk2) &*&
-            (result == false ? (sk1 != sk2) : sk1 == sk2); @*/
+            (result ? sk1 == sk2 : sk1 != sk2); @*/
 
 
-int ether_addr_hash(void* k);
+unsigned ether_addr_hash(void* k);
 /*@ requires [?fr]ether_addrp(k, ?ea); @*/
 /*@ ensures [fr]ether_addrp(k, ea) &*&
             result == eth_addr_hash(ea); @*/
 
-int static_key_hash(void* key);
+unsigned static_key_hash(void* key);
 /*@ requires [?fr]static_keyp(key, ?sk); @*/
 /*@ ensures [fr]static_keyp(key, sk) &*&
             result == st_key_hash(sk); @*/

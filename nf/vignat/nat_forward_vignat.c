@@ -6,8 +6,6 @@
 #include <stdlib.h>
 
 #include <rte_common.h>
-#include <rte_ethdev.h>
-#include <rte_ether.h>
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
@@ -25,8 +23,7 @@ struct FlowManager* flow_manager;
 void nf_core_init()
 {
 	flow_manager = allocate_flowmanager(
-		rte_eth_dev_count(),
-                config.start_port,
+		config.start_port,
                 config.external_addr,
                 config.wan_device,
                 config.expiration_time,

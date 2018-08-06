@@ -19,9 +19,14 @@ struct Vector {
   int field_count;
   int nested_field_count;
   char* cell_type;
+
+  vector_init_elem* init_elem;
+
+  vector_entry_condition* ent_cond;
+  void* ent_cond_state;
 };
 
-int vector_allocate(int elem_size, int capacity,
+int vector_allocate(int elem_size, unsigned capacity,
                     vector_init_elem* init_elem,
                     struct Vector** vector_out) {
   klee_trace_ret();
@@ -34,16 +39,20 @@ int vector_allocate(int elem_size, int capacity,
   if (! allocation_succeeded) return 0;
 
   *vector_out = malloc(sizeof(struct Vector));
-  klee_assume(*vector_out != NULL);
   klee_make_symbolic(*vector_out, sizeof(struct Vector), "vector");
-  (*vector_out)->data = malloc(elem_size*NUM_ELEMS);
-  klee_assume((*vector_out)->data != NULL);
+  (*vector_out)->data = calloc(NUM_ELEMS, elem_size);
   klee_make_symbolic((*vector_out)->data, elem_size*NUM_ELEMS, "vector_data");
+  for (int n = 0; n < NUM_ELEMS; n++) {
+    init_elem((*vector_out)->data + (elem_size*n));
+  }
   (*vector_out)->elem_size = elem_size;
   (*vector_out)->capacity = capacity;
+  (*vector_out)->init_elem = init_elem;
   (*vector_out)->elems_claimed = 0;
   (*vector_out)->field_count = 0;
   (*vector_out)->nested_field_count = 0;
+  (*vector_out)->ent_cond = NULL;
+  (*vector_out)->ent_cond_state = NULL;
   klee_forbid_access((*vector_out)->data, elem_size*NUM_ELEMS, "private state");
   return 1;
 }
@@ -54,7 +63,15 @@ void vector_reset(struct Vector* vector) {
   klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
   klee_make_symbolic(vector->data, NUM_ELEMS*vector->elem_size, "vector_data_reset");
   vector->elems_claimed = 0;
+  for (int n = 0; n < NUM_ELEMS; n++) {
+    vector->init_elem(vector->data + (vector->elem_size*n));
+  }
   klee_forbid_access(vector->data, vector->elem_size*NUM_ELEMS, "private state");
+}
+
+void vector_set_entry_condition(struct Vector* vector, vector_entry_condition* cond, void* state) {
+  vector->ent_cond = cond;
+  vector->ent_cond_state = state;
 }
 
 void vector_set_layout(struct Vector* vector,
@@ -83,17 +100,17 @@ void vector_borrow_full(struct Vector* vector, int index, void** val_out) {
   //Avoid dumping the actual contents of vector.
   klee_trace_param_u64((uint64_t)vector, "vector");
   klee_trace_param_i32(index, "index");
-  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_BOTH);
+  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_OUT);
   void* cell = vector->data + vector->elems_claimed*vector->elem_size;
   klee_trace_extra_ptr(cell, vector->elem_size,
-                       "borrowed_cell", vector->cell_type, TD_BOTH);
+                       "borrowed_cell", vector->cell_type, TD_OUT);
   {
     for (int i = 0; i < vector->field_count; ++i) {
       klee_trace_extra_ptr_field(cell,
                                  vector->fields[i].offset,
                                  vector->fields[i].width,
                                  vector->fields[i].name,
-                                 TD_BOTH);
+                                 TD_OUT);
     }
     for (int i = 0; i < vector->nested_field_count; ++i) {
       klee_trace_extra_ptr_nested_field(cell,
@@ -101,13 +118,19 @@ void vector_borrow_full(struct Vector* vector, int index, void** val_out) {
                                         vector->nest_fields[i].offset,
                                         vector->nest_fields[i].width,
                                         vector->nest_fields[i].name,
-                                        TD_BOTH);
+                                        TD_OUT);
     }
   }
+
+  klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
+
+  if (vector->ent_cond) {
+    klee_assume(vector->ent_cond(cell, vector->ent_cond_state));
+  }
+
   klee_assert(vector->elems_claimed < NUM_ELEMS);
   vector->index_claimed[vector->elems_claimed] = index;
   vector->elems_claimed += 1;
-  klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
   *val_out = cell;
 }
 
@@ -116,17 +139,17 @@ void vector_borrow_half(struct Vector* vector, int index, void** val_out) {
   //Avoid dumping the actual contents of vector.
   klee_trace_param_u64((uint64_t)vector, "vector");
   klee_trace_param_i32(index, "index");
-  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_BOTH);
+  klee_trace_param_tagged_ptr(val_out, sizeof(void*), "val_out", vector->cell_type, TD_OUT);
   void* cell = vector->data + vector->elems_claimed*vector->elem_size;
   klee_trace_extra_ptr(cell, vector->elem_size,
-                       "borrowed_cell", vector->cell_type, TD_BOTH);
+                       "borrowed_cell", vector->cell_type, TD_OUT);
   {
     for (int i = 0; i < vector->field_count; ++i) {
       klee_trace_extra_ptr_field(cell,
                                  vector->fields[i].offset,
                                  vector->fields[i].width,
                                  vector->fields[i].name,
-                                 TD_BOTH);
+                                 TD_OUT);
     }
     for (int i = 0; i < vector->nested_field_count; ++i) {
       klee_trace_extra_ptr_nested_field(cell,
@@ -134,13 +157,19 @@ void vector_borrow_half(struct Vector* vector, int index, void** val_out) {
                                         vector->nest_fields[i].offset,
                                         vector->nest_fields[i].width,
                                         vector->nest_fields[i].name,
-                                        TD_BOTH);
+                                        TD_OUT);
     }
   }
+
+  klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
+
+  if (vector->ent_cond) {
+    klee_assume(vector->ent_cond(cell, vector->ent_cond_state));
+  }
+
   klee_assert(vector->elems_claimed < NUM_ELEMS);
   vector->index_claimed[vector->elems_claimed] = index;
   vector->elems_claimed += 1;
-  klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
   *val_out = cell;
 }
 
@@ -168,6 +197,11 @@ void vector_return_full(struct Vector* vector, int index, void* value) {
                                                  TD_IN);
     }
   }
+
+  if (vector->ent_cond) {
+    klee_assert(vector->ent_cond(value, vector->ent_cond_state));
+  }
+
   int belongs = 0;
   for (int i = 0; i < vector->elems_claimed; ++i) {
     if (vector->data + i*vector->elem_size == value) {
@@ -203,6 +237,11 @@ void vector_return_half(struct Vector* vector, int index, void* value) {
                                                  TD_IN);
     }
   }
+
+  if (vector->ent_cond) {
+    klee_assert(vector->ent_cond(value, vector->ent_cond_state));
+  }
+
   int belongs = 0;
   for (int i = 0; i < vector->elems_claimed; ++i) {
     if (vector->data + i*vector->elem_size == value) {

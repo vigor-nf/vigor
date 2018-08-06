@@ -1,10 +1,27 @@
 open Core
 open Ir
 
+let tmp_counter = ref 0
+let gen_tmp_name () =
+  let counter_value = !tmp_counter in
+  tmp_counter := counter_value + 1;
+  let func prefix = "tmp" ^ prefix ^ (Int.to_string counter_value) in
+  func
+
 let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   let head = (if is_assert then "assert" else "assume") in
   (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
   match out_val.v, out_val.t with
+  (* HACKY HACK - can't do an assume over the arrays themselves because they're pointers and VeriFast will assume that the pointers, not the contents, are equal *)
+  | _, Array (Uint8, size) when head = "assume" -> begin match out_arg.t with
+                          | Array (Uint8, size2) when size2 = size ->
+                            let tmp_gen = gen_tmp_name() in
+                            let (bindings, expr) = Fspec_api.generate_2step_dereference out_arg tmp_gen in
+                            (String.concat ~sep:"\n" bindings) ^ "\n" ^
+                            "//@ assert [_]uchars(" ^ (render_tterm expr) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "oa") ^ ");\n" ^
+                            "//@ assert [_]uchars(" ^ (render_tterm out_val) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "ov") ^ ");\n" ^
+                            "//@ assume(" ^ (tmp_gen "oa") ^ " == " ^ (tmp_gen "ov") ^ ");\n"
+                          | _ -> failwith "Arrays must be of type Uint8 (sorry!) and same size (not sorry!)" end
   (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->
     begin match out_arg.v, out_arg.t with
@@ -70,14 +87,14 @@ let render_args_post_conditions ~is_assert apk =
   (String.concat ~sep:"\n" (List.map apk
                               ~f:(fun {lhs;rhs;} ->
                                   render_eq_sttmt ~is_assert
-                                    lhs rhs)))
+                                    lhs rhs))) ^ "\n"
 
 let render_post_assumptions post_statements =
   (String.concat ~sep:"\n" (List.map post_statements
                               ~f:(fun t ->
                                   "/*@ assume(" ^
                                   (render_tterm t) ^
-                                  ");@*/")))
+                                  ");@*/"))) ^ "\n"
 
 let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
   match ret_name with
@@ -87,11 +104,17 @@ let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
 let render_assignment {lhs;rhs;} =
   match rhs.v with
   | Undef -> "";
-  | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";"
+  | _ -> begin match rhs.t with
+         | Array (_, size) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");"
+         | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
 
 let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
   else match rhs.t, rhs.v with
+  | _, Undef -> []
+  | Array (_, s), _ -> begin match lhs.t with
+                  | Array (_, s2) when s = s2 -> [{lhs;rhs}]
+                  | _ -> failwith "arrays must be compared to arrays of the same size" end
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
                           rhs=pointee}
@@ -110,29 +133,18 @@ let rec gen_plain_equalities {lhs;rhs} =
            gen_plain_equalities
              {lhs={v=Str_idx (lhs, name);t=ttype};
               rhs={v=Str_idx (rhs, name);t=ttype}}))
-  | Uint64, Int _
-  | Sint64, Str_idx _
-  | Sint64, Id _
-  | Sint64, Int _
-  | Sint32, Int _
-  | Sint32, Bop (Add, {v=Id _;t=_}, {v=Int _; t=_})
-  | Sint8, Int _
-  | Uint32, Int _
-  | Uint32, Str_idx _
-  | Uint16, Int _
-  | Uint16, Str_idx _
-  | Uint8, Int _
-  | Uint8, Str_idx _
-  | Sint32, Id _
-  | Sint8, Id _
-  | Uint64, Id _
-  | Uint32, Id _
-  | Uint16, Id _
-  | Uint8, Id _
+  | Sint64, _
+  | Sint32, _
+  | Sint16, _
+  | Sint8, _
+  | Uint64, _
+  | Uint32, _
+  | Uint16, _
+  | Uint8,  _
   | Boolean, Id _
   | Boolean, Bool _
   | Ptr _, Id _
-  | Ptr _, Int _ -> [{lhs;rhs}]
+  | Ptr _, Int _ -> [{lhs;rhs={v=Cast(lhs.t,rhs);t=lhs.t}}]
   | Boolean, Int 0 ->
     [{lhs;rhs={v=Bool false;
                t=Boolean}}]
@@ -144,9 +156,7 @@ let rec gen_plain_equalities {lhs;rhs} =
                              {v=Int 0;t=Sint32});
                       t=Boolean};
                t=Boolean}}]
-  | Uint16, Cast (Uint16, {v=Id _;t=_}) -> [{lhs;rhs}]
   | Ptr _, Zeroptr -> []
-  | _, Undef -> []
   | _ -> match lhs.v, rhs.v with
          | Deref lref, Deref rref -> gen_plain_equalities {lhs=lref; rhs=rref}
          | Id x, Deref {v=Addr {v=Id y;t=_};t=_} when x = y -> [{lhs;rhs}]
@@ -186,11 +196,11 @@ let render_hist_fun_call {context;result} =
                  " != " ^ "0);\n") ^
               "/* Do not render the return ptee assumption for hist calls */\n"
    | _ -> render_ret_equ_sttmt ~is_assert:false context.ret_name context.ret_type result.ret_val) ^
-  "// POSTLEMMAS\n" ^
-  (render_postlemmas context) (* postlemmas can depend on the return value *) ^
   "// POSTCONDITIONS\n" ^
   (render_args_post_conditions ~is_assert:false result.args_post_conditions) ^ (* ret can influence whether args are accessible *)
-  (render_post_assumptions result.post_statements)
+  (render_post_assumptions result.post_statements) ^
+  "// POSTLEMMAS\n" ^
+  (render_postlemmas context) (* postlemmas can depend on the return value *)
 
 let gen_ret_equalities ret_val ret_name ret_type =
   match ret_name with
@@ -203,9 +213,12 @@ let make_assignments_for_eqs equalities =
       {lhs=rhs;rhs=lhs})
 
 let split_assignments assignments =
+  let rec unfold_casts v = match v with
+  | Cast (_, {v=v2;t=_}) -> unfold_casts v2
+  | _ -> v
+  in
   List.fold assignments ~init:([],[]) ~f:(fun (concrete,symbolic) assignment ->
-      match assignment.lhs.v with
-      | Cast (_,{v=Id _;t=_})
+      match unfold_casts assignment.lhs.v with
       | Id _ -> (concrete,assignment::symbolic)
       | Int _ -> (assignment::concrete,symbolic)
       | Bool _ -> (assignment::concrete,symbolic)
@@ -523,6 +536,7 @@ let render_vars_declarations ( vars : var_spec list ) =
   String.concat ~sep:"\n"
     (List.map vars ~f:(fun v ->
          match v.value.t with
+         | Array (at, size) -> (ttype_to_str at) ^ " " ^ v.name ^ "[" ^ (Int.to_string size) ^ "];"
          | Unknown | Sunknown | Uunknown -> failwith ("Cannot render var decl '" ^ v.name ^ "' for type " ^ (ttype_to_str v.value.t))
          | _ -> ttype_to_str v.value.t ^ " " ^ v.name ^ ";")) ^ "\n"
 
@@ -531,8 +545,9 @@ let render_hist_calls hist_funs =
 
 let render_cmplexes cmplxes =
   String.concat ~sep:"\n" (List.map (String.Map.data cmplxes) ~f:(fun var ->
-      (ttype_to_str var.value.t) ^ " " ^ var.name ^ ";//" ^
-      (render_tterm var.value))) ^ "\n"
+      match var.value.t with
+      | Array (at, size) -> (ttype_to_str at) ^ " " ^ var.name ^ "[" ^ (Int.to_string size) ^ "]; //" ^ (render_tterm var.value)
+      | _ -> (ttype_to_str var.value.t) ^ " " ^ var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
 
 let render_context_assumptions assumptions  =
   render_assumptions assumptions

@@ -1,15 +1,15 @@
 #include <stdlib.h>
-#include "lib/containers/map-impl.h"
+#include "map-impl.h"
 #include "map.h"
 
 struct Map {
   int* busybits;
   void** keyps;
-  int* khs;
+  unsigned* khs;
   int* chns;
   int* vals;
-  int capacity;
-  int size;
+  unsigned capacity;
+  unsigned size;
   map_keys_equality* keys_eq;
   map_key_hash* khash;
 };
@@ -21,7 +21,7 @@ struct Map {
 /*@
   predicate mapp<t>(struct Map* ptr,
                     predicate (void*;t) kp,
-                    fixpoint (t,int) hsh,
+                    fixpoint (t,unsigned) hsh,
                     fixpoint (t,int,bool) recp,
                     mapi<t> map) =
     malloc_block_Map(ptr) &*&
@@ -36,7 +36,7 @@ struct Map {
     ptr->khash |-> ?khash &*&
     malloc_block_ints(busybits, capacity) &*&
     malloc_block_pointers(keyps, capacity) &*&
-    malloc_block_ints(khs, capacity) &*&
+    malloc_block_uints(khs, capacity) &*&
     malloc_block_ints(chns, capacity) &*&
     malloc_block_ints(vals, capacity) &*&
     [_]is_map_keys_equality<t>(keys_eq, kp) &*&
@@ -48,7 +48,7 @@ struct Map {
   @*/
 
 int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
-                            int capacity,
+                            unsigned capacity,
                             struct Map** map_out)
 /*@ requires 0 < capacity &*& capacity < CAPACITY_UPPER_LIMIT &*&
              [_]is_map_keys_equality<t>(keq, ?kp) &*&
@@ -65,14 +65,14 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
   struct Map* map_alloc = malloc(sizeof(struct Map));
   if (map_alloc == NULL) return 0;
   *map_out = (struct Map*) map_alloc;
-  int* bbs_alloc = malloc(sizeof(int)*capacity);
+  int* bbs_alloc = malloc(sizeof(int)*(int)capacity);
   if (bbs_alloc == NULL) {
     free(map_alloc);
     *map_out = old_map_val;
     return 0;
   }
   (*map_out)->busybits = bbs_alloc;
-  void** keyps_alloc = malloc(sizeof(void*)*capacity);
+  void** keyps_alloc = malloc(sizeof(void*)*(int)capacity);
   if (keyps_alloc == NULL) {
     free(bbs_alloc);
     free(map_alloc);
@@ -80,7 +80,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
     return 0;
   }
   (*map_out)->keyps = keyps_alloc;
-  int* khs_alloc = malloc(sizeof(int)*capacity);
+  unsigned* khs_alloc = malloc(sizeof(unsigned)*(int)capacity);
   if (khs_alloc == NULL) {
     free(keyps_alloc);
     free(bbs_alloc);
@@ -89,7 +89,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
     return 0;
   }
   (*map_out)->khs = khs_alloc;
-  int* chns_alloc = malloc(sizeof(int)*capacity);
+  int* chns_alloc = malloc(sizeof(int)*(int)capacity);
   if (chns_alloc == NULL) {
     free(khs_alloc);
     free(keyps_alloc);
@@ -99,7 +99,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
     return 0;
   }
   (*map_out)->chns = chns_alloc;
-  int* vals_alloc = malloc(sizeof(int)*capacity);
+  int* vals_alloc = malloc(sizeof(int)*(int)capacity);
   if (vals_alloc == NULL) {
     free(chns_alloc);
     free(khs_alloc);
@@ -147,7 +147,7 @@ int map_get/*@ <t> @*/(struct Map* map, void* key, int* value_out)
 {
   //@ open mapp<t>(map, kp, hsh, recp, mapc(capacity, contents, addrs));
   map_key_hash* khash = map->khash;
-  int hash = khash(key);
+  unsigned hash = khash(key);
   return map_impl_get(map->busybits,
                       map->keyps,
                       map->khs,
@@ -174,7 +174,7 @@ void map_put/*@ <t> @*/(struct Map* map, void* key, int value)
 {
   //@ open mapp<t>(map, kp, hsh, recp, mapc(capacity, contents, addrs));
   map_key_hash* khash = map->khash;
-  int hash = khash(key);
+  unsigned hash = khash(key);
   map_impl_put(map->busybits,
                map->keyps,
                map->khs,
@@ -235,7 +235,7 @@ void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash)
 {
   //@ open mapp<t>(map, kp, hsh, recp, mapc(capacity, contents, addrs));
   map_key_hash* khash = map->khash;
-  int hash = khash(key);
+  unsigned hash = khash(key);
   map_impl_erase(map->busybits,
                  map->keyps,
                  map->khs,
@@ -245,8 +245,8 @@ void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash)
                  hash,
                  map->capacity,
                  trash);
-  --map->size;
   //@ map_erase_decrement_len(contents, k);
+  --map->size;
   /*@
     close mapp<t>(map, kp, hsh, recp, mapc(capacity,
                                            map_erase_fp(contents, k),
@@ -254,7 +254,7 @@ void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash)
     @*/
 }
 
-int map_size/*@ <t> @*/(struct Map* map)
+unsigned map_size/*@ <t> @*/(struct Map* map)
 /*@ requires mapp<t>(map, ?kp, ?hsh, ?recp,
                      mapc(?capacity, ?contents, ?addrs)); @*/
 /*@ ensures mapp<t>(map, kp, hsh, recp,

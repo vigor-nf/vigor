@@ -60,7 +60,6 @@ int bridge_get_device(struct ether_addr* dst,
   struct StaticKey k;
   memcpy(&k.addr, dst, sizeof(struct ether_addr));
   k.device = src_device;
-  int hash = static_key_hash(&k);
   int present = map_get(static_ft.map,
                         &k, &device);
   if (present) {
@@ -71,7 +70,6 @@ int bridge_get_device(struct ether_addr* dst,
 #endif//KLEE_VERIFICATION
 
   int index = -1;
-  hash = ether_addr_hash(dst);
   present = map_get(dynamic_ft.map, dst, &index);
   if (present) {
     struct DynamicValue* value = 0;
@@ -112,7 +110,7 @@ void bridge_put_update_entry(struct ether_addr* src,
   }
 }
 
-void allocate_static_ft(int capacity) {
+void allocate_static_ft(unsigned capacity) {
   assert(0 < capacity);
   assert(capacity < CAPACITY_UPPER_LIMIT);
   int happy = map_allocate(static_key_eq, static_key_hash,
@@ -132,37 +130,22 @@ struct str_field_descr static_map_key_fields[] = {
 };
 
 struct nested_field_descr static_map_key_nested_fields[] = {
-  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t), "a"},
-  {offsetof(struct StaticKey, addr), 1, sizeof(uint8_t), "b"},
-  {offsetof(struct StaticKey, addr), 2, sizeof(uint8_t), "c"},
-  {offsetof(struct StaticKey, addr), 3, sizeof(uint8_t), "d"},
-  {offsetof(struct StaticKey, addr), 4, sizeof(uint8_t), "e"},
-  {offsetof(struct StaticKey, addr), 5, sizeof(uint8_t), "f"},
+  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t) * 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint8_t), "a"},
-  {1, sizeof(uint8_t), "b"},
-  {2, sizeof(uint8_t), "c"},
-  {3, sizeof(uint8_t), "d"},
-  {4, sizeof(uint8_t), "e"},
-  {5, sizeof(uint8_t), "f"}
+  {0, sizeof(uint8_t) * 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint8_t), "a"},
-  {1, sizeof(uint8_t), "b"},
-  {2, sizeof(uint8_t), "c"},
-  {3, sizeof(uint8_t), "d"},
-  {4, sizeof(uint8_t), "e"},
-  {5, sizeof(uint8_t), "f"},
+  {0, sizeof(uint8_t) * 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_value_fields[] = {
   {0, sizeof(uint16_t), "device"},
 };
 
-int stat_map_condition(void* key, int index) {
+bool stat_map_condition(void* key, int index, void* state) {
   // Do not trace the model service function
   return 0 <= index & index < rte_eth_dev_count();
 }
@@ -174,7 +157,7 @@ int stat_map_condition(void* key, int index) {
 //TODO: this function must appear in the traces.
 // let's see if we notice that it does not
 void read_static_ft_from_file() {
-  int static_capacity = klee_range(1, CAPACITY_UPPER_LIMIT, "static_capacity");
+  unsigned static_capacity = klee_range(1, CAPACITY_UPPER_LIMIT, "static_capacity");
   allocate_static_ft(static_capacity);
   map_set_layout(static_ft.map, static_map_key_fields,
                  sizeof(static_map_key_fields)/sizeof(static_map_key_fields[0]),
@@ -182,7 +165,7 @@ void read_static_ft_from_file() {
                  sizeof(static_map_key_nested_fields)/
                  sizeof(static_map_key_nested_fields[0]),
                  "StaticKey");
-  map_set_entry_condition(static_ft.map, stat_map_condition);
+  map_set_entry_condition(static_ft.map, stat_map_condition, NULL);
   vector_set_layout(static_ft.keys, static_map_key_fields,
                     sizeof(static_map_key_fields)/
                     sizeof(static_map_key_fields[0]),
@@ -207,7 +190,7 @@ void read_static_ft_from_file() {
              config.static_config_fname);
   }
 
-  int number_of_lines = 0;
+  unsigned number_of_lines = 0;
   char ch;
   do {
     ch = fgetc(cfg_file);
@@ -216,7 +199,7 @@ void read_static_ft_from_file() {
   } while (ch != EOF);
 
   // Make sure the hash table is occupied only by 50%
-  int capacity = number_of_lines * 2;
+  unsigned capacity = number_of_lines * 2;
   rewind(cfg_file);
   if (CAPACITY_UPPER_LIMIT <= capacity) {
     rte_exit(EXIT_FAILURE, "Too many static rules (%d), max: %d",
@@ -309,7 +292,7 @@ void read_static_ft_from_file() {
 void nf_core_init(void) {
   read_static_ft_from_file();
 
-  int capacity = config.dyn_capacity;
+  unsigned capacity = config.dyn_capacity;
   int happy = map_allocate(ether_addr_eq, ether_addr_hash,
                            capacity, &dynamic_ft.map);
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic map");

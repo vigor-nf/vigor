@@ -7,12 +7,12 @@
 struct Map;
 
 /*@
-  inductive mapi<t> = mapc(int, list<pair<t, int> >,
+  inductive mapi<t> = mapc(unsigned, list<pair<t, int> >,
                            list<pair<t, void*> >);
 
   predicate mapp<t>(struct Map* ptr,
                     predicate (void*;t) kp,
-                    fixpoint (t,int) hsh,
+                    fixpoint (t,unsigned) hsh,
                     fixpoint (t,int,bool) recp,
                     mapi<t> map);
 
@@ -26,7 +26,7 @@ struct Map;
   @*/
 
 int map_allocate/*@ <t> @*/(map_keys_equality* keq,
-                            map_key_hash* khash, int capacity,
+                            map_key_hash* khash, unsigned capacity,
                             struct Map** map_out);
 /*@ requires 0 < capacity &*& capacity < CAPACITY_UPPER_LIMIT &*&
              [_]is_map_keys_equality<t>(keq, ?kp) &*&
@@ -79,7 +79,7 @@ void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash);
             k_out == map_get_fp(addrs, k) &*&
             [0.5]kp(k_out, k); @*/
 
-int map_size/*@ <t> @*/(struct Map* map);
+unsigned map_size/*@ <t> @*/(struct Map* map);
 /*@ requires mapp<t>(map, ?kp, ?hsh, ?recp,
                      mapc(?capacity, ?contents, ?addrs)); @*/
 /*@ ensures mapp<t>(map, kp, hsh, recp,

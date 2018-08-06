@@ -1,0 +1,184 @@
+assert mapp<lb_flowi>(_, lb_flowp, lb_flow_hash_2, nop_true, ?final_indices);
+assert vectorp<lb_flowi>(_, lb_flowp, ?final_heap, _);
+assert vectorp<lb_backendi>(_, lb_backendp, ?final_backends, _);
+assert double_chainp(?final_chain,_);
+
+
+lb_table initial_table = lb_abstract_function(initial_indices,
+                                              initial_backends,
+                                              initial_chain);
+lb_table final_table = lb_abstract_function(final_indices,
+                                            final_backends,
+                                            final_chain);
+
+bit_and_hack();
+
+// Consider only normal moments, remote from the start of the epoch
+if (10 < now) {
+
+  // 0x10 -> IPv4
+  if (a_packet_received && ((received_packet_type & 0x10) == 0x10)) {
+
+    // 6/17 -> TCP/UDP
+    if (pkt_recv.ipv4.next_proto_id == 6 ||
+        pkt_recv.ipv4.next_proto_id == 17) {
+
+      // 0 -> Packet received from the external network
+      if (received_on_port == 0) {
+
+        lb_flowi packet_flow = lb_flowc(pkt_recv.ipv4.src_addr,
+                                        pkt_recv.tcp.src_port,
+                                        pkt_recv.tcp.dst_port,
+                                        pkt_recv.ipv4.next_proto_id);
+
+        lb_table expired_table = lb_abstract_function(expired_indices,
+                                                      expired_backends,
+                                                      expired_chain);
+
+
+        // Check the maps' consistency
+        switch(expired_indices) {
+          case mapc(capacity, lb_map, flows):
+            lb_map_has(lb_map, expired_backends, expired_chain, packet_flow);
+        }
+        switch(final_indices) {
+          case mapc(capacity, lb_map, flows):
+            lb_map_has(lb_map, final_backends, final_chain, packet_flow);
+        }
+
+        // Check that expiration was done properly
+        switch(initial_indices) { case mapc(capacity, lb_map, backends):
+          lb_expire_abstract(lb_map, initial_backends, initial_heap, initial_chain, now - 10);
+        }
+        assert true == set_eq(get_lb_table(expired_table),
+                              expire_lb_entries(get_lb_table(initial_table), now - 10));
+
+
+        if (lb_table_has_key(get_lb_table(expired_table), packet_flow)) {
+          // The flow was in the table already
+
+          assert true == backend_known;
+
+          // Let's check that the structures are consistent
+          switch(expired_indices) {
+            case mapc(capacity, lb_map, flows):
+              lb_rejuv_entry(lb_map, expired_backends, expired_chain, packet_flow, now);
+
+              assert true == set_eq(gen_lb_entries(lb_map,
+                                                   expired_backends,
+                                                   dchain_rejuvenate_fp(expired_chain, the_index_rejuvenated, now)),
+                                    rejuvenate_lb_entry(get_lb_table(expired_table), packet_flow, now));
+
+              assert true == set_eq(get_lb_table(final_table),
+                                    rejuvenate_lb_entry(get_lb_table(expired_table), packet_flow, now));
+          }
+
+          lb_rejuv_entry_set_eq(get_lb_table(expired_table),
+                                expire_lb_entries(get_lb_table(initial_table), now - 10),
+                                packet_flow, now);
+
+          set_eq_trans(get_lb_table(final_table),
+                       rejuvenate_lb_entry(get_lb_table(expired_table), packet_flow, now),
+                       rejuvenate_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10), packet_flow, now));
+
+          assert true == set_eq(get_lb_table(final_table),
+                                rejuvenate_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10), packet_flow, now));
+
+          // And now that the packet was sent properly
+          assert true == a_packet_sent;
+          assert sent_on_port == lb_backend_get_index(fst(nth(backend_index, final_backends))) + 1;
+
+        } else if (lb_table_has_key(get_lb_table(final_table), packet_flow)) {
+          // The flow was not in the expired table but we added it
+
+          assert true == backend_known;
+          lb_backendi the_backend = fst(nth(backend_index, final_backends));
+
+          // Let's check that the structures are consistent
+          switch(expired_indices) { case mapc(capacity, lb_map, backends):
+            lb_add_entry(lb_map, expired_backends, expired_chain,
+                         packet_flow, the_index_allocated, the_backend, time_for_allocated_index);
+
+            assert true == set_eq(gen_lb_entries(map_put_fp(lb_map, packet_flow, the_index_allocated),
+                                                 update(the_index_allocated, pair(the_backend, true), expired_backends),
+                                                 dchain_allocate_fp(expired_chain,
+                                                                    the_index_allocated,
+                                                                    time_for_allocated_index)),
+                                  add_lb_entry(get_lb_table(expired_table),
+                                               packet_flow, the_backend, time_for_allocated_index));
+
+            assert true == set_eq(get_lb_table(final_table),
+                                  add_lb_entry(get_lb_table(expired_table),
+                                               packet_flow, the_backend, time_for_allocated_index));
+          }
+
+          lb_add_entry_set_eq(get_lb_table(expired_table),
+                              expire_lb_entries(get_lb_table(initial_table), now - 10),
+                              packet_flow, the_backend, time_for_allocated_index);
+
+          set_eq_trans(get_lb_table(final_table),
+                       add_lb_entry(get_lb_table(expired_table), packet_flow, the_backend, now),
+                       add_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10),
+                                    packet_flow, the_backend, now));
+
+          assert true == set_eq(get_lb_table(final_table),
+                                add_lb_entry(expire_lb_entries(get_lb_table(initial_table), now - 10),
+                                             packet_flow, the_backend, now));
+
+          // And now that the packet was sent properly
+          assert true == a_packet_sent;
+          assert sent_on_port == lb_backend_get_index(the_backend) + 1;
+
+        } else {
+          // The flow could not be added
+          chain_out_of_space_lb_out_of_space(expired_indices, expired_backends, expired_chain);
+
+          // We must have run out of space in the table
+          assert true == lb_table_out_of_space(expired_table);
+
+          // Clearly, if the table is out of space, we can't have expired anything
+          assert true == set_eq(get_lb_table(final_table),
+                                expire_lb_entries(get_lb_table(initial_table), now - 10));
+
+          assert false == backend_known;
+
+          // But we must have sent the packet anyway
+          assert true == a_packet_sent;
+          assert sent_on_port > 0;
+          assert sent_on_port <= 2; // 3 devices for the LB; TODO make that a #define somewhere, common to dpdk/hardware
+        }
+
+        // Packet post-condition
+        assert pkt_sent.ether.ether_type     == pkt_recv.ether.ether_type;
+        assert pkt_sent.ipv4.version_ihl     == pkt_recv.ipv4.version_ihl;
+        assert pkt_sent.ipv4.type_of_service == pkt_recv.ipv4.type_of_service;
+        assert pkt_sent.ipv4.total_length    == pkt_recv.ipv4.total_length;
+        assert pkt_sent.ipv4.packet_id       == pkt_recv.ipv4.packet_id;
+        assert pkt_sent.ipv4.fragment_offset == pkt_recv.ipv4.fragment_offset;
+        assert pkt_sent.ipv4.time_to_live    == pkt_recv.ipv4.time_to_live;
+        assert pkt_sent.ipv4.next_proto_id   == pkt_recv.ipv4.next_proto_id;
+        assert pkt_sent.ipv4.hdr_checksum    == pkt_recv.ipv4.hdr_checksum;
+        assert pkt_sent.ipv4.src_addr        == pkt_recv.ipv4.src_addr;
+        assert pkt_sent.ipv4.dst_addr        == pkt_recv.ipv4.dst_addr;
+        assert pkt_sent.tcp.src_port         == pkt_recv.tcp.src_port;
+        assert pkt_sent.tcp.sent_seq         == pkt_recv.tcp.sent_seq;
+        assert pkt_sent.tcp.recv_ack         == pkt_recv.tcp.recv_ack;
+        assert pkt_sent.tcp.data_off         == pkt_recv.tcp.data_off;
+        assert pkt_sent.tcp.tcp_flags        == pkt_recv.tcp.tcp_flags;
+        assert pkt_sent.tcp.rx_win           == pkt_recv.tcp.rx_win;
+        assert pkt_sent.tcp.cksum            == pkt_recv.tcp.cksum;
+        assert pkt_sent.tcp.tcp_urp          == pkt_recv.tcp.tcp_urp;
+
+      } else {
+        // Packet from a backend (not allowed)
+        assert false == a_packet_sent;
+      }
+    } else {
+      // Non-TCP/UDP packet
+      assert false == a_packet_sent;
+    }
+  } else {
+    // Non-IPv4 packet
+    assert false == a_packet_sent;
+  }
+}

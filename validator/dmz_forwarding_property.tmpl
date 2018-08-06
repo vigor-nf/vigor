@@ -17,7 +17,7 @@
     after.tcp.rx_win           == before.tcp.rx_win &&        \
     after.tcp.tcp_urp          == before.tcp.tcp_urp
 
-bit_and_zero(0x00000010);
+bit_and_hack();
 if (10 < now) {// consider only normal moments, remote from the start of the epoch
   // 0x10 -> IPv4
   if (a_packet_received && (received_packet_type & 0x00000010)) {

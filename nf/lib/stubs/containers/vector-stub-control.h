@@ -4,12 +4,18 @@
 #include "lib/containers/vector.h"
 #include "str-descr.h"
 
+#include <stdbool.h>
+
 void vector_set_layout(struct Vector* vector,
                        struct str_field_descr* value_fields,
                        int field_count,
                        struct nested_field_descr* val_nest_fields,
                        int nest_field_count,
                        char* type_tag);
+
+typedef bool vector_entry_condition(void* value, void* state);
+
+void vector_set_entry_condition(struct Vector* vector, vector_entry_condition* cond, void* state);
 
 void vector_reset(struct Vector* vector);
 

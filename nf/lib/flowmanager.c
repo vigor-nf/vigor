@@ -43,8 +43,7 @@ void concretize_devices(struct flow* f) {
 }
 #endif//KLEE_VERIFICATION
 
-struct FlowManager* allocate_flowmanager(uint16_t nb_ports,
-                                         uint16_t starting_port,
+struct FlowManager* allocate_flowmanager(uint16_t starting_port,
                                          uint32_t ext_src_ip,
                                          uint16_t ext_device_id,
                                          uint32_t expiration_time,
@@ -64,7 +63,7 @@ struct FlowManager* allocate_flowmanager(uint16_t nb_ports,
     manager->ext_device_id = ext_device_id;
     manager->expiration_time = expiration_time; /*seconds*/
 
-    if (0 == allocate_flowtables(nb_ports, max_flows, &(manager->flow_table))) {
+    if (0 == allocate_flowtables(max_flows, &(manager->flow_table))) {
         free(manager);
         return NULL;
     }

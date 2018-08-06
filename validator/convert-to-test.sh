@@ -4,6 +4,8 @@ PREFIX=$1
 TEST_NAME=$2
 PLUGIN=$3
 
+set -eux
+
 if [ "$PREFIX" = "" ]; then
     echo "Please specify the trace prefix."
     echo "The trace prefix should be in the form: aaa/000032"
@@ -60,6 +62,6 @@ echo "FSPEC_PLUGIN=$PLUGIN" > "$TEST_DIR/config"
 echo "ORIG_PREFIX=$PREFIX" >> "$TEST_DIR/config"
 
 # Canonicalize the file name in the VeriFast report.
-sed -i "s:$PREFIX:<beep>/$TEST_NAME:g" "$TEST_DIR/verify.stdout.expected"
+. canonicalize.verify.stdout.sh "$PREFIX.c" "$TEST_DIR/verify.stdout.expected"
 
 git add "$TEST_DIR"
