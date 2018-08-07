@@ -1,7 +1,7 @@
-#include <stdlib.h>
-#include <string.h>
-
 #include "double-chain.h"
+
+#include <stdlib.h>
+
 #include "double-chain-impl.h"
 
 //@ #include <nat.gh>

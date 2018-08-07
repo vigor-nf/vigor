@@ -1,6 +1,6 @@
 #pragma once
 
-#include <inttypes.h>
+#include <stdint.h>
 
 // TODO can't really include rte_max_ethports here but need it :/
 

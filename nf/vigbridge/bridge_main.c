@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
-#include <inttypes.h>
+#include <stdint.h>
 #include <string.h>
 // DPDK uses these but doesn't include them. :|
 #include <linux/limits.h>

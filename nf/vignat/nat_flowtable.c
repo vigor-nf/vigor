@@ -1,12 +1,6 @@
-#include <stddef.h>
-#include <assert.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
-
-#include "lib/containers/double-map.h"
 #include "nat_flowtable.h"
 
+#include "lib/containers/double-map.h"
 #include "lib/nf_log.h"
 
 #ifdef KLEE_VERIFICATION

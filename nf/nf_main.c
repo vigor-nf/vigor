@@ -5,7 +5,7 @@
 #include <klee/klee.h>
 #endif
 
-#include <inttypes.h>
+#include <stdint.h>
 
 
 #ifdef KLEE_VERIFICATION
@@ -39,9 +39,6 @@
 // DPDK uses these but doesn't include them. :|
 #include <linux/limits.h>
 #include <sys/types.h>
-
-#include <stdlib.h>
-#include <string.h>
 
 #include <rte_common.h>
 #include <rte_eal.h>
@@ -112,8 +109,7 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   // with rx_free_thresh = 1 so that internal descriptors are replenished always,
   // i.e. 1 mbuf is taken (for RX) from the pool and 1 is put back (when freeing),
   //      at each iteration, which avoids havocing problems
-  struct rte_eth_rxconf rx_conf;
-  memset(&rx_conf, 0, sizeof(struct rte_eth_rxconf));
+  struct rte_eth_rxconf rx_conf = {0};
   rx_conf.rx_free_thresh = 1;
   for (int rxq = 0; rxq < RX_QUEUES_COUNT; rxq++) {
     retval = rte_eth_rx_queue_setup(

@@ -1,15 +1,8 @@
 #include "nat_flow.h"
 
-#include <stdbool.h>
-#include <string.h>
-#include <limits.h>
-
-// for RTE_MAX_ETHPORTS
-#include <rte_config.h>
-
 #include "lib/ignore.h"
 
-#include "include_ignored_by_verifast.h"
+#include <limits.h>
 
 // KLEE doesn't tolerate && in a klee_assume (see klee/klee#809),
 // so we replace them with & during symbex but interpret them as && in the validator
@@ -191,6 +184,8 @@ void flow_destroy(void* flwp)
 }
 
 #ifdef KLEE_VERIFICATION
+// for RTE_MAX_ETHPORTS
+#include <rte_config.h>
 
 struct str_field_descr int_key_descrs[] = {
   {offsetof(struct int_key, int_src_port), sizeof(uint16_t), "int_src_port"},

@@ -1,6 +1,6 @@
+#include "nat_config.h"
+
 #include <getopt.h>
-#include <inttypes.h>
-#include <stdlib.h>
 
 // DPDK needs these but doesn't include them. :|
 #include <linux/limits.h>
@@ -13,7 +13,6 @@
 #include <cmdline_parse_etheraddr.h>
 #include <cmdline_parse_ipaddr.h>
 
-#include "nat_config.h"
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
 

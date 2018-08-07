@@ -1,7 +1,7 @@
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 #include "double-map.h"
+
+#include <stdint.h>
+#include <stdlib.h>
 
 //@ #include "arith.gh"
 

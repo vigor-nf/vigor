@@ -1,7 +1,6 @@
+#include "bridge_config.h"
+
 #include <getopt.h>
-#include <inttypes.h>
-#include <stdlib.h>
-#include <string.h>
 
 // DPDK needs these but doesn't include them. :|
 #include <linux/limits.h>
@@ -13,7 +12,6 @@
 
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
-#include "bridge_config.h"
 
 const uint32_t DEFAULT_EXP_TIME = 300;//seconds
 const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses
