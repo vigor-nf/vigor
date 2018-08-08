@@ -1156,4 +1156,6 @@ ensures true == mem(el1, update(index, el2, l));
 
 fixpoint t nth2<t>(list<t> lst, int index) { return nth(index, lst); }
 
+fixpoint bool mem2<t>(list<t> lst, t el) { return mem(el, lst); }
+
 #endif//LISTEXEX_GH

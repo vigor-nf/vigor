@@ -25,6 +25,13 @@
   @*/
 
 /*@
+  fixpoint bool engaged_cell<kt>(pair<kt, bool> p) {
+    return !snd(p);
+  }
+  @*/
+
+
+/*@
   lemma void mvc_coherent_bounds<kt>(list<pair<kt, int> > m,
                                      list<pair<kt, bool> > v, dchain ch);
   requires map_vec_chain_coherent<kt>(m, v, ch);

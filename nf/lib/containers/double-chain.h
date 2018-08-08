@@ -351,6 +351,14 @@ struct DoubleChain;
           dchain_high_fp(ch);
   @*/
 
+/*@
+  fixpoint dchain dchain_erase_indexes_fp(dchain ch, list<int> indexes) {
+    switch(ch) { case dchain(alist, index_range, low, high):
+      return dchain(filter((sup)((mem2)(indexes), (fst)), alist), index_range, low, high);
+    }
+  }
+  @*/
+
 /**
    Allocate memory and initialize a new double chain allocator. The produced
    allocator will operate on indexes [0-index).

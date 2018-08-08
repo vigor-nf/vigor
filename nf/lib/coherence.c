@@ -525,12 +525,6 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
-  fixpoint bool engaged_cell<kt>(pair<kt, bool> p) {
-    return !snd(p);
-  }
-  @*/
-
-/*@
   predicate map_vec_chain_coherent<kt>(list<pair<kt, int> > m,
                                        list<pair<kt, bool> > v, dchain ch) =
     dchain_index_range_fp(ch) == length(v) &*&
