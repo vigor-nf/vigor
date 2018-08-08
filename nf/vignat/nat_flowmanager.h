@@ -4,22 +4,24 @@
 #include "nat_flow.h"
 #include "lib/nf_time.h"
 
+#include <stdbool.h>
+#include <stdint.h>
+
 struct FlowManager;
-struct FlowManager* allocate_flowmanager(uint16_t starting_port,
-                                         uint32_t ext_src_ip,
-                                         uint16_t ext_device_id,
-                                         uint32_t expiration_time,
-                                         int max_flows);
 
-int allocate_flow(struct FlowManager* manager, struct int_key* ik, time_t time, struct flow* out);
-int expire_flows(struct FlowManager* manager, time_t time);
+struct FlowManager* flow_manager_allocate(uint16_t starting_port,
+                                          uint32_t nat_ip,
+                                          uint32_t expiration_time,
+                                          uint64_t max_flows);
 
-int get_flow_by_int_key(struct FlowManager* manager, struct int_key* key, time_t time, struct flow* flow_out);
-int get_flow_by_ext_key(struct FlowManager* manager, struct ext_key* key, time_t time, struct flow* flow_out);
+bool flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id, uint16_t internal_device, time_t time, struct Flow* out_flow);
+void flow_manager_expire(struct FlowManager* manager, time_t time);
+bool flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id, time_t time, struct Flow* out_flow);
+bool flow_manager_get_external(struct FlowManager* manager, struct FlowId* id, time_t time, struct Flow* out_flow);
 
 #ifdef KLEE_VERIFICATION
-struct DoubleChain** get_dchain_pp(struct FlowManager* manager);
-struct DoubleMap **get_dmap_pp(struct FlowManager* manager);
-#endif //KLEE_VERIFICATION
+struct DoubleChain** flow_manager_get_chain(struct FlowManager* manager);
+struct DoubleMap** flow_manager_get_table(struct FlowManager* manager);
+#endif
 
 #endif //_FLOWMANAGER_H_INCLUDED_

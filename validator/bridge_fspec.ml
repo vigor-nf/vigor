@@ -910,9 +910,6 @@ let fun_types =
                                    | x -> "Error: unexpected argument type: " ^ (ttype_to_str x));
                               ];};]
 
-let fixpoints =
-  String.Map.of_alist_exn []
-
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
 struct
@@ -965,7 +962,6 @@ struct
                   bool dyn_vs_borrowed = false;\n\
                   bool stat_vec_borrowed = false;\n"
   let fun_types = fun_types
-  let fixpoints = fixpoints
   let boundary_fun = "bridge_loop_invariant_produce"
   let finishing_fun = "bridge_loop_invariant_consume"
   let eventproc_iteration_begin = "bridge_loop_invariant_produce"

@@ -34,7 +34,7 @@ void flow_log(struct Flow* flow);
   double-map-stub-control.h
  */
 extern struct str_field_descr flow_id_descrs[5];
-extern struct nested_field_descr flow_nests[11];
+extern struct nested_field_descr flow_nests[5];
 extern struct str_field_descr flow_descrs[4];
 #endif//KLEE_VERIFICATION
 
@@ -64,6 +64,18 @@ extern struct str_field_descr flow_descrs[4];
   fixpoint unsigned _flow_id_hash(flow_id id) {
     switch(id) {case flid(sp, dp, sip, dip, prot):
                      return _wrap(((((sp * 31) + dp) * 31 + sip) * 31 + dip) * 31 + prot);}
+  }
+
+  fixpoint flow_id flow_get_internal_id(flow f) {
+    switch(f) { case flw(id, np, nip, dev): return id; }
+  }
+  fixpoint flow_id flow_get_external_id(flow f) {
+    switch(f) { case flw(id, np, nip, dev):
+      switch(id) { case flid(sp, dp, sip, dip, prot):
+        return flid(dp, np, sip, nip, prot); } }
+
+  fixpoint bool flow_ids_offsets_fp(struct Flow* f, struct FlowId* iid, struct FlowId* eid) {
+    return &(f->id) == iid; // eid was malloced..
   }
   @*/
 

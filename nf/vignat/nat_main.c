@@ -21,10 +21,9 @@ struct FlowManager* flow_manager;
 
 void nf_core_init()
 {
-	flow_manager = allocate_flowmanager(
+	flow_manager = flow_manager_allocate(
 		config.start_port,
                 config.external_addr,
-                config.wan_device,
                 config.expiration_time,
                 config.max_flows
 	);
@@ -38,7 +37,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 {
 	NF_DEBUG("It is %" PRId64, now);
 
-	expire_flows(flow_manager, now);
+	flow_manager_expire(flow_manager, now);
 	NF_DEBUG("Flows have been expired");
 
 	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
@@ -61,27 +60,26 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	if (mbuf->port == config.wan_device) {
 		NF_DEBUG("Device %" PRIu16 " is external", mbuf->port);
 
-		struct ext_key key = {
-			.ext_src_port = tcpudp_header->dst_port, //intentionally swapped.
-			.dst_port = tcpudp_header->src_port,
-			.ext_src_ip = ipv4_header->dst_addr, //Note, they are switched for
-			.dst_ip = ipv4_header->src_addr, // the backwards traffic
-			.ext_device_id = mbuf->port,
+		struct FlowId id = {
+			.src_port = tcpudp_header->src_port,
+			.dst_port = tcpudp_header->dst_port,
+			.src_ip = ipv4_header->src_addr,
+			.dst_ip = ipv4_header->dst_addr,
 			.protocol = ipv4_header->next_proto_id
 		};
 
-		NF_DEBUG("For key:");
-		log_ext_key(&key);
+		NF_DEBUG("For id:");
+		flow_log_id(&id);
 
-		struct flow f;
-		int flow_exists = get_flow_by_ext_key(flow_manager, &key, now, &f);
+		struct Flow f;
+		bool flow_exists = flow_manager_get_external(flow_manager, &id, now, &f);
 		if (flow_exists) {
 			NF_DEBUG("Found flow:");
-			log_flow(&f);
+			flow_log(&f);
 
-			ipv4_header->dst_addr = f.int_src_ip;
-			tcpudp_header->dst_port = f.int_src_port;
-			dst_device = f.int_device_id;
+			ipv4_header->dst_addr = f.id.src_ip;
+			tcpudp_header->dst_port = f.id.src_port;
+			dst_device = f.internal_device;
 		} else {
 			NF_DEBUG("Unknown flow, dropping");
 			return mbuf->port;
@@ -89,35 +87,34 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	} else {
 		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", mbuf->port, config.wan_device);
 
-		struct int_key key = {
-			.int_src_port = tcpudp_header->src_port,
+		struct FlowId id = {
+			.src_port = tcpudp_header->src_port,
 			.dst_port = tcpudp_header->dst_port,
-			.int_src_ip = ipv4_header->src_addr,
+			.src_ip = ipv4_header->src_addr,
 			.dst_ip = ipv4_header->dst_addr,
-			.int_device_id = mbuf->port,
 			.protocol = ipv4_header->next_proto_id
 		};
 
-		NF_DEBUG("For key:");
-		log_int_key(&key);
+		NF_DEBUG("For id:");
+		flow_log_id(&id);
 
-		struct flow f;
-		int flow_exists = get_flow_by_int_key(flow_manager, &key, now, &f);
+		struct Flow f;
+		bool flow_exists = flow_manager_get_internal(flow_manager, &id, now, &f);
 		if (!flow_exists) {
 			NF_DEBUG("New flow");
 
-			if (!allocate_flow(flow_manager, &key, now, &f)) {
+			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &f)) {
 				NF_DEBUG("No space for the flow, dropping");
 				return mbuf->port;
 			}
 		}
 
 		NF_DEBUG("Forwarding to:");
-		log_flow(&f);
+		flow_log(&f);
 
-		ipv4_header->src_addr = f.ext_src_ip;
-		tcpudp_header->src_port = f.ext_src_port;
-		dst_device = f.ext_device_id;
+		ipv4_header->src_addr = f.nat_ip;
+		tcpudp_header->src_port = f.nat_port;
+		dst_device = config.wan_device;
 	}
 
 	ether_header->s_addr = config.device_macs[dst_device];
@@ -145,7 +142,7 @@ void nf_print_config() {
 
 void nf_loop_iteration_begin(unsigned lcore_id,
                              time_t time) {
-  loop_iteration_begin(get_dmap_pp(flow_manager), get_dchain_pp(flow_manager),
+  loop_iteration_begin(flow_manager_get_table(flow_manager), flow_manager_get_chain(flow_manager),
                        lcore_id, time,
                        config.max_flows,
                        config.start_port);
@@ -153,7 +150,7 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
                                        time_t time) {
-  loop_iteration_assumptions(get_dmap_pp(flow_manager), get_dchain_pp(flow_manager),
+  loop_iteration_assumptions(flow_manager_get_table(flow_manager), flow_manager_get_chain(flow_manager),
                              lcore_id, time,
                              config.max_flows,
                              config.start_port);
@@ -161,7 +158,7 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 
 void nf_loop_iteration_end(unsigned lcore_id,
                            time_t time) {
-  loop_iteration_end(get_dmap_pp(flow_manager), get_dchain_pp(flow_manager),
+  loop_iteration_end(flow_manager_get_table(flow_manager), flow_manager_get_chain(flow_manager),
                      lcore_id, time,
                      config.max_flows,
                      config.start_port);

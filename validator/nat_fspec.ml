@@ -19,11 +19,11 @@ let gen_get_fp map_name =
   | Ext -> "dmap_get_k2_fp(" ^ map_name ^ ", " ^ !last_index_gotten ^ ")"
 
 let capture_map map_name ptr_num {args;tmp_gen;_} =
-  "//@ assert dmappingp<int_k,ext_k,flw>(?" ^ (tmp_gen map_name) ^
+  "//@ assert dmappingp<flow_id,flow_id,flow>(?" ^ (tmp_gen map_name) ^
   ",_,_,_,_,_,_,_,_,_,_,_,_," ^ (List.nth_exn args ptr_num) ^ ");\n"
 
 let capture_map_after map_name ptr_num (params:lemma_params) =
-  "//@ assert dmappingp<int_k,ext_k,flw>(?" ^ (params.tmp_gen map_name) ^
+  "//@ assert dmappingp<flow_id,flow_id,flow>(?" ^ (params.tmp_gen map_name) ^
   ",_,_,_,_,_,_,_,_,_,_,_,_," ^ (List.nth_exn params.args ptr_num) ^ ");\n"
 
 let capture_chain_after ch_name ptr_num (params:lemma_params) =
@@ -31,7 +31,7 @@ let capture_chain_after ch_name ptr_num (params:lemma_params) =
   (List.nth_exn params.args ptr_num) ^ ");\n"
 
 let capture_map_ex map_name vk1 vk2 ptr_num {args;tmp_gen;_} =
-  "//@ assert dmappingp<int_k,ext_k,flw>(?" ^ (tmp_gen map_name) ^
+  "//@ assert dmappingp<flow_id,flow_id,flow>(?" ^ (tmp_gen map_name) ^
   ",_,_,_,_,_,_,_,_,?" ^ (tmp_gen vk1) ^ ",?" ^ (tmp_gen vk2) ^
   ",_,_," ^
   (List.nth_exn args ptr_num) ^ ");\n"
@@ -42,29 +42,15 @@ let capture_chain ch_name ptr_num {args;tmp_gen;_} =
 
 let dmap_struct = Ir.Str ( "DoubleMap", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
-let ext_key_struct = Ir.Str ( "ext_key", ["ext_src_port", Uint16;
-                                          "dst_port", Uint16;
-                                          "ext_src_ip", Uint32;
-                                          "dst_ip", Uint32;
-                                          "ext_device_id", Uint8;
-                                          "protocol", Uint8;] )
-let int_key_struct = Ir.Str ( "int_key", ["int_src_port", Uint16;
-                                          "dst_port", Uint16;
-                                          "int_src_ip", Uint32;
-                                          "dst_ip", Uint32;
-                                          "int_device_id", Uint8;
-                                          "protocol", Uint8;] )
-let flw_struct = Ir.Str ("flow", ["ik", int_key_struct;
-                                  "ek", ext_key_struct;
-                                  "int_src_port", Uint16;
-                                  "ext_src_port", Uint16;
-                                  "dst_port", Uint16;
-                                  "int_src_ip", Uint32;
-                                  "ext_src_ip", Uint32;
-                                  "dst_ip", Uint32;
-                                  "int_device_id", Uint8;
-                                  "ext_device_id", Uint8;
-                                  "protocol", Uint8;])
+let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
+                                         "dst_port", Uint16;
+                                         "src_ip", Uint32;
+                                         "dst_ip", Uint32;
+                                         "protocol", Uint8;] )
+let flow_struct = Ir.Str ("Flow", ["id", flow_id_struct;
+                                   "nat_port", Uint16;
+                                   "nat_ip", Uint32;
+                                   "internal_device", Uint16;])
 
 let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
@@ -164,51 +150,51 @@ let fun_types =
                        extra_ptr_types = [];
                        lemmas_before = [
                          tx_bl "produce_function_pointer_chunk \
-                                map_keys_equality<int_k>(int_key_eq)(int_k_p)(a, b) \
+                                map_keys_equality<flow_id>(flow_id_eq)(flow_idp)(a, b) \
                                 {\
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                map_key_hash<int_k>(int_key_hash)\
-                                (int_k_p, int_hash)(a)\
+                                map_key_hash<flow_id>(flow_id_hash)\
+                                (flow_idp, _flow_id_hash)(a)\
                                 {\
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                map_keys_equality<ext_k>(ext_key_eq)(ext_k_p)(a, b)\
+                                map_keys_equality<flow_id>(flow_id_eq)(flow_idp)(a, b)\
                                 {\
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                map_key_hash<ext_k>(ext_key_hash)\
-                                (ext_k_p, ext_hash)(a)\
+                                map_key_hash<ext_k>(flow_id_hash)\
+                                (flow_idp, _flow_id_hash)(a)\
                                 {\
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                dmap_extract_keys<int_k,ext_k,flw>\
+                                dmap_extract_keys<flow_id,flow_id,flow>\
                                 (flow_extract_keys)\
-                                (int_k_p, ext_k_p, flw_p, flow_p,\
-                                 flow_keys_offsets_fp,\
-                                 flw_get_ik,\
-                                 flw_get_ek)(a, b, c)\
+                                (flow_idp, flow_idp, flowp, flowp,\
+                                 flow_ids_offsets_fp,\
+                                 flow_get_internal_id,\
+                                 flow_get_external_id)(a, b, c)\
                                 {\
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                dmap_pack_keys<int_k,ext_k,flw>\
+                                dmap_pack_keys<flow_id,flow_id,flow>\
                                 (flow_pack_keys)\
-                                (int_k_p, ext_k_p, flw_p, flow_p,\
-                                 flow_keys_offsets_fp,\
-                                 flw_get_ik,\
-                                 flw_get_ek)(a, b, c)\
+                                (flow_idp, flow_idp, flowp, flowp,\
+                                 flow_ids_offsets_fp,\
+                                 flow_get_internal_id,\
+                                 flow_get_external_id)(a, b, c)\
                                 {\
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
                                 uq_value_destr<flw>\
                                 (flow_destroy)\
-                                (flw_p, sizeof(struct flow))(a)\
+                                (flowp, sizeof(struct Flow))(a)\
                                 {\
                                 call();\
                                 }";
@@ -223,17 +209,15 @@ let fun_types =
                              call();\
                              }@*/");
                          tx_bl "close dmap_key_val_types\
-                                (ikc(0,0,0,0,0,0), ekc(0,0,0,0,0,0),\
-                                      flwc(ikc(0,0,0,0,0,0),\
-                                           ekc(0,0,0,0,0,0),\
-                                           0,0,0,0,0,0,0,0,0));";
+                                (flid(0,0,0,0,0), flid(0,0,0,0,0),\
+                                      flw(flid(0,0,0,0,0),0,0,0));";
                          tx_bl "close dmap_record_property1(nat_int_fp);";
                          (fun _ -> "int start_port;\n");
                          tx_bl "close dmap_record_property2\
                                 ((nat_ext_fp)(start_port));"];
                        lemmas_after = [
                          tx_l "empty_dmap_cap\
-                               <int_k,ext_k,flw>(65536);";];};
+                               <flow_id,flow_id,flow>(65536);";];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];
@@ -241,7 +225,7 @@ let fun_types =
                          lemmas_after = [
                            on_rez_nonzero
                                "empty_dmap_dchain_coherent\
-                                <int_k,ext_k,flw>(65536);";
+                                <flow_id,flow_id,flow>(65536);";
                            tx_l "index_range_of_empty(65536, 0);";];};
      "loop_invariant_consume", {ret_type = Static Void;
                                 arg_types = stt [Ptr (Ptr dmap_struct);
@@ -289,25 +273,25 @@ let fun_types =
                                      List.nth_exn params.args 5 ^ " == start_port);");
                                   tx_l "assert dmap_dchain_coherent(?map,?chain);";
                                   tx_l "coherent_same_cap(map, chain);";
-                                  tx_l "dmap<int_k,ext_k,flw> initial_double_map = map;";
+                                  tx_l "dmap<flow_id,flow_id,flow> initial_double_map = map;";
                                   tx_l "dchain initial_double_chain = chain;"
                                 ];};
      "dmap_get_b", {ret_type = Static Sint32;
-                    arg_types = stt [Ptr dmap_struct; Ptr ext_key_struct; Ptr Sint32;];
+                    arg_types = stt [Ptr dmap_struct; Ptr flow_id_struct; Ptr Sint32;];
                     extra_ptr_types = [];
                     lemmas_before = [
                       capture_map "cur_map" 0;
                       (fun {args;_} ->
                          last_device_id :=
                            "(" ^ List.nth_exn args 1 ^ ")->ext_device_id";
-                         "/*@ close ext_k_p(" ^ List.nth_exn args 1 ^
+                         "/*@ close flow_idp(" ^ List.nth_exn args 1 ^
                          ", ?ext_key_dgb); @*/"); ];
                     lemmas_after = [
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
                          ", ?cur_ch);\n\
-                          contains_ext_k_abstract(" ^
+                          contains_flow_id_abstract(" ^
                          (params.tmp_gen "cur_map") ^
                          ", cur_ch,\n ext_key_dgb);\n}@*/");
                       on_rez_nz
@@ -325,7 +309,7 @@ let fun_types =
                            "{\n assert dmap_dchain_coherent(" ^
                            (params.tmp_gen "cur_map") ^
                            ", ?cur_ch);\n" ^
-                           "ext_k ek = ext_key_dgb;\n"^
+                           "flow_id ek = ext_key_dgb;\n"^
                            "get_flow_by_ext_abstract(" ^
                            (params.tmp_gen "cur_map") ^ ", cur_ch, ek);\n" ^
                            "coherent_dmap_used_dchain_allocated(" ^
@@ -339,14 +323,14 @@ let fun_types =
                          "");
                     ];};
      "dmap_get_a", {ret_type = Static Sint32;
-                    arg_types = stt [Ptr dmap_struct; Ptr int_key_struct; Ptr Sint32;];
+                    arg_types = stt [Ptr dmap_struct; Ptr flow_id_struct; Ptr Sint32;];
                     extra_ptr_types = [];
                     lemmas_before = [
                       capture_map "cur_map" 0;
                       (fun {args;_} ->
                          last_device_id :=
                            "(" ^ List.nth_exn args 1 ^ ")->int_device_id";
-                         "/*@ close int_k_p(" ^ List.nth_exn args 1 ^
+                         "/*@ close flow_idp(" ^ List.nth_exn args 1 ^
                          ", ?int_key_dga); @*/"
                       );];
                     lemmas_after = [
@@ -354,7 +338,7 @@ let fun_types =
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
                          ", ?cur_ch);\n\
-                          contains_int_k_abstract(" ^
+                          contains_flow_id_abstract(" ^
                          (params.tmp_gen "cur_map") ^
                          ", cur_ch,\n int_key_dga);\n}@*/");
                       on_rez_nz
@@ -370,7 +354,7 @@ let fun_types =
                       on_rez_nz
                         (fun params ->
                            "{\n" ^
-                           "int_k ik = int_key_dga;\n" ^
+                           "flow_id ik = int_key_dga;\n" ^
                            " assert dmap_dchain_coherent(" ^
                            (params.tmp_gen "cur_map") ^ ", ?cur_ch);\n" ^
                            "get_flow_by_int_abstract(" ^
@@ -395,18 +379,18 @@ let fun_types =
                     (fun {args;tmp_gen;_} ->
                        "/*@ flw the_inserted_flow; @*/\n\
                         /*@ {\n" ^
-                       "close int_k_p(" ^ (List.nth_exn args 1) ^
-                    ".ik, ikc(?isp, ?dp, ?isip,\
+                       "close flow_idp(" ^ (List.nth_exn args 1) ^
+                    ".ik, flid(?isp, ?dp, ?isip,\
                      ?dip, " ^ !last_device_id ^
                      ", user_buf_23));\n" ^
-                     "assert int_k_p(" ^ (List.nth_exn args 1) ^
-                     ".ik, ikc(?isp, ?dp, ?isip,\
+                     "assert flow_idp(" ^ (List.nth_exn args 1) ^
+                     ".ik, flid(?isp, ?dp, ?isip,\
                      ?dip, _, user_buf_23));\n" ^
-                     "close ext_k_p(" ^ (List.nth_exn args 1) ^
+                     "close flow_idp(" ^ (List.nth_exn args 1) ^
                     ".ek, ekc(new_index_2_0, dp, external_ip, dip,\
                      1, user_buf_23));\n" ^
-                    " close flw_p(" ^ (List.nth_exn args 1) ^
-                    ", flwc(ikc(isp, dp, isip, dip,\
+                    " close flowp(" ^ (List.nth_exn args 1) ^
+                    ", flwc(flid(isp, dp, isip, dip,\
                      " ^
                            !last_device_id ^
                            ", user_buf_23), ekc(new_index_2_0, dp, external_ip, dip,\
@@ -417,7 +401,7 @@ let fun_types =
                        "assert dmap_dchain_coherent(" ^
                          (tmp_gen "cur_map") ^
                        ", ?cur_ch);\n\
-                        ext_k ek = ekc(new_index_2_0, dp,\
+                        flow_id ek = flid(new_index_2_0, dp,\
                         external_ip, dip, 1, user_buf_23);\n\
                         if (dmap_has_k2_fp(" ^ (tmp_gen "cur_map") ^
                        ", ek)) {\n\
@@ -449,7 +433,7 @@ let fun_types =
                        ", cur_ch, " ^ (List.nth_exn args 2) ^ ");\n\
                         }\n\
                         dmap_put_preserves_cap(" ^ (tmp_gen "cur_map") ^
-                       ", " ^ (List.nth_exn args 2) ^ ", flwc(ikc(isp, dp,\
+                       ", " ^ (List.nth_exn args 2) ^ ", flw(flid(isp, dp,\
                         isip, dip, " ^
                            !last_device_id ^
                            ", user_buf_23),\n\
@@ -461,7 +445,7 @@ let fun_types =
                            ", 1, user_buf_23)," ^
                        (tmp_gen "vk1") ^ ", " ^ (tmp_gen "vk2") ^ ");\n" ^
                        "the_inserted_flow = " ^
-                       " flwc(ikc(isp, dp,\
+                       " flw(flid(isp, dp,\
                         isip, dip, " ^
                        !last_device_id ^
                        ", user_buf_23),\n\
@@ -473,13 +457,13 @@ let fun_types =
                        ", 1, user_buf_23);\n\
                        assert dmap_dchain_coherent(" ^ (tmp_gen "cur_map") ^
                       ", ?ch);\n\
-                       int_k ik = ikc(isp, dp,\
+                       flow_id ik = flid(isp, dp,\
                         isip, dip, " ^
                        !last_device_id ^
                        ", user_buf_23);\n\
                        coherent_dchain_non_out_of_space_map_nonfull(" ^
                       (tmp_gen "cur_map") ^ ", ch);\n" ^
-                      "contains_ext_k_abstract(" ^
+                      "contains_flow_id_abstract(" ^
                       (tmp_gen "cur_map") ^
                       ", ch, ek);\n" ^
                       "flw the_flow_to_insert = flwc(ik, ek,\n\
@@ -494,11 +478,11 @@ let fun_types =
                   lemmas_after = [
                     (fun params ->
                        "/*@ {\n\
-                        close flw_p(" ^ (List.nth_exn params.args 1) ^
+                        close flowp(" ^ (List.nth_exn params.args 1) ^
                        ", ?flw);\n\
-                         open flw_p(_, flw);\n\
-                         open int_k_p(_,?ik);\n\
-                         open ext_k_p(_,?ek);\n\
+                         open flowp(_, flw);\n\
+                         open flow_idp(_,?ik);\n\
+                         open flow_idp(_,?ek);\n\
                         if (" ^ params.ret_name ^
                        "!= 0) {\n\
                         dmap_put_get(" ^
@@ -560,8 +544,8 @@ let fun_types =
                               open flw_p(" ^ (List.nth_exn params.args 2) ^
                              ", _);\n\
                               @*/");
-                          tx_l "open int_k_p(_,_);";
-                          tx_l "open ext_k_p(_,_);";
+                          tx_l "open flow_idp(_,_);";
+                          tx_l "open flow_idp(_,_);";
                         ];};
      "expire_items", {ret_type = Static Sint32;
                       arg_types = stt [Ptr dchain_struct;
@@ -621,7 +605,7 @@ let fun_types =
                            (params.tmp_gen "map_after_exp") ^
                            ", " ^ (params.tmp_gen "ch_after_exp") ^ ");");
                         (fun params ->
-                           "//@ dmap<int_k,ext_k,flw> map_after_expiration = " ^
+                           "//@ dmap<flow_id,flow_id,flow> map_after_expiration = " ^
                            (params.tmp_gen "map_after_exp") ^";\n" ^
                            "dchain chain_after_expiration = " ^
                            (params.tmp_gen "ch_after_exp") ^ ";";);
@@ -738,67 +722,6 @@ let fun_types =
                    lemmas_after = [];}
     ]
 
-let fixpoints =
-  String.Map.of_alist_exn [
-    "nat_int_fp", {Ir.v=Bop(And,
-                            {v=Bop(Le,{v=Int 0;t=Sint32},{v=Str_idx({v=Id "Arg0";t=Unknown},"idid");t=Unknown});t=Unknown},
-                            {v=Bop(Lt,{v=Str_idx({v=Id "Arg0";t=Unknown},"idid");t=Unknown},
-                                   {v=Int 2;t=Sint32});t=Unknown});t=Boolean};
-    "nat_ext_fp", {v=Bop(And,
-                         {v=Bop(And,
-                                {v=Bop(Le,
-                                       {v=Int 0;t=Sint32},
-                                       {v=Str_idx({v=Id "Arg1";t=Unknown},"edid");t=Unknown});
-                                 t=Unknown},
-                                {v=Bop(Lt,
-                                       {v=Str_idx({v=Id "Arg1";t=Unknown},"edid");t=Unknown},
-                                       {v=Int 2;t=Sint32});t=Unknown});
-                          t=Boolean},
-                         {v=Bop(Eq,
-                                {v=Str_idx({v=Id "Arg1";t=Unknown},"edid");t=Unknown},
-                                {v=Bop(Add,
-                                       {v=Id "Arg0";t=Sint32},
-                                       {v=Id "Arg2";t=Sint32});t=Unknown});
-                          t=Boolean});
-                   t=Boolean};
-    "ikc", {v=Struct ("int_k",
-                      [{name="isp";value={v=Id "Arg0";t=Unknown}};
-                       {name="dp";value={v=Id "Arg1";t=Unknown}};
-                       {name="isip";value={v=Id "Arg2";t=Unknown}};
-                       {name="dip";value={v=Id "Arg3";t=Unknown}};
-                       {name="idid";value={v=Id "Arg4";t=Unknown}};
-                       {name="prtc";value={v=Id "Arg5";t=Unknown}}]);
-           t=Unknown};
-    "ekc", {v=Struct ("ext_k",
-                      [{name="esp";value={v=Id "Arg0";t=Unknown}};
-                       {name="dp";value={v=Id "Arg1";t=Unknown}};
-                       {name="esip";value={v=Id "Arg2";t=Unknown}};
-                       {name="dip";value={v=Id "Arg3";t=Unknown}};
-                       {name="edid";value={v=Id "Arg4";t=Unknown}};
-                       {name="prtc";value={v=Id "Arg5";t=Unknown}}]);
-           t=Unknown};
-    "integer", {v=Bop(Eq,{v=Id "Arg0";t=Unknown},{v=Id "Arg1";t=Unknown});t=Boolean};
-    "flow_int_device_id", {v=Bop(Eq,{v=Str_idx({v=Id "Arg0";t=Unknown},"int_device_id");t=Unknown},
-                                 {v=Id "Arg1";t=Unknown}); t=Boolean};
-    "flow_ext_device_id", {v=Bop(Eq,{v=Str_idx({v=Id "Arg0";t=Unknown},"ext_device_id");t=Unknown},
-                                 {v=Id "Arg1";t=Unknown}); t=Boolean};
-    "flwc", {v=Struct ("flw",
-                       [{name="ik";value={v=Id "Arg0";t=Unknown}};
-                        {name="ek";value={v=Id "Arg1";t=Unknown}};
-                        {name="isp";value={v=Id "Arg2";t=Unknown}};
-                        {name="esp";value={v=Id "Arg3";t=Unknown}};
-                        {name="dp";value={v=Id "Arg4";t=Unknown}};
-                        {name="isip";value={v=Id "Arg5";t=Unknown}};
-                        {name="esip";value={v=Id "Arg6";t=Unknown}};
-                        {name="dip";value={v=Id "Arg7";t=Unknown}};
-                        {name="idid";value={v=Id "Arg8";t=Unknown}};
-                        {name="edid";value={v=Id "Arg9";t=Unknown}};
-                        {name="prtc";value={v=Id "Arg10";t=Unknown}};
-                       ]);t=Unknown};
-    "flw_get_ik", {v=Str_idx({v=Id "Arg0";t=Unknown},"ik");t=Unknown};
-    "flw_get_ek", {v=Str_idx({v=Id "Arg0";t=Unknown},"ek");t=Unknown};
-  ]
-
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
 struct
@@ -824,7 +747,6 @@ struct
                   uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n"
   let fun_types = fun_types
-  let fixpoints = fixpoints
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
   let eventproc_iteration_begin = "loop_invariant_produce"

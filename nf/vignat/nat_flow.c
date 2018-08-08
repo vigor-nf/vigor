@@ -3,6 +3,7 @@
 #include "lib/ignore.h"
 
 #include <limits.h>
+#include <stdlib.h>
 
 // KLEE doesn't tolerate && in a klee_assume (see klee/klee#809),
 // so we replace them with & during symbex but interpret them as && in the validator
@@ -68,12 +69,13 @@ void flow_extract_keys(void* flow, void** int_id, void** ext_id)
   //@ open [f]flowp(flow, flw);
   struct Flow* f = flow;
   *int_id = &(f->id);
-  *ext_id = malloc(sizeof(struct FlowId));
-  (*ext_id)->src_port = f->id.dst_port;
-  (*ext_id)->dst_port = f->nat_port;
-  (*ext_id)->src_ip = f->id.dst_ip;
-  (*ext_id)->dst_ip = f->nat_ip;
-  (*ext_id)->protocol = f->id.protocol;
+  struct FlowId* id = malloc(sizeof(struct FlowId));
+  id->src_port = f->id.dst_port;
+  id->dst_port = f->nat_port;
+  id->src_ip = f->id.dst_ip;
+  id->dst_ip = f->nat_ip;
+  id->protocol = f->id.protocol;
+  (*ext_id) = id;
   //@ close [f]flowp(flow, flw);
 }
 
@@ -90,7 +92,7 @@ void flow_pack_keys(void* flow, void* iidp, void* eidp)
   //@ open flowp(flow, flw);
 }
 
-void flow_cpy(char* dst, void* src)
+void flow_copy(char* dst, void* src)
 //@ requires [?f]flowp(src, ?flw) &*& dst[0..sizeof(struct Flow)] |-> _;
 //@ ensures [f]flowp(src, flw) &*& flowp((void*) dst, flw);
 {
@@ -101,7 +103,7 @@ void flow_cpy(char* dst, void* src)
   destination->id.dst_port = source->id.dst_port;
   destination->id.src_ip = source->id.src_ip;
   destination->id.dst_ip = source->id.dst_ip;
-  destination->ik.protocol = source->id.protocol;
+  destination->id.protocol = source->id.protocol;
   destination->nat_port = source->nat_port;
   destination->nat_ip = source->nat_ip;
   destination->internal_device = source->internal_device;
@@ -135,8 +137,8 @@ struct nested_field_descr flow_nests[] = {
 struct str_field_descr flow_descrs[] = {
   {offsetof(struct Flow, id), sizeof(struct FlowId), "id"},
   {offsetof(struct Flow, nat_port), sizeof(uint16_t), "nat_port"},
-  {offsetof(struct flow, nat_ip), sizeof(uint32_t), "nat_ip"},
-  {offsetof(struct flow, internal_device), sizeof(uint16_t), "internal_device"},
+  {offsetof(struct Flow, nat_ip), sizeof(uint32_t), "nat_ip"},
+  {offsetof(struct Flow, internal_device), sizeof(uint16_t), "internal_device"},
 };
 #endif//KLEE_VERIFICATION
 

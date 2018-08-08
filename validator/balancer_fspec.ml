@@ -671,9 +671,6 @@ let fun_types =
                                    failwith "Unsupported type for vector!")
                             ];};]
 
-let fixpoints =
-  String.Map.of_alist_exn []
-
 module Iface : Fspec_api.Spec =
 struct
   let preamble = "\
@@ -717,7 +714,6 @@ struct
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
   let fun_types = fun_types
-  let fixpoints = fixpoints
   let boundary_fun = "lb_loop_invariant_produce"
   let finishing_fun = "lb_loop_invariant_consume"
   let eventproc_iteration_begin = "lb_loop_invariant_produce"
