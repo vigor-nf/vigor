@@ -20,6 +20,7 @@ struct DoubleMap {
   int allocated_index;
 
   entry_condition* ent_cond;
+  void* ent_state;
   struct str_field_descr key_a_fields[prealloc_size];
   struct str_field_descr key_b_fields[prealloc_size];
   struct str_field_descr value_fields[prealloc_size];
@@ -36,13 +37,10 @@ struct DoubleMap {
 };
 
 __attribute__((noinline))
-void dmap_set_entry_condition(struct DoubleMap* map, entry_condition* c) {
-  //To avoid symbolic-pointer-dereference,
-  // consciously trace "map" as a simple value.
-  klee_trace_param_u64((uint64_t)map, "map");
-  klee_trace_param_fptr(c, "c");
+void dmap_set_entry_condition(struct DoubleMap* map, entry_condition* c, void* state) {
   ALLOW(map);
   map->ent_cond = c;
+  map->ent_state = state;
   DENY(map);
 }
 
@@ -166,7 +164,7 @@ int dmap_get_a(struct DoubleMap* map, void* key, int* index) {
     klee_assume(map->eq_a_g(key_a, key));
     if (map->ent_cond)
       klee_assume(map->ent_cond(key_a, key_b,
-                           map->allocated_index, map->value));
+                           map->allocated_index, map->value, map->ent_state));
     map->dpk_g(map->value, key_a, key_b);
     map->entry_claimed = 1;
     *index = map->allocated_index;
@@ -202,7 +200,7 @@ int dmap_get_b(struct DoubleMap* map, void* key, int* index) {
     map->dexk_g(map->value, &key_a, &key_b);
     klee_assume(map->eq_b_g(key_b, key));
     if (map->ent_cond) klee_assume(map->ent_cond(key_a, key_b,
-                                       map->allocated_index, map->value));
+                                       map->allocated_index, map->value, map->ent_state));
     map->dpk_g(map->value, key_a, key_b);
     map->entry_claimed = 1;
     *index = map->allocated_index;
@@ -254,7 +252,7 @@ int dmap_put(struct DoubleMap* map, void* value_, int index) {
   // to fulfill the value by the same index:
   klee_assert(map->ent_cond == NULL || map->ent_cond(key_a, key_b,
                                            index,
-                                           map->value));
+                                           map->value, map->ent_state));
   map->dpk_g(map->value, key_a, key_b);
   map->entry_claimed = 1;
   map->allocated_index = index;

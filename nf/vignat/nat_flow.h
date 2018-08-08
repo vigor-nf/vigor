@@ -3,10 +3,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-// HACK HACK HACK HACK super dirty hack from when there was only 1 instance of the model
-//                     used in flow consistency checks
-uint16_t GLOBAL_starting_port;
-
 /**
   The "internal" key - the part of the flow ID, related to the internal network.
   Used in a hash map to identify flows for packets coming from the internal
@@ -77,10 +73,6 @@ extern struct str_field_descr int_key_descrs[6];
 extern struct str_field_descr ext_key_descrs[6];
 extern struct nested_field_descr flow_nests[12];
 extern struct str_field_descr flow_descrs[11];
-
-int flow_consistency(void* key_a, void* key_b,
-                     int index, void* value);
-
 #endif//KLEE_VERIFICATION
 
 /*@

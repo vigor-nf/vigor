@@ -2,11 +2,11 @@
 #define _DOUBLE_MAP_STUB_CONTROL_H_INCLUDED_
 #include "str-descr.h"
 
-typedef int entry_condition(void* key_a, void* key_b, int index, void* value);
+typedef int entry_condition(void* key_a, void* key_b, int index, void* value, void* state);
 
 struct DoubleMap;
 
-void dmap_set_entry_condition(struct DoubleMap* map, entry_condition* cond);
+void dmap_set_entry_condition(struct DoubleMap* map, entry_condition* cond, void* state);
 //@ requires true;
 //@ ensures true;
 

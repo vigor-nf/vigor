@@ -11,7 +11,7 @@ struct FlowManager* allocate_flowmanager(uint16_t starting_port,
                                          uint32_t expiration_time,
                                          int max_flows);
 
-int allocate_flow(struct FlowManager* manager, struct int_key *ik, time_t time, struct flow* out);
+int allocate_flow(struct FlowManager* manager, struct int_key* ik, time_t time, struct flow* out);
 int expire_flows(struct FlowManager* manager, time_t time);
 
 int get_flow_by_int_key(struct FlowManager* manager, struct int_key* key, time_t time, struct flow* flow_out);

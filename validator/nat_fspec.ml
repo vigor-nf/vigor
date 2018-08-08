@@ -234,11 +234,6 @@ let fun_types =
                        lemmas_after = [
                          tx_l "empty_dmap_cap\
                                <int_k,ext_k,flw>(65536);";];};
-     "dmap_set_entry_condition", {ret_type = Static Void;
-                                  arg_types = stt [Ptr dmap_struct; Ptr (Ctm "entry_condition")];
-                                  extra_ptr_types = [];
-                                  lemmas_before = [];
-                                  lemmas_after = [];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];

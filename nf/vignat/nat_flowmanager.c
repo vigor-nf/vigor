@@ -1,10 +1,11 @@
+#include "nat_flowmanager.h"
+
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 
 #include "nat_flowtable.h"
 #include "lib/containers/double-chain.h"
-#include "nat_flowmanager.h"
 #include "lib/expirator.h"
 
 #ifdef KLEE_VERIFICATION
@@ -22,12 +23,67 @@ struct FlowManager {
 };
 
 #ifdef KLEE_VERIFICATION
+// for RTE_MAX_ETHPORTS
+#include <rte_config.h>
+
 struct DoubleChain** get_dchain_pp(struct FlowManager* manager) {
   return &(manager->chain);
 }
 
 struct DoubleMap** get_dmap_pp(struct FlowManager* manager) {
   return &(manager->flow_table);
+}
+
+int flow_consistency(void* key_a, void* key_b,
+                     int index, void* value, void* state) {
+  struct int_key* int_key = key_a;
+  struct ext_key* ext_key = key_b;
+  struct flow* flow = value;
+  struct FlowManager* manager = state;
+  return
+#if 0 //Semantics - inessential for the crash-freedom.
+    ( int_key->int_src_port == flow->int_src_port ) &
+    ( int_key->dst_port == flow->dst_port ) &
+    ( int_key->int_src_ip == flow->int_src_ip ) &
+    ( int_key->dst_ip == flow->dst_ip ) &
+    ( int_key->int_device_id == flow->int_device_id ) &
+    ( int_key->protocol == flow->protocol ) &
+
+    ( int_key->int_src_port == flow->ik.int_src_port ) &
+    ( int_key->dst_port == flow->ik.dst_port ) &
+    ( int_key->int_src_ip == flow->ik.int_src_ip ) &
+    ( int_key->dst_ip == flow->ik.dst_ip ) &
+    ( int_key->int_device_id == flow->ik.int_device_id ) &
+    ( int_key->protocol == flow->ik.protocol ) &
+
+    //(0 == memcmp(int_key, &flow->ik, sizeof(struct int_key))) &
+    ( ext_key->ext_src_port == flow->ext_src_port ) &
+    ( ext_key->dst_port == flow->dst_port ) &
+    ( ext_key->ext_src_ip == flow->ext_src_ip ) &
+    ( ext_key->dst_ip == flow->dst_ip ) &
+    ( ext_key->ext_device_id == flow->ext_device_id ) &
+    ( ext_key->protocol == flow->protocol ) &
+
+    ( ext_key->ext_src_port == flow->ek.ext_src_port ) &
+    ( ext_key->dst_port == flow->ek.dst_port ) &
+    ( ext_key->ext_src_ip == flow->ek.ext_src_ip ) &
+    ( ext_key->dst_ip == flow->ek.dst_ip ) &
+    ( ext_key->ext_device_id == flow->ek.ext_device_id ) &
+    ( ext_key->protocol == flow->ek.protocol ) &
+#endif//0 -- inessential for crash freedom part.
+    ( 0 <= flow->int_device_id ) &
+          ( flow->int_device_id < RTE_MAX_ETHPORTS ) &
+    ( 0 <= flow->ext_device_id ) & //FIXME: Klee translates this to signed variable
+          (flow->ext_device_id < RTE_MAX_ETHPORTS ) &
+    ( ext_key->ext_device_id == flow->ek.ext_device_id ) &
+    ( ext_key->ext_device_id == flow->ext_device_id ) &
+    ( int_key->int_device_id == flow->ik.int_device_id ) &
+    ( int_key->int_device_id == flow->int_device_id ) &
+    ( flow->int_device_id != flow->ext_device_id ) &
+    ( ext_key->ext_src_port == manager->starting_port + index ) &
+    ( flow->ext_src_port == manager->starting_port + index ) &
+    ( flow->ek.ext_src_port == manager->starting_port + index );
+    //(0 == memcmp(ext_key, &flow->ek, sizeof(struct ext_key)));
 }
 
 void concretize_devices(struct flow* f) {
@@ -48,11 +104,6 @@ struct FlowManager* allocate_flowmanager(uint16_t starting_port,
                                          uint16_t ext_device_id,
                                          uint32_t expiration_time,
                                          int max_flows) {
-#ifdef KLEE_VERIFICATION
-    // HACK HACK HACK HACK only works if the two starting ports are the same (see definition in flow.h)
-    GLOBAL_starting_port = starting_port;
-#endif//KLEE_VERIFICATION
-
     struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
     if (manager == NULL) {
         return NULL;
@@ -75,7 +126,7 @@ struct FlowManager* allocate_flowmanager(uint16_t starting_port,
     }
 
 #ifdef KLEE_VERIFICATION
-    dmap_set_entry_condition(manager->flow_table, flow_consistency);
+    dmap_set_entry_condition(manager->flow_table, flow_consistency, manager);
 #endif
 
     return manager;
