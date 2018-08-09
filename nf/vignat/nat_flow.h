@@ -12,9 +12,9 @@ struct FlowId {
 };
 
 struct Flow {
-	struct FlowId id;
-	uint16_t nat_port;
-	uint32_t nat_ip;
+	// Some redundancy there, but the double-map assumes the flow contains its IDs
+	struct FlowId internal_id;
+	struct FlowId external_id;
 	uint16_t internal_device;
 };
 
@@ -34,8 +34,8 @@ void flow_log(struct Flow* flow);
   double-map-stub-control.h
  */
 extern struct str_field_descr flow_id_descrs[5];
-extern struct nested_field_descr flow_nests[5];
-extern struct str_field_descr flow_descrs[4];
+extern struct nested_field_descr flow_nests[10];
+extern struct str_field_descr flow_descrs[3];
 #endif//KLEE_VERIFICATION
 
 /*@
@@ -50,14 +50,13 @@ extern struct str_field_descr flow_descrs[4];
     id == flid(sp, dp, sip, dip, prot);
 
 
-  inductive flow = flw(flow_id, int, int, int);
-  predicate flow_p(struct Flow* flowptr, flow flow) =
+  inductive flow = flw(flow_id, flow_id, int);
+  predicate flowp(struct Flow* flowptr, flow flow) =
     struct_Flow_padding(flowptr) &*&
-    flow_idp(&(flowptr->direct_flow), ?flowid)
-    flowptr->nat_port |-> np &*&
-    flowptr->nat_ip |-> nip &*&
-    flowptr->nat_dev |-> dev &*&
-    f == flwc(flowid, np, nip, dev);
+    flow_idp(&(flowptr->internal_id), ?iid) &*&
+    flow_idp(&(flowptr->external_id), ?eid) &*&
+    flowptr->internal_device |-> ?dev &*&
+    flow == flw(iid, eid, dev);
 
   fixpoint long long _wrap(long long x) { return x % INT_MAX; }
 
@@ -67,15 +66,14 @@ extern struct str_field_descr flow_descrs[4];
   }
 
   fixpoint flow_id flow_get_internal_id(flow f) {
-    switch(f) { case flw(id, np, nip, dev): return id; }
+    switch(f) { case flw(iid, eid, dev): return iid; }
   }
   fixpoint flow_id flow_get_external_id(flow f) {
-    switch(f) { case flw(id, np, nip, dev):
-      switch(id) { case flid(sp, dp, sip, dip, prot):
-        return flid(dp, np, sip, nip, prot); } }
+    switch(f) { case flw(iid, eid, dev): return eid; }
+  }
 
   fixpoint bool flow_ids_offsets_fp(struct Flow* f, struct FlowId* iid, struct FlowId* eid) {
-    return &(f->id) == iid; // eid was malloced..
+    return &(f->internal_id) == iid && &(f->external_id) == eid;
   }
   @*/
 
@@ -94,44 +92,45 @@ bool flow_id_eq(void* a, void* b);
   Hash function for flow IDs.
   Necessary for DoubleMap, hence the generalized signature.
 
-  @param ik - pointer to the ID.
+  @param obj - pointer to the ID.
   @returns integer - a hash computed. For equal values the hash values are
   guaranteed to be equal.
 */
 unsigned flow_id_hash(void* obj);
 //@ requires [?f]flow_idp(obj, ?id);
-//@ ensures [f]flow_idp(obj, id) &*& result == _flow_id_hash(k);
+//@ ensures [f]flow_idp(obj, id) &*& result == _flow_id_hash(id);
 
 /**
    Given the flow ID, get the internal and external IDs.
    Necessary for DoubleMap, hence the generalized signature.
 
    @param flwp - the pointer to the flow.
-   @param ikpp - the output pointer for the internal ID extracted from the flow.
-   @param ekpp - the output pointer for the external ID extracted from the flow.
+   @param int_id - the output pointer for the internal ID extracted from the flow.
+   @param ext_id - the output pointer for the external ID extracted from the flow.
 */
 void flow_extract_keys(void* flow, void** int_id, void** ext_id);
-/*@ requires [?f]flowp(flow, ?flw) &*& *int_id |-> _ &*& *ext_id |-> _;
-    ensures [f]flowp(flwp, flw) &*& *int_id |-> ?iidp &*& *ext_id |-> ?eidp &*&
-            [f]flow_idp(&(flow->id), ?iid) &*& [f]flow_idp(iidp, iid) &*& [f]flow_idp(eidp, ?eid) &*&
-            eid == flid(flow->id.dst_port, flow->nat_port, flow->id.dst_ip, flow->nat_ip, flow->id.protocol); @*/
+//@ requires [?f]flowp(flow, ?flw) &*& *int_id |-> _ &*& *ext_id |-> _;
+/*@ ensures [f]flowp(flow, flw) &*& *int_id |-> ?iidp &*& *ext_id |-> ?eidp &*&
+            [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
+            true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
+            iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
 
 /**
    The opposite of flow_extract_keys.
    Necessary for DoubleMap, hence the generalized signature.
 
-   @param flwp - the pointer to the flow.
-   @param ikp - pointer to the internal ID, must be the one extracted
+   @param flow - the pointer to the flow.
+   @param iidp - pointer to the internal ID, must be the one extracted
                 previously.
-   @param ekp - pointer to the external ID, must be the one extracted
+   @param eidp - pointer to the external ID, must be the one extracted
                 previously.
 */
 void flow_pack_keys(void* flow, void* iidp, void* eidp);
 /*@ requires [?f]flowp(flow, ?flw) &*&
-             [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
-             [f]flow_idp(&(flow->id), ?iid) &*& [f]flow_idp(iidp, iid) &*& [f]flow_idp(eidp, ?eid) &*&
-            eid == flid(flow->id.dst_port, flow->nat_port, flow->id.dst_ip, flow->nat_ip, flow->id.protocol);
-    ensures [f]flowp(flow, flw); @*/
+            [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
+            true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
+            iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
+//@ ensures [f]flowp(flow, flw);
 
 /**
    Copy the flow.

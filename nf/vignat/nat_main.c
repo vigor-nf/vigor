@@ -77,8 +77,8 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 			NF_DEBUG("Found flow:");
 			flow_log(&f);
 
-			ipv4_header->dst_addr = f.id.src_ip;
-			tcpudp_header->dst_port = f.id.src_port;
+			ipv4_header->dst_addr = f.internal_id.src_ip;
+			tcpudp_header->dst_port = f.internal_id.src_port;
 			dst_device = f.internal_device;
 		} else {
 			NF_DEBUG("Unknown flow, dropping");
@@ -112,8 +112,8 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		NF_DEBUG("Forwarding to:");
 		flow_log(&f);
 
-		ipv4_header->src_addr = f.nat_ip;
-		tcpudp_header->src_port = f.nat_port;
+		ipv4_header->src_addr = f.external_id.dst_ip;
+		tcpudp_header->src_port = f.external_id.dst_port;
 		dst_device = config.wan_device;
 	}
 

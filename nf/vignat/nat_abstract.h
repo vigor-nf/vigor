@@ -5,28 +5,28 @@
 
 /*@
 
-inductive entry = entry(int_k, ext_k, flw, time_t tstmp);
+inductive entry = entry(flow_id, flow_id, flow, time_t tstmp);
 inductive flowtable = flowtable(int, list<entry>);
 
-fixpoint int_k entry_ik(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
-    return ik;
+fixpoint flow_id entry_internal(entry e) {
+  switch(e) { case entry(iid, eid, flw, tstmp):
+    return iid;
   }
 }
 
-fixpoint ext_k entry_ek(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
-    return ek;
+fixpoint flow_id entry_external(entry e) {
+  switch(e) { case entry(iid, eid, flw, tstmp):
+    return eid;
   }
 }
-fixpoint flw entry_flow(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
+fixpoint flow entry_flow(entry e) {
+  switch(e) { case entry(iid, eid, flw, tstmp):
     return flw;
   }
 }
 
 fixpoint time_t entry_tstamp(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
+  switch(e) { case entry(iid, eid, flw, tstmp):
     return tstmp;
   }
 }
@@ -41,9 +41,9 @@ fixpoint t alist_get_by_right<t>(list<pair<t, int> > alist, int idx) {
 }
 
 fixpoint list<entry> gen_entries(list<pair<int, time_t> > indices,
-                                 list<pair<int_k, int> > ikeys,
-                                 list<pair<ext_k, int> > ekeys,
-                                 list<option<flw> > flows) {
+                                 list<pair<flow_id, int> > ikeys,
+                                 list<pair<flow_id, int> > ekeys,
+                                 list<option<flow> > flows) {
   switch(indices) {
     case nil: return nil;
     case cons(h,t): return switch(h) { case pair(index, tstmp):
@@ -64,27 +64,27 @@ fixpoint flowtable abstract_function(dmap<int_k,ext_k,flw> m, dchain ch) {
   }
 }
 
-fixpoint bool flowtable_contains_int_flow_id(flowtable ft, int_k flow_id) {
+fixpoint bool flowtable_contains_int_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return mem(flow_id, map(entry_ik, entries));
+    return mem(id, map(entry_internal, entries));
   }
 }
 
-fixpoint bool flowtable_contains_ext_flow_id(flowtable ft, ext_k flow_id) {
+fixpoint bool flowtable_contains_ext_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return mem(flow_id, map(entry_ek, entries));
+    return mem(id, map(entry_external, entries));
   }
 }
 
-fixpoint flw flowtable_get_by_int_flow_id(flowtable ft, int_k flow_id) {
+fixpoint flw flowtable_get_by_int_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return entry_flow(nth(index_of(flow_id, map(entry_ik, entries)), entries));
+    return entry_flow(nth(index_of(id, map(entry_internal, entries)), entries));
   }
 }
 
-fixpoint flw flowtable_get_by_ext_flow_id(flowtable ft, ext_k flow_id) {
+fixpoint flw flowtable_get_by_ext_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return entry_flow(nth(index_of(flow_id, map(entry_ek, entries)), entries));
+    return entry_flow(nth(index_of(id, map(entry_external, entries)), entries));
   }
 }
 
@@ -106,14 +106,18 @@ fixpoint bool entry_matches_flow(flw f, entry e) {
   return entry_flow(e) == f;
 }
 
-fixpoint flowtable flowtable_add_flow(flowtable table, flw flow, time_t time) {
+fixpoint flowtable flowtable_add_flow(flowtable table, flow flow, time_t time) {
   switch(table) { case flowtable(size, entries):
-    return flowtable(size, append(entries,
-                                  cons(entry(flw_get_ik(flow),
-                                             flw_get_ek(flow),
-                                             flow,
-                                             time),
-                                       nil)));
+    switch(flow) { case flw(id, np, nip, dev):
+      switch(id) { case flid(sp, dp, sip, dip, prot):
+        return flowtable(size, append(entries,
+                                      cons(entry(id,
+                                                 flid(dp, np, dip, nip, prot),
+                                                 flow,
+                                                 time),
+                                           nil)));
+      }
+    }
   }
 }
 

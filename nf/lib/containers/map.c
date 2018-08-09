@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stddef.h>
 #include "map-impl.h"
 #include "map.h"
 
@@ -13,10 +14,6 @@ struct Map {
   map_keys_equality* keys_eq;
   map_key_hash* khash;
 };
-
-#ifndef NULL
-#define NULL 0
-#endif//NULL
 
 /*@
   predicate mapp<t>(struct Map* ptr,

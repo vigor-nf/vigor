@@ -37,7 +37,10 @@ int flow_consistency(void* key_a, void* key_b,
   struct FlowManager* manager = state;
   return
     ( 0 <= flow->internal_device ) & ( flow->internal_device < RTE_MAX_ETHPORTS ) &
-    ( flow->nat_port == manager->starting_port + index );
+    ( flow->external_id.src_port == flow->internal_id.dst_port ) &
+    ( flow->external_id.src_ip == flow->internal_id.dst_ip ) &
+    ( flow->external_id.protocol == flow->internal_id.protocol ) &
+    ( flow->external_id.dst_port == manager->starting_port + index );
 }
 
 void concretize_devices(struct Flow* f) {
@@ -99,9 +102,14 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id, uint1
 
 	uint16_t port = manager->starting_port + index;
 	struct Flow flow = {
-		.id = *id,
-		.nat_port = port,
-		.nat_ip = manager->nat_ip,
+		.internal_id = *id,
+		.external_id = {
+			.src_port = id->dst_port,
+			.dst_port = port,
+			.src_ip = id->dst_ip,
+			.dst_ip = manager->nat_ip,
+			.protocol = id->protocol
+		},
 		.internal_device = internal_device
 	};
 

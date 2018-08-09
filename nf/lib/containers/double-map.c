@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 //@ #include "arith.gh"
 
