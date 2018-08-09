@@ -19,18 +19,162 @@ fixpoint list<dyn_entry> erase_addresses(list<dyn_entry> entries, list<ether_add
   }
 }
 
+@*/
+
+/*@
+lemma void erase_addresses_nil(list<ether_addri> addrs)
+requires true;
+ensures erase_addresses(nil, addrs) == nil;
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void dchain_expired_in_expired(dchain ch, int index, time_t t)
+requires true == distinct(dchain_indexes_fp(ch));
+ensures (dchain_get_time_fp(ch, index) < t) == (mem(index, dchain_get_expired_indexes_fp(ch, t)));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void vector_get_values_index_of<t>(list<pair<t, bool> > v, list<int> indices, t entry)
+requires true == mem(entry, vector_get_values_fp(v, indices));
+ensures fst(nth(nth(index_of(entry, vector_get_values_fp(v, indices)), indices), v)) == entry;
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void vector_get_values_known<t>(list<pair<t, bool> > v, list<int> indices, int idx)
+requires true == mem(idx, indices);
+ensures true == mem(fst(nth(idx, v)), vector_get_values_fp(v, indices));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void erase_addresses_known(dyn_entry e, list<dyn_entry> entries, list<ether_addri> addrs)
+requires true == mem(get_dyn_addr(e), addrs);
+ensures erase_addresses(cons(e, entries), addrs) == erase_addresses(entries, addrs);
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void two_indexes_into_engaged_nondistinct(list<pair<ether_addri, bool> > keys, int i1, int i2)
+requires i1 != i2 &*&
+         0 <= i1 &*& i1 < length(keys) &*&
+         0 <= i2 &*& i2 < length(keys) &*&
+         true == engaged_cell(nth(i1, keys)) &*&
+         true == engaged_cell(nth(i2, keys)) &*&
+         fst(nth(i1, keys)) == fst(nth(i2, keys));
+ensures false == distinct(map(fst, filter(engaged_cell, keys)));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void erase_addresses_nonmem(dyn_entry e, list<dyn_entry> entries, list<ether_addri> addrs)
+requires false == mem(get_dyn_addr(e), addrs);
+ensures erase_addresses(cons(e, entries), addrs) == cons(e, erase_addresses(entries, addrs));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void multiset_eq_cons_both<t>(list<t> l1, list<t> l2, t x)
+requires true == multiset_eq(l1, l2);
+ensures true == multiset_eq(cons(x, l1), cons(x, l2));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+
 lemma void bridge_expire_erase_abstract(list<pair<ether_addri, uint32_t> > dyn_map,
                                         list<pair<uint16_t, bool> > vals,
                                         list<pair<ether_addri, bool> > keys,
                                         dchain indices,
                                         time_t time)
-requires true;
+requires true == distinct(dchain_indexes_fp(indices)) &*&
+         true == forall(dyn_map, (synced_pair)(keys)) &*&
+         true == distinct(map(fst, filter(engaged_cell, keys))) &*&
+         true == forall(dchain_get_expired_indexes_fp(indices, time),
+                        (bounded)(length(keys))) &*&
+         true == forall(dchain_get_expired_indexes_fp(indices, time),
+                        (sup)(engaged_cell, (nth2)(keys)));
 ensures multiset_eq(erase_addresses(gen_dyn_entries(dyn_map, vals, indices),
                                     vector_get_values_fp(keys, dchain_get_expired_indexes_fp(indices, time))),
                     expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
                                      time)) == true;
 {
-  assume(false);//TODO
+  switch(dyn_map) {
+    case nil:
+      erase_addresses_nil(vector_get_values_fp(keys, dchain_get_expired_indexes_fp(indices, time)));
+    case cons(h,t): switch(h) { case pair(addr, idx):
+      bridge_expire_erase_abstract(t, vals, keys, indices, time);
+      list<uint32_t> expired_i = dchain_get_expired_indexes_fp(indices, time);
+      list<ether_addri> expired_e = vector_get_values_fp(keys, expired_i);
+      assert gen_dyn_entries(dyn_map, vals, indices) ==
+              cons(dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)),
+                   gen_dyn_entries(t, vals, indices));
+      dchain_expired_in_expired(indices, idx, time);
+      if (dchain_get_time_fp(indices, idx) < time) {
+        assert true == mem(idx, expired_i);
+        assert fst(nth(idx, keys)) == addr;
+        vector_get_values_known(keys, expired_i, idx);
+        assert true == mem(addr, expired_e);
+        erase_addresses_known(dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)),
+                              gen_dyn_entries(t, vals, indices),
+                              expired_e);
+        assert erase_addresses(gen_dyn_entries(dyn_map, vals, indices),
+                                expired_e) ==
+              erase_addresses(gen_dyn_entries(t, vals, indices), expired_e);
+        assert expire_addresses(gen_dyn_entries(dyn_map, vals, indices), time) ==
+              expire_addresses(gen_dyn_entries(t, vals, indices), time);
+      } else {
+        assert false == mem(idx, expired_i);
+        if (mem(addr, expired_e)) {
+          int addr_index = index_of(addr, expired_e);
+          int addr_idx = nth(addr_index, expired_i);
+          map_preserves_length((sup)(fst, (nth2)(keys)), expired_i);
+          assert fst(nth(idx, keys)) == addr;
+          vector_get_values_index_of(keys, expired_i, addr);
+          assert fst(nth(addr_idx, keys)) == addr;
+          forall_nth(expired_i, (bounded)(length(keys)), addr_index);
+          forall_nth(expired_i, (sup)(engaged_cell, (nth2)(keys)), addr_index);
+          assert true == engaged_cell(nth(idx, keys));
+          assert true == engaged_cell(nth(addr_idx, keys));
+          two_indexes_into_engaged_nondistinct(keys, addr_idx, idx);
+        }
+        assert false == mem(addr, expired_e);
+
+        erase_addresses_nonmem(dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)),
+                               gen_dyn_entries(t, vals, indices),
+                               expired_e);
+        assert erase_addresses(gen_dyn_entries(dyn_map, vals, indices),
+                               expired_e) ==
+               cons(dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)),
+                    erase_addresses(gen_dyn_entries(t, vals, indices),
+                                    expired_e));
+        assert expire_addresses(gen_dyn_entries(dyn_map, vals, indices), time) ==
+               cons(dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)),
+                    expire_addresses(gen_dyn_entries(t, vals, indices), time));
+        multiset_eq_cons_both(erase_addresses(gen_dyn_entries(t, vals, indices), expired_e),
+                              expire_addresses(gen_dyn_entries(t, vals, indices), time),
+                              dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)));
+      }
+    }
+  }
 }
 @*/
 
@@ -139,31 +283,8 @@ ensures false == mem(v, map(snd, map_erase_all_fp(m, keys)));
 @*/
 
 /*@
-lemma void two_indexes_into_engaged_nondistinct(list<pair<ether_addri, bool> > keys, int i1, int i2)
-requires i1 != i2 &*&
-         0 <= i1 &*& i1 < length(keys) &*&
-         0 <= i2 &*& i2 < length(keys) &*&
-         true == engaged_cell(nth(i1, keys)) &*&
-         true == engaged_cell(nth(i2, keys)) &*&
-         fst(nth(i1, keys)) == fst(nth(i2, keys));
-ensures false == distinct(map(fst, filter(engaged_cell, keys)));
-{
-  assume(false);//TODO
-}
-@*/
-
-/*@
 fixpoint bool bounded(int bound, int x) {
   return 0 <= x && x < bound;
-}
-@*/
-
-/*@
-lemma void vector_get_values_index_of<t>(list<pair<t, bool> > v, list<int> indices, t entry)
-requires true == mem(entry, vector_get_values_fp(v, indices));
-ensures fst(nth(nth(index_of(entry, vector_get_values_fp(v, indices)), indices), v)) == entry;
-{
-  assume(false);//TODO
 }
 @*/
 
@@ -171,6 +292,28 @@ ensures fst(nth(nth(index_of(entry, vector_get_values_fp(v, indices)), indices),
 lemma void map_erase_all_erase_head<kt,vt>(list<pair<kt,vt> > m, list<kt> keys, kt k, vt v)
 requires true == mem(k, keys);
 ensures map_erase_all_fp(cons(pair(k, v), m), keys) == map_erase_all_fp(m, keys);
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
+                                        list<pair<kt, bool> > v, dchain ch)
+requires map_vec_chain_coherent(m, v, ch);
+ensures map_vec_chain_coherent(m, v, ch) &*&
+        true == forall(m, (synced_pair)(v));
+{
+  assume(false);//TODO
+}
+
+lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
+                                     list<pair<kt, bool> > v, dchain ch)
+requires map_vec_chain_coherent(m, v, ch);
+ensures map_vec_chain_coherent(m, v, ch) &*&
+        true == distinct(dchain_indexes_fp(ch)) &*&
+        true == distinct(map(snd, m)) &*&
+        true == distinct(map(fst, filter(engaged_cell, v)));
 {
   assume(false);//TODO
 }
@@ -396,27 +539,6 @@ ensures dchain_erase_indexes_fp(ch, nil) == ch;
 @*/
 
 /*@
-lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
-                                        list<pair<kt, bool> > v, dchain ch)
-requires map_vec_chain_coherent(m, v, ch);
-ensures map_vec_chain_coherent(m, v, ch) &*&
-        true == forall(m, (synced_pair)(v));
-{
-  assume(false);//TODO
-}
-
-lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
-                                     list<pair<kt, bool> > v, dchain ch)
-requires map_vec_chain_coherent(m, v, ch);
-ensures map_vec_chain_coherent(m, v, ch) &*&
-        true == distinct(map(snd, m)) &*&
-        true == distinct(map(fst, filter(engaged_cell, v)));
-{
-  assume(false);//TODO
-}
-@*/
-
-/*@
 lemma void bridge_erase_many_abstract(list<pair<ether_addri, uint32_t> > dyn_map,
                                       list<pair<uint16_t, bool> > vals,
                                       list<pair<ether_addri, bool> > keys,
@@ -531,6 +653,7 @@ ensures map_vec_chain_coherent(m, v, ch) &*&
 }
 @*/
 
+
 /*@
 
 lemma void bridge_expire_abstract(list<pair<ether_addri, uint32_t> > dyn_map,
@@ -550,8 +673,10 @@ ensures map_vec_chain_coherent(dyn_map, keys, indices) &*&
                expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
                                 time)) == true;
 {
-  bridge_expire_erase_abstract(dyn_map, vals, keys, indices, time);
+  mvc_coherent_distinct(dyn_map, keys, indices);
+  mvc_coherent_keys_synced(dyn_map, keys, indices);
   mvc_coherent_expired_indexes(dyn_map, keys, indices, time);
+  bridge_expire_erase_abstract(dyn_map, vals, keys, indices, time);
   bridge_erase_many_abstract(dyn_map, vals, keys, indices, dchain_get_expired_indexes_fp(indices, time));
   dchain_erase_all_expired_indexes(indices, time);
   multiset_eq_trans(gen_dyn_entries(map_erase_all_fp
