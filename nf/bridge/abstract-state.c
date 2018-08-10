@@ -26,7 +26,11 @@ lemma void erase_addresses_nil(list<ether_addri> addrs)
 requires true;
 ensures erase_addresses(nil, addrs) == nil;
 {
-  assume(false);//TODO
+  switch(addrs) {
+    case nil:
+    case cons(h,t):
+      erase_addresses_nil(t);
+  }
 }
 @*/
 
