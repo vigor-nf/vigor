@@ -165,7 +165,8 @@ void map_put/*@ <t> @*/(struct Map* map, void* key, int value)
              true == recp(k, value) &*&
              length(contents) < capacity &*&
              false == map_has_fp(contents, k); @*/
-/*@ ensures mapp<t>(map, kp, hsh, recp,
+/*@ ensures [0.25]kp(key, k) &*&
+            mapp<t>(map, kp, hsh, recp,
                     mapc(capacity, map_put_fp(contents, k, value),
                          map_put_fp(addrs, k, key))); @*/
 {
@@ -219,16 +220,16 @@ void map_put/*@ <t> @*/(struct Map* map, void* key, int value)
 void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash)
 /*@ requires mapp<t>(map, ?kp, ?hsh, ?recp,
                      mapc(?capacity, ?contents, ?addrs)) &*&
-             [0.5]kp(key, ?k) &*&
+             [0.25]kp(key, ?k) &*&
              *trash |-> _ &*&
              true == map_has_fp(contents, k); @*/
 /*@ ensures mapp<t>(map, kp, hsh, recp,
                     mapc(capacity, map_erase_fp(contents, k),
                          map_erase_fp(addrs, k))) &*&
-            [0.5]kp(key, k) &*&
+            [0.25]kp(key, k) &*&
             *trash |-> ?k_out &*&
             k_out == map_get_fp(addrs, k) &*&
-            [0.5]kp(k_out, k); @*/
+            [0.25]kp(k_out, k); @*/
 {
   //@ open mapp<t>(map, kp, hsh, recp, mapc(capacity, contents, addrs));
   map_key_hash* khash = map->khash;
