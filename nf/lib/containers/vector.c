@@ -15,14 +15,14 @@ struct Vector {
   predicate entsp<t>(void* data, int el_size,
                      predicate (void*;t) entp,
                      int length,
-                     list<pair<t, bool> > vals) =
+                     list<pair<t, real> > vals) =
     switch(vals) {
       case nil:
         return length == 0;
       case cons(h,t):
         return switch(h) {
-          case pair(v, shared):
-            return (shared ? entp(data, v) : [0.5]entp(data, v)) &*&
+          case pair(v, frac):
+            return [frac]entp(data, v) &*&
                    entsp(data + el_size,
                          el_size, entp,
                          length - 1,
@@ -61,7 +61,7 @@ struct Vector {
 
   predicate vectorp<t>(struct Vector* vector,
                        predicate (void*;t) entp,
-                       list<pair<t, bool> > values,
+                       list<pair<t, real> > values,
                        list<void*> addrs) =
     vector_basep<t>(vector, ?el_size, ?cap, ?data) &*&
     cap == length(values) &*&
@@ -70,7 +70,7 @@ struct Vector {
 
   predicate vector_accp<t>(struct Vector* vector,
                            predicate (void*;t) entp,
-                           list<pair<t, bool> > values,
+                           list<pair<t, real> > values,
                            list<void*> addrs,
                            int accessed_idx,
                            void* entry) =
@@ -94,7 +94,7 @@ struct Vector {
            next_elem == (data + el_size*len) &*&
            len == length(lst);
   ensures entsp<t>(data, el_size, entp,
-                   len+1, append(lst, cons(pair(x, true), nil)));
+                   len+1, append(lst, cons(pair(x, 1.0), nil)));
   {
     close ptrs_eq(next_elem, el_size*len, data);
     open entsp(data, el_size, entp, len, lst);
@@ -105,11 +105,11 @@ struct Vector {
         assert len == 0;
         assert next_elem == data;
         close entsp<t>(data + el_size, el_size, entp, 0, nil);
-        close entsp<t>(data, el_size, entp, 1, cons(pair(x, true), nil));
+        close entsp<t>(data, el_size, entp, 1, cons(pair(x, 1.0), nil));
       case cons(h,t):
         append_to_entsp<t>(data + el_size, next_elem);
         close entsp<t>(data, el_size, entp,
-                       len+1, append(lst, cons(pair(x, true), nil)));
+                       len+1, append(lst, cons(pair(x, 1.0), nil)));
     }
   }
   @*/
@@ -133,7 +133,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                result == 1 &*&
                vectorp(new_vo, entp, ?contents, ?addrs) &*&
                length(contents) == capacity &*&
-               true == forall(contents, snd)); @*/
+               true == forall(contents, is_one)); @*/
 {
   struct Vector* old_vector_val = *vector_out;
   struct Vector* vector_alloc = malloc(sizeof(struct Vector));
@@ -149,7 +149,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
   (*vector_out)->data = data_alloc;
   (*vector_out)->elem_size = elem_size;
   (*vector_out)->capacity = capacity;
-  //@ list<pair<t, bool> > elems = nil;
+  //@ list<pair<t, real> > elems = nil;
   //@ close upperbounded_ptr((*vector_out)->data + elem_size*0);
   /*@ close entsp<t>((*vector_out)->data + elem_size*0, elem_size,
                      entp, 0, elems);
@@ -166,7 +166,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                 chars((data + elem_size*i),
                       elem_size*(capacity - i), _) &*&
                 [_]is_vector_init_elem<t>(init_elem, entp, elem_size) &*&
-                true == forall(elems, snd);
+                true == forall(elems, is_one);
       @*/
     //@ decreases (capacity - i);
   {
@@ -183,8 +183,8 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
     //@ assert entp(data + elem_size*i, ?x);
     //@ close upperbounded_ptr(data + elem_size*(i + 1));
     //@ append_to_entsp(data, data + elem_size*i);
-    //@ forall_append(elems, cons(pair(x, true), nil), snd);
-    //@ elems = append(elems, cons(pair(x, true), nil));
+    //@ forall_append(elems, cons(pair(x, 1.0), nil), is_one);
+    //@ elems = append(elems, cons(pair(x, 1.0), nil));
   }
   //@ open upperbounded_ptr(_);
   //@ list<void*> addrs = gen_vector_addrs_fp((*vector_out)->data, elem_size, capacity);
@@ -196,9 +196,9 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
   lemma void extract_by_index_full<t>(char* data, int idx)
   requires entsp<t>(data, ?el_size, ?entp, ?cap, ?lst) &*&
            0 <= idx &*& idx < cap &*&
-           nth(idx, lst) == pair(?val, true);
+           nth(idx, lst) == pair(?val, ?frac);
   ensures entsp<t>(data, el_size, entp, idx, take(idx, lst)) &*&
-          entp(data + el_size*idx, val) &*&
+          [frac]entp(data + el_size*idx, val) &*&
           entsp<t>(data + el_size*(idx + 1), el_size, entp,
                    cap - idx - 1, drop(idx + 1, lst));
   {
@@ -240,12 +240,12 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
 void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
 /*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
              0 <= index &*& index < length(values) &*&
-             nth(index, values) == pair(?val, true) &*&
+             nth(index, values) == pair(?val, ?frac) &*&
              *val_out |-> _; @*/
 /*@ ensures *val_out |-> ?vo &*&
             vector_accp<t>(vector, entp, values, addrs, index, vo) &*&
             vo == nth(index, addrs) &*&
-            entp(vo, val); @*/
+            [frac]entp(vo, val); @*/
 {
   //@ open vectorp<t>(vector, entp, values, addrs);
   //@ extract_by_index_full<t>(vector->data, index);
@@ -257,10 +257,10 @@ void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_
 }
 
 /*@
-  lemma void glue_by_index_full<t>(char* data, int idx, list<pair<t, bool> > lst)
+  lemma void glue_by_index_full<t>(char* data, int idx, list<pair<t, real> > lst)
   requires 0 <= idx &*& idx < length(lst) &*&
            entsp<t>(data, ?el_size, ?entp, idx, take(idx, lst)) &*&
-           nth(idx, lst) == pair(?val, true) &*&
+           nth(idx, lst) == pair(?val, 1.0) &*&
            entp(data + el_size*idx, val) &*&
            entsp<t>(data + el_size*(idx + 1), el_size, entp,
                     length(lst) - idx - 1, drop(idx + 1, lst));
@@ -282,9 +282,9 @@ void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_
   lemma void extract_by_index_half<t>(char* data, int idx)
   requires entsp<t>(data, ?el_size, ?entp, ?cap, ?lst) &*&
            0 <= idx &*& idx < cap &*&
-           nth(idx, lst) == pair(?val, false);
+           nth(idx, lst) == pair(?val, ?frac);
   ensures entsp<t>(data, el_size, entp, idx, take(idx, lst)) &*&
-          [0.5]entp(data + el_size*idx, val) &*&
+          [0.5*frac]entp(data + el_size*idx, val) &*&
           entsp<t>(data + el_size*(idx + 1), el_size, entp,
                    cap - idx - 1, drop(idx + 1, lst));
   {
@@ -304,12 +304,13 @@ void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_
 void vector_borrow_half/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
 /*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
              0 <= index &*& index < length(values) &*&
-             nth(index, values) == pair(?val, false) &*&
+             nth(index, values) == pair(?val, ?frac) &*&
              *val_out |-> _; @*/
 /*@ ensures *val_out |-> ?vo &*&
             vector_accp<t>(vector, entp, values, addrs, index, vo) &*&
             vo == nth(index, addrs) &*&
-            [0.5]entp(vo, val); @*/
+            nth(index, values) == pair(val, 0.5*frac) &*&
+            [0.5*frac]entp(vo, val); @*/
 {
   //@ open vectorp<t>(vector, entp, values, addrs);
   //@ extract_by_index_half<t>(vector->data, index);
@@ -321,10 +322,10 @@ void vector_borrow_half/*@ <t> @*/(struct Vector* vector, int index, void** val_
 }
 
 /*@
-  lemma void glue_by_index_half<t>(char* data, int idx, list<pair<t, bool> > lst)
+  lemma void glue_by_index_half<t>(char* data, int idx, list<pair<t, real> > lst)
   requires 0 <= idx &*& idx < length(lst) &*&
            entsp<t>(data, ?el_size, ?entp, idx, take(idx, lst)) &*&
-           nth(idx, lst) == pair(?val, false) &*&
+           nth(idx, lst) == pair(?val, 0.0) &*&
            [0.5]entp(data + el_size*idx, val) &*&
            entsp<t>(data + el_size*(idx + 1), el_size, entp,
                     length(lst) - idx - 1, drop(idx + 1, lst));
@@ -344,32 +345,32 @@ void vector_borrow_half/*@ <t> @*/(struct Vector* vector, int index, void** val_
 
 void vector_return_full/*@ <t> @*/(struct Vector* vector, int index, void* value)
 /*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&
-             entp(value, ?v); @*/
-/*@ ensures vectorp(vector, entp, update(index, pair(v, true), values), addrs); @*/
+             [?frac]entp(value, ?v); @*/
+/*@ ensures vectorp(vector, entp, update(index, pair(v, frac), values), addrs); @*/
 {
   //@ open vector_accp<t>(vector, entp, values, addrs, index, value);
-  //@ take_update_unrelevant(index, index, pair(v, true), values);
-  //@ drop_update_unrelevant(index + 1, index, pair(v, true), values);
-  //@ glue_by_index_full(vector->data, index, update(index, pair(v, true), values));
-  //@ close vectorp<t>(vector, entp, update(index, pair(v, true), values), addrs);
+  //@ take_update_unrelevant(index, index, pair(v, frac), values);
+  //@ drop_update_unrelevant(index + 1, index, pair(v, frac), values);
+  //@ glue_by_index_full(vector->data, index, update(index, pair(v, frac), values));
+  //@ close vectorp<t>(vector, entp, update(index, pair(v, frac), values), addrs);
 }
 
 
 void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value)
 /*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&
-             [0.5]entp(value, ?v); @*/
-/*@ ensures vectorp(vector, entp, update(index, pair(v, false), values), addrs); @*/
+             [?frac]entp(value, ?v); @*/
+/*@ ensures vectorp(vector, entp, update(index, pair(v, 0.5*frac), values), addrs); @*/
 {
   //@ open vector_accp<t>(vector, entp, values, addrs, index, value);
-  //@ take_update_unrelevant(index, index, pair(v, false), values);
-  //@ drop_update_unrelevant(index + 1, index, pair(v, false), values);
-  //@ glue_by_index_half(vector->data, index, update(index, pair(v, false), values));
-  //@ close vectorp<t>(vector, entp, update(index, pair(v, false), values), addrs);
+  //@ take_update_unrelevant(index, index, pair(v, 0.5*frac), values);
+  //@ drop_update_unrelevant(index + 1, index, pair(v, 0.5*frac), values);
+  //@ glue_by_index_half(vector->data, index, update(index, pair(v, 0.5*frac), values));
+  //@ close vectorp<t>(vector, entp, update(index, pair(v, 0.5*frac), values), addrs);
 }
 
 
 /*@
-  lemma void vector_get_values_append<t>(list<pair<t, bool> > vector,
+  lemma void vector_get_values_append<t>(list<pair<t, real> > vector,
                                          list<int> indices,
                                          int index, t v)
   requires 0 <= index &*& index < length(vector) &*&
@@ -386,7 +387,7 @@ void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value
   @*/
 
 /*@
-  lemma void vector_erase_keeps_val<t>(list<pair<t, bool> > vector,
+  lemma void vector_erase_keeps_val<t>(list<pair<t, real> > vector,
                                        int erase_index, int val_index)
   requires 0 <= val_index &*& val_index < length(vector);
   ensures fst(nth(val_index, vector)) ==
@@ -404,7 +405,7 @@ void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value
     }
   }
 
-  lemma void vector_erase_all_same_length<t>(list<pair<t, bool> > vector,
+  lemma void vector_erase_all_same_length<t>(list<pair<t, real> > vector,
                                              list<int> indices)
   requires true;
   ensures length(vector_erase_all_fp(vector, indices)) == length(vector);
@@ -416,7 +417,7 @@ void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value
     }
   }
 
-  lemma void vector_erase_all_keeps_val<t>(list<pair<t, bool> > vector,
+  lemma void vector_erase_all_keeps_val<t>(list<pair<t, real> > vector,
                                            list<int> indices,
                                            int index)
   requires 0 <= index &*& index < length(vector);
@@ -434,7 +435,7 @@ void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value
   @*/
 
 /*@
-  lemma void vector_erase_swap<t>(list<pair<t, bool> > vector, int i1, int i2)
+  lemma void vector_erase_swap<t>(list<pair<t, real> > vector, int i1, int i2)
   requires true;
   ensures vector_erase_fp(vector_erase_fp(vector, i1), i2) ==
           vector_erase_fp(vector_erase_fp(vector, i2), i1);
@@ -448,7 +449,7 @@ void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value
     }
   }
 
-  lemma void vector_erase_one_more<t>(list<pair<t, bool> > vector,
+  lemma void vector_erase_one_more<t>(list<pair<t, real> > vector,
                                       list<int> indices,
                                       int index)
   requires true;

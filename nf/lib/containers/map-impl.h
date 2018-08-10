@@ -177,12 +177,11 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
                               unsigned capacity);
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
-             [0.5]kp(keyp, ?k) &*& true == recp(k, value) &*&
+             [0.25]kp(keyp, ?k) &*& true == recp(k, value) &*&
              hsh(k) == hash &*&
              false == map_has_fp(m, k) &*&
              map_size_fp(m) < capacity; @*/
 /*@ ensures true == recp(k, value) &*&
-            [0.25]kp(keyp, k) &*&
             mapping<kt>(map_put_fp(m, k, value),
                         map_put_fp(addrs, k, keyp),
                         kp, recp,
@@ -199,12 +198,12 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps, unsigned* key_hashe
                                 void** keyp_out);
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, key_hashes, chns, ?values) &*&
-             [0.25]kp(keyp, ?k) &*&
+             [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality<kt>(eq, kp) &*&
              hsh(k) == hash &*&
              *keyp_out |-> ?ko &*&
              true == map_has_fp(m, k); @*/
-/*@ ensures [0.25]kp(keyp, k) &*&
+/*@ ensures [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality<kt>(eq, kp) &*&
             *keyp_out |-> ?nko &*&
             nko == map_get_fp(addrs, k) &*&
