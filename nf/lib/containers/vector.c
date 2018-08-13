@@ -193,7 +193,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
 }
 
 /*@
-  lemma void extract_by_index_full<t>(char* data, int idx)
+  lemma void extract_by_index<t>(char* data, int idx)
   requires entsp<t>(data, ?el_size, ?entp, ?cap, ?lst) &*&
            0 <= idx &*& idx < cap &*&
            nth(idx, lst) == pair(?val, ?frac);
@@ -209,7 +209,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
         if (idx == 0) {
           close entsp<t>(data, el_size, entp, 0, nil);
         } else {
-          extract_by_index_full<t>(data + el_size, idx - 1);
+          extract_by_index<t>(data + el_size, idx - 1);
           close entsp<t>(data, el_size, entp, idx, take(idx, lst));
         }
     }
@@ -237,7 +237,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
   }
   @*/
 
-void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
+void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
 /*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
              0 <= index &*& index < length(values) &*&
              nth(index, values) == pair(?val, ?frac) &*&
@@ -248,7 +248,7 @@ void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_
             [frac]entp(vo, val); @*/
 {
   //@ open vectorp<t>(vector, entp, values, addrs);
-  //@ extract_by_index_full<t>(vector->data, index);
+  //@ extract_by_index<t>(vector->data, index);
   //@ mul_mono_strict(index, length(values), vector->elem_size);
   //@ mul_bounds(index, length(values), vector->elem_size, 4096);
   *val_out = vector->data + index*vector->elem_size;
@@ -277,49 +277,6 @@ void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_
     }
   }
   @*/
-
-/*@
-  lemma void extract_by_index_half<t>(char* data, int idx)
-  requires entsp<t>(data, ?el_size, ?entp, ?cap, ?lst) &*&
-           0 <= idx &*& idx < cap &*&
-           nth(idx, lst) == pair(?val, ?frac);
-  ensures entsp<t>(data, el_size, entp, idx, take(idx, lst)) &*&
-          [0.5*frac]entp(data + el_size*idx, val) &*&
-          entsp<t>(data + el_size*(idx + 1), el_size, entp,
-                   cap - idx - 1, drop(idx + 1, lst));
-  {
-    open entsp<t>(data, el_size, entp, cap, lst);
-    switch(lst) {
-      case nil:
-      case cons(h,t):
-        if (idx == 0) {
-          close entsp<t>(data, el_size, entp, 0, nil);
-        } else {
-          extract_by_index_half<t>(data + el_size, idx - 1);
-          close entsp<t>(data, el_size, entp, idx, take(idx, lst));
-        }
-    }
-  }
-  @*/
-void vector_borrow_half/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
-/*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
-             0 <= index &*& index < length(values) &*&
-             nth(index, values) == pair(?val, ?frac) &*&
-             *val_out |-> _; @*/
-/*@ ensures *val_out |-> ?vo &*&
-            vector_accp<t>(vector, entp, values, addrs, index, vo) &*&
-            vo == nth(index, addrs) &*&
-            nth(index, values) == pair(val, 0.5*frac) &*&
-            [0.5*frac]entp(vo, val); @*/
-{
-  //@ open vectorp<t>(vector, entp, values, addrs);
-  //@ extract_by_index_half<t>(vector->data, index);
-  //@ mul_mono_strict(index, length(values), vector->elem_size);
-  //@ mul_bounds(index, length(values), vector->elem_size, 4096);
-  *val_out = vector->data + index*vector->elem_size;
-  //@ gen_addrs_index(vector->data, vector->elem_size, length(values), index);
-  //@ close vector_accp<t>(vector, entp, values, addrs, index, *val_out);
-}
 
 /*@
   lemma void glue_by_index_half<t>(char* data, int idx, list<pair<t, real> > lst)

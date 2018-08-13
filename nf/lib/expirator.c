@@ -183,7 +183,7 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
     //@ dchain_oldest_allocated(cur_ch);
     //@ mvc_coherent_index_busy(cur_m, cur_v, cur_ch, dchain_get_oldest_index_fp(cur_ch));
     void* key;
-    vector_borrow_half(vector, index, &key);
+    vector_borrow(vector, index, &key);
     //@ assert *&key |-> ?key_pointer;
     //@ assert [_]kp(key_pointer, ?k);
     //@ forall2_nth(cur_v, vaddrs, (kkeeper)(cur_addrs), index);

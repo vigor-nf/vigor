@@ -110,7 +110,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
              length(contents) == capacity &*&
              true == forall(contents, is_one)); @*/
 
-void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_out);
+void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out);
 /*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
              0 <= index &*& index < length(values) &*&
              nth(index, values) == pair(?val, ?frac) &*&
@@ -119,17 +119,6 @@ void vector_borrow_full/*@ <t> @*/(struct Vector* vector, int index, void** val_
             vector_accp<t>(vector, entp, values, addrs, index, vo) &*&
             vo == nth(index, addrs) &*&
             [frac]entp(vo, val); @*/
-
-void vector_borrow_half/*@ <t> @*/(struct Vector* vector, int index, void** val_out);
-/*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
-             0 <= index &*& index < length(values) &*&
-             nth(index, values) == pair(?val, ?frac) &*&
-             *val_out |-> _; @*/
-/*@ ensures *val_out |-> ?vo &*&
-            vector_accp<t>(vector, entp, values, addrs, index, vo) &*&
-            vo == nth(index, addrs) &*&
-            nth(index, values) == pair(val, 0.5*frac) &*&
-            [0.5*frac]entp(vo, val); @*/
 
 void vector_return_full/*@ <t> @*/(struct Vector* vector, int index, void* value);
 /*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&

@@ -73,7 +73,7 @@ int bridge_get_device(struct ether_addr* dst,
   present = map_get(dynamic_ft.map, dst, &index);
   if (present) {
     struct DynamicValue* value = 0;
-    vector_borrow_full(dynamic_ft.values, index, (void**)&value);
+    vector_borrow(dynamic_ft.values, index, (void**)&value);
     device = value->device;
     vector_return_full(dynamic_ft.values, index, value);
     return device;
@@ -99,8 +99,8 @@ void bridge_put_update_entry(struct ether_addr* src,
     }
     struct ether_addr* key = 0;
     struct DynamicValue* value = 0;
-    vector_borrow_full(dynamic_ft.keys, index, (void**)&key);
-    vector_borrow_full(dynamic_ft.values, index, (void**)&value);
+    vector_borrow(dynamic_ft.keys, index, (void**)&key);
+    vector_borrow(dynamic_ft.values, index, (void**)&value);
     memcpy(key, src, sizeof(struct ether_addr));
     value->device = src_device;
     map_put(dynamic_ft.map, key, index);
@@ -250,7 +250,7 @@ void read_static_ft_from_file() {
     int device_to;
     char* temp;
     struct StaticKey* key = 0;
-    vector_borrow_full(static_ft.keys, count, (void**)&key);
+    vector_borrow(static_ft.keys, count, (void**)&key);
 
     // Ouff... the strings are extracted, now let's parse them.
     result = cmdline_parse_etheraddr(NULL, mac_addr_str,
