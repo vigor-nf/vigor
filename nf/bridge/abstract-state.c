@@ -79,8 +79,7 @@ ensures fst(nth(nth(index_of(entry, vector_get_values_fp(v, indices)), indices),
   switch(indices) {
     case nil:
     case cons(h,t):
-      if (fst(nth(h, v)) == entry) {
-      } else {
+      if (fst(nth(h, v)) != entry) {
         vector_get_values_index_of(v, t, entry);
       }
   }
@@ -92,7 +91,13 @@ lemma void vector_get_values_known<t>(list<pair<t, bool> > v, list<int> indices,
 requires true == mem(idx, indices);
 ensures true == mem(fst(nth(idx, v)), vector_get_values_fp(v, indices));
 {
-  assume(false);//TODO
+  switch(indices) {
+    case nil:
+    case cons(h,t):
+      if (h != idx) {
+        vector_get_values_known(v, t, idx);
+      }
+  }
 }
 @*/
 
