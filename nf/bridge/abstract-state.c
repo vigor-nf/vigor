@@ -76,7 +76,14 @@ lemma void vector_get_values_index_of<t>(list<pair<t, bool> > v, list<int> indic
 requires true == mem(entry, vector_get_values_fp(v, indices));
 ensures fst(nth(nth(index_of(entry, vector_get_values_fp(v, indices)), indices), v)) == entry;
 {
-  assume(false);//TODO
+  switch(indices) {
+    case nil:
+    case cons(h,t):
+      if (fst(nth(h, v)) == entry) {
+      } else {
+        vector_get_values_index_of(v, t, entry);
+      }
+  }
 }
 @*/
 
