@@ -254,16 +254,6 @@ ensures false == mem(v, map(snd, map_erase_all_fp(m, ks)));
 @*/
 
 /*@
-fixpoint bool synced_pair<kt>(list<pair<kt, bool> > keys, pair<kt, uint32_t> p) {
-  switch(p) {
-    case pair(addr, idx):
-      return 0 <= idx && idx < length(keys) &&
-             !snd(nth(idx, keys)) && fst(nth(idx, keys)) == addr;
-  }
-}
-@*/
-
-/*@
 lemma void synced_pairs_map_get(list<pair<ether_addri, bool> > keys,
                                 list<pair<ether_addri, uint32_t> > m,
                                 uint32_t v)
@@ -302,15 +292,6 @@ ensures map_erase_all_fp(cons(pair(k, v), m), keys) == map_erase_all_fp(m, keys)
 @*/
 
 /*@
-lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
-                                        list<pair<kt, bool> > v, dchain ch)
-requires map_vec_chain_coherent(m, v, ch);
-ensures map_vec_chain_coherent(m, v, ch) &*&
-        true == forall(m, (synced_pair)(v));
-{
-  assume(false);//TODO
-}
-
 lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
                                      list<pair<kt, bool> > v, dchain ch)
 requires map_vec_chain_coherent(m, v, ch);

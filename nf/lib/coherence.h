@@ -277,4 +277,22 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           dmap_cap_fp(m) == dchain_index_range_fp(ch);
   @*/
 
+/*@
+fixpoint bool synced_pair<kt>(list<pair<kt, bool> > keys, pair<kt, uint32_t> p) {
+  switch(p) {
+    case pair(addr, idx):
+      return 0 <= idx && idx < length(keys) &&
+             !snd(nth(idx, keys)) && fst(nth(idx, keys)) == addr;
+  }
+}
+@*/
+
+/*@
+  lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
+                                          list<pair<kt, bool> > v, dchain ch);
+  requires map_vec_chain_coherent(m, v, ch);
+  ensures map_vec_chain_coherent(m, v, ch) &*&
+          true == forall(m, (synced_pair)(v));
+  @*/
+
 #endif// _COHERENCE_H_INCLUDED_

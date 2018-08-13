@@ -501,8 +501,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
       case cons(h1,t1):
         switch(addrs) {
           case nil: return;
-            case cons(h2,t2):
-              empty_kkeeper(t2, t1, addr_map, capacity - 1);
+          case cons(h2,t2):
+            empty_kkeeper(t2, t1, addr_map, capacity - 1);
         }
     }
   }
@@ -1535,7 +1535,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                             kt key)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
            true == mem(pair(key, false), v);
-  ensures map_get_fp(m, key) == start_idx + index_of(pair(key, false), v);
+  ensures true == map_has_fp(m, key) &*&
+          map_get_fp(m, key) == start_idx + index_of(pair(key, false), v);
   {
     switch(v) {
       case nil:
@@ -1643,7 +1644,9 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                                  int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch));
   ensures true == subset(filter_idx(engaged_cell, start_idx, v),
-                         dchain_indexes_fp(ch));
+                         dchain_indexes_fp(ch)) &*&
+          true == subset(filter_idx(engaged_cell, start_idx, v),
+                         map(snd, m));
   {
     switch(v) {
       case nil:
@@ -1651,6 +1654,11 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
         consistent_pairs_indexes_subset(m, t, ch, start_idx + 1);
         if (engaged_cell(h)) {
           dchain_indexes_contain_index(ch, start_idx);
+          assert true == map_has_fp(m, fst(h));
+          assert map_get_fp(m, fst(h)) == start_idx;
+          map_get_mem(m, fst(h));
+          mem_map(pair(fst(h), start_idx), m, snd);
+          assert true == mem(start_idx, map(snd, m));
         }
     }
   }
@@ -1663,7 +1671,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires map_vec_chain_coherent<kt>(m, v, ch);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
           true == distinct(dchain_indexes_fp(ch)) &*&
-          true == distinct(map(fst, m));
+          true == distinct(map(fst, m)) &*&
+          true == distinct(map(snd, m));
   {
     open map_vec_chain_coherent(m, v, ch);
 
@@ -1690,6 +1699,15 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     msubset_same_len_eq(filter_idx(engaged_cell, 0, v), dchain_indexes_fp(ch));
     msubset_distinct(dchain_indexes_fp(ch), filter_idx(engaged_cell, 0, v));
     assert true == distinct(dchain_indexes_fp(ch));
+
+    //assert true == msubset(dchain_indexes_fp(ch), filter_idx(engaged_cell, 0, v));
+    assert true == subset(filter_idx(engaged_cell, 0, v), map(snd, m));
+    map_preserves_length(snd, m);
+    assert length(filter_idx(engaged_cell, 0, v)) == length(map(snd, m));
+    distinct_subset_msubset(filter_idx(engaged_cell, 0, v), map(snd, m));
+    msubset_same_len_eq(filter_idx(engaged_cell, 0, v), map(snd, m));
+    //assert true == msubset(dchain_indexes_fp(ch), map(snd, m));
+    msubset_distinct(map(snd, m), filter_idx(engaged_cell, 0, v));
 
     close map_vec_chain_coherent(m, v, ch);
   }
@@ -1725,3 +1743,208 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                  dchain_remove_index_fp(ch, index));
   }
   @*/
+
+/*@
+fixpoint bool synced_pair_idx<kt>(list<pair<kt, bool> > keys, int start, pair<kt, uint32_t> p) {
+  switch(p) {
+    case pair(addr, idx):
+      return 0 <= idx - start && idx - start < length(keys) &&
+             !snd(nth(idx - start, keys)) && fst(nth(idx - start, keys)) == addr;
+  }
+}
+@*/
+
+/*@
+lemma void map_distinct_mem_pair_get<kt,vt>(list<pair<kt,vt> > m, kt k, vt v)
+requires true == distinct(map(fst, m)) &*&
+         true == mem(pair(k, v), m);
+ensures map_get_fp(m, k) == v;
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key, value):
+        if (key == k) {
+          if (value != v) {
+            assert true == mem(pair(k, v), t);
+            mem_map(pair(k, v), t, fst);
+          }
+        }
+        else
+          map_distinct_mem_pair_get(t, k, v);
+      }
+  }
+}
+@*/
+
+/*@
+lemma void map_has_two_values_nondistinct<kt,vt>(list<pair<kt,vt> > m, kt k1, kt k2)
+requires true == map_has_fp(m, k1) &*&
+         true == map_has_fp(m, k2) &*&
+         map_get_fp(m, k1) == map_get_fp(m, k2) &*&
+         k1 != k2;
+ensures false == distinct(map(snd, m));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key, value):
+        if (key == k1) {
+          map_get_mem(t, k2);
+          mem_map(pair(k2, map_get_fp(m, k1)), t, snd);
+        } else if (key == k2) {
+          map_get_mem(t, k1);
+          mem_map(pair(k1, map_get_fp(m, k2)), t, snd);
+        } else {
+          map_has_two_values_nondistinct(t, k1, k2);
+        }
+      }
+  }
+}
+@*/
+
+/*@
+lemma void consistent_pair_synced_pair<kt>(list<pair<kt, int> > m,
+                                           list<pair<kt, bool> > v,
+                                           dchain ch,
+                                           pair<kt, int> entry,
+                                           int i)
+requires true == mem(entry, m) &*&
+         true == forall_idx(v, i, (consistent_pair)(m, ch)) &*&
+         true == mem(fst(entry), map(fst, filter(engaged_cell, v))) &*&
+         true == distinct(map(fst, m)) &*&
+         true == distinct(map(snd, m)) &*&
+         0 <= snd(entry) - i &*& snd(entry) - i < length(v) &*&
+         false == snd(nth(snd(entry) - i, v));
+ensures true == synced_pair_idx(v, i, entry);
+{
+  switch(v) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(val, owned):
+        switch(entry) { case pair(addr, idx):
+          if (i == idx) {
+            assert 0 <= snd(entry) - i;
+            assert snd(entry) - i < length(v);
+            assert h == nth(idx - i, v);
+            if (owned) {
+              consistent_pair_synced_pair(m, t, ch, entry, i + 1);
+            } else {
+              assert false == owned;
+              map_distinct_mem_pair_get(m, addr, idx);
+              if (addr != val) {
+                assert true == map_has_fp(m, val);
+                assert map_get_fp(m, val) == idx;
+                assert map_get_fp(m, addr) == idx;
+                assert true == map_has_fp(m, val);
+                mem_map(entry, m, fst);
+                map_has_to_mem(m, addr);
+                assert true == map_has_fp(m, addr);
+                map_has_two_values_nondistinct(m, val, addr);
+                assert false;
+              }
+            }
+            return;
+          } else {
+            if (addr == val && !owned) {
+              map_distinct_mem_pair_get(m, addr, idx);
+            }
+            consistent_pair_synced_pair(m, t, ch, entry, i + 1);
+          }
+        }
+      }
+  }
+}
+@*/
+
+/*@
+lemma void synced_pair_0<kt>(list<pair<kt, int> > m,
+                             list<pair<kt, bool> > v)
+requires true == forall(m, (synced_pair_idx)(v, 0));
+ensures true == forall(m, (synced_pair)(v));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      synced_pair_0(t, v);
+      switch(h) { case pair(aaa,bbb): }
+  }
+}
+@*/
+
+/*@
+lemma void drop_msubset<t>(int n, list<t> l)
+requires true;
+ensures true == subset(drop(n, l), l) &*&
+        true == msubset(drop(n, l), l);
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      if (0 != n) {
+        drop_msubset(n - 1, t);
+        msubset_cons_preserves(drop(n, l), t, h);
+      } else {
+        msubset_refl(l);
+      }
+      msubset_subset(drop(n, l), l);
+  }
+}
+@*/
+
+/*@
+lemma void consistent_pairs_synced_pairs<kt>(list<pair<kt, int> > m,
+                                             list<pair<kt, bool> > v,
+                                             dchain ch,
+                                             list<pair<kt, int> > cur_m,
+                                             int i)
+requires drop(i, m) == cur_m &*&
+         0 <= i &*& i + length(cur_m) == length(m) &*&
+         true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+         true == distinct(map(fst, m)) &*&
+         true == distinct(map(snd, m)) &*&
+         true == msubset(map(fst, m), map(fst, filter(engaged_cell, v)));
+ensures true == forall(cur_m, (synced_pair_idx)(v, 0));
+{
+  switch(cur_m) {
+    case nil:
+    case cons(h,t):
+      drop_msubset(i, m);
+      subset_mem_trans(cur_m, m, h);
+      mem_map(h, m, fst);
+      msubset_subset(map(fst, m), map(fst, filter(engaged_cell, v)));
+      subset_mem_trans(map(fst, m), map(fst, filter(engaged_cell, v)), fst(h));
+
+      map_has_to_mem(m, fst(h));
+      pairs_consistent_get_index(m, v, ch, fst(h), 0);
+      switch(h) { case pair(aaa,bbb): }
+      map_distinct_mem_pair_get(m, fst(h), snd(h));
+      consistent_pair_synced_pair(m, v, ch, h, 0);
+      drop_drop(1, i, m);
+      consistent_pairs_synced_pairs(m, v, ch, t, i + 1);
+  }
+}
+@*/
+
+/*@
+lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
+                                        list<pair<kt, bool> > v, dchain ch)
+requires map_vec_chain_coherent(m, v, ch);
+ensures map_vec_chain_coherent(m, v, ch) &*&
+        true == forall(m, (synced_pair)(v));
+{
+  mvc_coherent_distinct(m, v, ch);
+  assert true == distinct(dchain_indexes_fp(ch));
+  open map_vec_chain_coherent(m, v, ch);
+  assert 
+    dchain_index_range_fp(ch) == length(v) &*&
+    true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
+    true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
+    map_size_fp(m) == length(dchain_indexes_fp(ch));
+
+  consistent_pairs_synced_pairs(m, v, ch, m, 0);
+  synced_pair_0(m, v);
+
+  close map_vec_chain_coherent(m, v, ch);
+}
+@*/

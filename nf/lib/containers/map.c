@@ -205,7 +205,7 @@ void map_put/*@ <t> @*/(struct Map* map, void* key, int value)
   @*/
 
 /*@
-  lemma void map_get_mem<t>(list<pair<t, int> > m, t k)
+  lemma void map_get_mem<kt,vt>(list<pair<kt,vt> > m, kt k)
   requires true == map_has_fp(m, k);
   ensures true == mem(pair(k, map_get_fp(m, k)), m);
   {
