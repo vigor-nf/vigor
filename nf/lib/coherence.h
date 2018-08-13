@@ -292,7 +292,8 @@ fixpoint bool synced_pair<kt>(list<pair<kt, bool> > keys, pair<kt, uint32_t> p) 
                                           list<pair<kt, bool> > v, dchain ch);
   requires map_vec_chain_coherent(m, v, ch);
   ensures map_vec_chain_coherent(m, v, ch) &*&
-          true == forall(m, (synced_pair)(v));
+          true == forall(m, (synced_pair)(v)) &*&
+          true == msubset(map(snd, m), dchain_indexes_fp(ch));
   @*/
 
 #endif// _COHERENCE_H_INCLUDED_

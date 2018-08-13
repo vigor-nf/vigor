@@ -35,11 +35,39 @@ ensures erase_addresses(nil, addrs) == nil;
 @*/
 
 /*@
+lemma void dchaini_expired_in_expired(list<pair<int, time_t> > alist, int index, time_t time)
+requires true == distinct(map(fst, alist)) &*&
+         true == exists(alist, (same_index)(index));
+ensures (alist_get_fp(alist, index) < time) ==
+        mem(index, map(fst, filter((is_cell_expired)(time), alist)));
+{
+  switch(alist) {
+    case nil:
+    case cons(h,t): switch(h) { case pair(cur_index, cur_time):
+      if (cur_index == index) {
+        if (time <= cur_time) {
+          filter_subset((is_cell_expired)(time), t);
+          subset_map(filter((is_cell_expired)(time), t), t, fst);
+          if (mem(index, map(fst, filter((is_cell_expired)(time), t)))) {
+            subset_mem_trans(map(fst, filter((is_cell_expired)(time), t)), map(fst, t), index);
+          }
+          assert false == mem(index, map(fst, filter((is_cell_expired)(time), t)));
+        }
+      } else {
+        dchaini_expired_in_expired(t, index, time);
+      }
+    }
+  }
+}
+
 lemma void dchain_expired_in_expired(dchain ch, int index, time_t t)
-requires true == distinct(dchain_indexes_fp(ch));
+requires true == distinct(dchain_indexes_fp(ch)) &*&
+         true == dchain_allocated_fp(ch, index);
 ensures (dchain_get_time_fp(ch, index) < t) == (mem(index, dchain_get_expired_indexes_fp(ch, t)));
 {
-  assume(false);//TODO
+  switch(ch) { case dchain(alist, x1, x2, x3):
+    dchaini_expired_in_expired(alist, index, t);
+  }
 }
 @*/
 
@@ -112,6 +140,7 @@ lemma void bridge_expire_erase_abstract(list<pair<ether_addri, uint32_t> > dyn_m
 requires true == distinct(dchain_indexes_fp(indices)) &*&
          true == forall(dyn_map, (synced_pair)(keys)) &*&
          true == distinct(map(fst, filter(engaged_cell, keys))) &*&
+         true == subset(map(snd, dyn_map), dchain_indexes_fp(indices)) &*&
          true == forall(dchain_get_expired_indexes_fp(indices, time),
                         (bounded)(length(keys))) &*&
          true == forall(dchain_get_expired_indexes_fp(indices, time),
@@ -131,6 +160,8 @@ ensures multiset_eq(erase_addresses(gen_dyn_entries(dyn_map, vals, indices),
       assert gen_dyn_entries(dyn_map, vals, indices) ==
               cons(dyn_entry(addr, fst(nth(idx, vals)), dchain_get_time_fp(indices, idx)),
                    gen_dyn_entries(t, vals, indices));
+      subset_mem_trans(map(snd, dyn_map), dchain_indexes_fp(indices), idx);
+      dchain_indexes_contain_index(indices, idx);
       dchain_expired_in_expired(indices, idx, time);
       if (dchain_get_time_fp(indices, idx) < time) {
         assert true == mem(idx, expired_i);
@@ -660,6 +691,7 @@ ensures map_vec_chain_coherent(dyn_map, keys, indices) &*&
 {
   mvc_coherent_distinct(dyn_map, keys, indices);
   mvc_coherent_keys_synced(dyn_map, keys, indices);
+  msubset_subset(map(snd, dyn_map), dchain_indexes_fp(indices));
   mvc_coherent_expired_indexes(dyn_map, keys, indices, time);
   bridge_expire_erase_abstract(dyn_map, vals, keys, indices, time);
   bridge_erase_many_abstract(dyn_map, vals, keys, indices, dchain_get_expired_indexes_fp(indices, time));

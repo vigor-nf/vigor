@@ -1672,7 +1672,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
           true == distinct(dchain_indexes_fp(ch)) &*&
           true == distinct(map(fst, m)) &*&
-          true == distinct(map(snd, m));
+          true == distinct(map(snd, m)) &*&
+          true == msubset(map(snd, m), dchain_indexes_fp(ch));
   {
     open map_vec_chain_coherent(m, v, ch);
 
@@ -1708,6 +1709,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     msubset_same_len_eq(filter_idx(engaged_cell, 0, v), map(snd, m));
     //assert true == msubset(dchain_indexes_fp(ch), map(snd, m));
     msubset_distinct(map(snd, m), filter_idx(engaged_cell, 0, v));
+    msubset_trans(map(snd, m), filter_idx(engaged_cell, 0, v), dchain_indexes_fp(ch));
 
     close map_vec_chain_coherent(m, v, ch);
   }
@@ -1931,7 +1933,8 @@ lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
                                         list<pair<kt, bool> > v, dchain ch)
 requires map_vec_chain_coherent(m, v, ch);
 ensures map_vec_chain_coherent(m, v, ch) &*&
-        true == forall(m, (synced_pair)(v));
+        true == forall(m, (synced_pair)(v)) &*&
+        true == msubset(map(snd, m), dchain_indexes_fp(ch));
 {
   mvc_coherent_distinct(m, v, ch);
   assert true == distinct(dchain_indexes_fp(ch));
