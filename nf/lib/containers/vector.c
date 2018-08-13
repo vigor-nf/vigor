@@ -260,8 +260,8 @@ void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
   lemma void glue_by_index_full<t>(char* data, int idx, list<pair<t, real> > lst)
   requires 0 <= idx &*& idx < length(lst) &*&
            entsp<t>(data, ?el_size, ?entp, idx, take(idx, lst)) &*&
-           nth(idx, lst) == pair(?val, 1.0) &*&
-           entp(data + el_size*idx, val) &*&
+           nth(idx, lst) == pair(?val, ?frac) &*&
+           [frac]entp(data + el_size*idx, val) &*&
            entsp<t>(data + el_size*(idx + 1), el_size, entp,
                     length(lst) - idx - 1, drop(idx + 1, lst));
   ensures entsp<t>(data, el_size, entp, length(lst), lst);
@@ -282,8 +282,8 @@ void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
   lemma void glue_by_index_half<t>(char* data, int idx, list<pair<t, real> > lst)
   requires 0 <= idx &*& idx < length(lst) &*&
            entsp<t>(data, ?el_size, ?entp, idx, take(idx, lst)) &*&
-           nth(idx, lst) == pair(?val, 0.0) &*&
-           [0.5]entp(data + el_size*idx, val) &*&
+           nth(idx, lst) == pair(?val, ?frac) &*&
+           [frac]entp(data + el_size*idx, val) &*&
            entsp<t>(data + el_size*(idx + 1), el_size, entp,
                     length(lst) - idx - 1, drop(idx + 1, lst));
   ensures entsp<t>(data, el_size, entp, length(lst), lst);
@@ -316,7 +316,8 @@ void vector_return_full/*@ <t> @*/(struct Vector* vector, int index, void* value
 void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value)
 /*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&
              [?frac]entp(value, ?v); @*/
-/*@ ensures vectorp(vector, entp, update(index, pair(v, 0.5*frac), values), addrs); @*/
+/*@ ensures vectorp(vector, entp, update(index, pair(v, 0.5*frac), values), addrs) &*&
+            [0.5*frac]entp(value, v); @*/
 {
   //@ open vector_accp<t>(vector, entp, values, addrs, index, value);
   //@ take_update_unrelevant(index, index, pair(v, 0.5*frac), values);

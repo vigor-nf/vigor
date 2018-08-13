@@ -106,7 +106,7 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
 }
 
 /*@
-  lemma void vector_erase_all_same_len<t>(list<pair<t, bool> > vec, list<int> indices)
+  lemma void vector_erase_all_same_len<t>(list<pair<t, real> > vec, list<int> indices)
   requires true;
   ensures length(vec) == length(vector_erase_all_fp(vec, indices));
   {
@@ -148,7 +148,7 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
   //@ dchain cur_ch = ch;
   //@ list<pair<kt, uint32_t> > cur_m = m;
   //@ list<pair<kt, void*> > cur_addrs = addrs;
-  //@ list<pair<kt, bool> > cur_v = v;
+  //@ list<pair<kt, real> > cur_v = v;
   while (dchain_expire_one_index(chain, &index, time))
     /*@ invariant double_chainp(cur_ch, chain) &*&
                   dchain_is_sortedp(ch) &*&
@@ -188,6 +188,8 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
     //@ assert [_]kp(key_pointer, ?k);
     //@ forall2_nth(cur_v, vaddrs, (kkeeper)(cur_addrs), index);
     map_erase(map, key, &key);
+    //@ assert [?fk]kp(key_pointer, k);
+    //@ assert fk == 1.0;
     vector_return_full(vector, index, key);
     //@ dchain_still_more_to_expire(ch, time, count);
     //@ expire_n_plus_one(ch, time, count);
