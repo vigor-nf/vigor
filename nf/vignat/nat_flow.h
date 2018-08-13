@@ -59,20 +59,10 @@ extern struct str_field_descr flow_descrs[3];
     flow == flw(iid, eid, dev);
   predicate flowp_bare(struct Flow* flowptr, flow flow) =
     struct_Flow_padding(flowptr) &*&
-    flowptr->internal_id.src_port |-> ?isp &*&
-    flowptr->internal_id.dst_port |-> ?idp &*&
-    flowptr->internal_id.src_ip |-> ?isip &*&
-    flowptr->internal_id.dst_ip |-> ?idip &*&
-    flowptr->internal_id.protocol |-> ?ipr &*&
-    flowptr->external_id.src_port |-> ?esp &*&
-    flowptr->external_id.dst_port |-> ?edp &*&
-    flowptr->external_id.src_ip |-> ?esip &*&
-    flowptr->external_id.dst_ip |-> ?edip &*&
-    flowptr->external_id.protocol |-> ?epr &*&
+    [0.5]flow_idp(&(flowptr->internal_id), ?iid) &*&
+    [0.5]flow_idp(&(flowptr->external_id), ?eid) &*&
     flowptr->internal_device |-> ?dev &*&
-    flow == flw(flid(isp, idp, isip, idip, ipr),
-                flid(esp, edp, esip, edip, epr),
-                dev);
+    flow == flw(iid, eid, dev);
 
   fixpoint long long _wrap(long long x) { return x % INT_MAX; }
 
@@ -127,7 +117,7 @@ unsigned flow_id_hash(void* obj);
 void flow_extract_keys(void* flow, void** int_id, void** ext_id);
 //@ requires [?f]flowp(flow, ?flw) &*& *int_id |-> _ &*& *ext_id |-> _;
 /*@ ensures [f]flowp_bare(flow, flw) &*& *int_id |-> ?iidp &*& *ext_id |-> ?eidp &*&
-            [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
+            [0.5*f]flow_idp(iidp, ?iid) &*& [0.5*f]flow_idp(eidp, ?eid) &*&
             true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
             iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
 
@@ -143,7 +133,7 @@ void flow_extract_keys(void* flow, void** int_id, void** ext_id);
 */
 void flow_pack_keys(void* flow, void* iidp, void* eidp);
 /*@ requires [?f]flowp_bare(flow, ?flw) &*&
-             [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
+             [0.5*f]flow_idp(iidp, ?iid) &*& [0.5*f]flow_idp(eidp, ?eid) &*&
              true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
              iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
 //@ ensures [f]flowp(flow, flw);

@@ -63,7 +63,7 @@ unsigned flow_id_hash(void* obj)
 void flow_extract_keys(void* flow, void** int_id, void** ext_id)
 //@ requires [?f]flowp(flow, ?flw) &*& *int_id |-> _ &*& *ext_id |-> _;
 /*@ ensures [f]flowp_bare(flow, flw) &*& *int_id |-> ?iidp &*& *ext_id |-> ?eidp &*&
-            [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
+            [0.5*f]flow_idp(iidp, ?iid) &*& [0.5*f]flow_idp(eidp, ?eid) &*&
             true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
             iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
 {
@@ -76,7 +76,7 @@ void flow_extract_keys(void* flow, void** int_id, void** ext_id)
 
 void flow_pack_keys(void* flow, void* iidp, void* eidp)
 /*@ requires [?f]flowp_bare(flow, ?flw) &*&
-             [f]flow_idp(iidp, ?iid) &*& [f]flow_idp(eidp, ?eid) &*&
+             [0.5*f]flow_idp(iidp, ?iid) &*& [0.5*f]flow_idp(eidp, ?eid) &*&
              true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
              iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
 //@ ensures [f]flowp(flow, flw);
