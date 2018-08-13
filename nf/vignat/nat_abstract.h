@@ -109,8 +109,8 @@ fixpoint bool entry_matches_flow(flow f, entry e) {
 fixpoint flowtable flowtable_add_flow(flowtable table, flow flw, time_t time) {
   switch(table) { case flowtable(size, entries):
     return flowtable(size, append(entries,
-                                  cons(entry(flw_get_ik(flw),
-                                             flw_get_ek(flw),
+                                  cons(entry(flow_get_internal_id(flw),
+                                             flow_get_external_id(flw),
                                              flw,
                                              time),
                                        nil)));
@@ -188,9 +188,9 @@ fixpoint flowtable flowtable_expire_n_flows(flowtable table, time_t time,
      int index)
   requires true == mem(index, map(fst, entries));
   ensures true == mem(alist_get_by_right(ekeys, index),
-                      map(entry_ek, gen_entries(entries, ikeys, ekeys, vals))) &*&
+                      map(entry_external, gen_entries(entries, ikeys, ekeys, vals))) &*&
           true == mem(alist_get_by_right(ikeys, index),
-                      map(entry_ik, gen_entries(entries, ikeys, ekeys, vals))) &*&
+                      map(entry_internal, gen_entries(entries, ikeys, ekeys, vals))) &*&
           true == mem(get_some(nth(index, vals)),
                       map(entry_flow, gen_entries(entries, ikeys, ekeys, vals)));
   {
@@ -252,7 +252,7 @@ fixpoint flowtable flowtable_expire_n_flows(flowtable table, time_t time,
                                     flow_id ek)
   requires false == mem(ek, map(fst, ekeys)) &*&
            true == forall(map(fst, entries), (contains)(map(snd, ekeys)));
-  ensures false == mem(ek, map(entry_ek,
+  ensures false == mem(ek, map(entry_external,
                                gen_entries(entries, ikeys, ekeys, vals)));
   {
     switch(entries) {
@@ -296,7 +296,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmap_indices_no_dups(ikeys, ekeys, vals);
         alist_get_by_right_map_get(ekeys, ek);
         assert ek == alist_get_by_right(ekeys, index);
-        assert true == mem(ek, map(entry_ek, gen_entries(entries, ikeys, ekeys, vals)));
+        assert true == mem(ek, map(entry_external, gen_entries(entries, ikeys, ekeys, vals)));
       }
     }
   } else {
@@ -324,7 +324,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
                                     flow_id ik)
   requires false == mem(ik, map(fst, ikeys)) &*&
            true == forall(map(fst, entries), (contains)(map(snd, ikeys)));
-  ensures false == mem(ik, map(entry_ik,
+  ensures false == mem(ik, map(entry_internal,
                                gen_entries(entries, ikeys, ekeys, vals)));
   {
     switch(entries) {
@@ -367,7 +367,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmap_indices_no_dups(ikeys, ekeys, vals);
         alist_get_by_right_map_get(ikeys, ik);
         assert ik == alist_get_by_right(ikeys, index);
-        assert true == mem(ik, map(entry_ik, gen_entries(entries, ikeys, ekeys, vals)));
+        assert true == mem(ik, map(entry_internal, gen_entries(entries, ikeys, ekeys, vals)));
       }
     }
   } else {
@@ -430,8 +430,8 @@ ensures flowtable_out_of_space(abstract_function(m, ch)) ==
                                   flow flw,
                                   time_t time)
   requires false == exists(entries, (same_index)(index))&*&
-           false == map_has_fp(ikeys, flw_get_ik(flw)) &*&
-           false == map_has_fp(ekeys, flw_get_ek(flw)) &*&
+           false == map_has_fp(ikeys, flow_get_internal_id(flw)) &*&
+           false == map_has_fp(ekeys, flow_get_external_id(flw)) &*&
            false == mem(index, map(snd, ikeys)) &*&
            false == mem(index, map(snd, ekeys)) &*&
            nth(index, vals) == none &*&
@@ -439,13 +439,13 @@ ensures flowtable_out_of_space(abstract_function(m, ch)) ==
            true == forall(map(fst, entries), (ge)(0)) &*&
            true == forall(map(fst, entries), (lt)(length(vals)));
   ensures append(gen_entries(entries, ikeys, ekeys, vals),
-                 cons(entry(flw_get_ik(flw),
-                            flw_get_ek(flw),
+                 cons(entry(flow_get_internal_id(flw),
+                            flow_get_external_id(flw),
                             flw, time),
                       nil)) ==
           gen_entries(append(entries, cons(pair(index, time), nil)),
-                      map_put_fp(ikeys, flw_get_ik(flw), index),
-                      map_put_fp(ekeys, flw_get_ek(flw), index),
+                      map_put_fp(ikeys, flow_get_internal_id(flw), index),
+                      map_put_fp(ekeys, flow_get_external_id(flw), index),
                       update(index, some(flw), vals));
   {
     switch(entries) {
@@ -454,7 +454,7 @@ ensures flowtable_out_of_space(abstract_function(m, ch)) ==
         switch(h) { case pair(ind,tstmp):
           gen_entries_add_flow(t, ikeys, ekeys, vals, index, flw, time);
           assert alist_get_by_right(ikeys, ind) ==
-                 alist_get_by_right(map_put_fp(ikeys, flw_get_ik(flw), index),
+                 alist_get_by_right(map_put_fp(ikeys, flow_get_internal_id(flw), index),
                                     ind);
           assert get_some(nth(ind, vals)) == get_some(nth(ind, update(index, some(flw), vals)));
         }
@@ -487,8 +487,8 @@ lemma void add_flow_abstract(dmap<flow_id,flow_id,flow> m, dchain ch, flow flw,
 requires false == dchain_out_of_space_fp(ch) &*&
          false == dchain_allocated_fp(ch, index) &*&
          dmap_dchain_coherent(m, ch) &*&
-         false == dmap_has_k1_fp(m, flw_get_ik(flw)) &*&
-         false == dmap_has_k2_fp(m, flw_get_ek(flw)) &*&
+         false == dmap_has_k1_fp(m, flow_get_internal_id(flw)) &*&
+         false == dmap_has_k2_fp(m, flow_get_external_id(flw)) &*&
          0 <= index &*& index < dchain_index_range_fp(ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
@@ -498,7 +498,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
                   fvp, bvp, rof, vsz,
                   vk1, vk2, recp1, recp2, mp) &*&
         flowtable_add_flow(abstract_function(m, ch), flw, t) ==
-        abstract_function(dmap_put_fp(m, index, flw, flw_get_ik, flw_get_ek),
+        abstract_function(dmap_put_fp(m, index, flw, flow_get_internal_id, flow_get_external_id),
                           dchain_allocate_fp(ch, index, t));
 {
   switch(ch) { case dchain(entries, index_range, low, high):
@@ -593,10 +593,10 @@ ensures dmap_dchain_coherent(m, ch) &*&
            true == no_dups(map(fst, ikeys)) &*&
            true == forall(map(fst, entries),
                           (contains)(map(snd, ikeys))) &*&
-           true == mem(ik, map(entry_ik,
+           true == mem(ik, map(entry_internal,
                                gen_entries(entries, ikeys, ekeys, vals)));
   ensures entry_flow(nth(index_of(ik,
-                                  map(entry_ik,
+                                  map(entry_internal,
                                       gen_entries(entries, ikeys, ekeys, vals))),
                          gen_entries(entries, ikeys, ekeys, vals))) ==
           dmap_get_val_fp(dmap(ikeys, ekeys, vals),
@@ -607,7 +607,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       case cons(h,t):
         switch(h) { case pair(ind,tsmpt):
           if (alist_get_by_right(ikeys, ind) == ik) {
-            assert index_of(ik, map(entry_ik, gen_entries(entries, ikeys, ekeys, vals))) == 0;
+            assert index_of(ik, map(entry_internal, gen_entries(entries, ikeys, ekeys, vals))) == 0;
             map_no_dup_keys_alist_get_same(ikeys, ik, ind);
             assert dmap_get_k1_fp(dmap(ikeys, ekeys, vals), ik) == ind;
           } else {
@@ -658,10 +658,10 @@ ensures dmap_dchain_coherent(m, ch) &*&
            true == no_dups(map(fst, ekeys)) &*&
            true == forall(map(fst, entries),
                           (contains)(map(snd, ekeys))) &*&
-           true == mem(ek, map(entry_ek,
+           true == mem(ek, map(entry_external,
                                gen_entries(entries, ikeys, ekeys, vals)));
   ensures entry_flow(nth(index_of(ek,
-                                  map(entry_ek,
+                                  map(entry_external,
                                       gen_entries(entries, ikeys, ekeys, vals))),
                          gen_entries(entries, ikeys, ekeys, vals))) ==
           dmap_get_val_fp(dmap(ikeys, ekeys, vals),
@@ -672,7 +672,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       case cons(h,t):
         switch(h) { case pair(ind,tsmpt):
           if (alist_get_by_right(ekeys, ind) == ek) {
-            assert index_of(ek, map(entry_ek, gen_entries(entries, ikeys, ekeys, vals))) == 0;
+            assert index_of(ek, map(entry_external, gen_entries(entries, ikeys, ekeys, vals))) == 0;
             map_no_dup_keys_alist_get_same(ekeys, ek, ind);
             assert dmap_get_k2_fp(dmap(ikeys, ekeys, vals), ek) == ind;
           } else {
@@ -739,16 +739,16 @@ ensures dmap_dchain_coherent(m, ch) &*&
                                         int index,
                                         time_t time,
                                         flow flw)
-  requires nth(index, vals) == some(flow) &*&
+  requires nth(index, vals) == some(flw) &*&
            0 <= index &*& index < length(vals) &*&
-           alist_get_by_right(ikeys, index) == flw_get_ik(flw) &*&
-           alist_get_by_right(ekeys, index) == flw_get_ek(flw);
+           alist_get_by_right(ikeys, index) == flow_get_internal_id(flw) &*&
+           alist_get_by_right(ekeys, index) == flow_get_external_id(flw);
   ensures gen_entries(append(entries, cons(pair(index, time), nil)),
                       ikeys, ekeys, vals) ==
           append(gen_entries(entries, ikeys, ekeys, vals),
-                 cons(entry(flw_get_ik(flw),
-                            flw_get_ek(flw),
-                            flow,
+                 cons(entry(flow_get_internal_id(flw),
+                            flow_get_external_id(flw),
+                            flw,
                             time),
                       nil));
   {
@@ -756,7 +756,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       case nil:
       case cons(h,t):
         switch(h) { case pair(ind,tstmp):
-          gen_entries_add_flow_light(t, ikeys, ekeys, vals, index, time, flow);
+          gen_entries_add_flow_light(t, ikeys, ekeys, vals, index, time, flw);
         }
     }
   }
@@ -773,8 +773,8 @@ ensures dmap_dchain_coherent(m, ch) &*&
   requires nth(index, vals) == some(flw) &*&
            true == mem(index, map(fst, entries)) &*&
            0 <= index &*& index < length(vals) &*&
-           alist_get_by_right(ikeys, index) == flw_get_ik(flw) &*&
-           alist_get_by_right(ekeys, index) == flw_get_ek(flw) &*&
+           alist_get_by_right(ikeys, index) == flow_get_internal_id(flw) &*&
+           alist_get_by_right(ekeys, index) == flow_get_external_id(flw) &*&
            true == opt_no_dups(vals) &*&
            true == forall(map(fst, entries), (ge)(0)) &*&
            true == forall(map(fst, entries), (lt)(length(vals))) &*&
@@ -785,8 +785,8 @@ ensures dmap_dchain_coherent(m, ch) &*&
                       ikeys, ekeys, vals) ==
           append(remove_if((entry_matches_flow)(flw),
                            gen_entries(entries, ikeys, ekeys, vals)),
-                 cons(entry(flw_get_ik(flw),
-                            flw_get_ek(flw),
+                 cons(entry(flow_get_internal_id(flw),
+                            flow_get_external_id(flw),
                             flw,
                             time),
                       nil));
@@ -850,11 +850,11 @@ requires dmap_get_val_fp(m, index) == flw &*&
          dmap_dchain_coherent(m, ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
-                   flw_get_ik, flw_get_ek, ?recp1, ?recp2, ?mp);
+                   flow_get_internal_id, flow_get_external_id, ?recp1, ?recp2, ?mp);
 ensures dmap_dchain_coherent(m, ch) &*&
         dmappingp(m, kp1, kp2, hsh1, hsh2,
                   fvp, bvp, rof, vsz,
-                  flw_get_ik, flw_get_ek, recp1, recp2, mp) &*&
+                  flow_get_internal_id, flow_get_external_id, recp1, recp2, mp) &*&
         flowtable_add_flow(flowtable_remove_flow(abstract_function(m, ch),
                                                  flw),
                            flw, time) ==
@@ -866,7 +866,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       get_some_to_some_val(vals, index, flw);
       coherent_dmap_used_dchain_allocated(m, ch, index);
       dchain_allocated_mem_map(entries, index_range, low, high, index);
-      if (alist_get_by_right(ikeys, index) != flw_get_ik(flw)) {
+      if (alist_get_by_right(ikeys, index) != flow_get_internal_id(flw)) {
         flow_id alt_ik = alist_get_by_right(ikeys, index);
         dmap_indexes_used_used_in_ma_mb(ikeys, ekeys, vals);
         dmap_indexes_contain_index_used(m, index);
@@ -875,11 +875,11 @@ ensures dmap_dchain_coherent(m, ch) &*&
         map_no_dup_keys_alist_get_same(ikeys, alt_ik, index);
         assert dmap_get_k1_fp(m, alt_ik) == index;
         dmap_get_by_k1_invertible(m, alt_ik);
-        assert flw_get_ik(dmap_get_val_fp(m, index)) == alt_ik;
-        assert alt_ik != flw_get_ik(flw);
+        assert flow_get_internal_id(dmap_get_val_fp(m, index)) == alt_ik;
+        assert alt_ik != flow_get_internal_id(flw);
         assert dmap_get_val_fp(m, index) != flw;
       }
-      if (alist_get_by_right(ekeys, index) != flw_get_ek(flw)) {
+      if (alist_get_by_right(ekeys, index) != flow_get_external_id(flw)) {
         flow_id alt_ek = alist_get_by_right(ekeys, index);
         dmap_indexes_used_used_in_ma_mb(ikeys, ekeys, vals);
         dmap_indexes_contain_index_used(m, index);
@@ -888,11 +888,11 @@ ensures dmap_dchain_coherent(m, ch) &*&
         map_no_dup_keys_alist_get_same(ekeys, alt_ek, index);
         assert dmap_get_k2_fp(m, alt_ek) == index;
         dmap_get_by_k2_invertible(m, alt_ek);
-        assert flw_get_ek(dmap_get_val_fp(m, index)) == alt_ek;
-        assert alt_ek != flw_get_ek(flw);
+        assert flow_get_external_id(dmap_get_val_fp(m, index)) == alt_ek;
+        assert alt_ek != flow_get_external_id(flw);
         assert dmap_get_val_fp(m, index) != flw;
       }
-      assert alist_get_by_right(ikeys, index) == flw_get_ik(flw);
+      assert alist_get_by_right(ikeys, index) == flow_get_internal_id(flw);
       dmap_no_dup_vals(ikeys, ekeys, vals);
       nonempty_indexes_bounds(vals, 0);
       coherent_same_indexes(m, ch);
@@ -1069,16 +1069,16 @@ ensures dmap_dchain_coherent(m, ch) &*&
                                          flow flw)
   requires fst(hdentry) == index &*&
            nth(index, vals) == some(flw) &*&
-           map_get_fp(ikeys, flw_get_ik(flw)) == index &*&
-           map_get_fp(ekeys, flw_get_ek(flw)) == index &*&
+           map_get_fp(ikeys, flow_get_internal_id(flw)) == index &*&
+           map_get_fp(ekeys, flow_get_external_id(flw)) == index &*&
            0 <= index &*& index < length(vals) &*&
            snd(hdentry) < time &*&
            true == forall(map(fst, entries), (ge)(0)) &*&
            true == forall(map(fst, entries), (lt)(length(vals))) &*&
            false == mem(index, map(fst, entries));
   ensures gen_entries(entries,
-                      map_erase_fp(ikeys, flw_get_ik(flw)),
-                      map_erase_fp(ekeys, flw_get_ek(flw)),
+                      map_erase_fp(ikeys, flow_get_internal_id(flw)),
+                      map_erase_fp(ekeys, flow_get_external_id(flw)),
                       update(index, none, vals)) ==
           expire_one_entry(gen_entries(cons(hdentry, entries), ikeys, ekeys, vals),
                            time);
@@ -1093,7 +1093,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
     assert gen_entries(entries, ikeys, ekeys, vals) ==
            expire_one_entry(gen_entries(cons(hdentry, entries), ikeys, ekeys, vals), time);
     gen_entries_remove_extra(entries, ikeys, ekeys, vals,
-                             index, flw_get_ik(flw), flw_get_ek(flw));
+                             index, flow_get_internal_id(flw), flow_get_external_id(flw));
   }
   @*/
 
@@ -1102,15 +1102,15 @@ ensures dmap_dchain_coherent(m, ch) &*&
                                       dchain ch, time_t time)
   requires false == dchain_is_empty_fp(ch) &*&
            dchain_get_oldest_time_fp(ch) < time &*&
-           true == dmap_self_consistent_integral_fp(m, flw_get_ik,
-                                                    flw_get_ek) &*&
+           true == dmap_self_consistent_integral_fp(m, flow_get_internal_id,
+                                                    flow_get_external_id) &*&
            true == forall(dchain_indexes_fp(ch), (ge)(0)) &*&
            true == forall(dchain_indexes_fp(ch), (lt)(dmap_cap_fp(m))) &*&
            true == distinct(dchain_indexes_fp(ch)) &*&
            true == forall(dchain_indexes_fp(ch),
                           (dmap_index_used_fp)(m));
   ensures abstract_function(dmap_erase_fp(m, dchain_get_oldest_index_fp(ch),
-                                          flw_get_ik, flw_get_ek),
+                                          flow_get_internal_id, flow_get_external_id),
                             dchain_remove_index_fp
                               (ch, dchain_get_oldest_index_fp(ch))) ==
           flowtable_expire_one(abstract_function(m, ch), time);
@@ -1125,7 +1125,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
               case none:
               case some(xxxx):
             }
-            dmap_consistent_right_indexes(m, flw_get_ik, flw_get_ek, ind);
+            dmap_consistent_right_indexes(m, flow_get_internal_id, flow_get_external_id, ind);
             gen_entries_expire_just_one(ent, t, ikeys, ekeys, vals,
                                         ind, time,
                                         get_some(nth(ind, vals)));
@@ -1875,14 +1875,14 @@ ensures dmap_dchain_coherent(m, ch) &*&
                      (dmap_erase_all_fp
                         (m, take(count,
                                  dchain_get_expired_indexes_fp(ch, time)),
-                         flw_get_ik, flw_get_ek),
-                      flw_get_ik,
-                      flw_get_ek) &*&
+                         flow_get_internal_id, flow_get_external_id),
+                      flow_get_internal_id,
+                      flow_get_external_id) &*&
            flowtable_expire_n_flows(abstract_function(m, ch), time, count) ==
            abstract_function(dmap_erase_all_fp
                                (m, take(count,
                                         dchain_get_expired_indexes_fp(ch, time)),
-                                flw_get_ik, flw_get_ek),
+                                flow_get_internal_id, flow_get_external_id),
                              expire_n_indexes(ch, time, count));
   ensures dmap_dchain_coherent(m, ch) &*&
           dchain_is_sortedp(ch) &*&
@@ -1890,14 +1890,14 @@ ensures dmap_dchain_coherent(m, ch) &*&
                     (dmap_erase_all_fp
                       (m, take(count + 1,
                                 dchain_get_expired_indexes_fp(ch, time)),
-                        flw_get_ik, flw_get_ek),
-                    flw_get_ik,
-                    flw_get_ek) &*&
+                        flow_get_internal_id, flow_get_external_id),
+                    flow_get_internal_id,
+                    flow_get_external_id) &*&
           flowtable_expire_n_flows(abstract_function(m, ch), time, count + 1) ==
           abstract_function(dmap_erase_all_fp
                              (m, take(count + 1,
                                       dchain_get_expired_indexes_fp(ch, time)),
-                              flw_get_ik, flw_get_ek),
+                              flow_get_internal_id, flow_get_external_id),
                             expire_n_indexes(ch, time, count + 1));
   {
     dchain_expire_some_still_olds_left(ch, time, count);
@@ -1910,19 +1910,19 @@ ensures dmap_dchain_coherent(m, ch) &*&
                   (lt)(dmap_cap_fp(m)));
     dmap_erase_all_preserves_cap(m, take(count,
                                          dchain_get_expired_indexes_fp(ch, time)),
-                                 flw_get_ik, flw_get_ek);
+                                 flow_get_internal_id, flow_get_external_id);
     dchain_expire_n_still_distinct(ch, time, count);
-    indices_used_expire_some(ch, m, time, flw_get_ik, flw_get_ek, count);
+    indices_used_expire_some(ch, m, time, flow_get_internal_id, flow_get_external_id, count);
     expire_just_one_abstract(dmap_erase_all_fp
                                (m, take(count,
                                         dchain_get_expired_indexes_fp(ch, time)),
-                                flw_get_ik, flw_get_ek),
+                                flow_get_internal_id, flow_get_external_id),
                              expire_n_indexes(ch, time, count),
                              time);
     dchain_has_expired_ft_also(dmap_erase_all_fp
                                  (m, take(count,
                                           dchain_get_expired_indexes_fp(ch, time)),
-                                  flw_get_ik, flw_get_ek),
+                                  flow_get_internal_id, flow_get_external_id),
                                expire_n_indexes(ch, time, count),
                                time);
     flowtable ftbef = flowtable_expire_n_flows(abstract_function(m, ch),
@@ -1933,19 +1933,19 @@ ensures dmap_dchain_coherent(m, ch) &*&
                                    dchain_get_expired_indexes_fp(ch, time)),
                            dchain_get_oldest_index_fp
                              (expire_n_indexes(ch, time, count)),
-                           flw_get_ik, flw_get_ek);
+                           flow_get_internal_id, flow_get_external_id);
     oldest_index_is_mem_of_indices(expire_n_indexes(ch, time, count));
     forall_mem(dchain_get_oldest_index_fp(expire_n_indexes(ch, time, count)),
                dchain_indexes_fp(expire_n_indexes(ch, time, count)),
                (dmap_index_used_fp)
                  (dmap_erase_all_fp(m, take(count,
                                             dchain_get_expired_indexes_fp(ch, time)),
-                                    flw_get_ik, flw_get_ek)));
+                                    flow_get_internal_id, flow_get_external_id)));
     dmap_erase_self_consistent
       (dmap_erase_all_fp(m, take(count, dchain_get_expired_indexes_fp(ch, time)),
-                         flw_get_ik, flw_get_ek),
+                         flow_get_internal_id, flow_get_external_id),
        dchain_get_oldest_index_fp(expire_n_indexes(ch, time, count)),
-       flw_get_ik, flw_get_ek);
+       flow_get_internal_id, flow_get_external_id);
   }
   @*/
 
@@ -2038,16 +2038,16 @@ requires dmap_dchain_coherent(m, ch) &*&
          double_chainp(ch, ?ppp) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
-                   flw_get_ik, flw_get_ek, ?recp1, ?recp2, ?mp);
+                   flow_get_internal_id, flow_get_external_id, ?recp1, ?recp2, ?mp);
 ensures dmap_dchain_coherent(m, ch) &*&
         double_chainp(ch, ppp) &*&
         dmappingp(m, kp1, kp2, hsh1, hsh2,
                   fvp, bvp, rof, vsz,
-                  flw_get_ik, flw_get_ek, recp1, recp2, mp) &*&
+                  flow_get_internal_id, flow_get_external_id, recp1, recp2, mp) &*&
         flowtable_expire_flows(abstract_function(m, ch), time) ==
         abstract_function(dmap_erase_all_fp
                             (m, dchain_get_expired_indexes_fp(ch, time),
-                             flw_get_ik, flw_get_ek),
+                             flow_get_internal_id, flow_get_external_id),
                           dchain_expire_old_indexes_fp(ch, time));
 {
   list<int> exp_indices = dchain_get_expired_indexes_fp(ch, time);
@@ -2081,12 +2081,12 @@ ensures dmap_dchain_coherent(m, ch) &*&
                         (dmap_erase_all_fp
                            (m, take(count,
                                     dchain_get_expired_indexes_fp(ch, time)),
-                            flw_get_ik, flw_get_ek),
-                         flw_get_ik, flw_get_ek) &*&
+                            flow_get_internal_id, flow_get_external_id),
+                         flow_get_internal_id, flow_get_external_id) &*&
               flowtable_expire_n_flows(abstract_function(m, ch), time, count) ==
               abstract_function(dmap_erase_all_fp
                                   (m, take(count, exp_indices),
-                                   flw_get_ik, flw_get_ek),
+                                   flow_get_internal_id, flow_get_external_id),
                                 expire_n_indexes(ch, time, count));
     decreases length(exp_indices) - count;
   {

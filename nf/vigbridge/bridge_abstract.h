@@ -70,7 +70,7 @@
   }
 
   fixpoint list<dyn_entry> gen_dyn_entries(list<pair<ether_addri, int> > table,
-                                           list<pair<uint16_t, bool> > values,
+                                           list<pair<uint16_t, real> > values,
                                            dchain indices) {
     switch(table) {
       case nil: return nil;
@@ -94,7 +94,7 @@
   }
 
   fixpoint ml_table bridge_abstract_function(mapi<ether_addri> dyn_map,
-                                             list<pair<uint16_t, bool> > vals,
+                                             list<pair<uint16_t, real> > vals,
                                              dchain indices,
                                              mapi<stat_keyi> stat_map) {
     switch(dyn_map) { case mapc(dyn_capacity, dm, daddrs):
@@ -137,8 +137,8 @@
   }
 
   lemma void bridge_expire_abstract(list<pair<ether_addri, uint32_t> > dyn_map,
-                                    list<pair<uint16_t, bool> > vals,
-                                    list<pair<ether_addri, bool> > keys,
+                                    list<pair<uint16_t, real> > vals,
+                                    list<pair<ether_addri, real> > keys,
                                     dchain indices,
                                     time_t time);
   requires true;
@@ -153,7 +153,7 @@
                                   time)) == true;
 
   lemma void bridge_add_entry(list<pair<ether_addri, uint32_t> > dyn_map,
-                              list<pair<uint16_t, bool> > vals,
+                              list<pair<uint16_t, real> > vals,
                               dchain indices,
                               ether_addri addr,
                               uint32_t index,
@@ -161,13 +161,13 @@
                               time_t time);
   requires true;
   ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
-                                 update(index, pair(port, true), vals),
+                                 update(index, pair(port, 1.0), vals),
                                  dchain_allocate_fp(indices, index, time)),
                  add_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
                                addr, port, time)) == true;
 
   lemma void bridge_rejuv_entry(list<pair<ether_addri, uint32_t> > dyn_map,
-                                list<pair<uint16_t, bool> > vals,
+                                list<pair<uint16_t, real> > vals,
                                 dchain indices,
                                 ether_addri addr,
                                 time_t time);
@@ -200,7 +200,7 @@
   ensures map_has_fp(map, key)== stat_table_has_key(gen_stat_entries(map), key);
 
   lemma void dyn_map_has(list<pair<ether_addri, int> > map,
-                         list<pair<uint16_t, bool> > values,
+                         list<pair<uint16_t, real> > values,
                          dchain indices,
                          ether_addri key);
   requires true;
@@ -212,7 +212,7 @@
           map_get_fp(map, key) == stat_table_get(gen_stat_entries(map), key);
 
   lemma void dyn_map_has_get(list<pair<ether_addri, int> > map,
-                             list<pair<uint16_t, bool> > values,
+                             list<pair<uint16_t, real> > values,
                              dchain indices,
                              ether_addri key);
   requires true == dyn_table_has_key(gen_dyn_entries(map, values, indices), key);
@@ -220,7 +220,7 @@
           fst(nth(map_get_fp(map, key), values)) == dyn_table_get(gen_dyn_entries(map, values, indices), key);
 
   lemma void chain_out_of_space_ml_out_of_space(mapi<ether_addri> dyn_map,
-                                                list<pair<uint16_t, bool> > vals,
+                                                list<pair<uint16_t, real> > vals,
                                                 dchain indices,
                                                 mapi<stat_keyi> stat_map);
   requires true;
