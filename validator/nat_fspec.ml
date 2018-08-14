@@ -8,8 +8,6 @@ type map_key = Int | Ext
 let last_index_gotten = ref ""
 let last_index_key = ref Int
 let last_indexing_succ_ret_var = ref ""
-let last_device_id = ref ""
-
 let last_time_for_index_alloc = ref ""
 
 
@@ -376,16 +374,15 @@ let fun_types =
                      "assert flow_idp(" ^ (List.nth_exn args 1) ^
                      ".internal_id, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
                      "close flow_idp(" ^ (List.nth_exn args 1) ^
-                    ".external_id, flid(new_index_2_0, dp, external_ip, dip, user_buf_23));\n" ^
+                    ".external_id, flid(dp, new_index_2_0, dip, external_ip, user_buf_23));\n" ^
                     " close flowp(" ^ (List.nth_exn args 1) ^
                     ", flw(flid(isp, dp, isip, dip, user_buf_23),
-                           flid(new_index_2_0, dp, external_ip, dip, user_buf_23), " ^
-                           !last_device_id ^ "));\n" ^
+                           flid(dp, new_index_2_0, dip, external_ip, user_buf_23), received_on_port));\n" ^
                        "assert dmap_dchain_coherent(" ^
                          (tmp_gen "cur_map") ^
                        ", ?cur_ch);\n\
-                        flow_id ek = flid(new_index_2_0, dp,\
-                        external_ip, dip, user_buf_23);\n\
+                        flow_id ek = flid(dp, new_index_2_0, dip,\
+                        external_ip, user_buf_23);\n\
                         if (dmap_has_k2_fp(" ^ (tmp_gen "cur_map") ^
                        ", ek)) {\n\
                         int index = dmap_get_k2_fp(" ^ (tmp_gen "cur_map") ^
@@ -418,14 +415,12 @@ let fun_types =
                         dmap_put_preserves_cap(" ^ (tmp_gen "cur_map") ^
                        ", " ^ (List.nth_exn args 2) ^ ", flw(flid(isp, dp,\
                         isip, dip, user_buf_23),\n\
-                        flid(new_index_2_0, dp, external_ip, dip,\
-                        user_buf_23)," ^ !last_device_id ^ ")," ^
+                        flid(dp, new_index_2_0, dip, external_ip, user_buf_23), received_on_port)," ^
                        (tmp_gen "vk1") ^ ", " ^ (tmp_gen "vk2") ^ ");\n" ^
                        "the_inserted_flow = " ^
                        " flw(flid(isp, dp,\
                         isip, dip, user_buf_23),\n\
-                        flid(new_index_2_0, dp, external_ip, dip,\
-                        user_buf_23)," ^ !last_device_id ^ ");\n\
+                        flid(dp, new_index_2_0, dip, external_ip, user_buf_23), received_on_port);\n\
                        assert dmap_dchain_coherent(" ^ (tmp_gen "cur_map") ^
                       ", ?ch);\n\
                        flow_id ik = flid(isp, dp,\
@@ -435,7 +430,7 @@ let fun_types =
                       "contains_flow_id_ext_abstract(" ^
                       (tmp_gen "cur_map") ^
                       ", ch, ek);\n" ^
-                      "flow the_flow_to_insert = flw(ik, ek," ^ !last_device_id ^ ");\n" ^
+                      "flow the_flow_to_insert = flw(ik, ek, received_on_port);\n" ^
                        "add_flow_abstract(" ^ (tmp_gen "cur_map") ^
                        ", ch, the_flow_to_insert, " ^
                        (List.nth_exn args 2) ^ ", " ^
@@ -488,7 +483,6 @@ let fun_types =
                              "//@ open_struct(" ^
                              (List.nth_exn args 2) ^ ");")];
                         lemmas_after = [
-                          (fun params -> last_device_id := ("(" ^ (List.nth_exn params.args 2) ^ ")->internal_device"); "");
                           (fun params ->
                              "/*@{ if (" ^ !last_indexing_succ_ret_var ^
                              "!= 0) { \n\
@@ -577,7 +571,6 @@ let fun_types =
                                      capture_chain "cur_ch" 0;
                                    ];
                                    lemmas_after = [
-                                     (fun params -> last_device_id := ("(" ^ (List.nth_exn params.args 1) ^ ")->internal_device"); "");
                                      on_rez_nz
                                        (fun params ->
                                           "{\n allocate_preserves_index_range(" ^
