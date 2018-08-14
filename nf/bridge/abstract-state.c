@@ -580,11 +580,36 @@ fixpoint bool bounded(int bound, int x) {
 @*/
 
 /*@
+lemma void map_erase_unrelevant<kt,vt>(list<pair<kt,vt> > m, kt k)
+requires false == mem(k, map(fst, m));
+ensures map_erase_fp(m, k) == m;
+{
+  switch(m) {
+    case nil:
+    case cons(h,t): switch(h) { case pair(key,value):
+      map_erase_unrelevant(t, k);
+    }
+  }
+}
+@*/
+
+/*@
 lemma void map_erase_all_erase_head<kt,vt>(list<pair<kt,vt> > m, list<kt> keys, kt k, vt v)
-requires true == mem(k, keys);
+requires true == mem(k, keys) &*&
+         false == mem(k, map(fst, m));
 ensures map_erase_all_fp(cons(pair(k, v), m), keys) == map_erase_all_fp(m, keys);
 {
-  assume(false);//TODO
+  switch(keys) {
+    case nil:
+    case cons(h,t):
+      if (mem(k, t)) {
+        map_erase_all_erase_head(m, t, k, v);
+      } else {
+        map_erase_all_cons(k, v, m, t);
+        map_erase_all_preserves_nonmem_key(m, k, t);
+        map_erase_unrelevant(map_erase_all_fp(m, t), k);
+      }
+  }
 }
 @*/
 
