@@ -77,6 +77,9 @@ extern struct str_field_descr flow_descrs[3];
   fixpoint flow_id flow_get_external_id(flow f) {
     switch(f) { case flw(iid, eid, dev): return eid; }
   }
+  fixpoint int flow_get_internal_device(flow f) {
+    switch(f) { case flw(iid, eid, dev): return dev; }
+  }
 
   fixpoint bool flow_ids_offsets_fp(struct Flow* f, struct FlowId* iid, struct FlowId* eid) {
     return &(f->internal_id) == iid && &(f->external_id) == eid;

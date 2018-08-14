@@ -47,9 +47,8 @@ let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
                                          "src_ip", Uint32;
                                          "dst_ip", Uint32;
                                          "protocol", Uint8;] )
-let flow_struct = Ir.Str ("Flow", ["id", flow_id_struct;
-                                   "nat_port", Uint16;
-                                   "nat_ip", Uint32;
+let flow_struct = Ir.Str ("Flow", ["internal_id", flow_id_struct;
+                                   "external_id", flow_id_struct;
                                    "internal_device", Uint16;])
 
 let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
@@ -166,7 +165,7 @@ let fun_types =
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                map_key_hash<ext_k>(flow_id_hash)\
+                                map_key_hash<flow_id>(flow_id_hash)\
                                 (flow_idp, _flow_id_hash)(a)\
                                 {\
                                 call();\
@@ -192,7 +191,7 @@ let fun_types =
                                 call();\
                                 }";
                          tx_bl "produce_function_pointer_chunk \
-                                uq_value_destr<flw>\
+                                uq_value_destr<flow>\
                                 (flow_destroy)\
                                 (flowp, sizeof(struct Flow))(a)\
                                 {\
@@ -200,17 +199,17 @@ let fun_types =
                                 }";
                          (fun {args;_} ->
                             "/*@\
-                             assume(sizeof(struct flow) == " ^
+                             assume(sizeof(struct Flow) == " ^
                             (List.nth_exn args 4) ^ ");\n@*/ " ^
                              "/*@ produce_function_pointer_chunk \
-                             uq_value_copy<flw>(flow_cpy)\
-                             (flw_p, " ^ (List.nth_exn args 4) ^ ")(a,b)\
+                             uq_value_copy<flow>(flow_copy)\
+                             (flowp, " ^ (List.nth_exn args 4) ^ ")(a,b)\
                              {\
                              call();\
                              }@*/");
                          tx_bl "close dmap_key_val_types\
                                 (flid(0,0,0,0,0), flid(0,0,0,0,0),\
-                                      flw(flid(0,0,0,0,0),0,0,0));";
+                                      flw(flid(0,0,0,0,0),flid(0,0,0,0,0),0));";
                          tx_bl "close dmap_record_property1(nat_int_fp);";
                          (fun _ -> "int start_port;\n");
                          tx_bl "close dmap_record_property2\
@@ -282,8 +281,6 @@ let fun_types =
                     lemmas_before = [
                       capture_map "cur_map" 0;
                       (fun {args;_} ->
-                         last_device_id :=
-                           "(" ^ List.nth_exn args 1 ^ ")->ext_device_id";
                          "/*@ close flow_idp(" ^ List.nth_exn args 1 ^
                          ", ?ext_key_dgb); @*/"); ];
                     lemmas_after = [
@@ -291,7 +288,7 @@ let fun_types =
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
                          ", ?cur_ch);\n\
-                          contains_flow_id_abstract(" ^
+                          contains_flow_id_ext_abstract(" ^
                          (params.tmp_gen "cur_map") ^
                          ", cur_ch,\n ext_key_dgb);\n}@*/");
                       on_rez_nz
@@ -327,18 +324,13 @@ let fun_types =
                     extra_ptr_types = [];
                     lemmas_before = [
                       capture_map "cur_map" 0;
-                      (fun {args;_} ->
-                         last_device_id :=
-                           "(" ^ List.nth_exn args 1 ^ ")->int_device_id";
-                         "/*@ close flow_idp(" ^ List.nth_exn args 1 ^
-                         ", ?int_key_dga); @*/"
-                      );];
+                      (fun params -> "//@ close flow_idp(" ^ (List.nth_exn params.args 1) ^ ", ?int_key_dga);")];
                     lemmas_after = [
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
                          ", ?cur_ch);\n\
-                          contains_flow_id_abstract(" ^
+                          contains_flow_id_int_abstract(" ^
                          (params.tmp_gen "cur_map") ^
                          ", cur_ch,\n int_key_dga);\n}@*/");
                       on_rez_nz
@@ -372,7 +364,7 @@ let fun_types =
                          "");
                     ];};
      "dmap_put", {ret_type = Static Sint32;
-                  arg_types = stt [Ptr dmap_struct; Ptr flw_struct; Sint32;];
+                  arg_types = stt [Ptr dmap_struct; Ptr flow_struct; Sint32;];
                   extra_ptr_types = [];
                   lemmas_before = [
                     capture_map_ex "cur_map" "vk1" "vk2" 0;
@@ -380,29 +372,20 @@ let fun_types =
                        "/*@ flw the_inserted_flow; @*/\n\
                         /*@ {\n" ^
                        "close flow_idp(" ^ (List.nth_exn args 1) ^
-                    ".ik, flid(?isp, ?dp, ?isip,\
-                     ?dip, " ^ !last_device_id ^
-                     ", user_buf_23));\n" ^
+                    ".ik, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
                      "assert flow_idp(" ^ (List.nth_exn args 1) ^
-                     ".ik, flid(?isp, ?dp, ?isip,\
-                     ?dip, _, user_buf_23));\n" ^
+                     ".ik, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
                      "close flow_idp(" ^ (List.nth_exn args 1) ^
-                    ".ek, ekc(new_index_2_0, dp, external_ip, dip,\
-                     1, user_buf_23));\n" ^
+                    ".ek, flid(new_index_2_0, dp, external_ip, dip, user_buf_23));\n" ^
                     " close flowp(" ^ (List.nth_exn args 1) ^
-                    ", flwc(flid(isp, dp, isip, dip,\
-                     " ^
-                           !last_device_id ^
-                           ", user_buf_23), ekc(new_index_2_0, dp, external_ip, dip,\
-                     1, user_buf_23), isp, new_index_2_0, dp, isip,\
-                     external_ip, dip, " ^
-                           !last_device_id ^
-                           ", 1, user_buf_23));\n" ^
+                    ", flw(flid(isp, dp, isip, dip, user_buf_23),
+                           flid(new_index_2_0, dp, external_ip, dip, user_buf_23), " ^
+                           !last_device_id ^ "));\n" ^
                        "assert dmap_dchain_coherent(" ^
                          (tmp_gen "cur_map") ^
                        ", ?cur_ch);\n\
                         flow_id ek = flid(new_index_2_0, dp,\
-                        external_ip, dip, 1, user_buf_23);\n\
+                        external_ip, dip, user_buf_23);\n\
                         if (dmap_has_k2_fp(" ^ (tmp_gen "cur_map") ^
                        ", ek)) {\n\
                         int index = dmap_get_k2_fp(" ^ (tmp_gen "cur_map") ^
@@ -434,43 +417,25 @@ let fun_types =
                         }\n\
                         dmap_put_preserves_cap(" ^ (tmp_gen "cur_map") ^
                        ", " ^ (List.nth_exn args 2) ^ ", flw(flid(isp, dp,\
-                        isip, dip, " ^
-                           !last_device_id ^
-                           ", user_buf_23),\n\
-                        ekc(new_index_2_0, dp, external_ip, dip,\
-                        1, user_buf_23),\n\
-                        isp, new_index_2_0, dp, isip,\n\
-                        external_ip, dip, " ^
-                           !last_device_id ^
-                           ", 1, user_buf_23)," ^
+                        isip, dip, user_buf_23),\n\
+                        flid(new_index_2_0, dp, external_ip, dip,\
+                        user_buf_23)," ^ !last_device_id ^ ")," ^
                        (tmp_gen "vk1") ^ ", " ^ (tmp_gen "vk2") ^ ");\n" ^
                        "the_inserted_flow = " ^
                        " flw(flid(isp, dp,\
-                        isip, dip, " ^
-                       !last_device_id ^
-                       ", user_buf_23),\n\
-                        ekc(new_index_2_0, dp, external_ip, dip,\
-                        1, user_buf_23),\n\
-                        isp, new_index_2_0, dp, isip,\n\
-                        external_ip, dip, " ^
-                       !last_device_id ^
-                       ", 1, user_buf_23);\n\
+                        isip, dip, user_buf_23),\n\
+                        flid(new_index_2_0, dp, external_ip, dip,\
+                        user_buf_23)," ^ !last_device_id ^ ");\n\
                        assert dmap_dchain_coherent(" ^ (tmp_gen "cur_map") ^
                       ", ?ch);\n\
                        flow_id ik = flid(isp, dp,\
-                        isip, dip, " ^
-                       !last_device_id ^
-                       ", user_buf_23);\n\
+                        isip, dip, user_buf_23);\n\
                        coherent_dchain_non_out_of_space_map_nonfull(" ^
                       (tmp_gen "cur_map") ^ ", ch);\n" ^
-                      "contains_flow_id_abstract(" ^
+                      "contains_flow_id_ext_abstract(" ^
                       (tmp_gen "cur_map") ^
                       ", ch, ek);\n" ^
-                      "flw the_flow_to_insert = flwc(ik, ek,\n\
-                       isp, new_index_2_0, dp, isip,\n\
-                       external_ip, dip, " ^
-                       !last_device_id ^
-                      ", 1, user_buf_23);\n" ^
+                      "flow the_flow_to_insert = flw(ik, ek," ^ !last_device_id ^ ");\n" ^
                        "add_flow_abstract(" ^ (tmp_gen "cur_map") ^
                        ", ch, the_flow_to_insert, " ^
                        (List.nth_exn args 2) ^ ", " ^
@@ -508,7 +473,7 @@ let fun_types =
                                                 } @*/");
                   ];};
      "dmap_get_value", {ret_type = Static Void;
-                        arg_types = stt [Ptr dmap_struct; Sint32; Ptr flw_struct;];
+                        arg_types = stt [Ptr dmap_struct; Sint32; Ptr flow_struct;];
                         extra_ptr_types = [];
                         lemmas_before = [
                           capture_map "cur_map" 0;
@@ -523,6 +488,7 @@ let fun_types =
                              "//@ open_struct(" ^
                              (List.nth_exn args 2) ^ ");")];
                         lemmas_after = [
+                          (fun params -> last_device_id := ("(" ^ (List.nth_exn params.args 2) ^ ")->internal_device"); "");
                           (fun params ->
                              "/*@{ if (" ^ !last_indexing_succ_ret_var ^
                              "!= 0) { \n\
@@ -533,15 +499,15 @@ let fun_types =
                              (params.tmp_gen "cur_map") ^ ", cur_ch," ^
                              (gen_get_fp (params.tmp_gen "cur_map")) ^
                              ");\n\
-                              }}@*/");
-                          (fun _ -> "assert(0 <= " ^
+                              }}@*/\n" ^
+                              "assert(0 <= " ^
                                     !last_device_id ^
                                     " && " ^
                                     !last_device_id ^
-                                    " < RTE_MAX_ETHPORTS);");
+                                    " < RTE_MAX_ETHPORTS);\n");
                           (fun params ->
                              "/*@\
-                              open flw_p(" ^ (List.nth_exn params.args 2) ^
+                              open flowp(" ^ (List.nth_exn params.args 2) ^
                              ", _);\n\
                               @*/");
                           tx_l "open flow_idp(_,_);";
@@ -617,6 +583,7 @@ let fun_types =
                                      capture_chain "cur_ch" 0;
                                    ];
                                    lemmas_after = [
+                                     (fun params -> last_device_id := ("(" ^ (List.nth_exn params.args 1) ^ ")->internal_device"); "");
                                      on_rez_nz
                                        (fun params ->
                                           "{\n allocate_preserves_index_range(" ^
