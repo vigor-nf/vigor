@@ -302,7 +302,8 @@ lemma void dchain_erase_all_expired_indexes(dchain ch, time_t time)
 requires true;
 ensures dchain_erase_indexes_fp(ch, dchain_get_expired_indexes_fp(ch, time)) == dchain_expire_old_indexes_fp(ch, time);
 {
-  assume(false);//TODO
+  switch(ch) { case dchain(alist, x1, x2, x3):
+  }
 }
 @*/
 

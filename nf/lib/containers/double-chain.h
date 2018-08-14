@@ -354,7 +354,8 @@ struct DoubleChain;
 /*@
   fixpoint dchain dchain_erase_indexes_fp(dchain ch, list<int> indexes) {
     switch(ch) { case dchain(alist, index_range, low, high):
-      return dchain(filter((sup)((mem2)(indexes), (fst)), alist), index_range, low, high);
+      return dchain(fold_left(alist, remove_by_index_fp, indexes),
+                    index_range, low, high);
     }
   }
   @*/
