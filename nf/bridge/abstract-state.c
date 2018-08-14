@@ -142,7 +142,13 @@ lemma void erase_non_existent_address(list<dyn_entry> entries, ether_addri addr)
 requires false == mem(addr, map(get_dyn_addr, entries));
 ensures erase_address(entries, addr) == entries;
 {
-  assume(false);//TODO
+  switch(entries) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(e_addr, e_port, e_time):
+        erase_non_existent_address(t, addr);
+      }
+  }
 }
 @*/
 
