@@ -366,11 +366,15 @@ ensures map_erase_all_fp(cons(pair(k, v), m), keys) ==
 
 /*@
 lemma void map_erase_one_more<kt,vt>(kt k, vt v, list<pair<kt,vt> > m, list<kt> keys)
-requires true;
+requires false == mem(k, keys);
 ensures map_erase_all_fp(cons(pair(k, v), m), cons(k, keys)) ==
         map_erase_all_fp(m, keys);
 {
-  assume(false);//TODO
+  assert map_erase_all_fp(cons(pair(k, v), m), cons(k, keys)) ==
+         map_erase_fp(map_erase_all_fp(cons(pair(k, v), m), keys), k);
+  map_erase_all_cons(k, v, m, keys);
+  assert map_erase_fp(map_erase_all_fp(cons(pair(k, v), m), keys), k) ==
+         map_erase_fp(cons(pair(k, v), map_erase_all_fp(m, keys)), k);
 }
 @*/
 
@@ -467,6 +471,24 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
           assert map_erase_all_fp(dyn_map, vector_get_values_fp(keys, cons(idx, indices))) ==
                  map_erase_fp(map_erase_all_fp(dyn_map, vector_get_values_fp(keys, indices)), key_to_erase);
           if (key_to_erase == addr) {
+            if (mem(addr, vector_get_values_fp(keys, indices))) {
+              vector_get_values_index_of(keys, indices, addr);
+              int other_idx_idx = index_of(addr, vector_get_values_fp(keys, indices));
+              map_preserves_length((sup)(fst, (nth2)(keys)), indices);
+              assert length(vector_get_values_fp(keys, indices)) == length(indices);
+              assert 0 <= other_idx_idx &*& other_idx_idx < length(indices);
+              int other_idx = nth(other_idx_idx, indices);
+              assert true == mem(other_idx, indices);
+              assert false == mem(idx, indices);
+              forall_nth(indices, (bounded)(length(keys)), other_idx_idx);
+              forall_nth(indices, (sup)(engaged_cell, (nth2)(keys)), other_idx_idx);
+              assert fst(nth(idx, keys)) == addr;
+              assert fst(nth(other_idx, keys)) == addr;
+              two_indexes_into_engaged_nondistinct(keys, other_idx, idx);
+              assert nth(other_idx, keys) == pair(addr, false);
+              assert nth(idx, keys) == pair(addr, false);
+              assert false;
+            }
             assert vector_get_values_fp(keys, cons(idx, indices)) == cons(addr, vector_get_values_fp(keys, indices));
             map_erase_one_more(addr, index, t, vector_get_values_fp(keys, indices));
             assert(map_erase_all_fp(dyn_map, vector_get_values_fp(keys, cons(idx, indices))) ==
@@ -501,23 +523,6 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
                    gen_dyn_entries(map_erase_all_fp(t, vector_get_values_fp(keys, indices)),
                                    vals,
                                    dchain_erase_indexes_fp(ch, indices));
-            if (mem(addr, vector_get_values_fp(keys, indices))) {
-              vector_get_values_index_of(keys, indices, addr);
-              int other_idx_idx = index_of(addr, vector_get_values_fp(keys, indices));
-              map_preserves_length((sup)(fst, (nth2)(keys)), indices);
-              assert length(vector_get_values_fp(keys, indices)) == length(indices);
-              assert 0 <= other_idx_idx &*& other_idx_idx < length(indices);
-              int other_idx = nth(other_idx_idx, indices);
-              assert true == mem(other_idx, indices);
-              assert false == mem(idx, indices);
-              forall_nth(indices, (bounded)(length(keys)), other_idx_idx);
-              forall_nth(indices, (sup)(engaged_cell, (nth2)(keys)), other_idx_idx);
-              assert fst(nth(idx, keys)) == addr;
-              assert fst(nth(other_idx, keys)) == addr;
-              two_indexes_into_engaged_nondistinct(keys, other_idx, idx);
-              assert nth(other_idx, keys) == pair(addr, false);
-              assert nth(idx, keys) == pair(addr, false);
-            }
             map_erase_all_cons(addr, index, t, vector_get_values_fp(keys, indices));
             assert gen_dyn_entries(map_erase_all_fp
                                       (dyn_map,
