@@ -180,7 +180,23 @@ requires i1 != i2 &*&
          fst(nth(i1, keys)) == fst(nth(i2, keys));
 ensures false == distinct(map(fst, filter(engaged_cell, keys)));
 {
-  assume(false);//TODO
+  switch(keys) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(val, owned):
+        if (i1 == 0) {
+          switch(nth(i2 - 1, t)) { case pair(aaa,bbb): }
+          filter_mem(pair(val, false), t, engaged_cell);
+          mem_map(pair(val, false), filter(engaged_cell, t), fst);
+        } else if (i2 == 0) {
+          switch(nth(i1 - 1, t)) { case pair(aaa,bbb): }
+          filter_mem(pair(val, false), t, engaged_cell);
+          mem_map(pair(val, false), filter(engaged_cell, t), fst);
+        } else {
+          two_indexes_into_engaged_nondistinct(t, i1 - 1, i2 - 1);
+        }
+      }
+  }
 }
 @*/
 
