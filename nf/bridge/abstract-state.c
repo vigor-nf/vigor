@@ -404,11 +404,27 @@ ensures false == mem(v, map(snd, map_erase_all_fp(m, ks)));
 @*/
 
 /*@
+lemma void map_erase_preserves_nonmem_key<kt,vt>(list<pair<kt,vt> > m, kt k, kt k_to_erase)
+requires false == mem(k, map(fst, m));
+ensures false == mem(k, map(fst, map_erase_fp(m, k_to_erase)));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t): switch(h) { case pair(aaa,bbb): }
+      map_erase_preserves_nonmem_key(t, k, k_to_erase);
+  }
+}
+
 lemma void map_erase_all_preserves_nonmem_key<kt,vt>(list<pair<kt,vt> > m, kt k, list<kt> ks)
 requires false == mem(k, map(fst, m));
 ensures false == mem(k, map(fst, map_erase_all_fp(m, ks)));
 {
-  assume(false);//TODO
+  switch(ks) {
+    case nil:
+    case cons(h,t):
+      map_erase_all_preserves_nonmem_key(m, k, t);
+      map_erase_preserves_nonmem_key(map_erase_all_fp(m, t), k, h);
+  }
 }
 @*/
 
