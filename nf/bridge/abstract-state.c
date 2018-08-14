@@ -433,10 +433,24 @@ lemma void synced_pairs_map_get(list<pair<ether_addri, bool> > keys,
                                 list<pair<ether_addri, uint32_t> > m,
                                 uint32_t v)
 requires true == forall(m, (synced_pair)(keys)) &*&
-         true == map_has_fp(m, fst(nth(v, keys)));
+         true == distinct(map(fst, filter(engaged_cell, keys))) &*&
+         true == engaged_cell(nth(v, keys)) &*&
+         true == map_has_fp(m, fst(nth(v, keys))) &*&
+         0 <= v &*& v < length(keys);
 ensures map_get_fp(m, fst(nth(v, keys))) == v;
 {
-  assume(false);//TODO
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(addr, index):
+        if (index != v) {
+          if (addr == fst(nth(v, keys))) {
+            two_indexes_into_engaged_nondistinct(keys, index, v);
+          }
+          synced_pairs_map_get(keys, t, v);
+        }
+      }
+  }
 }
 @*/
 
