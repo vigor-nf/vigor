@@ -160,7 +160,13 @@ lemma void map_no_addr_gen_dyn_entries_no_addr(list<pair<ether_addri, uint32_t> 
 requires false == mem(addr, map(fst, m));
 ensures false == mem(addr, map(get_dyn_addr, gen_dyn_entries(m, v, ch)));
 {
-  assume(false);//TODO
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key, value):
+        map_no_addr_gen_dyn_entries_no_addr(t, v, ch, addr);
+      }
+  }
 }
 @*/
 
