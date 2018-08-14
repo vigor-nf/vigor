@@ -302,8 +302,7 @@ lemma void dchain_erase_all_expired_indexes(dchain ch, time_t time)
 requires true;
 ensures dchain_erase_indexes_fp(ch, dchain_get_expired_indexes_fp(ch, time)) == dchain_expire_old_indexes_fp(ch, time);
 {
-  switch(ch) { case dchain(alist, x1, x2, x3):
-  }
+  switch(ch) { case dchain(alist, x1, x2, x3):}
 }
 @*/
 
@@ -312,7 +311,11 @@ lemma void map_erase_all_nil<kt,vt>(list<kt> keys)
 requires true;
 ensures map_erase_all_fp(nil, keys) == nil;
 {
-  assume(false);//TODO
+  switch(keys) {
+    case nil:
+    case cons(h,t):
+      map_erase_all_nil(t);
+  }
 }
 @*/
 
