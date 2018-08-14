@@ -24,6 +24,7 @@ void nf_core_init()
 	flow_manager = flow_manager_allocate(
 		config.start_port,
                 config.external_addr,
+                config.wan_device,
                 config.expiration_time,
                 config.max_flows
 	);

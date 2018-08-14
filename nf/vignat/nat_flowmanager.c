@@ -8,11 +8,12 @@
 #include "lib/expirator.h"
 
 struct FlowManager {
-    uint16_t starting_port;
-    uint32_t nat_ip;
-    uint32_t expiration_time; /*seconds*/
-    struct DoubleChain* chain;
-    struct DoubleMap* table;
+	uint16_t starting_port;
+	uint32_t nat_ip;
+	uint16_t nat_device;
+	uint32_t expiration_time; /*seconds*/
+	struct DoubleChain* chain;
+	struct DoubleMap* table;
 };
 
 #ifdef KLEE_VERIFICATION
@@ -21,76 +22,82 @@ struct FlowManager {
 // for RTE_MAX_ETHPORTS
 #include <rte_config.h>
 
-struct DoubleChain** flow_manager_get_chain(struct FlowManager* manager) {
-  return &(manager->chain);
+struct DoubleChain**
+flow_manager_get_chain(struct FlowManager* manager) {
+	return &(manager->chain);
 }
 
-struct DoubleMap** flow_manager_get_table(struct FlowManager* manager) {
-  return &(manager->table);
+struct DoubleMap**
+flow_manager_get_table(struct FlowManager* manager) {
+	return &(manager->table);
 }
 
-int flow_consistency(void* key_a, void* key_b,
+int
+flow_consistency(void* key_a, void* key_b,
                      int index, void* value, void* state) {
-  struct FlowId* int_id = key_a;
-  struct FlowId* ext_id = key_b;
-  struct Flow* flow = value;
-  struct FlowManager* manager = state;
-  return
-    ( 0 <= flow->internal_device ) & ( flow->internal_device < RTE_MAX_ETHPORTS ) &
-    ( flow->external_id.src_port == flow->internal_id.dst_port ) &
-    ( flow->external_id.src_ip == flow->internal_id.dst_ip ) &
-    ( flow->external_id.protocol == flow->internal_id.protocol ) &
-    ( flow->external_id.dst_port == manager->starting_port + index );
+	struct FlowId* int_id = key_a;
+	struct FlowId* ext_id = key_b;
+	struct Flow* flow = value;
+	struct FlowManager* manager = state;
+	return ( 0 <= flow->internal_device ) & ( flow->internal_device < RTE_MAX_ETHPORTS ) &
+		( flow->external_id.src_port == flow->internal_id.dst_port ) &
+		( flow->external_id.src_ip == flow->internal_id.dst_ip ) &
+		( flow->external_id.protocol == flow->internal_id.protocol ) &
+		( flow->external_id.dst_port == manager->starting_port + index );
 }
 
-void concretize_devices(struct Flow* f) {
-    int count = rte_eth_dev_count();
+void
+concretize_devices(struct FlowManager* manager, struct Flow* f) {
+	int count = rte_eth_dev_count();
 
-    klee_assume(f->internal_device >= 0);
-    klee_assume(f->internal_device < count);
+	klee_assume(f->internal_device >= 0);
+	klee_assume(f->internal_device < count);
+	klee_assume(f->internal_device != manager->nat_device);
 
-    for(unsigned d = 0; d < count; d++) if (f->internal_device == d) { f->internal_device = d; break; }
+	for(unsigned d = 0; d < count; d++) if (f->internal_device == d) { f->internal_device = d; break; }
 }
 #endif//KLEE_VERIFICATION
 
 struct FlowManager*
 flow_manager_allocate(uint16_t starting_port,
                       uint32_t nat_ip,
+                      uint16_t nat_device,
                       uint32_t expiration_time,
                       uint64_t max_flows) {
-    struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
-    if (manager == NULL) {
-        return NULL;
-    }
+	struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
+	if (manager == NULL) {
+		return NULL;
+	}
 
-    manager->starting_port = starting_port;
-    manager->nat_ip = nat_ip;
-    manager->expiration_time = expiration_time;
+	manager->starting_port = starting_port;
+	manager->nat_ip = nat_ip;
+	manager->nat_device = nat_device;
+	manager->expiration_time = expiration_time;
 
-    if (dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash,
-                      sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys,
-                      max_flows, max_flows,
-                      &(manager->table)) == 0) {
-        free(manager);
-        return NULL;
-    }
+	if (dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash,
+			  sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys,
+			  max_flows, max_flows,
+			  &(manager->table)) == 0) {
+		free(manager);
+		return NULL;
+	}
 
-    if (dchain_allocate(max_flows, &(manager->chain)) == 0) {
-        free(manager->table);
-        free(manager);
-        return NULL;
-    }
+	if (dchain_allocate(max_flows, &(manager->chain)) == 0) {
+		free(manager->table);
+		free(manager);
+		return NULL;
+	}
 
 #ifdef KLEE_VERIFICATION
-    dmap_set_layout(manager->table,
-                    flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr),
-                    flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr),
-                    flow_descrs, sizeof(flow_descrs)/sizeof(struct str_field_descr),
-                    flow_nests, sizeof(flow_nests)/sizeof(struct nested_field_descr));
-    dmap_set_entry_condition(manager->table, flow_consistency, manager);
+	dmap_set_layout(manager->table,
+			flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr),
+			flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr),
+			flow_descrs, sizeof(flow_descrs)/sizeof(struct str_field_descr),
+			flow_nests, sizeof(flow_nests)/sizeof(struct nested_field_descr));
+	dmap_set_entry_condition(manager->table, flow_consistency, manager);
 #endif
 
-    return manager;
+	return manager;
 }
 
 bool
@@ -149,7 +156,7 @@ flow_manager_get_and_rejuvenate(struct FlowManager* manager, int index, time_t t
 	dchain_rejuvenate_index(manager->chain, index, time);
 
 #ifdef KLEE_VERIFICATION
-	concretize_devices(out_flow);
+	concretize_devices(manager, out_flow);
 #endif
 }
 
