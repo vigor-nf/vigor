@@ -320,16 +320,33 @@ ensures map_erase_all_fp(nil, keys) == nil;
 @*/
 
 /*@
+lemma void dchain_erase_another_one_keeps_time(dchain ch, list<int> e_indices, int e_ind, int index)
+requires e_ind != index;
+ensures dchain_get_time_fp(dchain_erase_indexes_fp(ch, cons(e_ind, e_indices)), index) ==
+        dchain_get_time_fp(dchain_erase_indexes_fp(ch, e_indices), index);
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
 lemma void dchain_erase_idx_same_gen_entries(list<pair<ether_addri, uint32_t> > dyn_map,
-                                      list<pair<uint16_t, bool> > vals,
-                                      dchain ch,
-                                      uint32_t idx,
-                                      list<uint32_t> indices)
+                                             list<pair<uint16_t, bool> > vals,
+                                             dchain ch,
+                                             uint32_t idx,
+                                             list<uint32_t> indices)
 requires false == mem(idx, map(snd, dyn_map));
 ensures gen_dyn_entries(dyn_map, vals, dchain_erase_indexes_fp(ch, indices)) ==
         gen_dyn_entries(dyn_map, vals, dchain_erase_indexes_fp(ch, cons(idx, indices)));
 {
-  assume(false);//TODO
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(addr, index):
+        dchain_erase_another_one_keeps_time(ch, indices, idx, index);
+        dchain_erase_idx_same_gen_entries(t, vals, ch, idx, indices);
+      }
+  }
 }
 @*/
 
@@ -348,16 +365,6 @@ lemma void map_erase_one_more<kt,vt>(kt k, vt v, list<pair<kt,vt> > m, list<kt> 
 requires true;
 ensures map_erase_all_fp(cons(pair(k, v), m), cons(k, keys)) ==
         map_erase_all_fp(m, keys);
-{
-  assume(false);//TODO
-}
-@*/
-
-/*@
-lemma void dchain_erase_another_one_keeps_time(dchain ch, list<int> e_indices, int e_ind, int index)
-requires e_ind != index;
-ensures dchain_get_time_fp(dchain_erase_indexes_fp(ch, cons(e_ind, e_indices)), index) ==
-        dchain_get_time_fp(dchain_erase_indexes_fp(ch, e_indices), index);
 {
   assume(false);//TODO
 }
