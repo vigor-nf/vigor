@@ -173,7 +173,7 @@ let fun_types =
                          tx_bl "produce_function_pointer_chunk \
                                 dmap_extract_keys<flow_id,flow_id,flow>\
                                 (flow_extract_keys)\
-                                (flow_idp, flow_idp, flowp, flowp,\
+                                (flow_idp, flow_idp, flowp, flowp_bare,\
                                  flow_ids_offsets_fp,\
                                  flow_get_internal_id,\
                                  flow_get_external_id)(a, b, c)\
@@ -183,7 +183,7 @@ let fun_types =
                          tx_bl "produce_function_pointer_chunk \
                                 dmap_pack_keys<flow_id,flow_id,flow>\
                                 (flow_pack_keys)\
-                                (flow_idp, flow_idp, flowp, flowp,\
+                                (flow_idp, flow_idp, flowp, flowp_bare,\
                                  flow_ids_offsets_fp,\
                                  flow_get_internal_id,\
                                  flow_get_external_id)(a, b, c)\
@@ -369,14 +369,14 @@ let fun_types =
                   lemmas_before = [
                     capture_map_ex "cur_map" "vk1" "vk2" 0;
                     (fun {args;tmp_gen;_} ->
-                       "/*@ flw the_inserted_flow; @*/\n\
+                       "/*@ flow the_inserted_flow; @*/\n\
                         /*@ {\n" ^
                        "close flow_idp(" ^ (List.nth_exn args 1) ^
-                    ".ik, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
+                    ".internal_id, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
                      "assert flow_idp(" ^ (List.nth_exn args 1) ^
-                     ".ik, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
+                     ".internal_id, flid(?isp, ?dp, ?isip, ?dip, user_buf_23));\n" ^
                      "close flow_idp(" ^ (List.nth_exn args 1) ^
-                    ".ek, flid(new_index_2_0, dp, external_ip, dip, user_buf_23));\n" ^
+                    ".external_id, flid(new_index_2_0, dp, external_ip, dip, user_buf_23));\n" ^
                     " close flowp(" ^ (List.nth_exn args 1) ^
                     ", flw(flid(isp, dp, isip, dip, user_buf_23),
                            flid(new_index_2_0, dp, external_ip, dip, user_buf_23), " ^
@@ -392,7 +392,7 @@ let fun_types =
                        ", ek);\n\
                         dmap_get_k2_limits(" ^ (tmp_gen "cur_map") ^
                        ", ek);\n\
-                        flw value = dmap_get_val_fp(" ^ (tmp_gen "cur_map") ^
+                        flow value = dmap_get_val_fp(" ^ (tmp_gen "cur_map") ^
                        ", index);\n\
                         dmap_get_by_index_rp(" ^ (tmp_gen "cur_map") ^
                        ", index);\n\
@@ -461,7 +461,7 @@ let fun_types =
                         assert dmap_dchain_coherent(" ^
                        (params.tmp_gen "cur_map") ^
                        ", ?cur_ch);\n\
-                        flw the_flow_to_insert = flw;\n" ^
+                        flow the_flow_to_insert = flw;\n" ^
                       "coherent_put_allocated_preserves_coherent\n(" ^
                       (params.tmp_gen "cur_map") ^
                       ", cur_ch, ik , ek,\
@@ -498,13 +498,7 @@ let fun_types =
                               coherent_dmap_used_dchain_allocated(" ^
                              (params.tmp_gen "cur_map") ^ ", cur_ch," ^
                              (gen_get_fp (params.tmp_gen "cur_map")) ^
-                             ");\n\
-                              }}@*/\n" ^
-                              "assert(0 <= " ^
-                                    !last_device_id ^
-                                    " && " ^
-                                    !last_device_id ^
-                                    " < RTE_MAX_ETHPORTS);\n");
+                             "); }} @*/\n");
                           (fun params ->
                              "/*@\
                               open flowp(" ^ (List.nth_exn params.args 2) ^
