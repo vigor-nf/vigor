@@ -67,15 +67,15 @@ flow_manager_allocate(uint16_t starting_port,
     manager->nat_ip = nat_ip;
     manager->expiration_time = expiration_time;
 
-    if (0 == dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash,
-                           sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys,
-                           max_flows, max_flows,
-                           &(manager->table))) {
+    if (dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash,
+                      sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys,
+                      max_flows, max_flows,
+                      &(manager->table)) == 0) {
         free(manager);
         return NULL;
     }
 
-    if (0 == dchain_allocate(max_flows, &(manager->chain))) {
+    if (dchain_allocate(max_flows, &(manager->chain)) == 0) {
         free(manager->table);
         free(manager);
         return NULL;
@@ -96,7 +96,7 @@ flow_manager_allocate(uint16_t starting_port,
 bool
 flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id, uint16_t internal_device, time_t time, struct Flow* out_flow) {
 	int index;
-	if (0 == dchain_allocate_new_index(manager->chain, &index, time)) {
+	if (dchain_allocate_new_index(manager->chain, &index, time) == 0) {
 		return false;
 	}
 
@@ -113,7 +113,7 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id, uint1
 		.internal_device = internal_device
 	};
 
-	if (!dmap_put(manager->table, &flow, index)) {
+	if (dmap_put(manager->table, &flow, index) == 0) {
 		return false;
 	}
 
@@ -145,6 +145,7 @@ flow_manager_expire(struct FlowManager* manager, time_t time) {
 static void
 flow_manager_get_and_rejuvenate(struct FlowManager* manager, int index, time_t time, struct Flow* out_flow) {
 	dmap_get_value(manager->table, index, out_flow);
+	// TODO: technically there's a return value here - should we just remove it altogether? or check it? it'll never be 0 in practice (verified!)
 	dchain_rejuvenate_index(manager->chain, index, time);
 
 #ifdef KLEE_VERIFICATION
@@ -155,7 +156,7 @@ flow_manager_get_and_rejuvenate(struct FlowManager* manager, int index, time_t t
 bool
 flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id, time_t time, struct Flow* out_flow) {
 	int index;
-	if (!dmap_get_a(manager->table, id, &index)) {
+	if (dmap_get_a(manager->table, id, &index) == 0) {
 		return false;
 	}
 
@@ -166,7 +167,7 @@ flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id, time_t
 bool
 flow_manager_get_external(struct FlowManager* manager, struct FlowId* id, time_t time, struct Flow* out_flow) {
 	int index;
-	if (!dmap_get_b(manager->table, id, &index)) {
+	if (dmap_get_b(manager->table, id, &index) == 0) {
 		return false;
 	}
 

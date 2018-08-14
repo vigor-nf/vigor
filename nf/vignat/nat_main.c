@@ -56,24 +56,23 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 
 	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, mbuf->port);
 
+	struct FlowId id = {
+		.src_port = tcpudp_header->src_port,
+		.dst_port = tcpudp_header->dst_port,
+		.src_ip = ipv4_header->src_addr,
+		.dst_ip = ipv4_header->dst_addr,
+		.protocol = ipv4_header->next_proto_id
+	};
+
+	NF_DEBUG("For id:");
+	flow_log_id(&id);
+
 	uint16_t dst_device;
 	if (mbuf->port == config.wan_device) {
 		NF_DEBUG("Device %" PRIu16 " is external", mbuf->port);
 
-		struct FlowId id = {
-			.src_port = tcpudp_header->src_port,
-			.dst_port = tcpudp_header->dst_port,
-			.src_ip = ipv4_header->src_addr,
-			.dst_ip = ipv4_header->dst_addr,
-			.protocol = ipv4_header->next_proto_id
-		};
-
-		NF_DEBUG("For id:");
-		flow_log_id(&id);
-
 		struct Flow f;
-		bool flow_exists = flow_manager_get_external(flow_manager, &id, now, &f);
-		if (flow_exists) {
+		if (flow_manager_get_external(flow_manager, &id, now, &f)) {
 			NF_DEBUG("Found flow:");
 			flow_log(&f);
 
@@ -87,20 +86,8 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	} else {
 		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", mbuf->port, config.wan_device);
 
-		struct FlowId id = {
-			.src_port = tcpudp_header->src_port,
-			.dst_port = tcpudp_header->dst_port,
-			.src_ip = ipv4_header->src_addr,
-			.dst_ip = ipv4_header->dst_addr,
-			.protocol = ipv4_header->next_proto_id
-		};
-
-		NF_DEBUG("For id:");
-		flow_log_id(&id);
-
 		struct Flow f;
-		bool flow_exists = flow_manager_get_internal(flow_manager, &id, now, &f);
-		if (!flow_exists) {
+		if (!flow_manager_get_internal(flow_manager, &id, now, &f)) {
 			NF_DEBUG("New flow");
 
 			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &f)) {

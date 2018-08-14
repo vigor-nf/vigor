@@ -160,11 +160,9 @@ int dmap_get_a(struct DoubleMap* map, void* key, int* index) {
     void* key_a = NULL;
     void* key_b = NULL;
     map->dexk_g(map->value, &key_a, &key_b);
-
     klee_assume(map->eq_a_g(key_a, key));
-    if (map->ent_cond)
-      klee_assume(map->ent_cond(key_a, key_b,
-                           map->allocated_index, map->value, map->ent_state));
+    if (map->ent_cond) klee_assume(map->ent_cond(key_a, key_b,
+                                       map->allocated_index, map->value, map->ent_state));
     map->dpk_g(map->value, key_a, key_b);
     map->entry_claimed = 1;
     *index = map->allocated_index;
