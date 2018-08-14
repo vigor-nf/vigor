@@ -205,7 +205,12 @@ lemma void erase_addresses_nonmem(dyn_entry e, list<dyn_entry> entries, list<eth
 requires false == mem(get_dyn_addr(e), addrs);
 ensures erase_addresses(cons(e, entries), addrs) == cons(e, erase_addresses(entries, addrs));
 {
-  assume(false);//TODO
+  switch(addrs) {
+    case nil:
+    case cons(h,t):
+      erase_addresses_nonmem(e, entries, t);
+      switch(e) { case dyn_entry(e_addr, e_port, e_time): }
+  }
 }
 @*/
 
