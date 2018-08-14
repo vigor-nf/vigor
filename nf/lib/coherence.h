@@ -296,4 +296,17 @@ fixpoint bool synced_pair<kt>(list<pair<kt, bool> > keys, pair<kt, uint32_t> p) 
           true == msubset(map(snd, m), dchain_indexes_fp(ch));
   @*/
 
+/*@
+  lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
+                                       list<pair<kt, bool> > v,
+                                       dchain ch);
+  requires map_vec_chain_coherent<kt>(m, v, ch);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          true == distinct(dchain_indexes_fp(ch)) &*&
+          true == distinct(map(fst, m)) &*&
+          true == distinct(map(snd, m)) &*&
+          true == distinct(map(fst, filter(engaged_cell, v))) &*&
+          true == msubset(map(snd, m), dchain_indexes_fp(ch));
+@*/
+
 #endif// _COHERENCE_H_INCLUDED_

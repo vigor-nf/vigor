@@ -1673,6 +1673,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           true == distinct(dchain_indexes_fp(ch)) &*&
           true == distinct(map(fst, m)) &*&
           true == distinct(map(snd, m)) &*&
+          true == distinct(map(fst, filter(engaged_cell, v))) &*&
           true == msubset(map(snd, m), dchain_indexes_fp(ch));
   {
     open map_vec_chain_coherent(m, v, ch);

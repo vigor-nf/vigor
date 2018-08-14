@@ -7,7 +7,9 @@ fixpoint list<dyn_entry> erase_address(list<dyn_entry> entries, ether_addri addr
   switch(entries) {
     case nil: return entries;
     case cons(h,t): return switch(h) { case dyn_entry(cur_addr, port, time):
-      return cur_addr == address ? t : cons(h, erase_address(t, address));
+      return cur_addr == address  ?
+        erase_address(t, address) :
+        cons(h, erase_address(t, address));
     };
   }
 }
@@ -102,9 +104,55 @@ ensures true == mem(fst(nth(idx, v)), vector_get_values_fp(v, indices));
 @*/
 
 /*@
+lemma void erase_addresses_cons(dyn_entry e, list<dyn_entry> entries, list<ether_addri> addrs)
+requires true;
+ensures (mem(get_dyn_addr(e), addrs)) ?
+        erase_addresses(cons(e, entries), addrs) == erase_addresses(entries, addrs) :
+        erase_addresses(cons(e, entries), addrs) == cons(e, erase_addresses(entries, addrs));
+{
+  switch(addrs) {
+    case nil:
+    case cons(h,t):
+      switch(e) { case dyn_entry(e_addr, e_port, e_time):
+        erase_addresses_cons(e, entries, t);
+      }
+  }
+}
+
 lemma void erase_addresses_known(dyn_entry e, list<dyn_entry> entries, list<ether_addri> addrs)
 requires true == mem(get_dyn_addr(e), addrs);
 ensures erase_addresses(cons(e, entries), addrs) == erase_addresses(entries, addrs);
+{
+  switch(addrs) {
+    case nil:
+    case cons(h,t):
+      switch(e) { case dyn_entry(e_addr, e_port, e_time):
+        if (e_addr == h) {
+          erase_addresses_cons(e, entries, t);
+        } else {
+          erase_addresses_known(e, entries, t);
+        }
+      }
+  }
+}
+@*/
+
+/*@
+lemma void erase_non_existent_address(list<dyn_entry> entries, ether_addri addr)
+requires false == mem(addr, map(get_dyn_addr, entries));
+ensures erase_address(entries, addr) == entries;
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void map_no_addr_gen_dyn_entries_no_addr(list<pair<ether_addri, uint32_t> > m,
+                                               list<pair<uint16_t, bool> > v,
+                                               dchain ch,
+                                               ether_addri addr)
+requires false == mem(addr, map(fst, m));
+ensures false == mem(addr, map(get_dyn_addr, gen_dyn_entries(m, v, ch)));
 {
   assume(false);//TODO
 }
@@ -244,7 +292,7 @@ ensures map_erase_all_fp(nil, keys) == nil;
 @*/
 
 /*@
-lemma void dchain_erase_idx_same_gen_entrires(list<pair<ether_addri, uint32_t> > dyn_map,
+lemma void dchain_erase_idx_same_gen_entries(list<pair<ether_addri, uint32_t> > dyn_map,
                                       list<pair<uint16_t, bool> > vals,
                                       dchain ch,
                                       uint32_t idx,
@@ -288,9 +336,18 @@ ensures dchain_get_time_fp(dchain_erase_indexes_fp(ch, cons(e_ind, e_indices)), 
 @*/
 
 /*@
-lemma void map_erase_all_preserves_nonmem<kt,vt>(list<pair<kt,vt> > m, vt v, list<kt> ks)
+lemma void map_erase_all_preserves_nonmem_val<kt,vt>(list<pair<kt,vt> > m, vt v, list<kt> ks)
 requires false == mem(v, map(snd, m));
 ensures false == mem(v, map(snd, map_erase_all_fp(m, ks)));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void map_erase_all_preserves_nonmem_key<kt,vt>(list<pair<kt,vt> > m, kt k, list<kt> ks)
+requires false == mem(k, map(fst, m));
+ensures false == mem(k, map(fst, map_erase_all_fp(m, ks)));
 {
   assume(false);//TODO
 }
@@ -335,19 +392,6 @@ ensures map_erase_all_fp(cons(pair(k, v), m), keys) == map_erase_all_fp(m, keys)
 @*/
 
 /*@
-lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
-                                     list<pair<kt, bool> > v, dchain ch)
-requires map_vec_chain_coherent(m, v, ch);
-ensures map_vec_chain_coherent(m, v, ch) &*&
-        true == distinct(dchain_indexes_fp(ch)) &*&
-        true == distinct(map(snd, m)) &*&
-        true == distinct(map(fst, filter(engaged_cell, v)));
-{
-  assume(false);//TODO
-}
-@*/
-
-/*@
 lemma void erase_one_address_after(list<pair<ether_addri, uint32_t> > dyn_map,
                                       list<pair<uint16_t, bool> > vals,
                                       list<pair<ether_addri, bool> > keys,
@@ -356,6 +400,7 @@ lemma void erase_one_address_after(list<pair<ether_addri, uint32_t> > dyn_map,
                                       list<uint32_t> indices)
 requires true == forall(dyn_map, (synced_pair)(keys)) &*&
          true == distinct(map(snd, dyn_map)) &*&
+         true == distinct(map(fst, dyn_map)) &*&
          true == distinct(map(fst, filter(engaged_cell, keys))) &*&
          true == distinct(cons(idx, indices)) &*&
          true == forall(cons(idx, indices), (bounded)(length(keys))) &*&
@@ -406,8 +451,8 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
             }
             assert index == idx;
             assert false == mem(index, map(snd, t));
-            map_erase_all_preserves_nonmem(t, idx, vector_get_values_fp(keys, indices));
-            dchain_erase_idx_same_gen_entrires(map_erase_all_fp(t, vector_get_values_fp(keys, indices)),
+            map_erase_all_preserves_nonmem_val(t, idx, vector_get_values_fp(keys, indices));
+            dchain_erase_idx_same_gen_entries(map_erase_all_fp(t, vector_get_values_fp(keys, indices)),
                                                vals, ch, idx, indices);
             assert gen_dyn_entries(map_erase_all_fp
                                       (dyn_map,
@@ -450,7 +495,42 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
                                        vector_get_values_fp(keys, cons(idx, indices))),
                                       vals,
                                       dchain_erase_indexes_fp(ch, cons(idx, indices))));
-                   
+
+            assert false == mem(fst(nth(idx, keys)), map(fst, t));
+            map_erase_all_preserves_nonmem_key(t, fst(nth(idx, keys)), vector_get_values_fp(keys, indices));
+            map_no_addr_gen_dyn_entries_no_addr(map_erase_all_fp
+                                      (t,
+                                       vector_get_values_fp(keys, indices)), vals, dchain_erase_indexes_fp(ch, indices), fst(nth(idx, keys)));
+            erase_non_existent_address(gen_dyn_entries(map_erase_all_fp
+                                      (t,
+                                       vector_get_values_fp(keys, indices)),
+                                      vals,
+                                      dchain_erase_indexes_fp(ch, indices)),
+                                      fst(nth(idx, keys)));
+            assert erase_address(
+                   gen_dyn_entries(map_erase_all_fp
+                                      (t,
+                                       vector_get_values_fp(keys, indices)),
+                                      vals,
+                                      dchain_erase_indexes_fp(ch, indices)),
+                                fst(nth(idx, keys))) ==
+                   gen_dyn_entries(map_erase_all_fp
+                                      (t,
+                                       vector_get_values_fp(keys, indices)),
+                                      vals,
+                                      dchain_erase_indexes_fp(ch, indices));
+
+            assert erase_address(gen_dyn_entries(map_erase_all_fp
+                                      (dyn_map,
+                                       vector_get_values_fp(keys, indices)),
+                                      vals,
+                                      dchain_erase_indexes_fp(ch, indices)),
+                                  fst(nth(idx, keys))) ==
+                   gen_dyn_entries(map_erase_all_fp
+                                      (t,
+                                       vector_get_values_fp(keys, indices)),
+                                      vals,
+                                      dchain_erase_indexes_fp(ch, indices));
           } else {
 
             erase_one_address_after(t, vals, keys, ch, idx, indices);
@@ -490,7 +570,7 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
               synced_pairs_map_get(keys, t, idx);
             }
             map_erase_all_nonmem(t, fst(nth(idx, keys)), idx, vector_get_values_fp(keys, cons(idx, indices)));
-            dchain_erase_idx_same_gen_entrires(map_erase_all_fp(t, vector_get_values_fp(keys, cons(idx, indices))),
+            dchain_erase_idx_same_gen_entries(map_erase_all_fp(t, vector_get_values_fp(keys, cons(idx, indices))),
                                                vals, ch, idx, indices);
             assert gen_dyn_entries(map_erase_all_fp(dyn_map, vector_get_values_fp(keys, cons(idx, indices))), vals,
                                    dchain_erase_indexes_fp(ch, cons(idx, indices))) ==
