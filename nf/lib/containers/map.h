@@ -86,4 +86,13 @@ unsigned map_size/*@ <t> @*/(struct Map* map);
                     mapc(capacity, contents, addrs)) &*&
             result == length(contents); @*/
 
+/*@
+lemma void map_has_two_values_nondistinct<kt,vt>(list<pair<kt,vt> > m, kt k1, kt k2);
+requires true == map_has_fp(m, k1) &*&
+         true == map_has_fp(m, k2) &*&
+         map_get_fp(m, k1) == map_get_fp(m, k2) &*&
+         k1 != k2;
+ensures false == distinct(map(snd, m));
+  @*/
+
 #endif//_MAP_H_INCLUDED_

@@ -1781,32 +1781,6 @@ ensures map_get_fp(m, k) == v;
 @*/
 
 /*@
-lemma void map_has_two_values_nondistinct<kt,vt>(list<pair<kt,vt> > m, kt k1, kt k2)
-requires true == map_has_fp(m, k1) &*&
-         true == map_has_fp(m, k2) &*&
-         map_get_fp(m, k1) == map_get_fp(m, k2) &*&
-         k1 != k2;
-ensures false == distinct(map(snd, m));
-{
-  switch(m) {
-    case nil:
-    case cons(h,t):
-      switch(h) { case pair(key, value):
-        if (key == k1) {
-          map_get_mem(t, k2);
-          mem_map(pair(k2, map_get_fp(m, k1)), t, snd);
-        } else if (key == k2) {
-          map_get_mem(t, k1);
-          mem_map(pair(k1, map_get_fp(m, k2)), t, snd);
-        } else {
-          map_has_two_values_nondistinct(t, k1, k2);
-        }
-      }
-  }
-}
-@*/
-
-/*@
 lemma void consistent_pair_synced_pair<kt>(list<pair<kt, int> > m,
                                            list<pair<kt, bool> > v,
                                            dchain ch,

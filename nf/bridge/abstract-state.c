@@ -455,13 +455,121 @@ ensures map_get_fp(m, fst(nth(v, keys))) == v;
 @*/
 
 /*@
+lemma void map_erase_val_nonmem<kt,vt>(list<pair<kt, vt> > m, kt k, vt v)
+requires true == map_has_fp(m, k) &*&
+         map_get_fp(m, k) == v &*&
+         true == distinct(map(snd, m));
+ensures false == mem(v, map(snd, map_erase_fp(m, k)));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key,value):
+        if (key != k) {
+          map_erase_val_nonmem(t, k, v);
+          if (value == v) {
+            map_has_two_values_nondistinct(m, key, k);
+          }
+        }
+      }
+  }
+}
+
+lemma void map_erase_preserves_distinct_vals<kt,vt>(list<pair<kt,vt> > m, kt k)
+requires true == distinct(map(snd, m));
+ensures true == distinct(map(snd, map_erase_fp(m, k)));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t): switch(h) { case pair(key, value):
+      if (key != k) {
+        map_erase_preserves_distinct_vals(t, k);
+        map_erase_preserves_nonmem_val(t, value, k);
+      }
+    }
+  }
+}
+
+lemma void map_erase_unrelevant_keep_kv<kt,vt>(list<pair<kt,vt> > m, kt k, vt v, kt k_to_erase)
+requires k != k_to_erase &*&
+         true == map_has_fp(m, k) &*&
+         map_get_fp(m, k) == v &*&
+         true == distinct(map(snd, m));
+ensures true == map_has_fp(map_erase_fp(m, k_to_erase), k) &*&
+        map_get_fp(map_erase_fp(m, k_to_erase), k) == v &*&
+        true == distinct(map(snd, map_erase_fp(m, k_to_erase)));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t): switch(h) { case pair(key, value):
+      if (key == k) {
+        map_erase_preserves_distinct_vals(t, k_to_erase);
+        map_erase_preserves_nonmem_val(t, value, k_to_erase);
+      } else if (key == k_to_erase) {
+        return;
+      } else {
+        map_erase_unrelevant_keep_kv(t, k, v, k_to_erase);
+        map_erase_preserves_nonmem_val(t, value, k_to_erase);
+      }
+    }
+  }
+}
+
+lemma void map_erase_all_unrelevant_keep_kv<kt,vt>(list<pair<kt,vt> > m, kt k, vt v, list<kt> keys)
+requires false == mem(k, keys) &*&
+         true == map_has_fp(m, k) &*&
+         map_get_fp(m, k) == v &*&
+         true == distinct(map(snd, m));
+ensures true == map_has_fp(map_erase_all_fp(m, keys), k) &*&
+        map_get_fp(map_erase_all_fp(m, keys), k) == v &*&
+        true == distinct(map(snd, map_erase_all_fp(m, keys)));
+{
+  switch(keys) {
+    case nil:
+    case cons(h,t):
+      map_erase_all_unrelevant_keep_kv(m, k, v, t);
+      map_erase_unrelevant_keep_kv(map_erase_all_fp(m, t), k, v, h);
+  }
+}
+
 lemma void map_erase_all_nonmem<kt,vt>(list<pair<kt,vt> > m, kt k, vt v, list<kt> keys)
-requires (false == map_has_fp(m, k) || map_get_fp(m, k) == v) &*&
+requires true == map_has_fp(m, k) &*&
+         map_get_fp(m, k) == v &*&
          true == mem(k, keys) &*&
          true == distinct(map(snd, m));
 ensures false == mem(v, map(snd, map_erase_all_fp(m, keys)));
 {
-  assume(false);//TODO
+  switch(keys) {
+    case nil:
+    case cons(h,t):
+      if (!mem(k, t)) {
+        assert map_get_fp(m, k) == v;
+        map_erase_all_unrelevant_keep_kv(m, k, v, t);
+        map_erase_val_nonmem(map_erase_all_fp(m, t), k, v);
+      } else {
+        map_erase_all_nonmem(m, k, v, t);
+        map_erase_preserves_nonmem_val(map_erase_all_fp(m, t), v, h);
+      }
+  }
+}
+@*/
+
+/*@
+lemma void synced_pairs_map_has_key_for_idx(list<pair<ether_addri, uint32_t> > m,
+                                            list<pair<ether_addri, bool> > v,
+                                            int idx)
+requires true == forall(m, (synced_pair)(v)) &*&
+         true == mem(idx, map(snd, m));
+ensures true == map_has_fp(m, fst(nth(idx, v)));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key, index):
+        if (index != idx)
+          synced_pairs_map_has_key_for_idx(t, v, idx);
+      }
+  }
 }
 @*/
 
@@ -659,7 +767,16 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
             if (map_has_fp(t, fst(nth(idx, keys)))) {
               synced_pairs_map_get(keys, t, idx);
             }
-            map_erase_all_nonmem(t, fst(nth(idx, keys)), idx, vector_get_values_fp(keys, cons(idx, indices)));
+            if (false == map_has_fp(t, fst(nth(idx, keys)))) {
+              if (mem(idx, map(snd, t))) {
+                synced_pairs_map_has_key_for_idx(t, keys, idx);
+                assert false;
+              }
+              assert false == mem(idx, map(snd, t));
+              map_erase_all_preserves_nonmem_val(t, idx, vector_get_values_fp(keys, cons(idx, indices)));
+            } else {
+              map_erase_all_nonmem(t, fst(nth(idx, keys)), idx, vector_get_values_fp(keys, cons(idx, indices)));
+            }
             dchain_erase_idx_same_gen_entries(map_erase_all_fp(t, vector_get_values_fp(keys, cons(idx, indices))),
                                                vals, ch, idx, indices);
             assert gen_dyn_entries(map_erase_all_fp(dyn_map, vector_get_values_fp(keys, cons(idx, indices))), vals,
