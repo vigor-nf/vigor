@@ -356,7 +356,11 @@ requires false == mem(k, keys);
 ensures map_erase_all_fp(cons(pair(k, v), m), keys) ==
         cons(pair(k, v), map_erase_all_fp(m, keys));
 {
-  assume(false);//TODO
+  switch(keys) {
+    case nil:
+    case cons(h,t):
+      map_erase_all_cons(k, v, m, t);
+  }
 }
 @*/
 
