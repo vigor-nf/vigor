@@ -215,15 +215,6 @@ ensures erase_addresses(cons(e, entries), addrs) == cons(e, erase_addresses(entr
 @*/
 
 /*@
-lemma void multiset_eq_cons_both<t>(list<t> l1, list<t> l2, t x)
-requires true == multiset_eq(l1, l2);
-ensures true == multiset_eq(cons(x, l1), cons(x, l2));
-{
-  assume(false);//TODO
-}
-@*/
-
-/*@
 
 lemma void bridge_expire_erase_abstract(list<pair<ether_addri, uint32_t> > dyn_map,
                                         list<pair<uint16_t, bool> > vals,
