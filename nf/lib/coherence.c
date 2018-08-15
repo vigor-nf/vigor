@@ -733,6 +733,18 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     switch(v) {
       case nil:
       case cons(h, t):
+        if (fst(h) == key) {
+          assert true == consistent_pair(m, ch, start_idx, h);
+          // Yes, VeriFast actually requires inlining the very thing we just asserted :(
+          switch(h) { case pair(car, cdr):
+            assert cdr == 1.0 ? (false == dchain_allocated_fp(ch, start_idx))
+                              : (cdr == 0.75 && map_has_fp(m, car) &&
+                                 map_get_fp(m, car) == start_idx && dchain_allocated_fp(ch, start_idx));
+          }
+          assert false == map_has_fp(m, fst(h));
+          assert snd(h) == 1.0;
+          assert true == is_one_if_equals(key, h);
+        }
         consistent_pairs_no_key(m, t, ch, key, start_idx + 1);
     }
   }
