@@ -40,6 +40,7 @@ flow_consistency(void* key_a, void* key_b,
 	struct Flow* flow = value;
 	struct FlowManager* manager = state;
 	return ( 0 <= flow->internal_device ) & ( flow->internal_device < RTE_MAX_ETHPORTS ) &
+		( flow->internal_device != manager->nat_device ) &
 		( flow->external_id.src_port == flow->internal_id.dst_port ) &
 		( flow->external_id.src_ip == flow->internal_id.dst_ip ) &
 		( flow->external_id.protocol == flow->internal_id.protocol ) &
@@ -52,7 +53,6 @@ concretize_devices(struct FlowManager* manager, struct Flow* f) {
 
 	klee_assume(f->internal_device >= 0);
 	klee_assume(f->internal_device < count);
-	klee_assume(f->internal_device != manager->nat_device);
 
 	for(unsigned d = 0; d < count; d++) if (f->internal_device == d) { f->internal_device = d; break; }
 }
