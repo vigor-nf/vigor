@@ -190,7 +190,7 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
     map_erase(map, key, &key);
     //@ assert [?fk]kp(key_pointer, k);
     //@ assert fk == 1.0;
-    vector_return_full(vector, index, key);
+    vector_return(vector, index, key);
     //@ dchain_still_more_to_expire(ch, time, count);
     //@ expire_n_plus_one(ch, time, count);
     ++count;

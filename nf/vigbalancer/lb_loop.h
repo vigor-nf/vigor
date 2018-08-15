@@ -21,7 +21,7 @@ predicate lb_loop_invariant(struct Map* indices, struct Vector* heap, struct Vec
           length(heapv) == flow_capacity &*&
           length(backendsv) == flow_capacity &*&
           map_vec_chain_coherent<lb_flowi>(indicesi, heapv, chainv) &*&
-          true == forall(backendsv, snd) &*&
+          true == forall(backendsv, is_one) &*&
           last_time(time) &*&
           dchain_high_fp(chainv) <= time;
 @*/

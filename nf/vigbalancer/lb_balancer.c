@@ -113,12 +113,12 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 			vector_borrow(balancer->flow_heap, index, (void**) &vec_flow);
 			memcpy(vec_flow, flow, sizeof(struct LoadBalancedFlow));
 			map_put(balancer->flow_indices, vec_flow, index);
-			vector_return_half(balancer->flow_heap, index, vec_flow); // other half in map
+			vector_return(balancer->flow_heap, index, vec_flow); // other half in map
 
 			struct LoadBalancedBackend* vec_backend;
 			vector_borrow(balancer->flow_backends, index, (void**) &vec_backend);
 			memcpy(vec_backend, &backend, sizeof(struct LoadBalancedBackend));
-			vector_return_full(balancer->flow_backends, index, vec_backend);
+			vector_return(balancer->flow_backends, index, vec_backend);
 
 		}
 		// Doesn't matter if we can't insert
@@ -128,7 +128,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
 		struct LoadBalancedBackend* vec_backend;
 		vector_borrow(balancer->flow_backends, index, (void**) &vec_backend);
 		memcpy(&backend, vec_backend, sizeof(struct LoadBalancedBackend));
-		vector_return_full(balancer->flow_backends, index, vec_backend);
+		vector_return(balancer->flow_backends, index, vec_backend);
 	}
 
 #ifdef KLEE_VERIFICATION

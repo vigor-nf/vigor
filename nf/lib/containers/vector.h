@@ -120,15 +120,9 @@ void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out);
             vo == nth(index, addrs) &*&
             [frac]entp(vo, val); @*/
 
-void vector_return_full/*@ <t> @*/(struct Vector* vector, int index, void* value);
+void vector_return/*@ <t> @*/(struct Vector* vector, int index, void* value);
 /*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&
              [?frac]entp(value, ?v); @*/
 /*@ ensures vectorp<t>(vector, entp, update(index, pair(v, frac), values), addrs); @*/
-
-void vector_return_half/*@ <t> @*/(struct Vector* vector, int index, void* value);
-/*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&
-             [?frac]entp(value, ?v); @*/
-/*@ ensures vectorp<t>(vector, entp, update(index, pair(v, 0.5*frac), values), addrs) &*&
-            [0.5*frac]entp(value, v); @*/
 
 #endif//_VECTOR_H_INCLUDED_

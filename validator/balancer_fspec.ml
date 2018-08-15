@@ -549,7 +549,7 @@ let fun_types =
                               ", " ^ (tmp_gen "cap") ^ ");\n\
                               } @*/");
                            (fun _ -> "if (!vector_flow_allocated) { vector_flow_allocated = true; }");];};
-     "vector_borrow_full", {ret_type = Static Void;
+     "vector_borrow",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
                                          Dynamic ["LoadBalancedFlow", (Ptr (Ptr lb_flow_struct));
@@ -581,58 +581,7 @@ let fun_types =
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};
-     "vector_borrow_half", {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", (Ptr (Ptr lb_flow_struct));
-                                                  "LoadBalancedBackend", (Ptr (Ptr lb_backend_struct));];];
-                            extra_ptr_types = ["borrowed_cell",
-                                               Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                                        "LoadBalancedBackend", (Ptr lb_backend_struct);];];
-                            lemmas_before = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ if (!vector_backend_borrowed) { close hide_vector<lb_backendi>(_, _, _, _); } @*/\n"
-                                 | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
-                                   "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!")
-                            ];
-                            lemmas_after = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ if (!vector_backend_borrowed) { open hide_vector<lb_backendi>(_, _, _, _); } @*/\n" ^
-                                   "vector_flow_borrowed = true;"
-                                 | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
-                                   "/*@ if (!vector_flow_borrowed) { open hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
-                                   "vector_backend_borrowed = true;"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!")
-                            ];};
-     "vector_return_full", {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                                  "LoadBalancedBackend", (Ptr lb_backend_struct);];];
-                            extra_ptr_types = [];
-                            lemmas_before = [
-                              (fun {args;arg_types;tmp_gen;_} ->
-                                 match List.nth_exn arg_types 2 with
-                                 | Ptr (Str ("LoadBalancedFlow", _)) -> (* VeriFast will syntax-error on update_id if not within a block *)
-                                   "/*@ { assert vector_accp<lb_flowi>(_, _, ?" ^ (tmp_gen "vec") ^ ", _, _, _); \n\
-                                          update_id(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "); } @*/"
-                                 | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?" ^ (tmp_gen "vec") ^ ", _, _, _); \n\
-                                          forall_update<pair<lb_backendi, bool> >(" ^ (tmp_gen "vec") ^ ", snd, " ^ (List.nth_exn args 1) ^
-                                                                                  ", pair(lb_backendc(" ^ (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 2)) ^ "->index), true));\n\
-                                          update_id(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "); } @*/"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!")
-                                 ];
-                            lemmas_after = [];};
-     "vector_return_half", {ret_type = Static Void;
+     "vector_return",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
                                          Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
@@ -646,6 +595,8 @@ let fun_types =
                                           update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
                                    "/*@ { assert vector_accp<lb_backendi>(_, _, ?vectr, _, _, _); \n\
+                                          forall_update<pair<lb_backendi, real> >(" ^ (params.tmp_gen "vec") ^ ", snd, " ^ (List.nth_exn params.args 1) ^
+                                                                                  ", pair(lb_backendc(" ^ (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^ "->index), true));\n\
                                           update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");
@@ -700,12 +651,12 @@ struct
                   bool backend_known = false;\n\
                   int32_t backend_index = -1;\n"
                  ^ "//@ mapi<lb_flowi> initial_indices;\n"
-                 ^ "//@ list<pair<lb_flowi, bool> > initial_heap;\n"
-                 ^ "//@ list<pair<lb_backendi, bool> > initial_backends;\n"
+                 ^ "//@ list<pair<lb_flowi, real> > initial_heap;\n"
+                 ^ "//@ list<pair<lb_backendi, real> > initial_backends;\n"
                  ^ "//@ dchain initial_chain;\n"
                  ^ "//@ mapi<lb_flowi> expired_indices;\n"
-                 ^ "//@ list<pair<lb_flowi, bool> > expired_heap;\n"
-                 ^ "//@ list<pair<lb_backendi, bool> > expired_backends;\n"
+                 ^ "//@ list<pair<lb_flowi, real> > expired_heap;\n"
+                 ^ "//@ list<pair<lb_backendi, real> > expired_backends;\n"
                  ^ "//@ dchain expired_chain;\n"
                  ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
                  "/*@ assume(sizeof(struct LoadBalancedFlow) == 12); @*/\n"

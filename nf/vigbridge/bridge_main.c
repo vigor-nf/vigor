@@ -75,7 +75,7 @@ int bridge_get_device(struct ether_addr* dst,
     struct DynamicValue* value = 0;
     vector_borrow(dynamic_ft.values, index, (void**)&value);
     device = value->device;
-    vector_return_full(dynamic_ft.values, index, value);
+    vector_return(dynamic_ft.values, index, value);
     return device;
   }
   return -1;
@@ -105,8 +105,8 @@ void bridge_put_update_entry(struct ether_addr* src,
     value->device = src_device;
     map_put(dynamic_ft.map, key, index);
     //the other half of the key is in the map
-    vector_return_half(dynamic_ft.keys, index, key);
-    vector_return_full(dynamic_ft.values, index, value);
+    vector_return(dynamic_ft.keys, index, key);
+    vector_return(dynamic_ft.values, index, value);
   }
 }
 
@@ -279,7 +279,7 @@ void read_static_ft_from_file() {
     // Now everything is alright, we can add the entry
     key->device = device_from;
     map_put(static_ft.map, &key->addr, device_to);
-    vector_return_half(static_ft.keys, count, key);
+    vector_return(static_ft.keys, count, key);
     ++count;
     assert(count < capacity);
   }
