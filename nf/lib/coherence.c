@@ -728,7 +728,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                          int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
            false == map_has_fp(m, key);
-  ensures false == mem(pair(key, 0.0), v);
+  ensures true == forall(v, (is_one_if_equals)(key));
   {
     switch(v) {
       case nil:
@@ -746,7 +746,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            false == map_has_fp(m, key);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          false == mem(pair(key, 0.0), v);
+          true == forall(v, (is_one_if_equals)(key));
   {
     mvc_coherent_bounds(m, v, ch);
     open map_vec_chain_coherent(m, v, ch);
@@ -800,7 +800,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires 0 <= index &*& index < length(contents) &*&
            true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
            true == forall(contents, (is_one_if_equals)(v));
-  ensures true == forall2(update(index, pair(v, 0.0), contents),
+  ensures true == forall2(update(index, pair(v, 0.75), contents),
                           addrs,
                           (kkeeper)(map_put_fp(addr_map, v,
                                                nth(index, addrs))));
@@ -907,7 +907,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            false == dchain_allocated_fp(ch, index);
   ensures map_vec_chain_coherent<kt>(map_put_fp(m, key, index),
-                                     update(index, pair(key, 0.0), v),
+                                     update(index, pair(key, 0.75), v),
                                      dchain_allocate_fp(ch, index, time));
   {
     assume(false);//TODO

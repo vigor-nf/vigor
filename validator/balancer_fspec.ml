@@ -5,14 +5,6 @@ open Ir
 
 type map_key = Int | Ext
 
-let last_index_gotten = ref ""
-let last_index_key = ref Int
-let last_indexing_succ_ret_var = ref ""
-let last_device_id = ref ""
-
-let last_time_for_index_alloc = ref ""
-let the_array_lcc_is_local = ref true
-
 let capture_chain ch_name ptr_num {args;tmp_gen;_} =
   "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
   (List.nth_exn args ptr_num) ^ ");\n"
@@ -220,10 +212,6 @@ let fun_types =
                                         ", *" ^ (List.nth_exn params.args 1) ^
                                         ", " ^ (List.nth_exn params.args 2) ^
                                         ");\n");
-                                     (fun params ->
-                                        last_time_for_index_alloc :=
-                                          (List.nth_exn params.args 2);
-                                        "");
                                      (fun params ->
                                         "the_index_allocated = *" ^
                                         (List.nth_exn params.args 1) ^ ";\n");
@@ -565,7 +553,7 @@ let fun_types =
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "/*@ { assert vectorp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
-                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", snd);\n } @*/"
+                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
@@ -594,9 +582,9 @@ let fun_types =
                                    "/*@ { assert vector_accp<lb_flowi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
                                           update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?vectr, _, _, _); \n\
-                                          forall_update<pair<lb_backendi, real> >(" ^ (params.tmp_gen "vec") ^ ", snd, " ^ (List.nth_exn params.args 1) ^
-                                                                                  ", pair(lb_backendc(" ^ (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^ "->index), true));\n\
+                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
+                                          forall_update<pair<lb_backendi, real> >(" ^ (params.tmp_gen "vec") ^ ", is_one, " ^ (List.nth_exn params.args 1) ^
+                                                                                  ", pair(lb_backendc(" ^ (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^ "->index), 1.0));\n\
                                           update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");

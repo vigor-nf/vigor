@@ -19,7 +19,8 @@
   fixpoint bool kkeeper<t>(list<pair<t, void*> > addr_map,
                            pair<t, real> entry, void* ptr) {
     return snd(entry) == 1.0 ? true :
-             (map_has_fp(addr_map, fst(entry)) &&
+             (snd(entry) == 0.75 &&
+              map_has_fp(addr_map, fst(entry)) &&
                ptr == map_get_fp(addr_map, fst(entry)));
   }
   @*/
@@ -101,7 +102,7 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            false == map_has_fp(m, key);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          false == mem(pair(key, 0.0), v);
+          true == forall(v, (is_one_if_equals)(key));
   @*/
 
 /*@
@@ -136,7 +137,7 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            false == dchain_allocated_fp(ch, index);
   ensures map_vec_chain_coherent<kt>(map_put_fp(m, key, index),
-                                     update(index, pair(key, 0.0), v),
+                                     update(index, pair(key, 0.75), v),
                                      dchain_allocate_fp(ch, index, time));
   @*/
 
@@ -189,7 +190,7 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
   requires 0 <= index &*& index < length(contents) &*&
            true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
            true == forall(contents, (is_one_if_equals)(v));
-  ensures true == forall2(update(index, pair(v, 0.0), contents),
+  ensures true == forall2(update(index, pair(v, 0.75), contents),
                           addrs,
                           (kkeeper)(map_put_fp(addr_map, v,
                                                nth(index, addrs))));

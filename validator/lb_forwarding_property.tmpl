@@ -100,7 +100,7 @@ if (10 < now) {
                          packet_flow, the_index_allocated, the_backend, time_for_allocated_index);
 
             assert true == set_eq(gen_lb_entries(map_put_fp(lb_map, packet_flow, the_index_allocated),
-                                                 update(the_index_allocated, pair(the_backend, true), expired_backends),
+                                                 update(the_index_allocated, pair(the_backend, 1.0), expired_backends),
                                                  dchain_allocate_fp(expired_chain,
                                                                     the_index_allocated,
                                                                     time_for_allocated_index)),
