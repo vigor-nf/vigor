@@ -744,7 +744,7 @@
       (ReadLSB w32 (w32 0) new_index_2))
 (Slt (ReadLSB w32 (w32 0) new_index_2)
       (w32 100)))))
-((fun_name "vector_borrow_full")
+((fun_name "vector_borrow")
  (args (
 ((aname "vector")
 (value (w64 1073962440))
@@ -800,7 +800,7 @@
 (Slt (ReadLSB w32 (w32 0) new_index_2)
       (w32 100))))
 (ret_context ()))
-((fun_name "vector_borrow_full")
+((fun_name "vector_borrow")
  (args (
 ((aname "vector")
 (value (w64 1073973256))
