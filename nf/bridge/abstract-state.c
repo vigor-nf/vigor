@@ -880,21 +880,30 @@ ensures mem(x, erase_address(l, addr)) == mem(x, l);
 @*/
 
 /*@
-lemma void erase_address_distinct(list<dyn_entry> l, ether_addri addr)
-requires true == distinct(map(get_dyn_addr, l));
-ensures true == distinct(map(get_dyn_addr, erase_address(l, addr)));
-{
-  assume(false);//TODO
-}
-@*/
-
-/*@
 lemma void erase_address_preserves_mem(list<dyn_entry> l, ether_addri addr, ether_addri del_addr)
 requires addr != del_addr;
 ensures mem(addr, map(get_dyn_addr, erase_address(l, del_addr))) ==
         mem(addr, map(get_dyn_addr, l));
 {
   assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void erase_address_distinct(list<dyn_entry> l, ether_addri addr)
+requires true == distinct(map(get_dyn_addr, l));
+ensures true == distinct(map(get_dyn_addr, erase_address(l, addr)));
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(cur_addr,b,c):
+        erase_address_distinct(t, addr);
+        if (cur_addr != addr) {
+          erase_address_preserves_mem(t, cur_addr, addr);
+        }
+      }
+  }
 }
 @*/
 
