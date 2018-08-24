@@ -868,7 +868,14 @@ lemma void erase_address_same_mem(list<dyn_entry> l, dyn_entry x, ether_addri ad
 requires get_dyn_addr(x) != addr;
 ensures mem(x, erase_address(l, addr)) == mem(x, l);
 {
-  assume(false);//TODO
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(cur_addr,b,c):
+        if (x != h)
+          erase_address_same_mem(t, x, addr);
+      }
+  }
 }
 @*/
 
