@@ -846,13 +846,74 @@ ensures multiset_eq(gen_dyn_entries(map_erase_all_fp
 @*/
 
 /*@
+lemma void erase_address_remove_swap(list<dyn_entry> l, dyn_entry x, ether_addri addr)
+requires get_dyn_addr(x) != addr;
+ensures erase_address(remove(x, l), addr) ==
+        remove(x, erase_address(l, addr));
+{
+  assume(false);//TODO
+}
+
+lemma void erase_address_same_mem(list<dyn_entry> l, dyn_entry x, ether_addri addr)
+requires get_dyn_addr(x) != addr;
+ensures mem(x, erase_address(l, addr)) == mem(x, l);
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void erase_address_distinct(list<dyn_entry> l, ether_addri addr)
+requires true == distinct(map(get_dyn_addr, l));
+ensures true == distinct(map(get_dyn_addr, erase_address(l, addr)));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
+lemma void erase_address_preserves_mem(list<dyn_entry> l, ether_addri addr, ether_addri del_addr)
+requires addr != del_addr;
+ensures mem(addr, map(get_dyn_addr, erase_address(l, del_addr))) ==
+        mem(addr, map(get_dyn_addr, l));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
 lemma void erase_address_still_mset_eq(list<dyn_entry> table1, list<dyn_entry> table2, ether_addri addr)
 requires true == multiset_eq(table1, table2) &*&
          true == distinct(map(get_dyn_addr, table2));
 ensures true == multiset_eq(erase_address(table1, addr), erase_address(table2, addr)) &*&
+        true == distinct(map(get_dyn_addr, erase_address(table1, addr))) &*&
         true == distinct(map(get_dyn_addr, erase_address(table2, addr)));
 {
-  assume(false);//TODO
+  switch(table1) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(cur_addr, index, time):
+        if (addr == cur_addr) {
+          assume(false);//TODO
+        } else {
+          multiset_eq_map(get_dyn_addr, table1, table2);
+          multiset_eq_distinct(map(get_dyn_addr, table1), map(get_dyn_addr, table2));
+          map_remove(get_dyn_addr, h, table2);
+          remove_still_distinct(map(get_dyn_addr, table2), cur_addr);
+          erase_address_still_mset_eq(t, remove(h, table2), addr);
+          erase_address_remove_swap(table2, h, addr);
+          assert erase_address(remove(h, table2), addr) ==
+                 remove(h, erase_address(table2, addr));
+          erase_address_same_mem(table2, h, addr);
+          multiset_eq_map(get_dyn_addr, erase_address(table1, addr), erase_address(table2, addr));
+          multiset_eq_distinct(erase_address(table1, addr), erase_address(table2, addr));
+
+          erase_address_preserves_mem(t, cur_addr, addr);
+          multiset_eq_distinct(map(get_dyn_addr, erase_address(table1, addr)),
+                               map(get_dyn_addr, erase_address(table2, addr)));
+        }
+      }
+  }
 }
 @*/
 
