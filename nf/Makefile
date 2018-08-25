@@ -43,20 +43,19 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 # we use DPDK stubs in there (e.g. rte_config.h)
 verifast:
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
-                $(SELF_DIR)/bridge/abstract-state.c \
-                $(SELF_DIR)/bridge/bridge_data.c \
-                $(SELF_DIR)/viglb/lb_abstract.c \
-		$(SELF_DIR)/lib/assumptions_stubs.c \
-		$(SELF_DIR)/lib/flow.c \
 		$(SELF_DIR)/lib/containers/double-chain-impl.c \
 		$(SELF_DIR)/lib/containers/double-chain.c \
 		$(SELF_DIR)/lib/containers/map-impl.c \
 		$(SELF_DIR)/lib/containers/double-map.c \
 		$(SELF_DIR)/lib/containers/vector.c \
-		$(SELF_DIR)/lib/coherence.c \
 		$(SELF_DIR)/lib/containers/map.c \
+		$(SELF_DIR)/lib/coherence.c \
 		$(SELF_DIR)/lib/expirator.c \
-		$(SELF_DIR)/lib/abstract-state-verify-lemmas.c
+		$(SELF_DIR)/vignat/nat_flow.c \
+		$(SELF_DIR)/vignat/nat_abstract.c \
+		$(SELF_DIR)/vigbridge/bridge_abstract.c \
+		$(SELF_DIR)/vigbridge/bridge_data.c \
+		$(SELF_DIR)/vigbalancer/lb_abstract.c
 
 
 ### KLEE verification ###

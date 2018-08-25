@@ -1,12 +1,16 @@
-#include <stdlib.h>
-#include <string.h>
-
 #include "double-chain.h"
+
+#include <stdlib.h>
+
 #include "double-chain-impl.h"
 
 //@ #include <nat.gh>
 //@ #include "arith.gh"
 //@ #include "stdex.gh"
+
+#ifndef NULL
+#define NULL 0
+#endif//NULL
 
 struct DoubleChain {
   struct dchain_cell* cells;

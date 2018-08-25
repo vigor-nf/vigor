@@ -1,7 +1,5 @@
-#include <stdint.h>
-#include <string.h>
-
 #include "map-impl.h"
+
 #include "lib/ignore.h"
 
 //@ #include <list.gh>

@@ -20,13 +20,16 @@ struct stub_mbuf_content {
 ;
 
 // VeriFast definitions used in the tracing contracts
+// The switch statement for ether_addrp is there to make VeriFast understand that the list has *exactly* 6 elements
 /*@
-    inductive ether_addri = eaddrc(list<uint8_t>);
+    inductive ether_addri = eaddrc(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t, uint8_t);
     predicate ether_addrp(struct ether_addr* ptr; ether_addri addr) =
       struct_ether_addr_padding(ptr) &*&
-      chars(ptr->addr_bytes, 6, ?bytes) &*&
-      bytes == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, ?_nil)))))) &*& _nil == nil &*&
-      addr == eaddrc(bytes);
+      uchars(ptr->addr_bytes, 6, ?bytes) &*&
+      bytes == cons(?a, cons(?b, cons(?c, cons(?d, cons(?e, cons(?f, ?_nil)))))) &*&
+      switch(_nil) { case nil: return true; case cons(nh, nt): return false; } &*&
+      _nil == nil &*&
+      addr == eaddrc(a, b, c, d, e, f);
 
     inductive ether_hdri = ether_hdrc(ether_addri, ether_addri, int);
     predicate ether_hdrp(struct ether_hdr *ether; ether_hdri hdr) =

@@ -1,10 +1,27 @@
 open Core
 open Ir
 
+let tmp_counter = ref 0
+let gen_tmp_name () =
+  let counter_value = !tmp_counter in
+  tmp_counter := counter_value + 1;
+  let func prefix = "tmp" ^ prefix ^ (Int.to_string counter_value) in
+  func
+
 let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   let head = (if is_assert then "assert" else "assume") in
   (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
   match out_val.v, out_val.t with
+  (* HACKY HACK - can't do an assume over the arrays themselves because they're pointers and VeriFast will assume that the pointers, not the contents, are equal *)
+  | _, Array (Uint8, size) when head = "assume" -> begin match out_arg.t with
+                          | Array (Uint8, size2) when size2 = size ->
+                            let tmp_gen = gen_tmp_name() in
+                            let (bindings, expr) = Fspec_api.generate_2step_dereference out_arg tmp_gen in
+                            (String.concat ~sep:"\n" bindings) ^ "\n" ^
+                            "//@ assert [_]uchars(" ^ (render_tterm expr) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "oa") ^ ");\n" ^
+                            "//@ assert [_]uchars(" ^ (render_tterm out_val) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "ov") ^ ");\n" ^
+                            "//@ assume(" ^ (tmp_gen "oa") ^ " == " ^ (tmp_gen "ov") ^ ");\n"
+                          | _ -> failwith "Arrays must be of type Uint8 (sorry!) and same size (not sorry!)" end
   (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->
     begin match out_arg.v, out_arg.t with
@@ -70,14 +87,14 @@ let render_args_post_conditions ~is_assert apk =
   (String.concat ~sep:"\n" (List.map apk
                               ~f:(fun {lhs;rhs;} ->
                                   render_eq_sttmt ~is_assert
-                                    lhs rhs)))
+                                    lhs rhs))) ^ "\n"
 
 let render_post_assumptions post_statements =
   (String.concat ~sep:"\n" (List.map post_statements
                               ~f:(fun t ->
                                   "/*@ assume(" ^
                                   (render_tterm t) ^
-                                  ");@*/")))
+                                  ");@*/"))) ^ "\n"
 
 let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
   match ret_name with
@@ -88,7 +105,7 @@ let render_assignment {lhs;rhs;} =
   match rhs.v with
   | Undef -> "";
   | _ -> begin match rhs.t with
-         | Array (_, size) -> "memcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");"
+         | Array (_, size) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");"
          | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
 
 let rec gen_plain_equalities {lhs;rhs} =
@@ -179,11 +196,11 @@ let render_hist_fun_call {context;result} =
                  " != " ^ "0);\n") ^
               "/* Do not render the return ptee assumption for hist calls */\n"
    | _ -> render_ret_equ_sttmt ~is_assert:false context.ret_name context.ret_type result.ret_val) ^
-  "// POSTLEMMAS\n" ^
-  (render_postlemmas context) (* postlemmas can depend on the return value *) ^
   "// POSTCONDITIONS\n" ^
   (render_args_post_conditions ~is_assert:false result.args_post_conditions) ^ (* ret can influence whether args are accessible *)
-  (render_post_assumptions result.post_statements)
+  (render_post_assumptions result.post_statements) ^
+  "// POSTLEMMAS\n" ^
+  (render_postlemmas context) (* postlemmas can depend on the return value *)
 
 let gen_ret_equalities ret_val ret_name ret_type =
   match ret_name with

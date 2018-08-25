@@ -234,11 +234,6 @@ let fun_types =
                        lemmas_after = [
                          tx_l "empty_dmap_cap\
                                <int_k,ext_k,flw>(65536);";];};
-     "dmap_set_entry_condition", {ret_type = Static Void;
-                                  arg_types = stt [Ptr dmap_struct; Ptr (Ctm "entry_condition")];
-                                  extra_ptr_types = [];
-                                  lemmas_before = [];
-                                  lemmas_after = [];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];
@@ -308,7 +303,6 @@ let fun_types =
                          "/*@ close ext_k_p(" ^ List.nth_exn args 1 ^
                          ", ?ext_key_dgb); @*/"); ];
                     lemmas_after = [
-                      tx_l "open (ext_k_p(_,_));";
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
@@ -356,7 +350,6 @@ let fun_types =
                          ", ?int_key_dga); @*/"
                       );];
                     lemmas_after = [
-                      tx_l "open (int_k_p(_,_));";
                       (fun params ->
                          "/*@ {\n assert dmap_dchain_coherent(" ^
                          (params.tmp_gen "cur_map") ^
@@ -501,7 +494,9 @@ let fun_types =
                   lemmas_after = [
                     (fun params ->
                        "/*@ {\n\
-                         open flw_p(_, ?flw);\n\
+                        close flw_p(" ^ (List.nth_exn params.args 1) ^
+                       ", ?flw);\n\
+                         open flw_p(_, flw);\n\
                          open int_k_p(_,?ik);\n\
                          open ext_k_p(_,?ek);\n\
                         if (" ^ params.ret_name ^
@@ -813,8 +808,8 @@ struct
 #include \"lib/containers/double-map.h\"\n\
 #include \"lib/containers/double-chain.h\"\n\
 #include \"lib/stubs/containers/double-map-stub-control.h\"\n\
-#include \"vignat/loop.h\"\n\
-//@ #include \"lib/abstract-state.h\"\n" ^
+#include \"vignat/nat_loop.h\"\n\
+//@ #include \"vignat/nat_abstract.h\"\n" ^
                   (In_channel.read_all "preamble.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\

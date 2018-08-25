@@ -9,7 +9,10 @@ set -euxo pipefail
 pushd nf/vignat
   make verify-dpdk
 popd
-pushd nf/bridge
+pushd nf/vigbridge
+  make verify-dpdk
+popd
+pushd nf/vigbridge
   make verify-dpdk
 popd
 

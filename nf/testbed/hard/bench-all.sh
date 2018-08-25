@@ -9,7 +9,7 @@ VNDS_PREFIX="$HOME/vnds/nf"
 
 NOW=$(date +"%d.%m.%Y_%H_%M")
 
-MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/unverified-nat" "$VNDS_PREFIX/nop")
+MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/unverified-nat" "$VNDS_PREFIX/unverified-nop")
 SCENARIOS=("mg-new-flows-latency" "mg-existing-flows-latency" "mg-1p")
 
 mkdir -p $NOW
