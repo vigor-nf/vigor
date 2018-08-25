@@ -989,7 +989,7 @@ lemma void dchain_erase_indexes_nil(dchain ch)
 requires true;
 ensures dchain_erase_indexes_fp(ch, nil) == ch;
 {
-  assume(false);//TODO
+  switch(ch) { case dchain(alist,x1,x2,x3):}
 }
 @*/
 
