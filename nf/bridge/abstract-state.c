@@ -357,7 +357,14 @@ requires e_ind != index;
 ensures alist_get_fp(remove_by_index_fp(alist, e_ind), index) ==
         alist_get_fp(alist, index);
 {
-  assume(false);//TODO
+  switch(alist) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(cur_ind, time):
+        if (cur_ind != index && cur_ind != e_ind)
+          dchaini_remove_by_index_get_unrelevant(t, e_ind, index);
+      }
+  }
 }
 
 lemma void dchaini_erase_another_one_keeps_time(list<pair<int, time_t> > alist,
