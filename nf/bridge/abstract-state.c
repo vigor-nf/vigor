@@ -320,12 +320,54 @@ ensures map_erase_all_fp(nil, keys) == nil;
 @*/
 
 /*@
+lemma void dchaini_erase_indexes_append_cons(list<pair<int, time_t> > alist,
+                                              list<int> e_indices,
+                                              int e_ind)
+requires true;
+ensures fold_left(alist, remove_by_index_fp, cons(e_ind, e_indices)) ==
+        fold_left(alist, remove_by_index_fp, append(e_indices, cons(e_ind, nil)));
+{
+  assume(false);//TODO
+}
+
+lemma void dchaini_remove_by_index_get_unrelevant(list<pair<int, time_t> > alist,
+                                                  int e_ind,
+                                                  int index)
+requires e_ind != index;
+ensures alist_get_fp(remove_by_index_fp(alist, e_ind), index) ==
+        alist_get_fp(alist, index);
+{
+  assume(false);//TODO
+}
+
+lemma void dchaini_erase_another_one_keeps_time(list<pair<int, time_t> > alist,
+                                                list<int> e_indices,
+                                                int e_ind,
+                                                int index)
+requires e_ind != index;
+ensures alist_get_fp(fold_left(alist, remove_by_index_fp, append(e_indices, cons(e_ind, nil))), index) ==
+        alist_get_fp(fold_left(alist, remove_by_index_fp, e_indices), index);
+{
+  switch(e_indices) {
+    case nil:
+      dchaini_remove_by_index_get_unrelevant(alist, e_ind, index);
+    case cons(h,t):
+      dchaini_erase_another_one_keeps_time(remove_by_index_fp(alist, h), t, e_ind, index);
+
+  }
+}
+@*/
+
+/*@
 lemma void dchain_erase_another_one_keeps_time(dchain ch, list<int> e_indices, int e_ind, int index)
 requires e_ind != index;
 ensures dchain_get_time_fp(dchain_erase_indexes_fp(ch, cons(e_ind, e_indices)), index) ==
         dchain_get_time_fp(dchain_erase_indexes_fp(ch, e_indices), index);
 {
-  assume(false);//TODO
+  switch(ch) { case dchain(alist, x1, x2, x3):
+    dchaini_erase_indexes_append_cons(alist, e_indices, e_ind);
+    dchaini_erase_another_one_keeps_time(alist, e_indices, e_ind, index);
+  }
 }
 @*/
 
