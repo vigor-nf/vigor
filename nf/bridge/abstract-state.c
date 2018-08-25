@@ -1111,7 +1111,10 @@ requires true;
 ensures true == msubset(dchain_get_expired_indexes_fp(ch, time),
                         dchain_indexes_fp(ch));
 {
-  assume(false);//TODO
+  switch(ch) { case dchain(alist,x1,x2,x3):
+    filter_msubset((is_cell_expired)(time), alist);
+    msubset_map(fst, filter((is_cell_expired)(time), alist), alist);
+  }
 }
 @*/
 
