@@ -1928,6 +1928,22 @@ ensures map_vec_chain_coherent(m, v, ch) &*&
 @*/
 
 /*@
+lemma void synced_pairs_bounded_engaged<kt>(list<pair<kt, int> > m, list<pair<kt, bool> > v)
+requires true == forall(m, (synced_pair)(v));
+ensures true == forall(map(snd, m), (bounded)(length(v))) &*&
+        true == forall(map(snd, m), (sup)(engaged_cell, (nth2)(v)));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key,idx):
+        synced_pairs_bounded_engaged(t, v);
+      }
+  }
+}
+@*/
+
+/*@
 lemma void mvc_coherent_dchain_indexes<kt>(list<pair<kt, int> > m,
                                             list<pair<kt, bool> > v,
                                             dchain ch)
@@ -1939,6 +1955,19 @@ ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
         true == forall(dchain_indexes_fp(ch),
                       (sup)(engaged_cell, (nth2)(v)));
 {
-  assume(false);//TODO
+  mvc_coherent_distinct(m, v, ch);
+  mvc_coherent_keys_synced(m, v, ch);
+  open map_vec_chain_coherent(m, v, ch);
+  close map_vec_chain_coherent(m, v, ch);
+  map_preserves_length(snd, m);
+  msubset_same_len_eq(map(snd, m), dchain_indexes_fp(ch));
+  synced_pairs_bounded_engaged(m, v);
+  msubset_forall(dchain_indexes_fp(ch),
+                 map(snd, m),
+                 (bounded)(length(v)));
+  msubset_forall(dchain_indexes_fp(ch),
+                 map(snd, m),
+                 (sup)(engaged_cell, (nth2)(v)));
+
 }
 @*/
