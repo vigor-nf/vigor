@@ -320,14 +320,34 @@ ensures map_erase_all_fp(nil, keys) == nil;
 @*/
 
 /*@
+lemma void remove_by_index_swap(list<pair<int, time_t> > alist, int i1, int i2)
+requires true;
+ensures remove_by_index_fp(remove_by_index_fp(alist, i1), i2) ==
+        remove_by_index_fp(remove_by_index_fp(alist, i2), i1);
+{
+  switch(alist) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(ind, time):
+        if (ind != i1 && ind != i2)
+          remove_by_index_swap(t, i1, i2);
+      }
+  }
+}
+
 lemma void dchaini_erase_indexes_append_cons(list<pair<int, time_t> > alist,
-                                              list<int> e_indices,
-                                              int e_ind)
+                                             list<int> e_indices,
+                                             int e_ind)
 requires true;
 ensures fold_left(alist, remove_by_index_fp, cons(e_ind, e_indices)) ==
         fold_left(alist, remove_by_index_fp, append(e_indices, cons(e_ind, nil)));
 {
-  assume(false);//TODO
+  switch(e_indices) {
+    case nil:
+    case cons(h,t):
+      dchaini_erase_indexes_append_cons(remove_by_index_fp(alist, h), t, e_ind);
+      remove_by_index_swap(alist, e_ind, h);
+  }
 }
 
 lemma void dchaini_remove_by_index_get_unrelevant(list<pair<int, time_t> > alist,
