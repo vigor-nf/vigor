@@ -972,15 +972,35 @@ ensures true == multiset_eq(erase_address(table1, addr), erase_address(table2, a
 @*/
 
 /*@
+lemma void gen_dyn_entries_dyn_addresses_map_keys
+            (list<pair<ether_addri, uint32_t> > dyn_map,
+             list<pair<uint16_t, bool> > vals,
+             dchain ch)
+requires true;
+ensures map(get_dyn_addr, gen_dyn_entries(dyn_map, vals, ch)) ==
+        map(fst, dyn_map);
+{
+  switch(dyn_map) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(addr, idx):
+        gen_dyn_entries_dyn_addresses_map_keys(t, vals, ch);
+      }
+  }
+}
+@*/
+
+/*@
 lemma void dyn_addresses_distinct(list<pair<ether_addri, uint32_t> > dyn_map,
-                                      list<pair<uint16_t, bool> > vals,
-                                      list<pair<ether_addri, bool> > keys,
-                                      dchain ch)
+                                  list<pair<uint16_t, bool> > vals,
+                                  list<pair<ether_addri, bool> > keys,
+                                  dchain ch)
 requires map_vec_chain_coherent(dyn_map, keys, ch);
 ensures map_vec_chain_coherent(dyn_map, keys, ch) &*&
         true == distinct(map(get_dyn_addr, gen_dyn_entries(dyn_map, vals, ch)));
 {
-  assume(false);//TODO
+  mvc_coherent_distinct(dyn_map, keys, ch);
+  gen_dyn_entries_dyn_addresses_map_keys(dyn_map, vals, ch);
 }
 @*/
 
