@@ -574,12 +574,6 @@ ensures true == map_has_fp(m, fst(nth(idx, v)));
 @*/
 
 /*@
-fixpoint bool bounded(int bound, int x) {
-  return 0 <= x && x < bound;
-}
-@*/
-
-/*@
 lemma void map_erase_unrelevant<kt,vt>(list<pair<kt,vt> > m, kt k)
 requires false == mem(k, map(fst, m));
 ensures map_erase_fp(m, k) == m;
@@ -1112,6 +1106,16 @@ ensures map_vec_chain_coherent(dyn_map, keys, ch) &*&
 @*/
 
 /*@
+lemma void dchain_expired_indexes_msubset(dchain ch, time_t time)
+requires true;
+ensures true == msubset(dchain_get_expired_indexes_fp(ch, time),
+                        dchain_indexes_fp(ch));
+{
+  assume(false);//TODO
+}
+@*/
+
+/*@
 lemma void mvc_coherent_expired_indexes<kt>(list<pair<kt, int> > m,
                                             list<pair<kt, bool> > v,
                                             dchain ch,
@@ -1124,7 +1128,16 @@ ensures map_vec_chain_coherent(m, v, ch) &*&
         true == forall(dchain_get_expired_indexes_fp(ch, time),
                        (sup)(engaged_cell, (nth2)(v)));
 {
-  assume(false);//TODO
+  mvc_coherent_dchain_indexes(m, v, ch);
+  dchain_expired_indexes_msubset(ch, time);
+  msubset_distinct(dchain_get_expired_indexes_fp(ch, time),
+                   dchain_indexes_fp(ch));
+  msubset_forall(dchain_get_expired_indexes_fp(ch, time),
+                 dchain_indexes_fp(ch),
+                 (bounded)(length(v)));
+  msubset_forall(dchain_get_expired_indexes_fp(ch, time),
+                 dchain_indexes_fp(ch),
+                 (sup)(engaged_cell, (nth2)(v)));
 }
 @*/
 

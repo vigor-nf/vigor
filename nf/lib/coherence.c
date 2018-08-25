@@ -1926,3 +1926,19 @@ ensures map_vec_chain_coherent(m, v, ch) &*&
   close map_vec_chain_coherent(m, v, ch);
 }
 @*/
+
+/*@
+lemma void mvc_coherent_dchain_indexes<kt>(list<pair<kt, int> > m,
+                                            list<pair<kt, bool> > v,
+                                            dchain ch)
+requires map_vec_chain_coherent<kt>(m, v, ch);
+ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+        true == distinct(dchain_indexes_fp(ch)) &*&
+        true == forall(dchain_indexes_fp(ch),
+                      (bounded)(length(v))) &*&
+        true == forall(dchain_indexes_fp(ch),
+                      (sup)(engaged_cell, (nth2)(v)));
+{
+  assume(false);//TODO
+}
+@*/

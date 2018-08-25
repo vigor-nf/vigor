@@ -309,4 +309,23 @@ fixpoint bool synced_pair<kt>(list<pair<kt, bool> > keys, pair<kt, uint32_t> p) 
           true == msubset(map(snd, m), dchain_indexes_fp(ch));
 @*/
 
+/*@
+fixpoint bool bounded(int bound, int x) {
+  return 0 <= x && x < bound;
+}
+@*/
+
+/*@
+  lemma void mvc_coherent_dchain_indexes<kt>(list<pair<kt, int> > m,
+                                             list<pair<kt, bool> > v,
+                                             dchain ch);
+  requires map_vec_chain_coherent<kt>(m, v, ch);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          true == distinct(dchain_indexes_fp(ch)) &*&
+          true == forall(dchain_indexes_fp(ch),
+                        (bounded)(length(v))) &*&
+          true == forall(dchain_indexes_fp(ch),
+                        (sup)(engaged_cell, (nth2)(v)));
+@*/
+
 #endif// _COHERENCE_H_INCLUDED_
