@@ -1,11 +1,5 @@
 This repository contains the Vigor verification toolchain, along with the verified NAT ("VigNAT") and some experiments.
 
-**For the version of the code presented at SIGCOMM 2017, use the `master` branch.**
-
-**For the version of the code presented at SIGCOMM 2018 KBNets, use the `kbnets18` branch.**
-The main files of interest for this version are the patches in `install/`, and the stubs in `nf/lib/stubs/`.
-
-
 # Dependencies
 
 Our dependencies, in the same GitHub organization, are modified versions of [KLEE](https://github.com/vignat/klee),
