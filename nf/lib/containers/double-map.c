@@ -5,6 +5,10 @@
 
 //@ #include "arith.gh"
 
+#ifndef NULL
+#define NULL 0
+#endif//NULL
+
 /*@
   predicate valsp<t1,t2,vt>(void* values, int val_size,
                             predicate (void*,vt) fvp,

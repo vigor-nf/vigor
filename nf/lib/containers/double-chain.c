@@ -8,6 +8,10 @@
 //@ #include "arith.gh"
 //@ #include "stdex.gh"
 
+#ifndef NULL
+#define NULL 0
+#endif//NULL
+
 struct DoubleChain {
   struct dchain_cell* cells;
   time_t *timestamps;
