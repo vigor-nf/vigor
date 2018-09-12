@@ -12,6 +12,10 @@
 # see https://stackoverflow.com/a/8080530
 SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
+# If KLEE_BUILD_PATH is not defined (such as in the paths saved by install.sh),
+# try to compute it based on KLEE_INCLUDE.
+KLEE_BUILD_PATH ?= $(KLEE_INCLUDE)/../build
+
 # DPDK stuff
 include $(RTE_SDK)/mk/rte.vars.mk
 
@@ -132,7 +136,7 @@ CLEAN_COMMAND := rm -f *.bc *.os
 # Compilation
 COMPILE_COMMAND := clang
 # Linking with klee-uclibc, but without some methods we are stubbing (not sure why they're in klee-uclibc.bca)
-LINK_COMMAND := llvm-ar x $(KLEE_INCLUDE)/../build/Release+Debug+Asserts/lib/klee-uclibc.bca && \
+LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-uclibc.bca && \
                 rm -f sleep.os vfprintf.os && \
                 llvm-link -o nf_raw.bc  *.os *.bc
 # Optimization; analyze and remove as much provably dead code as possible (exceptions are stubs; also, mem* functions, not sure why it DCEs them since they are used...maybe related to LLVM having intrinsics for them?)
