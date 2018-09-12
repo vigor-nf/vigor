@@ -116,7 +116,6 @@ module type Spec =
 sig
   val preamble  : string
   val fun_types : fun_spec Core.String.Map.t
-  val fixpoints : Ir.tterm Core.String.Map.t
   val boundary_fun : string
   val finishing_fun : string
   val eventproc_iteration_begin : string

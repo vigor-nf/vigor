@@ -131,7 +131,7 @@ rte_eth_macaddr_get(uint16_t port_id, struct ether_addr *mac_addr)
 
 static inline uint16_t
 rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
-		 struct rte_mbuf **rx_pkts, const uint16_t nb_pkts)
+		 struct rte_mbuf **rx_pkts, uint16_t nb_pkts)
 {
 	klee_assert(devices_started[port_id]);
 	klee_assert(queue_id == 0); // we only support that

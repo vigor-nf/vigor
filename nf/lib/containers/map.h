@@ -57,7 +57,7 @@ int map_get/*@ <t> @*/(struct Map* map, void* key, int* value_out);
 void map_put/*@ <t> @*/(struct Map* map, void* key, int value);
 /*@ requires mapp<t>(map, ?kp, ?hsh, ?recp,
                      mapc(?capacity, ?contents, ?addrs)) &*&
-             [0.5]kp(key, ?k) &*&
+             [0.25]kp(key, ?k) &*&
              true == recp(k, value) &*&
              length(contents) < capacity &*&
              false == map_has_fp(contents, k); @*/
@@ -68,16 +68,16 @@ void map_put/*@ <t> @*/(struct Map* map, void* key, int value);
 void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash);
 /*@ requires mapp<t>(map, ?kp, ?hsh, ?recp,
                      mapc(?capacity, ?contents, ?addrs)) &*&
-             [0.5]kp(key, ?k) &*&
+             [?fk]kp(key, ?k) &*&
              *trash |-> _ &*&
              true == map_has_fp(contents, k); @*/
 /*@ ensures mapp<t>(map, kp, hsh, recp,
                     mapc(capacity, map_erase_fp(contents, k),
                          map_erase_fp(addrs, k))) &*&
-            [0.5]kp(key, k) &*&
+            [fk]kp(key, k) &*&
             *trash |-> ?k_out &*&
             k_out == map_get_fp(addrs, k) &*&
-            [0.5]kp(k_out, k); @*/
+            [0.25]kp(k_out, k); @*/
 
 unsigned map_size/*@ <t> @*/(struct Map* map);
 /*@ requires mapp<t>(map, ?kp, ?hsh, ?recp,

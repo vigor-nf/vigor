@@ -85,7 +85,7 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
           bridge_add_entry(dyn_map, exprnd_dyn_val_vec, exprnd_chain,
                           src_addr, the_index_allocated, received_on_port, time_for_allocated_index);
           assert true == set_eq(gen_dyn_entries(map_put_fp(dyn_map, src_addr, the_index_allocated),
-                                                update(the_index_allocated, pair(received_on_port, true), exprnd_dyn_val_vec),
+                                                update(the_index_allocated, pair(received_on_port, 1.0), exprnd_dyn_val_vec),
                                                 dchain_allocate_fp(exprnd_chain,
                                                                   the_index_allocated,
                                                                   time_for_allocated_index)),

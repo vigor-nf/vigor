@@ -1,4 +1,4 @@
-assert dmappingp<int_k,ext_k,flw>(?final_map,_,_,_,_,_,_,_,_,_,_,_,_,_);
+assert dmappingp<flow_id,flow_id,flow>(?final_map,_,_,_,_,_,_,_,_,_,_,_,_,_);
 assert double_chainp(?final_chain,_);
 
 #define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
@@ -39,30 +39,29 @@ if (10 < now) {// consider only normal moments, remote from the start of the epo
         the_received_packet.ipv4.next_proto_id == 17) {
       if (received_on_port == 1) {
         // packet from the external network
-        ext_k external_flow_id = ekc(the_received_packet.tcp.dst_port,
-                                     the_received_packet.tcp.src_port,
-                                     the_received_packet.ipv4.dst_addr,
-                                     the_received_packet.ipv4.src_addr,
-                                     received_on_port,
-                                     the_received_packet.ipv4.next_proto_id);
+        flow_id external_flow_id = flid(the_received_packet.tcp.src_port,
+                                        the_received_packet.tcp.dst_port,
+                                        the_received_packet.ipv4.src_addr,
+                                        the_received_packet.ipv4.dst_addr,
+                                        the_received_packet.ipv4.next_proto_id);
         if (flowtable_contains_ext_flow_id(after_expiration_ft,
                                            external_flow_id)) {
           // flow is present in the table
           assert true == a_packet_sent;
-          flw flow = flowtable_get_by_ext_flow_id(after_expiration_ft,
+          flow flw = flowtable_get_by_ext_flow_id(after_expiration_ft,
                                                   external_flow_id);
           assert final_ft ==
                    flowtable_add_flow(flowtable_remove_flow(after_expiration_ft,
-                                                            flow),
-                                      flow,
+                                                            flw),
+                                      flw,
                                       now);
-          assert ikc(sent_packet.tcp.dst_port,
-                     sent_packet.tcp.src_port,
-                     sent_packet.ipv4.dst_addr,
-                     sent_packet.ipv4.src_addr,
-                     sent_on_port,
-                     sent_packet.ipv4.next_proto_id) ==
-                 flw_get_ik(flow);
+          assert flid(sent_packet.tcp.dst_port,
+                      sent_packet.tcp.src_port,
+                      sent_packet.ipv4.dst_addr,
+                      sent_packet.ipv4.src_addr,
+                      sent_packet.ipv4.next_proto_id) ==
+                 flow_get_internal_id(flw);
+          assert sent_on_port == flow_get_internal_device(flw);
           assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
           if (the_received_packet.ipv4.next_proto_id == 6) {
             assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
@@ -75,30 +74,28 @@ if (10 < now) {// consider only normal moments, remote from the start of the epo
         }
       } else {
         // packet from the internal network
-        int_k internal_flow_id = ikc(the_received_packet.tcp.src_port,
-                                     the_received_packet.tcp.dst_port,
-                                     the_received_packet.ipv4.src_addr,
-                                     the_received_packet.ipv4.dst_addr,
-                                     received_on_port,
-                                     the_received_packet.ipv4.next_proto_id);
+        flow_id internal_flow_id = flid(the_received_packet.tcp.src_port,
+                                        the_received_packet.tcp.dst_port,
+                                        the_received_packet.ipv4.src_addr,
+                                        the_received_packet.ipv4.dst_addr,
+                                        the_received_packet.ipv4.next_proto_id);
         if (flowtable_contains_int_flow_id(after_expiration_ft,
                                            internal_flow_id)) {
           // flow present in the table
           assert true == a_packet_sent;
-          flw flow = flowtable_get_by_int_flow_id(after_expiration_ft,
+          flow flw = flowtable_get_by_int_flow_id(after_expiration_ft,
                                                   internal_flow_id);
           assert final_ft ==
                    flowtable_add_flow(flowtable_remove_flow(after_expiration_ft,
-                                                            flow),
-                                      flow,
+                                                            flw),
+                                      flw,
                                       now);
-          assert ekc(sent_packet.tcp.src_port,
-                     sent_packet.tcp.dst_port,
-                     sent_packet.ipv4.src_addr,
-                     sent_packet.ipv4.dst_addr,
-                     sent_on_port,
-                     sent_packet.ipv4.next_proto_id) ==
-                 flw_get_ek(flow);
+          assert flid(sent_packet.tcp.dst_port,
+                      sent_packet.tcp.src_port,
+                      sent_packet.ipv4.dst_addr,
+                      sent_packet.ipv4.src_addr,
+                      sent_packet.ipv4.next_proto_id) ==
+                 flow_get_external_id(flw);
           assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
           if (the_received_packet.ipv4.next_proto_id == 6) {
             assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
@@ -116,15 +113,15 @@ if (10 < now) {// consider only normal moments, remote from the start of the epo
             assert final_ft == flowtable_add_flow(after_expiration_ft,
                                                   the_inserted_flow,
                                                   now);
-            ext_k external_flow_id = flw_get_ek(the_inserted_flow);
+            flow_id external_flow_id = flow_get_external_id(the_inserted_flow);
             assert false == flowtable_contains_ext_flow_id(after_expiration_ft,
                                                            external_flow_id);
-            assert ekc(sent_packet.tcp.src_port,
-                       sent_packet.tcp.dst_port,
-                       sent_packet.ipv4.src_addr,
-                       sent_packet.ipv4.dst_addr,
-                       sent_on_port,
-                       sent_packet.ipv4.next_proto_id) ==
+            assert flow_get_internal_device(the_inserted_flow) == received_on_port;
+            assert flid(sent_packet.tcp.dst_port,
+                        sent_packet.tcp.src_port,
+                        sent_packet.ipv4.dst_addr,
+                        sent_packet.ipv4.src_addr,
+                        sent_packet.ipv4.next_proto_id) ==
                    external_flow_id;
             assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
             if (the_received_packet.ipv4.next_proto_id == 6) {

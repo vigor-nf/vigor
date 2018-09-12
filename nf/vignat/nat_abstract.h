@@ -5,28 +5,28 @@
 
 /*@
 
-inductive entry = entry(int_k, ext_k, flw, time_t tstmp);
+inductive entry = entry(flow_id, flow_id, flow, time_t tstmp);
 inductive flowtable = flowtable(int, list<entry>);
 
-fixpoint int_k entry_ik(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
-    return ik;
+fixpoint flow_id entry_internal(entry e) {
+  switch(e) { case entry(iid, eid, flw, tstmp):
+    return iid;
   }
 }
 
-fixpoint ext_k entry_ek(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
-    return ek;
+fixpoint flow_id entry_external(entry e) {
+  switch(e) { case entry(iid, eid, flw, tstmp):
+    return eid;
   }
 }
-fixpoint flw entry_flow(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
+fixpoint flow entry_flow(entry e) {
+  switch(e) { case entry(iid, eid, flw, tstmp):
     return flw;
   }
 }
 
 fixpoint time_t entry_tstamp(entry e) {
-  switch(e) { case entry(ik, ek, flw, tstmp):
+  switch(e) { case entry(iid, eid, flw, tstmp):
     return tstmp;
   }
 }
@@ -41,9 +41,9 @@ fixpoint t alist_get_by_right<t>(list<pair<t, int> > alist, int idx) {
 }
 
 fixpoint list<entry> gen_entries(list<pair<int, time_t> > indices,
-                                 list<pair<int_k, int> > ikeys,
-                                 list<pair<ext_k, int> > ekeys,
-                                 list<option<flw> > flows) {
+                                 list<pair<flow_id, int> > ikeys,
+                                 list<pair<flow_id, int> > ekeys,
+                                 list<option<flow> > flows) {
   switch(indices) {
     case nil: return nil;
     case cons(h,t): return switch(h) { case pair(index, tstmp):
@@ -56,7 +56,7 @@ fixpoint list<entry> gen_entries(list<pair<int, time_t> > indices,
   }
 }
 
-fixpoint flowtable abstract_function(dmap<int_k,ext_k,flw> m, dchain ch) {
+fixpoint flowtable abstract_function(dmap<flow_id,flow_id,flow> m, dchain ch) {
   switch(ch) { case dchain(entries, index_range, low, high):
     return switch(m) { case dmap(ikeys, ekeys, vals) :
       return flowtable(index_range, gen_entries(entries, ikeys, ekeys, vals));
@@ -64,27 +64,27 @@ fixpoint flowtable abstract_function(dmap<int_k,ext_k,flw> m, dchain ch) {
   }
 }
 
-fixpoint bool flowtable_contains_int_flow_id(flowtable ft, int_k flow_id) {
+fixpoint bool flowtable_contains_int_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return mem(flow_id, map(entry_ik, entries));
+    return mem(id, map(entry_internal, entries));
   }
 }
 
-fixpoint bool flowtable_contains_ext_flow_id(flowtable ft, ext_k flow_id) {
+fixpoint bool flowtable_contains_ext_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return mem(flow_id, map(entry_ek, entries));
+    return mem(id, map(entry_external, entries));
   }
 }
 
-fixpoint flw flowtable_get_by_int_flow_id(flowtable ft, int_k flow_id) {
+fixpoint flow flowtable_get_by_int_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return entry_flow(nth(index_of(flow_id, map(entry_ik, entries)), entries));
+    return entry_flow(nth(index_of(id, map(entry_internal, entries)), entries));
   }
 }
 
-fixpoint flw flowtable_get_by_ext_flow_id(flowtable ft, ext_k flow_id) {
+fixpoint flow flowtable_get_by_ext_flow_id(flowtable ft, flow_id id) {
   switch(ft) { case flowtable(size, entries):
-    return entry_flow(nth(index_of(flow_id, map(entry_ek, entries)), entries));
+    return entry_flow(nth(index_of(id, map(entry_external, entries)), entries));
   }
 }
 
@@ -102,24 +102,24 @@ fixpoint list<t> remove_if<t>(fixpoint (t,bool) cond, list<t> l) {
   }
 }
 
-fixpoint bool entry_matches_flow(flw f, entry e) {
+fixpoint bool entry_matches_flow(flow f, entry e) {
   return entry_flow(e) == f;
 }
 
-fixpoint flowtable flowtable_add_flow(flowtable table, flw flow, time_t time) {
+fixpoint flowtable flowtable_add_flow(flowtable table, flow flw, time_t time) {
   switch(table) { case flowtable(size, entries):
     return flowtable(size, append(entries,
-                                  cons(entry(flw_get_ik(flow),
-                                             flw_get_ek(flow),
-                                             flow,
+                                  cons(entry(flow_get_internal_id(flw),
+                                             flow_get_external_id(flw),
+                                             flw,
                                              time),
                                        nil)));
   }
 }
 
-fixpoint flowtable flowtable_remove_flow(flowtable table, flw flow) {
+fixpoint flowtable flowtable_remove_flow(flowtable table, flow flw) {
   switch(table) { case flowtable(size, entries):
-    return flowtable(size, remove_if((entry_matches_flow)(flow), entries));
+    return flowtable(size, remove_if((entry_matches_flow)(flw), entries));
   }
 }
 
@@ -182,15 +182,15 @@ fixpoint flowtable flowtable_expire_n_flows(flowtable table, time_t time,
 /*@
   lemma void gen_entries_has_ik_ek_flow_by_index
     (list<pair<int, time_t> > entries,
-     list<pair<int_k, int> > ikeys,
-     list<pair<ext_k, int> > ekeys,
-     list<option<flw> > vals,
+     list<pair<flow_id, int> > ikeys,
+     list<pair<flow_id, int> > ekeys,
+     list<option<flow> > vals,
      int index)
   requires true == mem(index, map(fst, entries));
   ensures true == mem(alist_get_by_right(ekeys, index),
-                      map(entry_ek, gen_entries(entries, ikeys, ekeys, vals))) &*&
+                      map(entry_external, gen_entries(entries, ikeys, ekeys, vals))) &*&
           true == mem(alist_get_by_right(ikeys, index),
-                      map(entry_ik, gen_entries(entries, ikeys, ekeys, vals))) &*&
+                      map(entry_internal, gen_entries(entries, ikeys, ekeys, vals))) &*&
           true == mem(get_some(nth(index, vals)),
                       map(entry_flow, gen_entries(entries, ikeys, ekeys, vals)));
   {
@@ -246,13 +246,13 @@ fixpoint flowtable flowtable_expire_n_flows(flowtable table, time_t time,
 
 /*@
   lemma void gen_entries_also_no_ek(list<pair<int, time_t> > entries,
-                                    list<pair<int_k, int> > ikeys,
-                                    list<pair<ext_k, int> > ekeys,
-                                    list<option<flw> > vals,
-                                    ext_k ek)
+                                    list<pair<flow_id, int> > ikeys,
+                                    list<pair<flow_id, int> > ekeys,
+                                    list<option<flow> > vals,
+                                    flow_id ek)
   requires false == mem(ek, map(fst, ekeys)) &*&
            true == forall(map(fst, entries), (contains)(map(snd, ekeys)));
-  ensures false == mem(ek, map(entry_ek,
+  ensures false == mem(ek, map(entry_external,
                                gen_entries(entries, ikeys, ekeys, vals)));
   {
     switch(entries) {
@@ -269,8 +269,8 @@ fixpoint flowtable flowtable_expire_n_flows(flowtable table, time_t time,
 
 /*@
 // Head lemma #
-lemma void contains_ext_k_abstract(dmap<int_k,ext_k,flw> m, dchain ch,
-                                   ext_k ek)
+lemma void contains_flow_id_ext_abstract(dmap<flow_id,flow_id,flow> m, dchain ch,
+                                         flow_id ek)
 requires dmap_dchain_coherent(m, ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
@@ -296,7 +296,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmap_indices_no_dups(ikeys, ekeys, vals);
         alist_get_by_right_map_get(ekeys, ek);
         assert ek == alist_get_by_right(ekeys, index);
-        assert true == mem(ek, map(entry_ek, gen_entries(entries, ikeys, ekeys, vals)));
+        assert true == mem(ek, map(entry_external, gen_entries(entries, ikeys, ekeys, vals)));
       }
     }
   } else {
@@ -318,13 +318,13 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_also_no_ik(list<pair<int, time_t> > entries,
-                                    list<pair<int_k, int> > ikeys,
-                                    list<pair<ext_k, int> > ekeys,
-                                    list<option<flw> > vals,
-                                    int_k ik)
+                                    list<pair<flow_id, int> > ikeys,
+                                    list<pair<flow_id, int> > ekeys,
+                                    list<option<flow> > vals,
+                                    flow_id ik)
   requires false == mem(ik, map(fst, ikeys)) &*&
            true == forall(map(fst, entries), (contains)(map(snd, ikeys)));
-  ensures false == mem(ik, map(entry_ik,
+  ensures false == mem(ik, map(entry_internal,
                                gen_entries(entries, ikeys, ekeys, vals)));
   {
     switch(entries) {
@@ -340,8 +340,8 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
 // Head lemma #
-lemma void contains_int_k_abstract(dmap<int_k,ext_k,flw> m, dchain ch,
-                                   int_k ik)
+lemma void contains_flow_id_int_abstract(dmap<flow_id,flow_id,flow> m, dchain ch,
+                                     flow_id ik)
 requires dmap_dchain_coherent(m, ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
@@ -367,7 +367,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmap_indices_no_dups(ikeys, ekeys, vals);
         alist_get_by_right_map_get(ikeys, ik);
         assert ik == alist_get_by_right(ikeys, index);
-        assert true == mem(ik, map(entry_ik, gen_entries(entries, ikeys, ekeys, vals)));
+        assert true == mem(ik, map(entry_internal, gen_entries(entries, ikeys, ekeys, vals)));
       }
     }
   } else {
@@ -390,9 +390,9 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_same_len(list<pair<int, time_t> > entries,
-                                  list<pair<int_k,int> > ikeys,
-                                  list<pair<ext_k,int> > ekeys,
-                                  list<option<flw> > vals)
+                                  list<pair<flow_id,int> > ikeys,
+                                  list<pair<flow_id,int> > ekeys,
+                                  list<option<flow> > vals)
   requires true;
   ensures length(entries) == length(gen_entries(entries, ikeys, ekeys, vals));
   {
@@ -408,7 +408,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
 // Head lemma #
-lemma void out_of_space_abstract(dmap<int_k,ext_k,flw> m, dchain ch)
+lemma void out_of_space_abstract(dmap<flow_id,flow_id,flow> m, dchain ch)
 requires true;
 ensures flowtable_out_of_space(abstract_function(m, ch)) ==
         dchain_out_of_space_fp(ch);
@@ -423,15 +423,15 @@ ensures flowtable_out_of_space(abstract_function(m, ch)) ==
 
 /*@
   lemma void gen_entries_add_flow(list<pair<int, time_t> > entries,
-                                  list<pair<int_k,int> > ikeys,
-                                  list<pair<ext_k,int> > ekeys,
-                                  list<option<flw> > vals,
+                                  list<pair<flow_id,int> > ikeys,
+                                  list<pair<flow_id,int> > ekeys,
+                                  list<option<flow> > vals,
                                   int index,
-                                  flw flow,
+                                  flow flw,
                                   time_t time)
   requires false == exists(entries, (same_index)(index))&*&
-           false == map_has_fp(ikeys, flw_get_ik(flow)) &*&
-           false == map_has_fp(ekeys, flw_get_ek(flow)) &*&
+           false == map_has_fp(ikeys, flow_get_internal_id(flw)) &*&
+           false == map_has_fp(ekeys, flow_get_external_id(flw)) &*&
            false == mem(index, map(snd, ikeys)) &*&
            false == mem(index, map(snd, ekeys)) &*&
            nth(index, vals) == none &*&
@@ -439,24 +439,24 @@ ensures flowtable_out_of_space(abstract_function(m, ch)) ==
            true == forall(map(fst, entries), (ge)(0)) &*&
            true == forall(map(fst, entries), (lt)(length(vals)));
   ensures append(gen_entries(entries, ikeys, ekeys, vals),
-                 cons(entry(flw_get_ik(flow),
-                            flw_get_ek(flow),
-                            flow, time),
+                 cons(entry(flow_get_internal_id(flw),
+                            flow_get_external_id(flw),
+                            flw, time),
                       nil)) ==
           gen_entries(append(entries, cons(pair(index, time), nil)),
-                      map_put_fp(ikeys, flw_get_ik(flow), index),
-                      map_put_fp(ekeys, flw_get_ek(flow), index),
-                      update(index, some(flow), vals));
+                      map_put_fp(ikeys, flow_get_internal_id(flw), index),
+                      map_put_fp(ekeys, flow_get_external_id(flw), index),
+                      update(index, some(flw), vals));
   {
     switch(entries) {
       case nil:
       case cons(h,t):
         switch(h) { case pair(ind,tstmp):
-          gen_entries_add_flow(t, ikeys, ekeys, vals, index, flow, time);
+          gen_entries_add_flow(t, ikeys, ekeys, vals, index, flw, time);
           assert alist_get_by_right(ikeys, ind) ==
-                 alist_get_by_right(map_put_fp(ikeys, flw_get_ik(flow), index),
+                 alist_get_by_right(map_put_fp(ikeys, flow_get_internal_id(flw), index),
                                     ind);
-          assert get_some(nth(ind, vals)) == get_some(nth(ind, update(index, some(flow), vals)));
+          assert get_some(nth(ind, vals)) == get_some(nth(ind, update(index, some(flw), vals)));
         }
     }
   }
@@ -482,13 +482,13 @@ ensures flowtable_out_of_space(abstract_function(m, ch)) ==
 
 /*@
 // Head lemma #
-lemma void add_flow_abstract(dmap<int_k,ext_k,flw> m, dchain ch, flw flow,
+lemma void add_flow_abstract(dmap<flow_id,flow_id,flow> m, dchain ch, flow flw,
                              int index, time_t t)
 requires false == dchain_out_of_space_fp(ch) &*&
          false == dchain_allocated_fp(ch, index) &*&
          dmap_dchain_coherent(m, ch) &*&
-         false == dmap_has_k1_fp(m, flw_get_ik(flow)) &*&
-         false == dmap_has_k2_fp(m, flw_get_ek(flow)) &*&
+         false == dmap_has_k1_fp(m, flow_get_internal_id(flw)) &*&
+         false == dmap_has_k2_fp(m, flow_get_external_id(flw)) &*&
          0 <= index &*& index < dchain_index_range_fp(ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
@@ -497,8 +497,8 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmappingp(m, kp1, kp2, hsh1, hsh2,
                   fvp, bvp, rof, vsz,
                   vk1, vk2, recp1, recp2, mp) &*&
-        flowtable_add_flow(abstract_function(m, ch), flow, t) ==
-        abstract_function(dmap_put_fp(m, index, flow, flw_get_ik, flw_get_ek),
+        flowtable_add_flow(abstract_function(m, ch), flw, t) ==
+        abstract_function(dmap_put_fp(m, index, flw, flow_get_internal_id, flow_get_external_id),
                           dchain_allocate_fp(ch, index, t));
 {
   switch(ch) { case dchain(entries, index_range, low, high):
@@ -517,7 +517,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       subset_forall(map(fst, entries), dmap_indexes_used_fp(m), (ge)(0));
       subset_forall(map(fst, entries), dmap_indexes_used_fp(m),
                     (lt)(length(vals)));
-      gen_entries_add_flow(entries, ikeys, ekeys, vals,index, flow, t);
+      gen_entries_add_flow(entries, ikeys, ekeys, vals,index, flw, t);
     }
   }
 }
@@ -585,18 +585,18 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_get_flow_int(list<pair<int, time_t> > entries,
-                                      list<pair<int_k,int> > ikeys,
-                                      list<pair<ext_k,int> > ekeys,
-                                      list<option<flw> > vals,
-                                      int_k ik)
+                                      list<pair<flow_id,int> > ikeys,
+                                      list<pair<flow_id,int> > ekeys,
+                                      list<option<flow> > vals,
+                                      flow_id ik)
   requires true == dmap_has_k1_fp(dmap(ikeys, ekeys, vals), ik) &*&
            true == no_dups(map(fst, ikeys)) &*&
            true == forall(map(fst, entries),
                           (contains)(map(snd, ikeys))) &*&
-           true == mem(ik, map(entry_ik,
+           true == mem(ik, map(entry_internal,
                                gen_entries(entries, ikeys, ekeys, vals)));
   ensures entry_flow(nth(index_of(ik,
-                                  map(entry_ik,
+                                  map(entry_internal,
                                       gen_entries(entries, ikeys, ekeys, vals))),
                          gen_entries(entries, ikeys, ekeys, vals))) ==
           dmap_get_val_fp(dmap(ikeys, ekeys, vals),
@@ -607,7 +607,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       case cons(h,t):
         switch(h) { case pair(ind,tsmpt):
           if (alist_get_by_right(ikeys, ind) == ik) {
-            assert index_of(ik, map(entry_ik, gen_entries(entries, ikeys, ekeys, vals))) == 0;
+            assert index_of(ik, map(entry_internal, gen_entries(entries, ikeys, ekeys, vals))) == 0;
             map_no_dup_keys_alist_get_same(ikeys, ik, ind);
             assert dmap_get_k1_fp(dmap(ikeys, ekeys, vals), ik) == ind;
           } else {
@@ -620,7 +620,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
 // Head lemma #
-lemma void get_flow_by_int_abstract(dmap<int_k,ext_k,flw> m, dchain ch, int_k ik)
+lemma void get_flow_by_int_abstract(dmap<flow_id,flow_id,flow> m, dchain ch, flow_id ik)
 requires true == dmap_has_k1_fp(m, ik) &*&
          dmap_dchain_coherent(m, ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
@@ -633,7 +633,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmap_get_val_fp(m, dmap_get_k1_fp(m, ik)) ==
         flowtable_get_by_int_flow_id(abstract_function(m, ch), ik);
 {
-  contains_int_k_abstract(m, ch, ik);
+  contains_flow_id_int_abstract(m, ch, ik);
   switch(ch) { case dchain(entries, index_range, low, high):
     switch(m) { case dmap(ikeys, ekeys, vals):
       dmap_no_dup_keys(ikeys, ekeys, vals);
@@ -650,18 +650,18 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_get_flow_ext(list<pair<int, time_t> > entries,
-                                      list<pair<int_k,int> > ikeys,
-                                      list<pair<ext_k,int> > ekeys,
-                                      list<option<flw> > vals,
-                                      ext_k ek)
+                                      list<pair<flow_id,int> > ikeys,
+                                      list<pair<flow_id,int> > ekeys,
+                                      list<option<flow> > vals,
+                                      flow_id ek)
   requires true == dmap_has_k2_fp(dmap(ikeys, ekeys, vals), ek) &*&
            true == no_dups(map(fst, ekeys)) &*&
            true == forall(map(fst, entries),
                           (contains)(map(snd, ekeys))) &*&
-           true == mem(ek, map(entry_ek,
+           true == mem(ek, map(entry_external,
                                gen_entries(entries, ikeys, ekeys, vals)));
   ensures entry_flow(nth(index_of(ek,
-                                  map(entry_ek,
+                                  map(entry_external,
                                       gen_entries(entries, ikeys, ekeys, vals))),
                          gen_entries(entries, ikeys, ekeys, vals))) ==
           dmap_get_val_fp(dmap(ikeys, ekeys, vals),
@@ -672,7 +672,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       case cons(h,t):
         switch(h) { case pair(ind,tsmpt):
           if (alist_get_by_right(ekeys, ind) == ek) {
-            assert index_of(ek, map(entry_ek, gen_entries(entries, ikeys, ekeys, vals))) == 0;
+            assert index_of(ek, map(entry_external, gen_entries(entries, ikeys, ekeys, vals))) == 0;
             map_no_dup_keys_alist_get_same(ekeys, ek, ind);
             assert dmap_get_k2_fp(dmap(ikeys, ekeys, vals), ek) == ind;
           } else {
@@ -685,7 +685,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
 // Head lemma #
-lemma void get_flow_by_ext_abstract(dmap<int_k,ext_k,flw> m, dchain ch, ext_k ek)
+lemma void get_flow_by_ext_abstract(dmap<flow_id,flow_id,flow> m, dchain ch, flow_id ek)
 requires true == dmap_has_k2_fp(m, ek) &*&
          dmap_dchain_coherent(m, ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
@@ -698,7 +698,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
         dmap_get_val_fp(m, dmap_get_k2_fp(m, ek)) ==
         flowtable_get_by_ext_flow_id(abstract_function(m, ch), ek);
 {
-  contains_ext_k_abstract(m, ch, ek);
+  contains_flow_id_ext_abstract(m, ch, ek);
   switch(ch) { case dchain(entries, index_range, low, high):
     switch(m) { case dmap(ikeys, ekeys, vals):
       dmap_no_dup_keys(ikeys, ekeys, vals);
@@ -733,22 +733,22 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_add_flow_light(list<pair<int, time_t> > entries,
-                                        list<pair<int_k,int> > ikeys,
-                                        list<pair<ext_k,int> > ekeys,
-                                        list<option<flw> > vals,
+                                        list<pair<flow_id,int> > ikeys,
+                                        list<pair<flow_id,int> > ekeys,
+                                        list<option<flow> > vals,
                                         int index,
                                         time_t time,
-                                        flw flow)
-  requires nth(index, vals) == some(flow) &*&
+                                        flow flw)
+  requires nth(index, vals) == some(flw) &*&
            0 <= index &*& index < length(vals) &*&
-           alist_get_by_right(ikeys, index) == flw_get_ik(flow) &*&
-           alist_get_by_right(ekeys, index) == flw_get_ek(flow);
+           alist_get_by_right(ikeys, index) == flow_get_internal_id(flw) &*&
+           alist_get_by_right(ekeys, index) == flow_get_external_id(flw);
   ensures gen_entries(append(entries, cons(pair(index, time), nil)),
                       ikeys, ekeys, vals) ==
           append(gen_entries(entries, ikeys, ekeys, vals),
-                 cons(entry(flw_get_ik(flow),
-                            flw_get_ek(flow),
-                            flow,
+                 cons(entry(flow_get_internal_id(flw),
+                            flow_get_external_id(flw),
+                            flw,
                             time),
                       nil));
   {
@@ -756,7 +756,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       case nil:
       case cons(h,t):
         switch(h) { case pair(ind,tstmp):
-          gen_entries_add_flow_light(t, ikeys, ekeys, vals, index, time, flow);
+          gen_entries_add_flow_light(t, ikeys, ekeys, vals, index, time, flw);
         }
     }
   }
@@ -764,17 +764,17 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_rejuvenate(list<pair<int, time_t> > entries,
-                                    list<pair<int_k,int> > ikeys,
-                                    list<pair<ext_k,int> > ekeys,
-                                    list<option<flw> > vals,
+                                    list<pair<flow_id,int> > ikeys,
+                                    list<pair<flow_id,int> > ekeys,
+                                    list<option<flow> > vals,
                                     int index,
                                     time_t time,
-                                    flw flow)
-  requires nth(index, vals) == some(flow) &*&
+                                    flow flw)
+  requires nth(index, vals) == some(flw) &*&
            true == mem(index, map(fst, entries)) &*&
            0 <= index &*& index < length(vals) &*&
-           alist_get_by_right(ikeys, index) == flw_get_ik(flow) &*&
-           alist_get_by_right(ekeys, index) == flw_get_ek(flow) &*&
+           alist_get_by_right(ikeys, index) == flow_get_internal_id(flw) &*&
+           alist_get_by_right(ekeys, index) == flow_get_external_id(flw) &*&
            true == opt_no_dups(vals) &*&
            true == forall(map(fst, entries), (ge)(0)) &*&
            true == forall(map(fst, entries), (lt)(length(vals))) &*&
@@ -783,11 +783,11 @@ ensures dmap_dchain_coherent(m, ch) &*&
   ensures gen_entries(append(remove_by_index_fp(entries, index),
                              cons(pair(index, time), nil)),
                       ikeys, ekeys, vals) ==
-          append(remove_if((entry_matches_flow)(flow),
+          append(remove_if((entry_matches_flow)(flw),
                            gen_entries(entries, ikeys, ekeys, vals)),
-                 cons(entry(flw_get_ik(flow),
-                            flw_get_ek(flow),
-                            flow,
+                 cons(entry(flow_get_internal_id(flw),
+                            flow_get_external_id(flw),
+                            flw,
                             time),
                       nil));
   {
@@ -797,24 +797,24 @@ ensures dmap_dchain_coherent(m, ch) &*&
         switch(h) { case pair(ind,tstmp):
           if (ind == index) {
             gen_entries_add_flow_light(t, ikeys, ekeys, vals,
-                                       index, time, flow);
+                                       index, time, flw);
           } else {
-            if (nth(ind, vals) == some(flow)) {
+            if (nth(ind, vals) == some(flw)) {
               if (ind < index) {
-                found_an_opt_dup(vals, ind, index, flow);
+                found_an_opt_dup(vals, ind, index, flw);
               } else {
-                found_an_opt_dup(vals, index, ind, flow);
+                found_an_opt_dup(vals, index, ind, flw);
               }
               assert(false);
             }
-            assert nth(ind, vals) != some(flow);
+            assert nth(ind, vals) != some(flw);
             assert nth(ind, vals) != none;
             switch(nth(ind, vals)) {
               case none:
               case some(aaaa):
             }
-            assert get_some(nth(ind, vals)) != flow;
-            gen_entries_rejuvenate(t, ikeys, ekeys, vals, index, time, flow);
+            assert get_some(nth(ind, vals)) != flw;
+            gen_entries_rejuvenate(t, ikeys, ekeys, vals, index, time, flw);
           }
         }
     }
@@ -843,31 +843,31 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
 // Head lemma #
-lemma void rejuvenate_flow_abstract(dmap<int_k,ext_k,flw> m, dchain ch, flw flow,
+lemma void rejuvenate_flow_abstract(dmap<flow_id,flow_id,flow> m, dchain ch, flow flw,
                                     int index, time_t time)
-requires dmap_get_val_fp(m, index) == flow &*&
+requires dmap_get_val_fp(m, index) == flw &*&
          true == dmap_index_used_fp(m, index) &*&
          dmap_dchain_coherent(m, ch) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
-                   flw_get_ik, flw_get_ek, ?recp1, ?recp2, ?mp);
+                   flow_get_internal_id, flow_get_external_id, ?recp1, ?recp2, ?mp);
 ensures dmap_dchain_coherent(m, ch) &*&
         dmappingp(m, kp1, kp2, hsh1, hsh2,
                   fvp, bvp, rof, vsz,
-                  flw_get_ik, flw_get_ek, recp1, recp2, mp) &*&
+                  flow_get_internal_id, flow_get_external_id, recp1, recp2, mp) &*&
         flowtable_add_flow(flowtable_remove_flow(abstract_function(m, ch),
-                                                 flow),
-                           flow, time) ==
+                                                 flw),
+                           flw, time) ==
         abstract_function(m, dchain_rejuvenate_fp(ch, index, time));
 {
   switch(ch) { case dchain(entries, index_range, low, high):
     switch(m) { case dmap(ikeys, ekeys, vals):
       dmap_no_dup_keys(ikeys, ekeys, vals);
-      get_some_to_some_val(vals, index, flow);
+      get_some_to_some_val(vals, index, flw);
       coherent_dmap_used_dchain_allocated(m, ch, index);
       dchain_allocated_mem_map(entries, index_range, low, high, index);
-      if (alist_get_by_right(ikeys, index) != flw_get_ik(flow)) {
-        int_k alt_ik = alist_get_by_right(ikeys, index);
+      if (alist_get_by_right(ikeys, index) != flow_get_internal_id(flw)) {
+        flow_id alt_ik = alist_get_by_right(ikeys, index);
         dmap_indexes_used_used_in_ma_mb(ikeys, ekeys, vals);
         dmap_indexes_contain_index_used(m, index);
         forall_mem(index, dmap_indexes_used_fp(m), (contains)(map(snd, ikeys)));
@@ -875,12 +875,12 @@ ensures dmap_dchain_coherent(m, ch) &*&
         map_no_dup_keys_alist_get_same(ikeys, alt_ik, index);
         assert dmap_get_k1_fp(m, alt_ik) == index;
         dmap_get_by_k1_invertible(m, alt_ik);
-        assert flw_get_ik(dmap_get_val_fp(m, index)) == alt_ik;
-        assert alt_ik != flw_get_ik(flow);
-        assert dmap_get_val_fp(m, index) != flow;
+        assert flow_get_internal_id(dmap_get_val_fp(m, index)) == alt_ik;
+        assert alt_ik != flow_get_internal_id(flw);
+        assert dmap_get_val_fp(m, index) != flw;
       }
-      if (alist_get_by_right(ekeys, index) != flw_get_ek(flow)) {
-        ext_k alt_ek = alist_get_by_right(ekeys, index);
+      if (alist_get_by_right(ekeys, index) != flow_get_external_id(flw)) {
+        flow_id alt_ek = alist_get_by_right(ekeys, index);
         dmap_indexes_used_used_in_ma_mb(ikeys, ekeys, vals);
         dmap_indexes_contain_index_used(m, index);
         forall_mem(index, dmap_indexes_used_fp(m), (contains)(map(snd, ekeys)));
@@ -888,11 +888,11 @@ ensures dmap_dchain_coherent(m, ch) &*&
         map_no_dup_keys_alist_get_same(ekeys, alt_ek, index);
         assert dmap_get_k2_fp(m, alt_ek) == index;
         dmap_get_by_k2_invertible(m, alt_ek);
-        assert flw_get_ek(dmap_get_val_fp(m, index)) == alt_ek;
-        assert alt_ek != flw_get_ek(flow);
-        assert dmap_get_val_fp(m, index) != flow;
+        assert flow_get_external_id(dmap_get_val_fp(m, index)) == alt_ek;
+        assert alt_ek != flow_get_external_id(flw);
+        assert dmap_get_val_fp(m, index) != flw;
       }
-      assert alist_get_by_right(ikeys, index) == flw_get_ik(flow);
+      assert alist_get_by_right(ikeys, index) == flow_get_internal_id(flw);
       dmap_no_dup_vals(ikeys, ekeys, vals);
       nonempty_indexes_bounds(vals, 0);
       coherent_same_indexes(m, ch);
@@ -904,7 +904,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
       assert true == forall(nonempty_indexes_fp(vals, 0), (dmap_index_used_fp)(m));
       subset_forall(map(fst, entries), dmap_indexes_used_fp(m),
                     (dmap_index_used_fp)(m));
-      gen_entries_rejuvenate(entries, ikeys, ekeys, vals, index, time, flow);
+      gen_entries_rejuvenate(entries, ikeys, ekeys, vals, index, time, flw);
     }
   }
 }
@@ -1025,12 +1025,12 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_remove_extra(list<pair<int, time_t> > entries,
-                                      list<pair<int_k,int> > ikeys,
-                                      list<pair<ext_k,int> > ekeys,
-                                      list<option<flw> > vals,
+                                      list<pair<flow_id,int> > ikeys,
+                                      list<pair<flow_id,int> > ekeys,
+                                      list<option<flow> > vals,
                                       int index,
-                                      int_k ik,
-                                      ext_k ek)
+                                      flow_id ik,
+                                      flow_id ek)
   requires false == mem(index, map(fst, entries)) &*&
            map_get_fp(ikeys, ik) == index &*&
            map_get_fp(ekeys, ek) == index &*&
@@ -1061,24 +1061,24 @@ ensures dmap_dchain_coherent(m, ch) &*&
 /*@
   lemma void gen_entries_expire_just_one(pair<int, time_t> hdentry,
                                          list<pair<int, time_t> > entries,
-                                         list<pair<int_k,int> > ikeys,
-                                         list<pair<ext_k,int> > ekeys,
-                                         list<option<flw> > vals,
+                                         list<pair<flow_id,int> > ikeys,
+                                         list<pair<flow_id,int> > ekeys,
+                                         list<option<flow> > vals,
                                          int index,
                                          time_t time,
-                                         flw flow)
+                                         flow flw)
   requires fst(hdentry) == index &*&
-           nth(index, vals) == some(flow) &*&
-           map_get_fp(ikeys, flw_get_ik(flow)) == index &*&
-           map_get_fp(ekeys, flw_get_ek(flow)) == index &*&
+           nth(index, vals) == some(flw) &*&
+           map_get_fp(ikeys, flow_get_internal_id(flw)) == index &*&
+           map_get_fp(ekeys, flow_get_external_id(flw)) == index &*&
            0 <= index &*& index < length(vals) &*&
            snd(hdentry) < time &*&
            true == forall(map(fst, entries), (ge)(0)) &*&
            true == forall(map(fst, entries), (lt)(length(vals))) &*&
            false == mem(index, map(fst, entries));
   ensures gen_entries(entries,
-                      map_erase_fp(ikeys, flw_get_ik(flow)),
-                      map_erase_fp(ekeys, flw_get_ek(flow)),
+                      map_erase_fp(ikeys, flow_get_internal_id(flw)),
+                      map_erase_fp(ekeys, flow_get_external_id(flw)),
                       update(index, none, vals)) ==
           expire_one_entry(gen_entries(cons(hdentry, entries), ikeys, ekeys, vals),
                            time);
@@ -1093,24 +1093,24 @@ ensures dmap_dchain_coherent(m, ch) &*&
     assert gen_entries(entries, ikeys, ekeys, vals) ==
            expire_one_entry(gen_entries(cons(hdentry, entries), ikeys, ekeys, vals), time);
     gen_entries_remove_extra(entries, ikeys, ekeys, vals,
-                             index, flw_get_ik(flow), flw_get_ek(flow));
+                             index, flow_get_internal_id(flw), flow_get_external_id(flw));
   }
   @*/
 
 /*@
-  lemma void expire_just_one_abstract(dmap<int_k,ext_k,flw> m,
+  lemma void expire_just_one_abstract(dmap<flow_id,flow_id,flow> m,
                                       dchain ch, time_t time)
   requires false == dchain_is_empty_fp(ch) &*&
            dchain_get_oldest_time_fp(ch) < time &*&
-           true == dmap_self_consistent_integral_fp(m, flw_get_ik,
-                                                    flw_get_ek) &*&
+           true == dmap_self_consistent_integral_fp(m, flow_get_internal_id,
+                                                    flow_get_external_id) &*&
            true == forall(dchain_indexes_fp(ch), (ge)(0)) &*&
            true == forall(dchain_indexes_fp(ch), (lt)(dmap_cap_fp(m))) &*&
            true == distinct(dchain_indexes_fp(ch)) &*&
            true == forall(dchain_indexes_fp(ch),
                           (dmap_index_used_fp)(m));
   ensures abstract_function(dmap_erase_fp(m, dchain_get_oldest_index_fp(ch),
-                                          flw_get_ik, flw_get_ek),
+                                          flow_get_internal_id, flow_get_external_id),
                             dchain_remove_index_fp
                               (ch, dchain_get_oldest_index_fp(ch))) ==
           flowtable_expire_one(abstract_function(m, ch), time);
@@ -1125,7 +1125,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
               case none:
               case some(xxxx):
             }
-            dmap_consistent_right_indexes(m, flw_get_ik, flw_get_ek, ind);
+            dmap_consistent_right_indexes(m, flow_get_internal_id, flow_get_external_id, ind);
             gen_entries_expire_just_one(ent, t, ikeys, ekeys, vals,
                                         ind, time,
                                         get_some(nth(ind, vals)));
@@ -1362,7 +1362,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
   @*/
 
 /*@
-  lemma void dchain_has_expired_ft_also(dmap<int_k,ext_k,flw> m,
+  lemma void dchain_has_expired_ft_also(dmap<flow_id,flow_id,flow> m,
                                         dchain ch, time_t time)
   requires false == dchain_is_empty_fp(ch) &*&
            dchain_get_oldest_time_fp(ch) < time;
@@ -1859,7 +1859,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
   @*/
 
 /*@
-  lemma void expire_one_more_flow(dmap<int_k,ext_k,flw> m,
+  lemma void expire_one_more_flow(dmap<flow_id,flow_id,flow> m,
                                   dchain ch, time_t time,
                                   int count)
   requires dmap_dchain_coherent(m, ch) &*&
@@ -1875,14 +1875,14 @@ ensures dmap_dchain_coherent(m, ch) &*&
                      (dmap_erase_all_fp
                         (m, take(count,
                                  dchain_get_expired_indexes_fp(ch, time)),
-                         flw_get_ik, flw_get_ek),
-                      flw_get_ik,
-                      flw_get_ek) &*&
+                         flow_get_internal_id, flow_get_external_id),
+                      flow_get_internal_id,
+                      flow_get_external_id) &*&
            flowtable_expire_n_flows(abstract_function(m, ch), time, count) ==
            abstract_function(dmap_erase_all_fp
                                (m, take(count,
                                         dchain_get_expired_indexes_fp(ch, time)),
-                                flw_get_ik, flw_get_ek),
+                                flow_get_internal_id, flow_get_external_id),
                              expire_n_indexes(ch, time, count));
   ensures dmap_dchain_coherent(m, ch) &*&
           dchain_is_sortedp(ch) &*&
@@ -1890,14 +1890,14 @@ ensures dmap_dchain_coherent(m, ch) &*&
                     (dmap_erase_all_fp
                       (m, take(count + 1,
                                 dchain_get_expired_indexes_fp(ch, time)),
-                        flw_get_ik, flw_get_ek),
-                    flw_get_ik,
-                    flw_get_ek) &*&
+                        flow_get_internal_id, flow_get_external_id),
+                    flow_get_internal_id,
+                    flow_get_external_id) &*&
           flowtable_expire_n_flows(abstract_function(m, ch), time, count + 1) ==
           abstract_function(dmap_erase_all_fp
                              (m, take(count + 1,
                                       dchain_get_expired_indexes_fp(ch, time)),
-                              flw_get_ik, flw_get_ek),
+                              flow_get_internal_id, flow_get_external_id),
                             expire_n_indexes(ch, time, count + 1));
   {
     dchain_expire_some_still_olds_left(ch, time, count);
@@ -1910,19 +1910,19 @@ ensures dmap_dchain_coherent(m, ch) &*&
                   (lt)(dmap_cap_fp(m)));
     dmap_erase_all_preserves_cap(m, take(count,
                                          dchain_get_expired_indexes_fp(ch, time)),
-                                 flw_get_ik, flw_get_ek);
+                                 flow_get_internal_id, flow_get_external_id);
     dchain_expire_n_still_distinct(ch, time, count);
-    indices_used_expire_some(ch, m, time, flw_get_ik, flw_get_ek, count);
+    indices_used_expire_some(ch, m, time, flow_get_internal_id, flow_get_external_id, count);
     expire_just_one_abstract(dmap_erase_all_fp
                                (m, take(count,
                                         dchain_get_expired_indexes_fp(ch, time)),
-                                flw_get_ik, flw_get_ek),
+                                flow_get_internal_id, flow_get_external_id),
                              expire_n_indexes(ch, time, count),
                              time);
     dchain_has_expired_ft_also(dmap_erase_all_fp
                                  (m, take(count,
                                           dchain_get_expired_indexes_fp(ch, time)),
-                                  flw_get_ik, flw_get_ek),
+                                  flow_get_internal_id, flow_get_external_id),
                                expire_n_indexes(ch, time, count),
                                time);
     flowtable ftbef = flowtable_expire_n_flows(abstract_function(m, ch),
@@ -1933,19 +1933,19 @@ ensures dmap_dchain_coherent(m, ch) &*&
                                    dchain_get_expired_indexes_fp(ch, time)),
                            dchain_get_oldest_index_fp
                              (expire_n_indexes(ch, time, count)),
-                           flw_get_ik, flw_get_ek);
+                           flow_get_internal_id, flow_get_external_id);
     oldest_index_is_mem_of_indices(expire_n_indexes(ch, time, count));
     forall_mem(dchain_get_oldest_index_fp(expire_n_indexes(ch, time, count)),
                dchain_indexes_fp(expire_n_indexes(ch, time, count)),
                (dmap_index_used_fp)
                  (dmap_erase_all_fp(m, take(count,
                                             dchain_get_expired_indexes_fp(ch, time)),
-                                    flw_get_ik, flw_get_ek)));
+                                    flow_get_internal_id, flow_get_external_id)));
     dmap_erase_self_consistent
       (dmap_erase_all_fp(m, take(count, dchain_get_expired_indexes_fp(ch, time)),
-                         flw_get_ik, flw_get_ek),
+                         flow_get_internal_id, flow_get_external_id),
        dchain_get_oldest_index_fp(expire_n_indexes(ch, time, count)),
-       flw_get_ik, flw_get_ek);
+       flow_get_internal_id, flow_get_external_id);
   }
   @*/
 
@@ -1973,9 +1973,9 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
   lemma void gen_entries_expire_them_all(list<pair<int, time_t> > entries,
-                                         list<pair<int_k,int> > ikeys,
-                                         list<pair<ext_k,int> > ekeys,
-                                         list<option<flw> > vals,
+                                         list<pair<flow_id,int> > ikeys,
+                                         list<pair<flow_id,int> > ekeys,
+                                         list<option<flow> > vals,
                                          time_t time)
   requires true;
   ensures expire_n_entries(gen_entries(entries, ikeys, ekeys, vals), time,
@@ -2002,7 +2002,7 @@ ensures dmap_dchain_coherent(m, ch) &*&
   @*/
 
 /*@
-  lemma void flowtable_expire_them_all(dmap<int_k,ext_k,flw> m,
+  lemma void flowtable_expire_them_all(dmap<flow_id,flow_id,flow> m,
                                        dchain ch, time_t time)
   requires true;
   ensures flowtable_expire_n_flows
@@ -2032,22 +2032,22 @@ ensures dmap_dchain_coherent(m, ch) &*&
 
 /*@
 // Head lemma #
-lemma void expire_flows_abstract(dmap<int_k,ext_k,flw> m,
+lemma void expire_flows_abstract(dmap<flow_id,flow_id,flow> m,
                                  dchain ch, time_t time)
 requires dmap_dchain_coherent(m, ch) &*&
          double_chainp(ch, ?ppp) &*&
          dmappingp(m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                    ?fvp, ?bvp, ?rof, ?vsz,
-                   flw_get_ik, flw_get_ek, ?recp1, ?recp2, ?mp);
+                   flow_get_internal_id, flow_get_external_id, ?recp1, ?recp2, ?mp);
 ensures dmap_dchain_coherent(m, ch) &*&
         double_chainp(ch, ppp) &*&
         dmappingp(m, kp1, kp2, hsh1, hsh2,
                   fvp, bvp, rof, vsz,
-                  flw_get_ik, flw_get_ek, recp1, recp2, mp) &*&
+                  flow_get_internal_id, flow_get_external_id, recp1, recp2, mp) &*&
         flowtable_expire_flows(abstract_function(m, ch), time) ==
         abstract_function(dmap_erase_all_fp
                             (m, dchain_get_expired_indexes_fp(ch, time),
-                             flw_get_ik, flw_get_ek),
+                             flow_get_internal_id, flow_get_external_id),
                           dchain_expire_old_indexes_fp(ch, time));
 {
   list<int> exp_indices = dchain_get_expired_indexes_fp(ch, time);
@@ -2081,12 +2081,12 @@ ensures dmap_dchain_coherent(m, ch) &*&
                         (dmap_erase_all_fp
                            (m, take(count,
                                     dchain_get_expired_indexes_fp(ch, time)),
-                            flw_get_ik, flw_get_ek),
-                         flw_get_ik, flw_get_ek) &*&
+                            flow_get_internal_id, flow_get_external_id),
+                         flow_get_internal_id, flow_get_external_id) &*&
               flowtable_expire_n_flows(abstract_function(m, ch), time, count) ==
               abstract_function(dmap_erase_all_fp
                                   (m, take(count, exp_indices),
-                                   flw_get_ik, flw_get_ek),
+                                   flow_get_internal_id, flow_get_external_id),
                                 expire_n_indexes(ch, time, count));
     decreases length(exp_indices) - count;
   {

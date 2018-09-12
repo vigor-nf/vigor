@@ -118,7 +118,7 @@ unsigned loop(unsigned k, unsigned capacity)
         return pts == cons(?pth,?ptt) &*&
           pred_mapping(ptt, t, pred, ?kt) &*&
           (h == 0 ? ks == cons(none, kt) :
-             ([0.5]pred(pth, ?kh) &*& ks == cons(some(kh), kt)));
+             ([0.25]pred(pth, ?kh) &*& ks == cons(some(kh), kt)));
     };
 
   fixpoint bool hash_list<kt>(list<option<kt> > vals,
@@ -428,7 +428,7 @@ unsigned loop(unsigned k, unsigned capacity)
   requires pred_mapping(?kps, bbs, ?pred, ks) &*&
            pred_mapping(kps_b, bbs_b, pred, ks_b) &*&
            0 <= n &*& n < length(bbs) &*& nth(n, bbs) != 0;
-  ensures nth(n, ks) == some(result) &*& [0.5]pred(nth(n, kps), result) &*&
+  ensures nth(n, ks) == some(result) &*& [0.25]pred(nth(n, kps), result) &*&
           pred_mapping(drop(n+1, kps), drop(n+1, bbs), pred, drop(n+1, ks)) &*&
           pred_mapping(append(reverse(take(n, kps)), kps_b),
                        append(reverse(take(n, bbs)), bbs_b),
@@ -507,7 +507,7 @@ unsigned loop(unsigned k, unsigned capacity)
   requires pred_mapping(reverse(take(n, kps)), reverse(take(n, bbs)),
                         ?pred, reverse(take(n, ks))) &*&
            nth(n, bbs) != 0 &*&
-           [0.5]pred(nth(n, kps), ?k) &*&
+           [0.25]pred(nth(n, kps), ?k) &*&
            nth(n, ks) == some(k) &*&
            pred_mapping(drop(n+1, kps), drop(n+1, bbs),
                         pred, drop(n+1, ks)) &*&
@@ -746,7 +746,7 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, unsigned* k_hashes, int* c
            0 <= index &*& index < length(bbs) &*&
            nth(index, ks) == some(?k);
   ensures pred_mapping(kps, update(index, 0, bbs), keyp, update(index, none, ks)) &*&
-          [0.5]keyp(nth(index, kps), k);
+          [0.25]keyp(nth(index, kps), k);
   {
     open pred_mapping(kps, bbs, keyp, ks);
     switch(bbs) {
@@ -823,7 +823,7 @@ unsigned find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
             result == hmap_find_key_fp(hm, k) &*&
             *keyp_out |-> ?ptr &*&
             ptr == nth(result, kps) &*&
-            [0.5]kpr(ptr, k); @*/
+            [0.25]kpr(ptr, k); @*/
 {
   //@ open hmapping(_, _, _, _, _, _, hm);
   //@ open buckets_ks_insync(chns, capacity, buckets, hsh, hmap_ks_fp(hm));
@@ -1844,13 +1844,13 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
                              unsigned capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
-             kp(keyp, ?k) &*&
+             [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality(eq, kp) &*&
              hsh(k) == hash &*&
              *value |-> ?v; @*/
 /*@ ensures mapping<kt>(m, addrs, kp, recp, hsh, capacity, busybits,
                         keyps, k_hashes, chns, values) &*&
-            kp(keyp, k) &*&
+            [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality(eq, kp) &*&
             (map_has_fp(m, k) ?
              (result == 1 &*&
@@ -1916,7 +1916,7 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
                                         predicate (void*; kt) pred,
                                         list<option<kt> > ks,
                                         int index, void* kp, kt k)
-  requires pred_mapping(pts, bbs, pred, ks) &*& [0.5]pred(kp, k) &*&
+  requires pred_mapping(pts, bbs, pred, ks) &*& [0.25]pred(kp, k) &*&
            0 <= index &*& index < length(bbs) &*&
            nth(index, ks) == none;
   ensures pred_mapping(update(index, kp, pts), update(index, 1, bbs),
@@ -2165,7 +2165,7 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
                               unsigned capacity)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
-             [0.5]kp(keyp, ?k) &*& true == recp(k, value) &*&
+             [0.25]kp(keyp, ?k) &*& true == recp(k, value) &*&
              hsh(k) == hash &*&
              false == map_has_fp(m, k) &*&
              map_size_fp(m) < capacity; @*/
@@ -2233,7 +2233,7 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   requires pred_mapping(kps, bbs, keyp, ks) &*&
            0 <= i &*& i < length(ks) &*& nth(i, ks) == some(?k);
   ensures pred_mapping(kps, update(i, 0, bbs), keyp, update(i, none, ks)) &*&
-          [0.5]keyp(nth(i, kps), k);
+          [0.25]keyp(nth(i, kps), k);
   {
     open pred_mapping(kps, bbs, keyp, ks);
     switch(bbs) {
@@ -2423,19 +2423,19 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
                                 void** keyp_out)
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, ?values) &*&
-             [0.5]kp(keyp, ?k) &*&
+             [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality<kt>(eq, kp) &*&
              hsh(k) == hash &*&
              *keyp_out |-> ?ko &*&
              true == map_has_fp(m, k); @*/
-/*@ ensures [0.5]kp(keyp, k) &*&
+/*@ ensures [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality<kt>(eq, kp) &*&
-               *keyp_out |-> ?nko &*&
-               nko == map_get_fp(addrs, k) &*&
-               [0.5]kp(nko, k) &*&
-               mapping<kt>(map_erase_fp(m, k), map_erase_fp(addrs, k),
-                           kp, recp, hsh,
-                           capacity, busybits, keyps, k_hashes, chns, values); @*/
+            *keyp_out |-> ?nko &*&
+            nko == map_get_fp(addrs, k) &*&
+            [0.25]kp(nko, k) &*&
+            mapping<kt>(map_erase_fp(m, k), map_erase_fp(addrs, k),
+                        kp, recp, hsh,
+                        capacity, busybits, keyps, k_hashes, chns, values); @*/
 {
   //@ open mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);

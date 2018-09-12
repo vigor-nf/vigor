@@ -31,7 +31,7 @@ typedef void dmap_extract_keys/*@ <K1,K2,V>
                               (void* vp, void** kpp1, void** kpp2);
 //@ requires [?fr]full_valp(vp, ?v) &*& *kpp1 |-> _ &*& *kpp2 |-> _;
 /*@ ensures [fr]bare_valp(vp, v) &*& *kpp1 |-> ?kp1 &*& *kpp2 |-> ?kp2 &*&
-            [fr]keyp1(kp1, ?k1) &*& [fr]keyp2(kp2, ?k2) &*&
+            [0.5*fr]keyp1(kp1, ?k1) &*& [0.5*fr]keyp2(kp2, ?k2) &*&
             true == right_offsets(vp, kp1, kp2) &*&
             k1 == vk1(v) &*&
             k2 == vk2(v); @*/
@@ -49,7 +49,7 @@ typedef void dmap_pack_keys/*@ <K1,K2,V>
                               fixpoint (V,K2) vk2)
                            @*/
                            (void* vp, void* kp1, void* kp2);
-/*@ requires [?fr]bare_valp(vp, ?v) &*& [fr]keyp1(kp1, ?k1) &*& [fr]keyp2(kp2, ?k2) &*&
+/*@ requires [?fr]bare_valp(vp, ?v) &*& [0.5*fr]keyp1(kp1, ?k1) &*& [0.5*fr]keyp2(kp2, ?k2) &*&
              true == right_offsets(vp, kp1, kp2) &*&
              k1 == vk1(v) &*&
              k2 == vk2(v); @*/

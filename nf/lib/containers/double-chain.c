@@ -1,6 +1,7 @@
 #include "double-chain.h"
 
 #include <stdlib.h>
+#include <stddef.h>
 
 #include "double-chain-impl.h"
 

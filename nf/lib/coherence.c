@@ -338,7 +338,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void kkeeper_erase_one_from_vec<t>(list<void*> addrs,
-                                           list<pair<t, bool> > contents,
+                                           list<pair<t, real> > contents,
                                            list<pair<t, void*> > addr_map,
                                            int index)
   requires 0 <= index &*& index < length(contents) &*&
@@ -358,12 +358,12 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     }
   }
 
-  fixpoint bool owned_or_not_this<t>(t val, pair<t, bool> cell) {
-    return snd(cell) || fst(cell) != val;
+  fixpoint bool owned_or_not_this<t>(t val, pair<t, real> cell) {
+    return snd(cell) == 1.0 || fst(cell) != val;
   }
 
   lemma void kkeeper_erase_one_from_map<t>(list<void*> addrs,
-                                           list<pair<t, bool> > contents,
+                                           list<pair<t, real> > contents,
                                            list<pair<t, void*> > addr_map,
                                            t val)
   requires true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
@@ -377,7 +377,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
         switch(addrs) {
           case nil: return;
           case cons(ah, at):
-            if (!snd(ch)) {
+            if (snd(ch) != 1.0) {
               map_erase_keeps_others(addr_map, val, fst(ch));
             }
             kkeeper_erase_one_from_map(at, ct, addr_map, val);
@@ -386,13 +386,14 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   }
 
   lemma void kkeeper_nth_addrs_is_map_get<t>(list<void*> addrs,
-                                             list<pair<t, bool> > contents,
+                                             list<pair<t, real> > contents,
                                              list<pair<t, void*> > addr_map,
                                              int index)
   requires 0 <= index &*& index < length(contents) &*&
            length(contents) <= length(addrs) &*&
            true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
-           nth(index, contents) == pair(?val, false);
+           nth(index, contents) == pair(?val, ?frac) &*&
+           frac != 1.0;
   ensures map_get_fp(addr_map, val) == nth(index, addrs);
   {
     switch(contents) {
@@ -410,7 +411,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   }
 
   lemma void kkeeper_non_mem_non_mem<t>(list<void*> addrs,
-                                        list<pair<t, bool> > contents,
+                                        list<pair<t, real> > contents,
                                         list<pair<t, void*> > addr_map,
                                         t val)
   requires true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
@@ -430,13 +431,14 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   }
 
   lemma void kkeeper_no_dups_owned_or_not_this<t>(list<void*> addrs,
-                                                  list<pair<t, bool> > contents,
+                                                  list<pair<t, real> > contents,
                                                   list<pair<t, void*> > addr_map,
                                                   int index)
   requires 0 <= index &*& index < length(contents) &*&
            length(contents) <= length(addrs) &*&
            true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
-           nth(index, contents) == pair(?val, false) &*&
+           nth(index, contents) == pair(?val, ?frac) &*&
+           frac != 1.0 &*&
            true == no_dups(addrs);
   ensures true == forall(vector_erase_fp(contents, index),
                          (owned_or_not_this)(val));
@@ -455,7 +457,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
               return;
             }
             kkeeper_no_dups_owned_or_not_this(at, ct, addr_map, index - 1);
-            if (!snd(ch)) {
+            if (snd(ch) != 1.0) {
               if (fst(ch) == fst(nth(index, contents))) {
                 kkeeper_nth_addrs_is_map_get(addrs, contents, addr_map, index);
                 assert ah == nth(index, addrs);
@@ -468,19 +470,20 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   }
 
   lemma void kkeeper_erase_one<t>(list<void*> addrs,
-                                  list<pair<t, bool> > contents,
+                                  list<pair<t, real> > contents,
                                   list<pair<t, void*> > addr_map,
                                   int index)
   requires 0 <= index &*& index < length(contents) &*&
            length(contents) <= length(addrs) &*&
            true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
-           nth(index, contents) == pair(?val, false) &*&
+           nth(index, contents) == pair(?val, ?frac) &*&
+           frac != 1.0 &*&
            true == no_dups(addrs);
   ensures true == forall2(vector_erase_fp(contents, index), addrs,
                           (kkeeper)(map_erase_fp(addr_map, val)));
   {
     kkeeper_erase_one_from_vec(addrs, contents, addr_map, index);
-    nth_update(index, index, pair(val, true), contents);
+    nth_update(index, index, pair(val, 1.0), contents);
     kkeeper_no_dups_owned_or_not_this(addrs, contents, addr_map, index);
     kkeeper_erase_one_from_map(addrs, vector_erase_fp(contents, index),
                                addr_map, val);
@@ -489,11 +492,11 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void empty_kkeeper<t>(list<void*> addrs,
-                              list<pair<t, bool> > contents,
+                              list<pair<t, real> > contents,
                               list<pair<t, void*> > addr_map,
                               int capacity)
   requires length(contents) == capacity &*&
-           true == forall(contents, snd);
+           true == forall(contents, is_one);
   ensures true == forall2(contents, addrs, (kkeeper)(addr_map));
   {
     switch(contents) {
@@ -511,13 +514,14 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 /*@
   fixpoint bool consistent_pair<kt>(list<pair<kt, int> > m,
                                     dchain ch,
-                                    int idx, pair<kt, bool> el) {
+                                    int idx, pair<kt, real> el) {
     switch(el) {
       case pair(car, cdr):
-        return cdr ?
+        return cdr == 1.0 ?
           (false == dchain_allocated_fp(ch, idx))
           :
-          (map_has_fp(m, car) &&
+          (cdr == 0.75 &&
+           map_has_fp(m, car) &&
            map_get_fp(m, car) == idx &&
            dchain_allocated_fp(ch, idx));
     }
@@ -525,14 +529,15 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
-  fixpoint bool engaged_cell<kt>(pair<kt, bool> p) {
-    return !snd(p);
+  fixpoint bool engaged_cell<kt>(pair<kt, real> p) {
+    return snd(p) != 1.0;
   }
   @*/
 
 /*@
   predicate map_vec_chain_coherent<kt>(list<pair<kt, int> > m,
-                                       list<pair<kt, bool> > v, dchain ch) =
+                                       list<pair<kt, real> > v,
+                                       dchain ch) =
     dchain_index_range_fp(ch) == length(v) &*&
     true == forall_idx(v, 0, (consistent_pair)(m, ch)) &*&
     true == msubset(map(fst, m), map(fst, filter(engaged_cell, v)));
@@ -540,7 +545,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_bounds<kt>(list<pair<kt, int> > m,
-                                     list<pair<kt, bool> > v, dchain ch)
+                                     list<pair<kt, real> > v,
+                                     dchain ch)
   requires map_vec_chain_coherent<kt>(m, v, ch);
   ensures dchain_index_range_fp(ch) == length(v) &*&
           map_vec_chain_coherent<kt>(m, v, ch);
@@ -552,22 +558,28 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_index_busy<kt>(list<pair<kt, int> > m,
-                                         list<pair<kt, bool> > v, dchain ch,
+                                         list<pair<kt, real> > v,
+                                         dchain ch,
                                          uint32_t index)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            true == dchain_allocated_fp(ch, index) &*&
            0 <= index &*& index < dchain_index_range_fp(ch);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          nth(index, v) == pair(?key, false) &*&
+          nth(index, v) == pair(?key, ?frac) &*&
+          frac == 0.75 &*&
           true == map_has_fp(m, key) &*&
           map_get_fp(m, key) == index;
   {
     mvc_coherent_bounds(m, v, ch);
     open map_vec_chain_coherent(m, v, ch);
     extract_prop_by_idx(v, (consistent_pair)(m, ch), 0, index);
-    pair<kt, bool> p = nth(index, v);
+    pair<kt, real> p = nth(index, v);
     switch(p) {
       case pair(car, cdr):
+        assert true == map_has_fp(m, car);
+        assert map_get_fp(m, car) == index;
+        assert true == dchain_allocated_fp(ch, index);
+        assert cdr == 0.75;
     }
     close map_vec_chain_coherent(m, v, ch);
   }
@@ -575,26 +587,28 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma int pairs_consistent_get_index<kt>(list<pair<kt, int> > m,
-                                           list<pair<kt, bool> > v, dchain ch,
+                                           list<pair<kt, real> > v,
+                                           dchain ch,
                                            kt k, int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
            true == map_has_fp(m, k) &*&
            true == mem(k, map(fst, filter(engaged_cell, v)));
   ensures 0 <= result - start_idx &*& result - start_idx < length(v) &*&
           true == consistent_pair(m, ch, result, nth(result - start_idx, v)) &*&
-          result == map_get_fp(m, k) &*&
           true == dchain_allocated_fp(ch, result) &*&
-          false == snd(nth(result - start_idx, v));
+          result == map_get_fp(m, k) &*&
+          1.0 != snd(nth(result - start_idx, v));
   {
     switch(v) {
       case nil:
         return 0;
       case cons(h, t):
-        switch(h) { case pair(car, cdr):}
-        if (h == pair(k, false)) {
-          return start_idx;
-        } else {
-          return pairs_consistent_get_index(m, t, ch, k, start_idx + 1);
+        switch(h) { case pair(car, cdr):
+            if (car == k && cdr != 1.0) {
+              return start_idx;
+            } else {
+              return pairs_consistent_get_index(m, t, ch, k, start_idx + 1);
+            }
         }
     }
   }
@@ -602,7 +616,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_map_get_bounded<kt>(list<pair<kt, int> > m,
-                                              list<pair<kt, bool> > v, dchain ch,
+                                              list<pair<kt, real> > v,
+                                              dchain ch,
                                               kt k)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            true == map_has_fp(m, k);
@@ -610,7 +625,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           dchain_index_range_fp(ch) == length(v) &*&
           map_vec_chain_coherent<kt>(m, v, ch) &*&
           true == dchain_allocated_fp(ch, map_get_fp(m, k)) &*&
-          false == snd(nth(map_get_fp(m, k), v));
+          1.0 != snd(nth(map_get_fp(m, k), v));
   {
     mvc_coherent_bounds(m, v, ch);
     open map_vec_chain_coherent(m, v, ch);
@@ -624,7 +639,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_map_get_vec_half<kt>(list<pair<kt, int> > m,
-                                               list<pair<kt, bool> > v, dchain ch,
+                                               list<pair<kt, real> > v,
+                                               dchain ch,
                                                kt k)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            true == map_has_fp(m, k);
@@ -632,7 +648,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
           dchain_index_range_fp(ch) == length(v) &*&
           map_vec_chain_coherent<kt>(m, v, ch) &*&
           true == dchain_allocated_fp(ch, map_get_fp(m, k)) &*&
-          false == snd(nth(map_get_fp(m, k), v));
+          1.0 != snd(nth(map_get_fp(m, k), v));
   {
     mvc_coherent_map_get_bounded(m, v, ch, k);
   }
@@ -640,7 +656,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void rejuvenate_pairs_still_consistent<kt>(list<pair<kt, int> > m,
-                                                   list<pair<kt, bool> > v, dchain ch,
+                                                   list<pair<kt, real> > v,
+                                                   dchain ch,
                                                    int index, time_t time,
                                                    int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
@@ -656,7 +673,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
             dchain nch = dchain_rejuvenate_fp(ch, index, time);
             dchain_indexes_contain_index(ch, start_idx);
             dchain_indexes_contain_index(nch, start_idx);
-            if (!cdr) {
+            if (cdr != 1.0) {
               subset_mem_trans(dchain_indexes_fp(ch), dchain_indexes_fp(nch), start_idx);
             } else {
               if (dchain_allocated_fp(nch, start_idx))
@@ -670,7 +687,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_rejuvenate_preserves_coherent<kt>(list<pair<kt, int> > m,
-                                                   list<pair<kt, bool> > v, dchain ch,
+                                                   list<pair<kt, real> > v,
+                                                   dchain ch,
                                                    int index, time_t time)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            true == dchain_allocated_fp(ch, index);
@@ -687,12 +705,13 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_alloc_is_halfowned<kt>(list<pair<kt, int> > m,
-                                                 list<pair<kt, bool> > v, dchain ch,
+                                                 list<pair<kt, real> > v,
+                                                 dchain ch,
                                                  int index)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            0 <= index &*& index < length(v);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          snd(nth(index, v)) != dchain_allocated_fp(ch, index);
+          (snd(nth(index, v)) == 1.0) != dchain_allocated_fp(ch, index);
   {
     open map_vec_chain_coherent(m, v, ch);
     extract_prop_by_idx(v, (consistent_pair)(m, ch), 0, index);
@@ -703,16 +722,29 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void consistent_pairs_no_key<kt>(list<pair<kt, int> > m,
-                                         list<pair<kt, bool> > v, dchain ch,
+                                         list<pair<kt, real> > v,
+                                         dchain ch,
                                          kt key,
                                          int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch)) &*&
            false == map_has_fp(m, key);
-  ensures false == mem(pair(key, false), v);
+  ensures true == forall(v, (is_one_if_equals)(key));
   {
     switch(v) {
       case nil:
       case cons(h, t):
+        if (fst(h) == key) {
+          assert true == consistent_pair(m, ch, start_idx, h);
+          // Yes, VeriFast actually requires inlining the very thing we just asserted :(
+          switch(h) { case pair(car, cdr):
+            assert cdr == 1.0 ? (false == dchain_allocated_fp(ch, start_idx))
+                              : (cdr == 0.75 && map_has_fp(m, car) &&
+                                 map_get_fp(m, car) == start_idx && dchain_allocated_fp(ch, start_idx));
+          }
+          assert false == map_has_fp(m, fst(h));
+          assert snd(h) == 1.0;
+          assert true == is_one_if_equals(key, h);
+        }
         consistent_pairs_no_key(m, t, ch, key, start_idx + 1);
     }
   }
@@ -720,12 +752,13 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
-                                          list<pair<kt, bool> > v, dchain ch,
+                                          list<pair<kt, real> > v,
+                                          dchain ch,
                                           kt key)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            false == map_has_fp(m, key);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          false == mem(pair(key, false), v);
+          true == forall(v, (is_one_if_equals)(key));
   {
     mvc_coherent_bounds(m, v, ch);
     open map_vec_chain_coherent(m, v, ch);
@@ -736,7 +769,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_same_len<kt>(list<pair<kt, int> > m,
-                                       list<pair<kt, bool> > v, dchain ch)
+                                       list<pair<kt, real> > v,
+                                       dchain ch)
   requires map_vec_chain_coherent<kt>(m, v, ch);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
           length(v) == dchain_index_range_fp(ch);
@@ -748,12 +782,12 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void kkeeper_add_unrelevant<t>(list<void*> addrs,
-                                       list<pair<t, bool> > contents,
+                                       list<pair<t, real> > contents,
                                        list<pair<t, void*> > addr_map,
                                        t v,
                                        void* addr)
   requires true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
-           false == mem(pair(v, false), contents);
+           true == forall(contents, (is_one_if_equals)(v));
   ensures true == forall2(contents, addrs, (kkeeper)(map_put_fp(addr_map, v, addr)));
   {
     switch(contents) {
@@ -771,14 +805,14 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void kkeeper_add_one<t>(list<void*> addrs,
-                                list<pair<t, bool> > contents,
+                                list<pair<t, real> > contents,
                                 list<pair<t, void*> > addr_map,
                                 t v,
                                 int index)
   requires 0 <= index &*& index < length(contents) &*&
            true == forall2(contents, addrs, (kkeeper)(addr_map)) &*&
-           false == mem(pair(v, false), contents);
-  ensures true == forall2(update(index, pair(v, false), contents),
+           true == forall(contents, (is_one_if_equals)(v));
+  ensures true == forall2(update(index, pair(v, 0.75), contents),
                           addrs,
                           (kkeeper)(map_put_fp(addr_map, v,
                                                nth(index, addrs))));
@@ -801,8 +835,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
-  lemma void empty_map_vec_dchain_consistent_pairs<kt>(list<pair<kt, bool> > vec, int len, int start_idx)
-  requires true == forall(vec, snd);
+  lemma void empty_map_vec_dchain_consistent_pairs<kt>(list<pair<kt, real> > vec, int len, int start_idx)
+  requires true == forall(vec, is_one);
   ensures true == forall_idx(vec, start_idx, (consistent_pair)(nil, empty_dchain_fp(len, 0)));
   {
     switch(vec) {
@@ -815,8 +849,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
-  lemma void empty_map_vec_dchain_coherent<kt>(list<pair<kt, bool> > vec)
-  requires true == forall(vec, snd);
+  lemma void empty_map_vec_dchain_coherent<kt>(list<pair<kt, real> > vec)
+  requires true == forall(vec, is_one);
   ensures map_vec_chain_coherent<kt>(nil, vec,
                                      empty_dchain_fp(length(vec), 0));
   {
@@ -827,7 +861,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void filter_engaged_len<kt>(list<pair<kt, int> > m,
-                                    list<pair<kt, bool> > v,
+                                    list<pair<kt, real> > v,
                                     dchain ch, int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch));
           //&*& length(dchain_indexes_fp(ch)) <= length(v);
@@ -855,7 +889,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_dchain_non_out_of_space_map_nonfull<kt>(list<pair<kt, int> > m,
-                                                                  list<pair<kt, bool> > v, dchain ch)
+                                                                  list<pair<kt, real> > v,
+                                                                  dchain ch)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            dchain_out_of_space_fp(ch) == false;
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
@@ -877,13 +912,14 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_put<kt>(list<pair<kt, int> > m,
-                                  list<pair<kt, bool> > v, dchain ch,
+                                  list<pair<kt, real> > v,
+                                  dchain ch,
                                   int index, time_t time,
                                   kt key)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
            false == dchain_allocated_fp(ch, index);
   ensures map_vec_chain_coherent<kt>(map_put_fp(m, key, index),
-                                     update(index, pair(key, false), v),
+                                     update(index, pair(key, 0.75), v),
                                      dchain_allocate_fp(ch, index, time));
   {
     assume(false);//TODO
@@ -892,11 +928,12 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void mvc_coherent_expire_one<kt>(list<pair<kt, int> > m,
-                                         list<pair<kt, bool> > v, dchain ch,
+                                         list<pair<kt, real> > v,
+                                         dchain ch,
                                          int index,
                                          kt key)
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
-           nth(index, v) == pair(key, false);
+           nth(index, v) != pair(key, 1.0);
   ensures map_vec_chain_coherent<kt>(map_erase_fp(m, key),
                                      vector_erase_fp(v, index),
                                      dchain_remove_index_fp(ch, index));

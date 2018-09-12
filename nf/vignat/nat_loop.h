@@ -10,25 +10,24 @@
 #include "lib/nf_time.h"
 
 /*@
-fixpoint bool nat_int_fp(int_k ik, int index) {
-    return 0 <= int_k_get_idid(ik) &&
-           int_k_get_idid(ik) < RTE_MAX_ETHPORTS;
+fixpoint bool nat_int_fp(flow_id ik, int index) {
+    return true;
 }
 
-fixpoint bool nat_ext_fp(int start_port, ext_k ek, int index) {
-    return ext_k_get_esp(ek) == start_port + index &&
-           0 <= ext_k_get_edid(ek) &&
-           ext_k_get_edid(ek) < RTE_MAX_ETHPORTS;
+fixpoint bool nat_ext_fp(int start_port, flow_id ek, int index) {
+    switch(ek) { case flid(sp,dp,sip,dip,prot):
+        return dp == start_port + index;
+    }
 }
 
 
 predicate evproc_loop_invariant(struct DoubleMap* mp, struct DoubleChain *chp,
                                 unsigned int lcore_id,
                                 time_t time, int max_flows, int start_port) =
-          dmappingp<int_k,ext_k,flw>(?m, int_k_p, ext_k_p, int_hash, ext_hash,
-                                     flw_p, flow_p, flow_keys_offsets_fp,
-                                     sizeof(struct flow), flw_get_ik, flw_get_ek,
-                                     nat_int_fp, (nat_ext_fp)(start_port), mp) &*&
+          dmappingp<flow_id,flow_id,flow>(?m, flow_idp, flow_idp, _flow_id_hash, _flow_id_hash,
+                                          flowp, flowp_bare, flow_ids_offsets_fp,
+                                          sizeof(struct Flow), flow_get_internal_id, flow_get_external_id,
+                                          nat_int_fp, (nat_ext_fp)(start_port), mp) &*&
           double_chainp(?ch, chp) &*&
           dmap_dchain_coherent(m, ch) &*&
           lcore_id == 0 &*& //<-- We are verifying for a single core.

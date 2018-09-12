@@ -154,13 +154,13 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
                              unsigned capacity);
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
-             kp(keyp, ?k) &*&
+             [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality(eq, kp) &*&
              hsh(k) == hash &*&
              *value |-> ?v; @*/
 /*@ ensures mapping<kt>(m, addrs, kp, recp, hsh, capacity, busybits,
                         keyps, k_hashes, chns, values) &*&
-            kp(keyp, k) &*&
+            [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality(eq, kp) &*&
             (map_has_fp(m, k) ?
              (result == 1 &*&
@@ -177,7 +177,7 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
                               unsigned capacity);
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, k_hashes, chns, values) &*&
-             [0.5]kp(keyp, ?k) &*& true == recp(k, value) &*&
+             [0.25]kp(keyp, ?k) &*& true == recp(k, value) &*&
              hsh(k) == hash &*&
              false == map_has_fp(m, k) &*&
              map_size_fp(m) < capacity; @*/
@@ -198,16 +198,16 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps, unsigned* key_hashe
                                 void** keyp_out);
 /*@ requires mapping<kt>(?m, ?addrs, ?kp, ?recp, ?hsh, capacity, busybits,
                          keyps, key_hashes, chns, ?values) &*&
-             [0.5]kp(keyp, ?k) &*&
+             [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality<kt>(eq, kp) &*&
              hsh(k) == hash &*&
              *keyp_out |-> ?ko &*&
              true == map_has_fp(m, k); @*/
-/*@ ensures [0.5]kp(keyp, k) &*&
+/*@ ensures [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality<kt>(eq, kp) &*&
             *keyp_out |-> ?nko &*&
             nko == map_get_fp(addrs, k) &*&
-            [0.5]kp(nko, k) &*&
+            [0.25]kp(nko, k) &*&
             mapping<kt>(map_erase_fp(m, k),
                         map_erase_fp(addrs, k),
                         kp, recp, hsh,
