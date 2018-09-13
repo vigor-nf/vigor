@@ -2,6 +2,12 @@
 #include "lb_balancer.h"
 
 #ifdef KLEE_VERIFICATION
+#  define AND &
+#else//KLEE_VERIFICATION
+#  define AND &&
+#endif//KLEE_VERIFICATION
+
+#ifdef KLEE_VERIFICATION
 
 #define FIELD(struct_name, name, size) { offsetof(struct struct_name, name), sizeof(size), #name }
 #define FFIELD(name, size) FIELD(LoadBalancedFlow, name, size)
@@ -44,9 +50,9 @@ lb_flow_equality(void* objA, void* objB)
 	struct LoadBalancedFlow* flowB = objB;
 
 	return flowA->src_ip == flowB->src_ip
-    && flowA->src_port == flowB->src_port
-    && flowA->dst_port == flowB->dst_port
-    && flowA->protocol == flowB->protocol;
+    AND flowA->src_port == flowB->src_port
+    AND flowA->dst_port == flowB->dst_port
+    AND flowA->protocol == flowB->protocol;
 }
 
 #ifdef KLEE_VERIFICATION
