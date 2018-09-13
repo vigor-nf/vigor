@@ -32,7 +32,6 @@ void nf_core_init()
 
 int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 {
-printf("main: here: %d\n", __LINE__);
 	lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
 

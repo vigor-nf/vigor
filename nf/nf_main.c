@@ -1,12 +1,3 @@
-#ifdef KLEE_VERIFICATION
-#include "lib/stubs/time_stub_control.h"
-#include "lib/stubs/driver_stub.h"
-#include "lib/stubs/hardware_stub.h"
-#include <klee/klee.h>
-#endif
-
-#include <stdint.h>
-
 // DPDK uses these but doesn't include them. :|
 #include <linux/limits.h>
 #include <sys/types.h>
@@ -23,34 +14,49 @@
 #include "lib/nf_time.h"
 #include "lib/nf_util.h"
 
+#ifdef KLEE_VERIFICATION
+#  include "lib/stubs/time_stub_control.h"
+#  include "lib/stubs/driver_stub.h"
+#  include "lib/stubs/hardware_stub.h"
+#  include <klee/klee.h>
+#endif//KLEE_VERIFICATION
+
+#include <inttypes.h>
 
 #ifdef KLEE_VERIFICATION
-#define VIGOR_LOOP_BEGIN \
-  unsigned _vigor_lcore_id = rte_lcore_id(); \
-  time_t _vigor_start_time = start_time(); \
-  int _vigor_loop_termination = klee_int("loop_termination"); \
-  nf_loop_iteration_begin(_vigor_lcore_id, _vigor_start_time); \
-  while(klee_induce_invariants() & _vigor_loop_termination) { \
-    nf_add_loop_iteration_assumptions(_vigor_lcore_id, _vigor_start_time); \
-    time_t VIGOR_NOW = current_time(); \
-    /* concretize the device to avoid leaking symbols into DPDK */ \
-    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
-    unsigned VIGOR_DEVICE = klee_range(0, VIGOR_DEVICES_COUNT, "VIGOR_DEVICE"); \
-    for(unsigned _d = 0; _d < VIGOR_DEVICES_COUNT; _d++) if (VIGOR_DEVICE == _d) { VIGOR_DEVICE = _d; break; } \
-    stub_hardware_receive_packet(VIGOR_DEVICE);
-#define VIGOR_LOOP_END \
-    stub_hardware_reset_receive(VIGOR_DEVICE); \
-    nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW); \
-  }
-#else
-#define VIGOR_LOOP_BEGIN \
-  while (1) { \
-    time_t VIGOR_NOW = current_time(); \
-    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
-    for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
-#define VIGOR_LOOP_END } }
-#endif
-
+#  define VIGOR_LOOP_BEGIN \
+    unsigned _vigor_lcore_id = rte_lcore_id(); \
+    time_t _vigor_start_time = start_time(); \
+    int _vigor_loop_termination = klee_int("loop_termination"); \
+    unsigned VIGOR_DEVICES_COUNT;                                       \
+    klee_possibly_havoc(&VIGOR_DEVICES_COUNT, sizeof(VIGOR_DEVICES_COUNT), "VIGOR_DEVICES_COUNT"); \
+    time_t VIGOR_NOW;                                                   \
+    klee_possibly_havoc(&VIGOR_NOW, sizeof(VIGOR_NOW), "VIGOR_NOW");    \
+    unsigned VIGOR_DEVICE;                                              \
+    klee_possibly_havoc(&VIGOR_DEVICE, sizeof(VIGOR_DEVICE), "VIGOR_DEVICE"); \
+    unsigned _d;                                                        \
+    klee_possibly_havoc(&_d, sizeof(_d), "_d");                         \
+    while(klee_induce_invariants() & _vigor_loop_termination) { \
+      nf_add_loop_iteration_assumptions(_vigor_lcore_id, _vigor_start_time); \
+      nf_loop_iteration_begin(_vigor_lcore_id, _vigor_start_time);      \
+      VIGOR_NOW = current_time(); \
+      /* concretize the device to avoid leaking symbols into DPDK */ \
+      VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
+      VIGOR_DEVICE = klee_range(0, VIGOR_DEVICES_COUNT, "VIGOR_DEVICE"); \
+      for(_d = 0; _d < VIGOR_DEVICES_COUNT; _d++) if (VIGOR_DEVICE == _d) { VIGOR_DEVICE = _d; break; } \
+      stub_hardware_receive_packet(VIGOR_DEVICE);
+#define VIGOR_LOOP_END                                \
+      stub_hardware_reset_receive(VIGOR_DEVICE);          \
+      nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW);  \
+      }
+#else//KLEE_VERIFICATION
+#  define VIGOR_LOOP_BEGIN \
+    while (1) { \
+      time_t VIGOR_NOW = current_time(); \
+      unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
+      for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
+#  define VIGOR_LOOP_END } }
+#endif//KLEE_VERIFICATION
 
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;

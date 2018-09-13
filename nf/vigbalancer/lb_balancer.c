@@ -5,6 +5,10 @@
 #include "lib/containers/double-chain.h"
 #include "lib/expirator.h"
 
+#include <linux/limits.h>
+#include <sys/types.h>
+#include <rte_ethdev.h>
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
@@ -47,6 +51,8 @@ struct LoadBalancer {
 #include "lib/stubs/containers/vector-stub-control.h"
 
 #include "lib/stubs/containers/str-descr.h"
+
+extern struct LoadBalancer* balancer;
 
 bool
 lb_backend_id_condition(void* key, int value) {
@@ -168,7 +174,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
 
 #ifdef KLEE_VERIFICATION
   map_set_layout(balancer->flow_to_flow_id, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
-  map_set_entry_condition(balancer->flow_to_flow_id, lb_flow_id_condition);
+  map_set_entry_condition(balancer->flow_to_flow_id, lb_flow_id_condition, NULL);
   vector_set_layout(balancer->flow_heap, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
   //vector_set_layout(balancer->flow_id_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
   vector_set_layout(balancer->flow_id_to_backend_id, NULL, 0, NULL, 0, "uint32_t");
@@ -178,7 +184,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   vector_set_layout(balancer->backends, lb_backend_fields, lb_backend_fields_number(), NULL, 0, "LoadBalancedBackend");
   vector_set_entry_condition(balancer->backends, lb_backend_condition, balancer);
   map_set_layout(balancer->ip_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
-  map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition);
+  map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition, NULL);
   vector_set_layout(balancer->cht, NULL, 0, NULL, 0, "uint32_t");
 #endif//KLEE_VERIFICATION
 
@@ -306,7 +312,10 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
       //Nevermind the flow_id_to_backend_id, its entry
       // is automatically invalidated, by erasing the map entry.
       vector_borrow(balancer->flow_heap, flow_index, (void**)&flow_key);
-      map_erase(balancer->flow_to_flow_id, flow_key, (void**)&flow_key);
+      // could use `flow_key` just as well here, but
+      // current impl of symbex models does not support
+      // connecting a map with its keystore.
+      map_erase(balancer->flow_to_flow_id, flow, (void**)&flow_key);
       vector_return(balancer->flow_heap, flow_index, (void*)flow_key);
       return lb_get_backend(balancer, flow, now);
     } else {
@@ -347,8 +356,8 @@ void lb_process_heartbit(struct LoadBalancer* balancer,
       uint32_t* ip;
       vector_borrow(balancer->backend_ips, backend_index, (void**)&ip);
       *ip = flow->src_ip;
-      vector_return(balancer->backend_ips, backend_index, (void*)ip);
       map_put(balancer->ip_to_backend_id, ip, backend_index);
+      vector_return(balancer->backend_ips, backend_index, (void*)ip);
     }
     //Otherwise ignore this backend, we are full.
   } else {
