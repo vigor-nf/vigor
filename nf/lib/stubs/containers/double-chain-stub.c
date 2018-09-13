@@ -92,6 +92,17 @@ int dchain_expire_one_index(struct DoubleChain* chain,
   return 0;
 }
 
+__attribute__((noinline))
+int dchain_is_index_allocated(struct DoubleChain* chain, int index) {
+  klee_trace_ret();
+  //Deliberately trace this pointer as an integer to avoid dereference
+  klee_trace_param_u64((uint64_t)chain, "chain");
+  klee_trace_param_i32(index, "index");
+
+  klee_assert(chain != NULL);
+  return klee_int("dchain_is_index_allocated");
+}
+
 void dchain_make_space(struct DoubleChain* chain) {
   //Do not trace. this function is internal for the Expirator model.
   ALLOW(chain);

@@ -26,28 +26,73 @@ predicate lb_loop_invariant(struct Map* indices, struct Vector* heap, struct Vec
           dchain_high_fp(chainv) <= time;
 @*/
 
-void lb_loop_iteration_assumptions(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
-                                   time_t time, uint32_t flow_capacity);
+void lb_loop_iteration_assumptions(
+				struct Map** flow_to_flow_id,
+				struct Vector** flow_heap,
+				struct DoubleChain** flow_chain,
+				struct Vector** flow_id_to_backend_id,
+				struct Vector** backend_ips,
+				struct Vector** backends,
+				struct Map** ip_to_backend_id,
+				struct DoubleChain** active_backends,
+				struct Vector** cht,
+                                   time_t time, uint32_t backend_capacity, uint32_t flow_capacity);
 
-void lb_loop_invariant_consume(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
-                               time_t time, uint32_t flow_capacity);
+void lb_loop_invariant_consume(
+				struct Map** flow_to_flow_id,
+				struct Vector** flow_heap,
+				struct DoubleChain** flow_chain,
+				struct Vector** flow_id_to_backend_id,
+				struct Vector** backend_ips,
+				struct Vector** backends,
+				struct Map** ip_to_backend_id,
+				struct DoubleChain** active_backends,
+				struct Vector** cht,
+                               time_t time, uint32_t backend_capacity, uint32_t flow_capacity);
 /*@ requires *indices |-> ?indicesp &*& *heap |-> ?heapp &*& *backends |-> ?backendsp &*& *chain |-> ?chainp &*&
              lb_loop_invariant(indicesp, heapp, backendsp, chainp, time, flow_capacity); @*/
 /*@ ensures *indices |-> indicesp &*& *heap |-> heapp &*& *backends |-> backendsp &*& *chain |-> chainp; @*/
 
-void lb_loop_invariant_produce(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
-                               time_t* time, uint32_t flow_capacity);
+void lb_loop_invariant_produce(
+				struct Map** flow_to_flow_id,
+				struct Vector** flow_heap,
+				struct DoubleChain** flow_chain,
+				struct Vector** flow_id_to_backend_id,
+				struct Vector** backend_ips,
+				struct Vector** backends,
+				struct Map** ip_to_backend_id,
+				struct DoubleChain** active_backends,
+				struct Vector** cht,
+                               time_t* time, uint32_t backend_capacity, uint32_t flow_capacity);
 /*@ requires *indices |-> ?indicesp &*& *heap |-> ?heapp &*& *backends |-> ?backendsp &*& *chain |-> ?chainp &*&
              *time |-> _; @*/
 /*@ ensures *indices |-> indicesp &*& *heap |-> heapp &*& *backends |-> backendsp &*& *chain |-> chainp &*&
             *time |-> ?t &*&
             lb_loop_invariant(indicesp, heapp, backendsp, chainp, t, flow_capacity); @*/
 
-void lb_loop_iteration_begin(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
-                             time_t time, uint32_t flow_capacity);
+void lb_loop_iteration_begin(
+				struct Map** flow_to_flow_id,
+				struct Vector** flow_heap,
+				struct DoubleChain** flow_chain,
+				struct Vector** flow_id_to_backend_id,
+				struct Vector** backend_ips,
+				struct Vector** backends,
+				struct Map** ip_to_backend_id,
+				struct DoubleChain** active_backends,
+				struct Vector** cht,
+                             time_t time, uint32_t backend_capacity, uint32_t flow_capacity);
 
-void lb_loop_iteration_end(struct Map** indices, struct Vector** heap, struct Vector** backends, struct DoubleChain** chain,
-                           time_t time, uint32_t flow_capacity);
+void lb_loop_iteration_end(
+				struct Map** flow_to_flow_id,
+				struct Vector** flow_heap,
+				struct DoubleChain** flow_chain,
+				struct Vector** flow_id_to_backend_id,
+				struct Vector** backend_ips,
+				struct Vector** backends,
+				struct Map** ip_to_backend_id,
+				struct DoubleChain** active_backends,
+				struct Vector** cht,
+                           time_t time, uint32_t backend_capacity, uint32_t flow_capacity);
 
 
 #endif // LB_LOOP_H_INCLUDED
