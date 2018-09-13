@@ -125,9 +125,9 @@ lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
       }
       //printf("** ");
       uint32_t* value;
-      vector_borrow_full(cht, i*backend_capacity + j, (void**)&value);
+      vector_borrow(cht, i*backend_capacity + j, (void**)&value);
       *value = bknd;
-      vector_return_full(cht, i*backend_capacity + j, (void*)value);
+      vector_return(cht, i*backend_capacity + j, (void*)value);
       ++bknd;
       if (backend_capacity <= bknd) {
         bknd = 0;
@@ -139,9 +139,9 @@ lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
   //for (int i = 0; i < cht_height; ++i) {
   //  for (int j = 0; j < backend_capacity; ++j) {
   //    uint32_t* value;
-  //    vector_borrow_full(cht, i*backend_capacity + j, (void**)&value);
+  //    vector_borrow(cht, i*backend_capacity + j, (void**)&value);
   //    printf("%02d, ", *value);
-  //    vector_return_full(cht, i*backend_capacity + j, (void*)value);
+  //    vector_return(cht, i*backend_capacity + j, (void*)value);
   //  }
   //  printf("\n");
   //}
@@ -201,7 +201,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
 
 #ifdef KLEE_VERIFICATION
   map_set_layout(balancer->flow_to_flow_id, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
-  map_set_entry_condition(balancer->flow_to_flow_id, lb_flow_id_condition, NULL);
+  map_set_entry_condition(balancer->flow_to_flow_id, lb_flow_id_condition);
   vector_set_layout(balancer->flow_heap, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
   //vector_set_layout(balancer->flow_id_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
   vector_set_layout(balancer->flow_id_to_backend_id, NULL, 0, NULL, 0, "uint32_t");
@@ -211,7 +211,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   vector_set_layout(balancer->backends, lb_backend_fields, lb_backend_fields_number(), NULL, 0, "LoadBalancedBackend");
   vector_set_entry_condition(balancer->backends, lb_backend_condition, balancer);
   map_set_layout(balancer->ip_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
-  map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition, NULL);
+  map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition);
   vector_set_layout(balancer->cht, NULL, 0, NULL, 0, "uint32_t");
 #endif//KLEE_VERIFICATION
 
@@ -279,16 +279,16 @@ lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
     int candidate_idx = (hash + i) % cht_height;
 
     int* candidate;
-    vector_borrow_full(cht, candidate_idx, (void**)&candidate);
+    vector_borrow(cht, candidate_idx, (void**)&candidate);
     //printf("%d:%d ", candidate_idx, *candidate);
 
     if (dchain_is_index_allocated(active_backends, *candidate)) {
       *chosen_backend = *candidate;
-      vector_return_full(cht, candidate_idx, candidate);
+      vector_return(cht, candidate_idx, candidate);
       //printf("FOUND\n");
       return 1;
     }
-    vector_return_full(cht, candidate_idx, candidate);
+    vector_return(cht, candidate_idx, candidate);
   }
   //printf("give up\n");
   return 0;
