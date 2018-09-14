@@ -98,6 +98,9 @@ void lb_config_cmdline_print_usage(void)
 		"\t--backend <mac>: backend MAC address (one per backend, configured sequentially).\n"
 		"\t--flow-expiration <time>: flow expiration time.\n"
 		"\t--flow-capacity <n>: flow table capacity.\n"
+   		"\t--backend-capacity <n>: backend table capacity.\n"
+   		"\t--cht-height <n>: consistent hashing table height: bigger <n> generates more smooth distribution.\n"
+   		"\t--backend-expiration <time>: backend expiration time.\n"
 	);
 }
 
