@@ -88,36 +88,62 @@ lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
 void
 lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
   //Make sure cht_height is prime.
-  for (int i = 1; i*i < cht_height; ++i) {
-    assert(i*(cht_height/i) != i);
+  for (int i = 2; i*i <= cht_height; ++i) {
+    assert(i*(cht_height/i) != cht_height);
   }
 
+  assert(backend_capacity < cht_height);
+
   // Generate the permutations of 0..(cht_height - 1) for each backend
-  int* permutations = malloc(sizeof(int)*cht_height*backend_capacity);
+  int* permutations = malloc(sizeof(int)*cht_height*(backend_capacity + 1));
   for (int i = 0; i < backend_capacity; ++i) {
-    int offset = i*31;
-    int shift = i;
+    int offset = (i*31)%cht_height;
+    int shift = i%cht_height + 1;
     for (int j = 0; j < cht_height; ++j) {
       permutations[i*cht_height + j] = (offset + shift*j)%cht_height;
+      //printf("%d, ", permutations[i*cht_height + j]);
     }
+    //printf("\n");
   }
   // Fill the priority lists for each hash in [0, cht_height)
   for (int i = 0; i < cht_height; ++i) {
+    int bknd = 0;
+    int perm_pos = 0;
+    //printf("looking for %d\n", i);
     for (int j = 0; j < backend_capacity; ++j) {
-      bool found = false;
-      for (int k = 0; k < backend_capacity; ++k) {
-        if (permutations[i*cht_height + k] == j) {
-          int* value = 0;
-          vector_borrow(cht, i*cht_height + j, (void**)&value);
-          *value = k;
-          vector_return(cht, i*cht_height + j, (void*)value);
-          found = true;
-          break;
+      assert(perm_pos < cht_height);
+      while (permutations[bknd*cht_height + perm_pos] != i) {
+        //printf("%02d ", permutations[bknd*cht_height + perm_pos]);
+        ++bknd;
+        if (backend_capacity <= bknd) {
+          //printf("..\n");
+          bknd = 0;
+          ++perm_pos;
+          assert(perm_pos < cht_height);
         }
       }
-      assert(found);
+      //printf("** ");
+      uint32_t* value;
+      vector_borrow_full(cht, i*backend_capacity + j, (void**)&value);
+      *value = bknd;
+      vector_return_full(cht, i*backend_capacity + j, (void*)value);
+      ++bknd;
+      if (backend_capacity <= bknd) {
+        bknd = 0;
+        ++perm_pos;
+      }
     }
   }
+  //printf("preferences:\n");
+  //for (int i = 0; i < cht_height; ++i) {
+  //  for (int j = 0; j < backend_capacity; ++j) {
+  //    uint32_t* value;
+  //    vector_borrow_full(cht, i*backend_capacity + j, (void**)&value);
+  //    printf("%02d, ", *value);
+  //    vector_return_full(cht, i*backend_capacity + j, (void*)value);
+  //  }
+  //  printf("\n");
+  //}
   free(permutations);
 }
 #endif//KLEE_VERIFICATION
@@ -247,20 +273,24 @@ lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
                                     uint32_t cht_height,
                                     uint32_t backend_capacity,
                                     int *chosen_backend) {
-  int candidate_idx = hash % cht_height;
-  int last_idx = candidate_idx + backend_capacity;
-  int* candidate;
-  vector_borrow(cht, candidate_idx, (void**)&candidate);
-  while (!dchain_is_index_allocated(active_backends, *candidate)) {
-    vector_return(cht, candidate_idx, candidate);
-    ++candidate_idx;
-    // All backends are down, give up
-    if (backend_capacity <= candidate_idx) return 0;
-    vector_borrow(cht, candidate_idx, (void**)&candidate);
+  for (int i = 0; i < backend_capacity; ++i) {
+
+    int candidate_idx = (hash + i) % cht_height;
+
+    int* candidate;
+    vector_borrow_full(cht, candidate_idx, (void**)&candidate);
+    //printf("%d:%d ", candidate_idx, *candidate);
+
+    if (dchain_is_index_allocated(active_backends, *candidate)) {
+      *chosen_backend = *candidate;
+      vector_return_full(cht, candidate_idx, candidate);
+      //printf("FOUND\n");
+      return 1;
+    }
+    vector_return_full(cht, candidate_idx, candidate);
   }
-  *chosen_backend = *candidate;
-  vector_return(cht, candidate_idx, candidate);
-  return 1;
+  //printf("give up\n");
+  return 0;
 }
 
 #endif//KLEE_VERIFICATION
@@ -297,6 +327,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
       vector_return(balancer->backends, backend_index, (void*)vec_backend);
       //klee_assert(backend.nic < rte_eth_dev_count());
     } else {
+      //printf("dropping\n");
       // Drop
       backend.nic = 0;// The wan interface.
     }
