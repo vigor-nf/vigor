@@ -42,9 +42,10 @@ int vector_allocate(int elem_size, unsigned capacity,
   klee_make_symbolic(*vector_out, sizeof(struct Vector), "vector");
   (*vector_out)->data = calloc(NUM_ELEMS, elem_size);
   klee_make_symbolic((*vector_out)->data, elem_size*NUM_ELEMS, "vector_data");
-  for (int n = 0; n < NUM_ELEMS; n++) {
-    init_elem((*vector_out)->data + (elem_size*n));
-  }
+  // Do not call init elem, to preserve the elems being symbolic.
+  //for (int n = 0; n < NUM_ELEMS; n++) {
+  //  init_elem((*vector_out)->data + (elem_size*n));
+  //}
   (*vector_out)->elem_size = elem_size;
   (*vector_out)->capacity = capacity;
   (*vector_out)->init_elem = init_elem;
@@ -63,9 +64,10 @@ void vector_reset(struct Vector* vector) {
   klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
   klee_make_symbolic(vector->data, NUM_ELEMS*vector->elem_size, "vector_data_reset");
   vector->elems_claimed = 0;
-  for (int n = 0; n < NUM_ELEMS; n++) {
-    vector->init_elem(vector->data + (vector->elem_size*n));
-  }
+  // Do not call init elem, to preserve the elems being symbolic.
+  //for (int n = 0; n < NUM_ELEMS; n++) {
+  //  vector->init_elem(vector->data + (vector->elem_size*n));
+  //}
   klee_forbid_access(vector->data, vector->elem_size*NUM_ELEMS, "private state");
 }
 
