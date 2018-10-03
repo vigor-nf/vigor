@@ -14,5 +14,5 @@
   - `unknown_swfw_sync_bit` removes the usage of an undocumented bit in the SWFW_SYNC (a.k.a. GSSR) register (reported)
   - `tdh_order_of_operations` fixes the order of enabling TX and setting TDH (reported)
   - `wrong_register_dpf_pmcf` removes the usage of bits that should be in another register on the 82599
-  - `hacks` contains unfortunate hacks for verification :-(
+  - `hacks` contains unfortunate hacks for verification :-( (There is an `ideal` file for the patch we want, but can't make work)
 - A minimalistic config file for `klee-uclibc`

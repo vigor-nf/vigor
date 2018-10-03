@@ -19,8 +19,6 @@ struct FlowManager {
 #ifdef KLEE_VERIFICATION
 #include <rte_ethdev.h>
 #include "lib/stubs/containers/double-map-stub-control.h" //<- for set entry cond
-// for RTE_MAX_ETHPORTS
-#include <rte_config.h>
 
 struct DoubleChain**
 flow_manager_get_chain(struct FlowManager* manager) {
@@ -39,7 +37,7 @@ flow_consistency(void* key_a, void* key_b,
 	struct FlowId* ext_id = key_b;
 	struct Flow* flow = value;
 	struct FlowManager* manager = state;
-	return ( 0 <= flow->internal_device ) & ( flow->internal_device < RTE_MAX_ETHPORTS ) &
+	return ( 0 <= flow->internal_device ) & ( flow->internal_device < rte_eth_dev_count() ) &
 		( flow->internal_device != manager->nat_device ) &
 		( flow->external_id.src_port == flow->internal_id.dst_port ) &
 		( flow->external_id.src_ip == flow->internal_id.dst_ip ) &

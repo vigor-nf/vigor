@@ -7,8 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "rte_cycles.h" // to include the next one cleanly
-#include "generic/rte_cycles.h" // for rte_delay_us_callback_register
+// NO DPDK HEADERS HERE! we're implementing a reference implementation...
 
 #include <klee/klee.h>
 
@@ -49,8 +48,8 @@ static bool free_called;
 
 // We do not model RC registers specially because we don't allow writes to any of them and they all start at 0, so we just leave them alone
 
-static void
-stub_delay_us(unsigned int us)
+void
+stub_delay(unsigned int us)
 {
 	TIME += us * 1000 ; // TIME is in ns
 }
@@ -64,12 +63,6 @@ stub_device_reset(struct stub_device* dev)
 			DEV_REG(dev, n) = REGISTERS[n].initial_value;
 		}
 	}
-
-// FIXME not needed?
-//	// 1 bit diff between MAC addresses; see registers init and VigNAT makefile
-//	if (dev == &DEVICES[1]) {
-//		DEV_REG(dev, 0x0A200) |= 1;
-//	}
 
 	dev->current_mdi_address = -1;
 }
@@ -2280,7 +2273,7 @@ stub_device_init(struct stub_device* dev)
 static struct stub_device*
 stub_device_get(uint64_t addr)
 {
-	for (int n = 0; n < STUB_HARDWARE_DEVICES_COUNT; n++) {
+	for (int n = 0; n < sizeof(DEVICES)/sizeof(DEVICES[0]); n++) {
 		if (addr == (uint64_t) DEVICES[n].mem) {
 			return &DEVICES[n];
 		}
@@ -2384,15 +2377,16 @@ stub_hardware_init(void)
 	// Intercept free to trace
 	klee_alias_function_regex("rte_pktmbuf_free[0-9]*", "stub_free");
 
+	// DPDK "delay" method override
+	klee_alias_function("rte_delay_us_block", "stub_delay");
+
 	// Register models initializations
 	stub_registers_init();
 
 	// Device initialization
-	for (int n = 0; n < STUB_HARDWARE_DEVICES_COUNT; n++) {
+	for (int n = 0; n < sizeof(DEVICES)/sizeof(DEVICES[0]); n++) {
 		struct stub_device stub_dev = {
 			.name = stub_pci_name(n),
-			.interrupts_fd = 0, // set by stdio_files stub
-			.interrupts_enabled = false,
 			.mem = NULL,
 			.mem_len = 1 << 20, // 2^20 bytes
 			.mem_shadow = NULL,
@@ -2403,15 +2397,12 @@ stub_hardware_init(void)
 			.i2c_start_time = 0,
 			.i2c_clock_time = 0,
 			.i2c_stop_time = 0,
-			.sfp_address = 0
+			.sfp_address = 0,
+			.interrupts_fd = 0 // set by stdio_files stub
 		};
 		stub_device_init(&stub_dev);
 		DEVICES[n] = stub_dev;
-
 	}
-
-	// DPDK "delay" method override
-	rte_delay_us_callback_register(stub_delay_us);
 }
 
 

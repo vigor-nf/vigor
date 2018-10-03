@@ -166,31 +166,29 @@ write(int fd, const void* buf, size_t count)
 	//  returning the number of bytes actually transferred."
 	klee_assert(count <= 0x7ffff000);
 
+	// "On success, the number of bytes written is returned (zero indicates nothing was written).
+	//  It is not an error if this number is smaller than the number of bytes requested."
+
 	// Either we write to the stub pipe, or to an interrupt file
 	if (fd == STUB_PIPE_FD_WRITE) {
 		stub_pipe_write(buf, count);
-	} else {
-		klee_assert(count == 4);
-
-		for (int n = 0; n < sizeof(DEVICES)/sizeof(DEVICES[0]); n++) {
-			if (fd == DEVICES[n].interrupts_fd) {
-				if (*((uint32_t*) buf) == 0) {
-					DEVICES[n].interrupts_enabled = false;
-				} else if (*((uint32_t*) buf) == 1) {
-					DEVICES[n].interrupts_enabled = true;
-				} else {
-					klee_abort();
-				}
-
-				goto success;
-			}
-		}
-
-		klee_abort();
+		return count;
 	}
 
-	// "On success, the number of bytes written is returned (zero indicates nothing was written).
-	//  It is not an error if this number is smaller than the number of bytes requested."
-success:
-	return 0;
+	klee_assert(count == 4);
+
+	for (int n = 0; n < sizeof(DEVICES)/sizeof(DEVICES[0]); n++) {
+		if (fd == DEVICES[n].interrupts_fd) {
+			if (*((uint32_t*) buf) == 0) {
+				// Disabled - OK
+			} else if (*((uint32_t*) buf) == 1) {
+				// Enabled - OK
+			} else {
+				klee_abort();
+			}
+				return count;
+		}
+	}
+
+	klee_abort();
 }

@@ -8,13 +8,6 @@
 #include <klee/klee.h>
 
 
-#ifdef STUB_DEVICES_COUNT
-#define STUB_DPDK_DEVICES_COUNT STUB_DEVICES_COUNT
-#else
-#define STUB_DPDK_DEVICES_COUNT 2
-#endif
-
-
 struct rte_eth_link {
 	uint32_t link_speed;
 	uint16_t link_duplex  : 1;
@@ -31,20 +24,20 @@ struct rte_eth_txconf { /* Nothing */ };
 
 // Sanity checks
 // Documentation of rte_ethdev indicates the configure/tx/rx/started order
-static bool devices_configured[STUB_DPDK_DEVICES_COUNT];
-static bool devices_tx_setup[STUB_DPDK_DEVICES_COUNT];
-static bool devices_rx_setup[STUB_DPDK_DEVICES_COUNT];
-static bool devices_started[STUB_DPDK_DEVICES_COUNT];
-static bool devices_promiscuous[STUB_DPDK_DEVICES_COUNT];
+static bool devices_configured[STUB_DEVICES_COUNT];
+static bool devices_tx_setup[STUB_DEVICES_COUNT];
+static bool devices_rx_setup[STUB_DEVICES_COUNT];
+static bool devices_started[STUB_DEVICES_COUNT];
+static bool devices_promiscuous[STUB_DEVICES_COUNT];
 
 // To allocate mbufs
-static struct rte_mempool* devices_rx_mempool[STUB_DPDK_DEVICES_COUNT];
+static struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
 
 
 static inline uint16_t
 rte_eth_dev_count(void)
 {
-	return STUB_DPDK_DEVICES_COUNT;
+	return STUB_DEVICES_COUNT;
 }
 
 static inline int
@@ -118,7 +111,7 @@ rte_eth_promiscuous_get(uint16_t port_id)
 static inline int
 rte_eth_dev_socket_id(uint16_t port_id)
 {
-	klee_assert(port_id < STUB_DPDK_DEVICES_COUNT);
+	klee_assert(port_id < rte_eth_dev_count());
 
 	return 0;
 }
