@@ -489,9 +489,10 @@ stub_stdio_files_init(void)
 	int f = 0;
 	memset(FILES, 0, sizeof(FILES));
 
+#ifdef VIGOR_STUB_HARDWARE
 	// PCI-related files
-	int* dev_folders = (int*) malloc(STUB_HARDWARE_DEVICES_COUNT * sizeof(int));
-	for (int n = 0; n < STUB_HARDWARE_DEVICES_COUNT; n++) {
+	int* dev_folders = (int*) malloc(STUB_DEVICES_COUNT * sizeof(int));
+	for (int n = 0; n < STUB_DEVICES_COUNT; n++) {
 		char* dev = DEVICES[n].name;
 
 		// Basic files
@@ -551,7 +552,8 @@ stub_stdio_files_init(void)
 		DEVICES[n].interrupts_fd = stub_add_file(strdup(interrupts_file_path), "");
 	}
 
-	stub_add_folder_array("/sys/bus/pci/devices", STUB_HARDWARE_DEVICES_COUNT, dev_folders);
+	stub_add_folder_array("/sys/bus/pci/devices", STUB_DEVICES_COUNT, dev_folders);
+#endif
 
 	// Hugepages properties
 	char huge_free_value[1024];

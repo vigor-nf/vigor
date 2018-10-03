@@ -1,6 +1,8 @@
 #include <rte_mempool.h>
 
-// HACKÃ!
+#include <klee/klee.h>
+
+// HACK!
 // Loop havocing means that any memory that changes in a loop iteration is replaced by an unconstrained symbol.
 // What would normally happen is that the ixgbe driver, when initializing, takes a bunch of mbufs from the pool;
 // then when RX-ing, uses one of those mbufs, and takes another one as replacement from the pool;
@@ -24,15 +26,20 @@ singleton_alloc(struct rte_mempool *mp)
 }
 
 static int
-singleton_enqueue(struct rte_mempool *mp, void * const *obj_table, unsigned n)
+singleton_enqueue(struct rte_mempool *mp, void* const* obj_table, unsigned n)
 {
 	if (n == 0) {
 		// not supposed to happen, but OK
 		return 0;
 	}
 
+	if (n > 1) {
+		// OK to enqueue more, as long as you don't ask for them back
+		n = 1;
+	}
+
 	if (mp->pool_data != NULL) {
-		// ignore
+		// Again, OK to enqueue more
 		return 0;
 	}
 
@@ -49,9 +56,14 @@ singleton_dequeue(struct rte_mempool *mp, void **obj_table, unsigned n)
 		return 0;
 	}
 
+	if (n > 1) {
+		// Not OK to dequeue more, this should not happen
+		klee_abort();
+	}
+
 	if (mp->pool_data == NULL) {
-		// Bad!
-		return -1;
+		// Should not happen either
+		klee_abort();
 	}
 
 	*obj_table = mp->pool_data;
@@ -67,7 +79,7 @@ singleton_get_count(const struct rte_mempool *mp)
 static void
 singleton_free(struct rte_mempool *mp)
 {
-	// whatever, we're leaking memory anyway...
+	// whatever...
 }
 
 static struct rte_mempool_ops ops_singleton = {

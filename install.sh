@@ -221,7 +221,7 @@ pushd "$BUILDDIR/klee"
      cmake \
      -DENABLE_UNIT_TESTS=OFF \
      -DBUILD_SHARED_LIBS=OFF \
-     -DENABLE_KLEE_ASSERTS=OFF \
+     -DENABLE_KLEE_ASSERTS=ON \
      -DLLVM_CONFIG_BINARY="$BUILDDIR/llvm/Release/bin/llvm-config" \
      -DLLVMCC="$BUILDDIR/llvm/Release/bin/clang" \
      -DLLVMCXX="$BUILDDIR/llvm/Release/bin/clang++" \

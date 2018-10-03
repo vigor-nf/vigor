@@ -7,6 +7,22 @@
 
 #include <stdint.h>
 
+// DPDK uses these but doesn't include them. :|
+#include <linux/limits.h>
+#include <sys/types.h>
+
+#include <rte_common.h>
+#include <rte_eal.h>
+#include <rte_errno.h>
+#include <rte_ethdev.h>
+#include <rte_lcore.h>
+#include <rte_mbuf.h>
+
+#include "lib/nf_forward.h"
+#include "lib/nf_log.h"
+#include "lib/nf_time.h"
+#include "lib/nf_util.h"
+
 
 #ifdef KLEE_VERIFICATION
 #define VIGOR_LOOP_BEGIN \
@@ -34,23 +50,6 @@
     for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
 #define VIGOR_LOOP_END } }
 #endif
-
-
-// DPDK uses these but doesn't include them. :|
-#include <linux/limits.h>
-#include <sys/types.h>
-
-#include <rte_common.h>
-#include <rte_eal.h>
-#include <rte_errno.h>
-#include <rte_ethdev.h>
-#include <rte_lcore.h>
-#include <rte_mbuf.h>
-
-#include "lib/nf_forward.h"
-#include "lib/nf_log.h"
-#include "lib/nf_time.h"
-#include "lib/nf_util.h"
 
 
 // Number of RX/TX queues

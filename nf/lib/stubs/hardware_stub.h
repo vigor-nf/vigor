@@ -9,19 +9,8 @@
 #include "lib/stubs/mbuf_content.h"
 
 
-// ifdef this so the stdio stubs don't create files that we don't need
-#ifdef VIGOR_STUB_HARDWARE
-#define STUB_HARDWARE_DEVICES_COUNT 2
-#else
-#define STUB_HARDWARE_DEVICES_COUNT 0
-#endif
-
-
 struct stub_device {
 	char* name;
-
-	int interrupts_fd;
-	bool interrupts_enabled;
 
 	void* mem; // intercepted by stub
 	size_t mem_len;
@@ -40,9 +29,12 @@ struct stub_device {
 
 	// required for the reset hack...
 	uint64_t old_mbuf_addr;
+
+	// required for the interrupts file, even though interrupts are not used
+	// TODO can we remove this, and can we write down how we know interrupts are disabled? I think it's a register...
+	int interrupts_fd;
 };
 
-struct stub_device DEVICES[STUB_HARDWARE_DEVICES_COUNT];
 
 // Required because the validator expects the traced mbuf and its content to stay at the same address throughout.
 // Sound as long as RX and TX are each called once at most, which we check.
@@ -52,10 +44,14 @@ struct stub_mbuf_content traced_mbuf_content;
 
 
 #ifdef VIGOR_STUB_HARDWARE
+struct stub_device DEVICES[STUB_DEVICES_COUNT];
+
 void stub_hardware_receive_packet(uint16_t device);
 // HACK this should not be needed :( but it is cause of the current impl. of havocing
 void stub_hardware_reset_receive(uint16_t device);
 #else
+struct stub_device DEVICES[0];
+
 static inline void stub_hardware_receive_packet(uint16_t device) { }
 static inline void stub_hardware_reset_receive(uint16_t device) { }
 #endif

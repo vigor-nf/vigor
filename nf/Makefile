@@ -1,9 +1,9 @@
 # Skeleton Makefile for Vigor NFs
 # Variables that should be defined by inheriting Makefiles:
 # - APP := <binary name>
+# - NF_DEVICES := <number of devices during verif-time, default 2>
 # - NF_FILES := <NF files for both runtime and verif-time>
 # - NF_VERIF_FILES := <verif-time only NF files>
-# - NF_VERIF_DEFS := <verif-time only defs (-Dxxx)>
 # - NF_VERIF_ARGS := <arguments to pass to the NF at verif-time>
 
 # -----------------------------------------------------------------------
@@ -11,6 +11,9 @@
 # get current dir
 # see https://stackoverflow.com/a/8080530
 SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+# Default value for devices
+NF_DEVICES ?= 2
 
 # If KLEE_BUILD_PATH is not defined (such as in the paths saved by install.sh),
 # try to compute it based on KLEE_INCLUDE.
@@ -75,8 +78,8 @@ VERIF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
 
 # Defines. TODO remove _GNU_SOURCE from here, #define it in files
 VERIF_DEFS := -D_GNU_SOURCE -DKLEE_VERIFICATION
-# Specific NF
-VERIF_DEFS += $(NF_VERIF_DEFS)
+# Number of devices
+VERIF_DEFS += -DSTUB_DEVICES_COUNT=$(NF_DEVICES)
 
 # Basic files
 # NF base
@@ -141,7 +144,7 @@ LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-ucli
                 llvm-link -o nf_raw.bc  *.os *.bc
 # Optimization; analyze and remove as much provably dead code as possible (exceptions are stubs; also, mem* functions, not sure why it DCEs them since they are used...maybe related to LLVM having intrinsics for them?)
 # I've tried adding '-constprop -ipconstprop -ipsccp -correlated-propagation -loop-deletion -dce -die -dse -adce -deadargelim -instsimplify'; this works but the traced prefixes seem messed up :(
-OPT_EXCEPTIONS := memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,stub_hardware_write,stub_prefetch,stub_rdtsc,stub_socket,stub_strerror
+OPT_EXCEPTIONS := memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,stub_hardware_write,stub_prefetch,stub_rdtsc,stub_socket,stub_strerror,stub_delay
 OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=main,$(OPT_EXCEPTIONS) -globaldce nf_raw.bc > nf.bc
 # KLEE verification
 # if something takes longer than expected, try --max-solver-time=3 --debug-report-symbdex (to avoid symbolic indices)
