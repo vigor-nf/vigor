@@ -63,5 +63,12 @@ SERVER_DEVICE=p801p1
 
 # Other
 
-export RTE_SDK=$HOME/dpdk
+CASE_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}")"/../../../../  >/dev/null && pwd )"
+
+# Fix the case root folder for the tester, where it should be just home
+if [ "${CASE_ROOT##/home/}" == "${CASE_ROOT}" ]; then
+  CASE_ROOT=$HOME
+fi
+
+export RTE_SDK=$CASE_ROOT/dpdk
 export RTE_TARGET=x86_64-native-linuxapp-gcc

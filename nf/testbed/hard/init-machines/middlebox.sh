@@ -9,6 +9,6 @@ sudo apt-get install -yqq \
     linux-headers-3.13.0-93 \
     libglib2.0-dev daemon iperf3 netperf tmux
 
-pushd "$HOME"
+pushd "$CASE_ROOT"
   bash vnds/install.sh dpdk-only
 popd
