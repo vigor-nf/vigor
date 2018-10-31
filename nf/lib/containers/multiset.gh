@@ -87,7 +87,7 @@ ensures true == subset(l1, l2);
   }
 }
 
-lemma void multiset_eq_set_eq<t>(list<t> l1, list<t> l2)
+lemma_auto void multiset_eq_set_eq<t>(list<t> l1, list<t> l2)
 requires true == multiset_eq(l1, l2);
 ensures true == set_eq(l1, l2);
 {

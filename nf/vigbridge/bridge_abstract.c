@@ -1451,23 +1451,23 @@ ensures dchain_get_time_fp(dchain_rejuvenate_fp(indices, index, time), index) ==
   }
 }
 
-lemma void bridge_dchain_rejuv_unrelevant_subset(list<pair<ether_addri, uint32_t> > dyn_map,
-                                                 list<pair<uint16_t, bool> > vals,
-                                                 dchain indices,
-                                                 int index,
-                                                 time_t time)
+lemma void bridge_dchain_rejuv_unrelevant_msubset(list<pair<ether_addri, uint32_t> > dyn_map,
+                                                  list<pair<uint16_t, bool> > vals,
+                                                  dchain indices,
+                                                  int index,
+                                                  time_t time)
 requires false == mem(index, map(snd, dyn_map));
-ensures true == subset(gen_dyn_entries(dyn_map, vals,
-                                       dchain_rejuvenate_fp(indices, index, time)),
-                       gen_dyn_entries(dyn_map, vals, indices));
+ensures true == msubset(gen_dyn_entries(dyn_map, vals,
+                                        dchain_rejuvenate_fp(indices, index, time)),
+                        gen_dyn_entries(dyn_map, vals, indices));
 {
   switch(dyn_map) {
     case nil:
     case cons(h,t):
       switch(h) { case pair(cur_addr, cur_index):
         dchain_rejuv_alloc_other_keeps_time(indices, index, time, cur_index);
-        bridge_dchain_rejuv_unrelevant_subset(t, vals, indices, index, time);
-        add_extra_preserves_subset
+        bridge_dchain_rejuv_unrelevant_msubset(t, vals, indices, index, time);
+        msubset_cons_preserves
           (gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices, index, time)),
            gen_dyn_entries(t, vals, indices),
            dyn_entry(cur_addr, fst(nth(cur_index, vals)),
@@ -1477,23 +1477,23 @@ ensures true == subset(gen_dyn_entries(dyn_map, vals,
   }
 }
 
-lemma void bridge_dchain_rejuv_unrelevant_superset(list<pair<ether_addri, uint32_t> > dyn_map,
-                                                   list<pair<uint16_t, bool> > vals,
-                                                   dchain indices,
-                                                   int index,
-                                                   time_t time)
+lemma void bridge_dchain_rejuv_unrelevant_msuperset(list<pair<ether_addri, uint32_t> > dyn_map,
+                                                    list<pair<uint16_t, bool> > vals,
+                                                    dchain indices,
+                                                    int index,
+                                                    time_t time)
 requires false == mem(index, map(snd, dyn_map));
-ensures true == subset(gen_dyn_entries(dyn_map, vals, indices),
-                       gen_dyn_entries(dyn_map, vals,
-                                       dchain_rejuvenate_fp(indices, index, time)));
+ensures true == msubset(gen_dyn_entries(dyn_map, vals, indices),
+                        gen_dyn_entries(dyn_map, vals,
+                                        dchain_rejuvenate_fp(indices, index, time)));
 {
   switch(dyn_map) {
     case nil:
     case cons(h,t):
       switch(h) { case pair(cur_addr, cur_index):
         dchain_rejuv_alloc_other_keeps_time(indices, index, time, cur_index);
-        bridge_dchain_rejuv_unrelevant_superset(t, vals, indices, index, time);
-        add_extra_preserves_subset
+        bridge_dchain_rejuv_unrelevant_msuperset(t, vals, indices, index, time);
+        msubset_cons_preserves
           (gen_dyn_entries(t, vals, indices),
            gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices, index, time)),
            dyn_entry(cur_addr, fst(nth(cur_index, vals)),
@@ -1504,7 +1504,6 @@ ensures true == subset(gen_dyn_entries(dyn_map, vals, indices),
       }
   }
 }
-                     
 
 lemma void map_get_contains_value<kt>(list<pair<kt, uint32_t> > m, kt k, uint32_t v)
 requires map_get_fp(m, k) == v &*&
@@ -1520,7 +1519,7 @@ ensures true == mem(v, map(snd, m));
   }
 }
 
-lemma void bridge_dchain_rejuv_entry_subset
+lemma void bridge_dchain_rejuv_entry_msubset
              (list<pair<ether_addri, uint32_t> > dyn_map,
               list<pair<uint16_t, bool> > vals,
               dchain indices,
@@ -1529,15 +1528,15 @@ lemma void bridge_dchain_rejuv_entry_subset
 requires true == distinct(map(snd, dyn_map)) &*&
          true == distinct(dchain_indexes_fp(indices)) &*&
          true == mem(addr, map(fst, dyn_map));
-ensures true == subset(gen_dyn_entries(dyn_map,
-                                       vals,
-                                       dchain_rejuvenate_fp(indices,
-                                                            map_get_fp(dyn_map,
-                                                                       addr),
-                                                            time)),
-                       rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
-                                                            indices),
-                                            addr, time));
+ensures true == msubset(gen_dyn_entries(dyn_map,
+                                        vals,
+                                        dchain_rejuvenate_fp(indices,
+                                                             map_get_fp(dyn_map,
+                                                                        addr),
+                                                             time)),
+                        rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
+                                                             indices),
+                                             addr, time));
 {
   switch(dyn_map) {
     case nil:
@@ -1546,27 +1545,27 @@ ensures true == subset(gen_dyn_entries(dyn_map,
         case pair(cur_addr,cur_index):
           if (cur_addr == addr) {
             dchain_rejuv_time(indices, cur_index, time);
-            bridge_dchain_rejuv_unrelevant_subset(t, vals, indices,
-                                                  cur_index, time);
-            add_extra_preserves_subset
+            bridge_dchain_rejuv_unrelevant_msubset(t, vals, indices,
+                                                   cur_index, time);
+            msubset_cons_preserves
               (gen_dyn_entries(t, vals, dchain_rejuvenate_fp(indices,
                                                              cur_index, time)),
                gen_dyn_entries(t, vals, indices),
                dyn_entry(cur_addr, fst(nth(cur_index, vals)), time));
           } else {
-            bridge_dchain_rejuv_entry_subset(t, vals, indices, addr, time);
-            add_extra_preserves_subset(gen_dyn_entries(t,
-                                        vals,
-                                        dchain_rejuvenate_fp
-                                          (indices, map_get_fp(dyn_map, addr),
-                                           time)),
-                                       rejuvenate_dyn_entry
-                                         (gen_dyn_entries(t, vals, indices),
-                                          addr, time),
-                                       dyn_entry(cur_addr,
-                                                 fst(nth(cur_index, vals)),
-                                                 dchain_get_time_fp(indices,
-                                                                    cur_index)));
+            bridge_dchain_rejuv_entry_msubset(t, vals, indices, addr, time);
+            msubset_cons_preserves(gen_dyn_entries(t,
+                                                   vals,
+                                                   dchain_rejuvenate_fp
+                                                     (indices, map_get_fp(dyn_map, addr),
+                                                     time)),
+                                   rejuvenate_dyn_entry
+                                     (gen_dyn_entries(t, vals, indices),
+                                     addr, time),
+                                   dyn_entry(cur_addr,
+                                             fst(nth(cur_index, vals)),
+                                             dchain_get_time_fp(indices,
+                                                               cur_index)));
             if (map_get_fp(dyn_map, addr) != cur_index) {
               dchain_rejuv_alloc_other_keeps_time(indices, map_get_fp(dyn_map, addr),
                                                   time, cur_index);
@@ -1579,7 +1578,7 @@ ensures true == subset(gen_dyn_entries(dyn_map,
   }
 }
 
-lemma void bridge_dchain_rejuv_entry_superset
+lemma void bridge_dchain_rejuv_entry_msuperset
              (list<pair<ether_addri, uint32_t> > dyn_map,
               list<pair<uint16_t, bool> > vals,
               dchain indices,
@@ -1588,15 +1587,15 @@ lemma void bridge_dchain_rejuv_entry_superset
 requires true == distinct(map(snd, dyn_map)) &*&
          true == distinct(dchain_indexes_fp(indices)) &*&
          true == mem(addr, map(fst, dyn_map));
-ensures true == subset(rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
-                                                            indices),
-                                            addr, time),
-                       gen_dyn_entries(dyn_map,
-                                       vals,
-                                       dchain_rejuvenate_fp(indices,
-                                                            map_get_fp(dyn_map,
-                                                                       addr),
-                                                            time)));
+ensures true == msubset(rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
+                                                             indices),
+                                             addr, time),
+                        gen_dyn_entries(dyn_map,
+                                        vals,
+                                        dchain_rejuvenate_fp(indices,
+                                                             map_get_fp(dyn_map,
+                                                                        addr),
+                                                             time)));
 {
   switch(dyn_map) {
     case nil:
@@ -1604,9 +1603,9 @@ ensures true == subset(rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
       switch(h) { case pair(cur_addr, cur_index):
         if (cur_addr == addr) {
           dchain_rejuv_time(indices, cur_index, time);
-          bridge_dchain_rejuv_unrelevant_superset(t, vals, indices,
+          bridge_dchain_rejuv_unrelevant_msuperset(t, vals, indices,
                                                   cur_index, time);
-          add_extra_preserves_subset
+          msubset_cons_preserves
             (gen_dyn_entries(t, vals, indices),
              gen_dyn_entries(t, vals, dchain_rejuvenate_fp
                                         (indices, map_get_fp(dyn_map, addr),
@@ -1618,8 +1617,8 @@ ensures true == subset(rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals,
           }
           dchain_rejuv_alloc_other_keeps_time(indices, map_get_fp(dyn_map, addr),
                                               time, cur_index);
-          bridge_dchain_rejuv_entry_superset(t, vals, indices, addr, time);
-          add_extra_preserves_subset
+          bridge_dchain_rejuv_entry_msuperset(t, vals, indices, addr, time);
+          msubset_cons_preserves
             (rejuvenate_dyn_entry(gen_dyn_entries(t, vals, indices),
                                   addr, time),
              gen_dyn_entries(t, vals,
@@ -1644,14 +1643,19 @@ lemma void bridge_rejuv_entry(list<pair<ether_addri, uint32_t> > dyn_map,
 requires true == distinct(map(snd, dyn_map)) &*&
          true == distinct(dchain_indexes_fp(indices)) &*&
          true == mem(addr, map(fst, dyn_map));
-ensures set_eq(gen_dyn_entries(dyn_map,
-                               vals,
-                               dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
-               rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
-                                    addr, time)) == true;
+ensures multiset_eq(gen_dyn_entries(dyn_map,
+                                    vals,
+                                    dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
+                    rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                                          addr, time)) == true;
 {
-  bridge_dchain_rejuv_entry_subset(dyn_map, vals, indices, addr, time);
-  bridge_dchain_rejuv_entry_superset(dyn_map, vals, indices, addr, time);
+  bridge_dchain_rejuv_entry_msubset(dyn_map, vals, indices, addr, time);
+  bridge_dchain_rejuv_entry_msuperset(dyn_map, vals, indices, addr, time);
+  msubset_multiset_eq(gen_dyn_entries(dyn_map,
+                                      vals,
+                                      dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
+                      rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                                           addr, time));
 }
 
 @*/
@@ -1671,7 +1675,6 @@ ensures mem(entry, dyn_table) == mem(entry, rejuvenate_dyn_entry(dyn_table, addr
           rejuv_unrelated_keep_mem(t, addr, time, entry);
       }
   }
-                    
 }
 
 lemma void bridge_rejuv_entry_is_mem(list<dyn_entry> dyn_table, dyn_entry entry, time_t new_time)
@@ -1747,20 +1750,69 @@ ensures true == subset(rejuvenate_dyn_entry(dyn_table1, addr, time),
   }
 }
 
-lemma void bridge_rejuv_entry_set_eq(list<dyn_entry> dyn_table1,
-                                     list<dyn_entry> dyn_table2,
-                                     ether_addri addr,
-                                     time_t time)
-requires true == set_eq(dyn_table1, dyn_table2) &*&
-         true == distinct(map(get_dyn_addr, dyn_table1)) &*&
-         true == distinct(map(get_dyn_addr, dyn_table2));
-ensures true == set_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
-                       rejuvenate_dyn_entry(dyn_table2, addr, time));
+lemma void bridge_rejuv_addrs(list<dyn_entry> table,
+                              ether_addri addr,
+                              time_t time)
+requires true;
+ensures map(get_dyn_addr, table) ==
+        map(get_dyn_addr, rejuvenate_dyn_entry(table, addr, time));
 {
+  switch(table) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case dyn_entry(cur_addr, port, cur_time):
+          if (addr != cur_addr) {
+            bridge_rejuv_addrs(t, addr, time);
+          }
+      }
+  }
+}
+
+lemma void bridge_rejuv_entry_mset_eq(list<dyn_entry> dyn_table1,
+                                      list<dyn_entry> dyn_table2,
+                                      ether_addri addr,
+                                      time_t time)
+requires true == multiset_eq(dyn_table1, dyn_table2) &*&
+         true == distinct(map(get_dyn_addr, dyn_table1));
+ensures true == multiset_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                            rejuvenate_dyn_entry(dyn_table2, addr, time));
+{
+  multiset_eq_map(get_dyn_addr, dyn_table1, dyn_table2);
+  multiset_eq_distinct(map(get_dyn_addr, dyn_table1),
+                       map(get_dyn_addr, dyn_table2));
+  bridge_rejuv_addrs(dyn_table1, addr, time);
+  distinct_unmap(rejuvenate_dyn_entry(dyn_table1, addr, time), get_dyn_addr);
+  bridge_rejuv_addrs(dyn_table2, addr, time);
+  distinct_unmap(rejuvenate_dyn_entry(dyn_table2, addr, time), get_dyn_addr);
   bridge_rejuv_entry_subset(dyn_table1, dyn_table2, addr, time);
   bridge_rejuv_entry_subset(dyn_table2, dyn_table1, addr, time);
+  distinct_subset_msubset(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                          rejuvenate_dyn_entry(dyn_table2, addr, time));
+  distinct_subset_msubset(rejuvenate_dyn_entry(dyn_table2, addr, time),
+                          rejuvenate_dyn_entry(dyn_table1, addr, time));
+  msubset_multiset_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                      rejuvenate_dyn_entry(dyn_table2, addr, time));
 }
 @*/
+
+/*@
+  lemma void get_dyn_addr_gen_dyn_entries_eq(list<pair<ether_addri, uint32_t> > dyn_map,
+                                             list<pair<uint16_t, bool> > vals,
+                                             dchain indices)
+  requires true;
+  ensures map(get_dyn_addr, gen_dyn_entries(dyn_map, vals, indices)) ==
+          map(fst, dyn_map);
+  {
+    switch(dyn_map) {
+      case nil:
+      case cons(h, t):
+        switch(h) { case pair(addr, index):
+          get_dyn_addr_gen_dyn_entries_eq(t, vals, indices);
+        }
+    }
+  }
+  @*/
+
 /*@
 lemma void bridge_add_entry_set_eq(list<dyn_entry> dyn_table1,
                                     list<dyn_entry> dyn_table2,

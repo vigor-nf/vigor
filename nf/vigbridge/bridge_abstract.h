@@ -181,21 +181,27 @@
   requires true == distinct(map(snd, dyn_map)) &*&
            true == distinct(dchain_indexes_fp(indices)) &*&
            true == mem(addr, map(fst, dyn_map));
-  ensures set_eq(gen_dyn_entries(dyn_map,
-                                 vals,
-                                 dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
-                 rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
-                                      addr, time)) == true;
+  ensures multiset_eq(gen_dyn_entries(dyn_map,
+                                      vals,
+                                      dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
+                      rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                                           addr, time)) == true;
 
-  lemma void bridge_rejuv_entry_set_eq(list<dyn_entry> dyn_table1,
-                                       list<dyn_entry> dyn_table2,
-                                       ether_addri addr,
-                                       time_t time);
-  requires true == set_eq(dyn_table1, dyn_table2) &*&
-           true == distinct(map(get_dyn_addr, dyn_table1)) &*&
-           true == distinct(map(get_dyn_addr, dyn_table2));
-  ensures true == set_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
-                         rejuvenate_dyn_entry(dyn_table2, addr, time));
+  lemma void get_dyn_addr_gen_dyn_entries_eq(list<pair<ether_addri, uint32_t> > dyn_map,
+                                             list<pair<uint16_t, bool> > vals,
+                                             dchain indices);
+  requires true;
+  ensures map(get_dyn_addr, gen_dyn_entries(dyn_map, vals, indices)) ==
+          map(fst, dyn_map);
+
+  lemma void bridge_rejuv_entry_mset_eq(list<dyn_entry> dyn_table1,
+                                        list<dyn_entry> dyn_table2,
+                                        ether_addri addr,
+                                        time_t time);
+  requires true == multiset_eq(dyn_table1, dyn_table2) &*&
+           true == distinct(map(get_dyn_addr, dyn_table1));
+  ensures true == multiset_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                              rejuvenate_dyn_entry(dyn_table2, addr, time));
 
   lemma void bridge_add_entry_set_eq(list<dyn_entry> dyn_table1,
                                      list<dyn_entry> dyn_table2,

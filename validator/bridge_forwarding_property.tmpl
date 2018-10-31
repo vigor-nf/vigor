@@ -62,10 +62,11 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
         assert true == set_eq(get_dyn_table(final_table),
                               rejuvenate_dyn_entry(get_dyn_table(exprnd_table),
                                                    src_addr, now));
+        get_dyn_addr_gen_dyn_entries_eq(dyn_map, exprnd_dyn_val_vec, exprnd_chain);
       }
-      bridge_rejuv_entry_set_eq(get_dyn_table(exprnd_table),
-                                expire_addresses(get_dyn_table(initial_table), now - 10),
-                                src_addr, now);
+      bridge_rejuv_entry_mset_eq(get_dyn_table(exprnd_table),
+                                 expire_addresses(get_dyn_table(initial_table), now - 10),
+                                 src_addr, now);
 
       set_eq_trans(get_dyn_table(final_table), rejuvenate_dyn_entry(get_dyn_table(exprnd_table), src_addr, now),
                    rejuvenate_dyn_entry(expire_addresses(get_dyn_table(initial_table), now - 10),
