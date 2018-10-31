@@ -48,6 +48,8 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
    // State postcondition
    if (dyn_table_has_key(get_dyn_table(exprnd_table), src_addr)) {
       switch(exprnd_dyn_map) { case mapc(capacity, dyn_map, addrs):
+        dyn_map_has(dyn_map, exprnd_dyn_val_vec, exprnd_chain, src_addr);
+        map_has_to_mem(dyn_map, src_addr);
         bridge_rejuv_entry(dyn_map, exprnd_dyn_val_vec, exprnd_chain,
                            src_addr, now);
         assert true == set_eq(gen_dyn_entries(dyn_map,
