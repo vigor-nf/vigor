@@ -78,6 +78,10 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
                               expire_addresses(get_dyn_table(initial_table), now - 10));
       } else {
         switch(exprnd_dyn_map) { case mapc(capacity, dyn_map, addrs):
+          msubset_subset(map(snd, dyn_map), dchain_indexes_fp(exprnd_chain));
+          if (mem(the_index_allocated, map(snd, dyn_map))) {
+            subset_mem_trans(map(snd, dyn_map), dchain_indexes_fp(exprnd_chain), the_index_allocated);
+          }
           bridge_add_entry(dyn_map, exprnd_dyn_val_vec, exprnd_chain,
                           src_addr, the_index_allocated, received_on_port, time_for_allocated_index);
           assert true == set_eq(gen_dyn_entries(map_put_fp(dyn_map, src_addr, the_index_allocated),

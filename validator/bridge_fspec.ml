@@ -258,7 +258,13 @@ let fun_types =
                                           (params.tmp_gen "cur_ch") ^
                                           ", *" ^
                                           (List.nth_exn params.args 1) ^ ", " ^
-                                          (List.nth_exn params.args 2) ^ ");\n}");
+                                          (List.nth_exn params.args 2) ^
+                                          ");\n\
+                                           dchain_indexes_contain_index(" ^
+                                          (params.tmp_gen "cur_ch") ^
+                                          ", *" ^
+                                          (List.nth_exn params.args 1) ^
+                                          ");\n}");
                                      (fun params ->
                                         "//@ allocate_keeps_high_bounded(" ^
                                         (params.tmp_gen "cur_ch") ^
@@ -396,6 +402,10 @@ let fun_types =
                                       ";\nexprnd_dyn_val_vec = " ^ (tmp_gen "dv_exprnd") ^
                                       ";\nexprnd_chain = " ^ (tmp_gen "dh") ^
                                       ";\nmvc_coherent_same_len<ether_addri>(" ^
+                                      (tmp_gen "dm") ^ ", " ^
+                                      (tmp_gen "dv") ^ ", " ^
+                                      (tmp_gen "dh") ^
+                                      ");\nmvc_coherent_distinct<ether_addri>(" ^
                                       (tmp_gen "dm") ^ ", " ^
                                       (tmp_gen "dv") ^ ", " ^
                                       (tmp_gen "dh") ^
