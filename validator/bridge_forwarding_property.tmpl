@@ -40,9 +40,6 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
       dyn_map_has(dyn_map, exprnd_dyn_val_vec, exprnd_chain, src_addr);
     }
 
-    switch(initial_dyn_map) { case mapc(capacity, dyn_map, addrs):
-      bridge_expire_abstract(dyn_map, initial_dyn_val_vec, initial_dyn_key_vec, initial_chain, now - 10);
-    }
     assert get_stat_table(final_table) == get_stat_table(initial_table);
     assert true == set_eq(get_dyn_table(exprnd_table),
                           expire_addresses(get_dyn_table(initial_table), now - 10));
@@ -76,7 +73,6 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
                             rejuvenate_dyn_entry(expire_addresses(get_dyn_table(initial_table), now - 10),
                                                  src_addr, now));
    } else {
-      chain_out_of_space_ml_out_of_space(exprnd_dyn_map, exprnd_dyn_val_vec, exprnd_chain, stat_map);
       if (dyn_table_out_of_space(exprnd_table)) {
         assert true == set_eq(get_dyn_table(final_table),
                               expire_addresses(get_dyn_table(initial_table), now - 10));

@@ -146,7 +146,15 @@ let fun_types =
                       lemmas_before = [];
                       lemmas_after = [
                         (fun params ->
-                           "int64_t now = " ^ (params.ret_name) ^ ";\n")];};
+                           "int64_t now = " ^ (params.ret_name) ^ ";\n");
+                      tx_l "\
+                            switch(initial_dyn_map) {\
+                              case mapc(capacity, dyn_map, addrs):\n\
+                              bridge_expire_abstract(dyn_map, \
+                                                     initial_dyn_val_vec, \
+                                                     initial_dyn_key_vec, \
+                                                     initial_chain, now - 10);\n\
+                            } "];};
      "bridge_loop_invariant_consume", {ret_type = Static Void;
                                        arg_types = stt
                                            [Ptr (Ptr dchain_struct);
@@ -390,7 +398,12 @@ let fun_types =
                                       ";\nmvc_coherent_same_len<ether_addri>(" ^
                                       (tmp_gen "dm") ^ ", " ^
                                       (tmp_gen "dv") ^ ", " ^
-                                      (tmp_gen "dh") ^ ");\n} @*/"
+                                      (tmp_gen "dh") ^
+                                      ");\n\ assert mapp<stat_keyi>(_, static_keyp, st_key_hash, nop_true, ?" ^
+                                      (tmp_gen "stat_map") ^
+                                      ");\n chain_out_of_space_ml_out_of_space(exprnd_dyn_map, \
+                                       exprnd_dyn_val_vec, exprnd_chain, " ^
+                                      (tmp_gen "stat_map") ^ ");\n} @*/"
                                          );
                                  ];};
      "map_allocate", {ret_type = Static Sint32;
