@@ -147,15 +147,15 @@
                                     time_t time);
   requires map_vec_chain_coherent(dyn_map, keys, indices);
   ensures map_vec_chain_coherent(dyn_map, keys, indices) &*&
-          set_eq(gen_dyn_entries(map_erase_all_fp
-                                  (dyn_map,
-                                   vector_get_values_fp
-                                     (keys, dchain_get_expired_indexes_fp
-                                              (indices, time))),
-                                 vals,
-                                 dchain_expire_old_indexes_fp(indices, time)),
-                 expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
-                                  time)) == true;
+          multiset_eq(gen_dyn_entries(map_erase_all_fp
+                                      (dyn_map,
+                                      vector_get_values_fp
+                                        (keys, dchain_get_expired_indexes_fp
+                                                  (indices, time))),
+                                    vals,
+                                    dchain_expire_old_indexes_fp(indices, time)),
+                    expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
+                                      time)) == true;
 
   lemma void bridge_add_entry(list<pair<ether_addri, uint32_t> > dyn_map,
                               list<pair<uint16_t, bool> > vals,

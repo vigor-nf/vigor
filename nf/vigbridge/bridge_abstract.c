@@ -1223,15 +1223,15 @@ lemma void bridge_expire_abstract(list<pair<ether_addri, uint32_t> > dyn_map,
                                   time_t time)
 requires map_vec_chain_coherent(dyn_map, keys, indices);
 ensures map_vec_chain_coherent(dyn_map, keys, indices) &*&
-        set_eq(gen_dyn_entries(map_erase_all_fp
-                                (dyn_map,
-                                  vector_get_values_fp
-                                    (keys, dchain_get_expired_indexes_fp
-                                            (indices, time))),
-                                vals,
-                                dchain_expire_old_indexes_fp(indices, time)),
-               expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
-                                time)) == true;
+        multiset_eq(gen_dyn_entries(map_erase_all_fp
+                                    (dyn_map,
+                                      vector_get_values_fp
+                                        (keys, dchain_get_expired_indexes_fp
+                                                (indices, time))),
+                                    vals,
+                                    dchain_expire_old_indexes_fp(indices, time)),
+                    expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
+                                     time)) == true;
 {
   mvc_coherent_distinct(dyn_map, keys, indices);
   mvc_coherent_keys_synced(dyn_map, keys, indices);
@@ -1251,19 +1251,9 @@ ensures map_vec_chain_coherent(dyn_map, keys, indices) &*&
                                     vector_get_values_fp(keys, dchain_get_expired_indexes_fp(indices, time))),
                     expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
                                      time));
-  multiset_eq_set_eq(gen_dyn_entries(map_erase_all_fp
-                                (dyn_map,
-                                  vector_get_values_fp
-                                    (keys, dchain_get_expired_indexes_fp
-                                            (indices, time))),
-                                vals,
-                                dchain_expire_old_indexes_fp(indices, time)),
-               expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
-                                time));
 }
 @*/
 /*@
-                                          
 lemma void alist_get_append_unrelevant(list<pair<int, time_t> > l,
                                        int i1, time_t time,
                                        int i2)
