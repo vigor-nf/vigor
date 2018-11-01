@@ -1431,6 +1431,27 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   @*/
 
 /*@
+
+lemma void erase_unrelevant_key_mem_engaged<kt>(list<pair<kt, real> > v,
+                                                kt k, int index)
+requires true == mem(k, map(fst, filter(engaged_cell, v))) &*&
+         fst(nth(index, v)) != k &*&
+         0 <= index;
+ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+{
+  switch(v) {
+    case nil:
+    case cons(h,t):
+      if (engaged_cell(h) && fst(h) == k) {
+        return;
+      } else if (0 < index) {
+        erase_unrelevant_key_mem_engaged(t, k, index - 1);
+      }
+  }
+}
+@*/
+
+/*@
   lemma void erase_unrelevant_preserves_msubset<kt>(list<kt> keys,
                                                     list<pair<kt, real> > v,
                                                     int index,
@@ -1438,36 +1459,33 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   requires true == msubset(keys, map(fst, filter(engaged_cell, v))) &*&
            fst(nth(index, v)) == key &*&
            snd(nth(index, v)) != 1.0 &*&
-           false == mem(key, keys);
+           false == mem(key, keys) &*&
+           0 <= index;
   ensures true == msubset(keys, map(fst, filter(engaged_cell,
                                                 vector_erase_fp(v, index))));
   {
-    assume(false);//TODO
     switch(keys) {
       case nil:
       case cons(h,t):
         msubset_unremove_outer(t, map(fst, filter(engaged_cell, v)), h);
         erase_unrelevant_preserves_msubset(t, v, index, key);
         assert true == mem(h, map(fst, filter(engaged_cell, v)));
-        assert key != h;
-        particular_mem_map_filter(h, v);
-        if (index_of(pair(h, false), v) == index) {
-          mem_nth_index_of(pair(h, false), v);
-        }
-        mem_update_unrelevant(pair(h, false), index,
-                              pair(fst(nth(index, v)), true), v);
-        filter_mem(pair(h, false), vector_erase_fp(v, index), engaged_cell);
-        mem_map(pair(h, false),
-                filter(engaged_cell, vector_erase_fp(v, index)),
-                fst);
+        erase_unrelevant_key_mem_engaged(v, h, index);
+        assert true == mem(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
 
         assert true == msubset(t, remove(h, map(fst, filter(engaged_cell, v))));
         erase_key_msubset(v, index, key);
+
         msubset_map(fst,
                     filter(engaged_cell, v),
-                    cons(pair(key, false),
+                    cons(pair(key, snd(nth(index, v))),
                          filter(engaged_cell, vector_erase_fp(v, index))));
-        msubset_remove(map(fst, filter(engaged_cell, v)),
+
+        assert true == msubset(map(fst, filter(engaged_cell, v)),
+                               cons(key, map(fst, filter(engaged_cell,
+                                                         vector_erase_fp(v, index)))));
+
+        msubset_remove(map(fst, filter(engaged_cell, v)), 
                        cons(key, map(fst, filter(engaged_cell,
                                                  vector_erase_fp(v, index)))),
                        h);
@@ -1484,6 +1502,12 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
                                                  vector_erase_fp(v, index))))),
                        key);
         remove_nonmem(key, t);
+        assert true == msubset(t, remove(h,
+                                          map(fst, filter(engaged_cell,
+                                                vector_erase_fp(v, index)))));
+        assert true == mem(h, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
+        assert true == msubset(keys, map(fst, filter(engaged_cell,
+                                                vector_erase_fp(v, index))));
     }
   }
   @*/
