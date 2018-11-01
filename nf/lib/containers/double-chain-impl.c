@@ -241,7 +241,8 @@ enum DCHAIN_ENUM {
           return;
       case succ(n):
         if (int_of_nat(succ(from)) == int_of_nat(to)) {
-          assume(succ(from) == to); // FIXME really, VeriFast? you can't figure that one out?
+          nat_of_int_of_nat(succ(from));
+          nat_of_int_of_nat(to);
           assert true == some_engaged(full_free_list_fp(len, i), from, to);
         } else {
           //if (int_of_nat(succ(from)) == int_of_nat(to)) {

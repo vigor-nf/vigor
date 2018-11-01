@@ -406,7 +406,7 @@ void vector_return/*@ <t> @*/(struct Vector* vector, int index, void* value)
   lemma void gen_vector_addrs_same_len_nodups(void* data,
                                               int el_size,
                                               nat len)
-  requires true;
+  requires 0 < el_size;
   ensures length(gen_vector_addrs_impl_fp(data, el_size, len)) == int_of_nat(len) &*&
           true == no_dups(gen_vector_addrs_impl_fp(data, el_size, len));
   {
@@ -414,7 +414,16 @@ void vector_return/*@ <t> @*/(struct Vector* vector, int index, void* value)
       case zero: return;
       case succ(n):
         gen_vector_addrs_same_len_nodups(data + el_size, el_size, n);
-        assume(false == mem(data, gen_vector_addrs_impl_fp(data + el_size, el_size, n)));
+        if (mem(data, gen_vector_addrs_impl_fp(data + el_size, el_size, n))) {
+          int idx = index_of(data, gen_vector_addrs_impl_fp(data + el_size, el_size, n));
+          mem_nth_index_of(data, gen_vector_addrs_impl_fp(data + el_size, el_size, n));
+          assert nth(idx, gen_vector_addrs_impl_fp(data + el_size, el_size, n)) == data;
+          gen_addrs_index_impl(data + el_size, el_size, idx, n);
+          assert nth(idx, gen_vector_addrs_impl_fp(data + el_size, el_size, n)) == data + el_size + el_size*idx;
+          mul_nonnegative(el_size, idx);
+          assert false;
+        }
+        assert false == mem(data, gen_vector_addrs_impl_fp(data + el_size, el_size, n));
     }
   }
 

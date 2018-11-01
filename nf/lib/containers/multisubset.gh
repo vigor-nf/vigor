@@ -327,6 +327,18 @@ ensures true == msubset(cons(el, append(l1, l2)),
   }
 }//took 2m
 
+lemma void msubset_bury_cons<t>(list<t> l1, list<t> l2, t el)
+requires true;
+ensures true == msubset(append(l1, cons(el, l2)), cons(el, append(l1, l2)));
+{
+  switch(l1) {
+    case nil:
+      msubset_refl(cons(el, l2));
+    case cons(h,t):
+      msubset_bury_cons(t, l2, el);
+  }
+}
+
 lemma void msubset_move_cons_to_the_middle_keep<t>(list<t> l1,
                                                    list<t> l2,
                                                    list<t> l3,
@@ -413,4 +425,136 @@ ensures length(l1) <= length(l2);
   }
 }
 
+lemma void msubset_push_to_the_end_self<t>(list<t> xs, t el)
+requires true;
+ensures true == msubset(xs, append(remove(el, xs), cons(el, nil)));
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (h == el) {
+        mem_append(h, remove(el, xs), cons(el, nil));
+        msubset_refl(t);
+        if (mem(el, t)) {
+          msubset_push_to_the_end_self(t, el);
+          append_remove_first(t, cons(el, nil), el);
+        } else {
+          remove_append_swap(el, t, cons(el, nil));
+        }
+      } else {
+        msubset_push_to_the_end_self(t, el);
+      }
+  }
+}
+
+lemma void msubset_push_to_the_end<t>(list<t> xs, list<t> ys, t el)
+requires true == msubset(xs, ys);
+ensures true == msubset(xs, append(remove(el, ys), cons(el, nil)));
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (h == el) {
+        mem_append(h, remove(el, ys), cons(el, nil));
+        msubset_push_to_the_end_self(ys, el);
+        msubset_remove(ys, append(remove(el, ys), cons(el, nil)), h);
+        msubset_trans(t, remove(h, ys), remove(h, append(remove(el, ys), cons(el, nil))));
+      } else {
+        msubset_push_to_the_end(t, remove(h, ys), el);
+        remove_commutes(ys, el, h);
+        neq_mem_remove(h, el, ys);
+        append_remove_first(remove(el, ys), cons(el, nil), h);
+      }
+  }
+}
+
+lemma void push_to_the_end_msubset<t>(list<t> xs, list<t> ys, t el)
+requires true == msubset(xs, ys) &*& true == mem(el, xs);
+ensures true == msubset(append(remove(el, xs), cons(el, nil)), ys);
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (el == h) {
+        msubset_bury_cons(t, nil, el);
+        msubset_trans(append(t, cons(el, nil)), cons(el, t), ys);
+      } else {
+        push_to_the_end_msubset(t, remove(h, ys), el);
+      }
+  }
+}
+
+lemma void pull_to_start_msubset<t>(list<t> xs, t el)
+requires true;
+ensures true == msubset(xs, cons(el, remove(el, xs)));
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (h == el) {
+        msubset_refl(xs);
+      } else {
+        pull_to_start_msubset(t, el);
+      }
+  }
+}
+
+lemma void pull_to_start_msubset2<t>(list<t> xs, t el)
+requires true == mem(el, xs);
+ensures true == msubset(cons(el, remove(el, xs)), xs);
+{
+  switch(xs) {
+    case nil:
+    case cons(h,t):
+      if (h == el) {
+        msubset_refl(xs);
+      } else {
+        pull_to_start_msubset2(t, el);
+      }
+  }
+}
+
+lemma void msubset_filter<t>(fixpoint (t,bool) f, list<t> l1, list<t> l2)
+requires true == msubset(l1, l2);
+ensures true == msubset(filter(f, l1), filter(f, l2));
+{
+  switch(l1) {
+    case nil:
+    case cons(h,t):
+      msubset_filter(f, t, remove(h, l2));
+      if (f(h)) {
+        filter_mem(h, l2, f);
+        filter_remove(f, h, l2);
+      } else {
+        filter_remove(f, h, l2);
+        filter_unmem(h, l2, f);
+        remove_nonmem(h, filter(f, l2));
+      }
+  }
+}
+
+lemma void distinct_subset_msubset<t>(list<t> l1, list<t> l2)
+requires true == subset(l1, l2) &*& true == distinct(l1);
+ensures true == msubset(l1, l2);
+{
+  switch(l1) {
+    case nil:
+    case cons(h,t):
+      remove_subset(t, h, l2);
+      distinct_subset_msubset(t, remove(h, l2));
+  }
+}
+
+lemma void msubset_same_len_eq<t>(list<t> l1, list<t> l2)
+requires true == msubset(l1, l2) &*& length(l1) == length(l2);
+ensures true == msubset(l2, l1);
+{
+  switch(l1) {
+    case nil:
+      length_0_nil(l2);
+    case cons(h,t):
+      msubset_same_len_eq(t, remove(h, l2));
+      msubset_unremove(l2, l1, h);
+  }
+}
 #endif// MULTISUBSET_GH

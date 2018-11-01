@@ -39,6 +39,12 @@ struct Vector;
                                            list<int> indices) {
     return map((sup)(fst, (nth2)(vector)), indices);
   }
+
+  fixpoint real vector_getf<t>(list<pair<t, real> > vector, t key) {
+    return mem(key, map(fst, vector)) ?
+             snd(nth(index_of(key, map(fst, vector)), vector)) :
+             0.0;
+  }
   @*/
 
 /*@

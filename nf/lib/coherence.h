@@ -26,6 +26,13 @@
   @*/
 
 /*@
+  fixpoint bool engaged_cell<kt>(pair<kt, real> p) {
+    return 1.0 != snd(p);
+  }
+  @*/
+
+
+/*@
   lemma void mvc_coherent_bounds<kt>(list<pair<kt, int> > m,
                                      list<pair<kt, real> > v, dchain ch);
   requires map_vec_chain_coherent<kt>(m, v, ch);
@@ -110,7 +117,8 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
                                        list<pair<kt, real> > v, dchain ch);
   requires map_vec_chain_coherent<kt>(m, v, ch);
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
-          length(v) == dchain_index_range_fp(ch);
+          length(v) == dchain_index_range_fp(ch) &*&
+          length(m) == length(dchain_indexes_fp(ch));
   @*/
 
 /*@
@@ -135,7 +143,10 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
                                   int index, time_t time,
                                   kt key);
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
-           false == dchain_allocated_fp(ch, index);
+           false == dchain_allocated_fp(ch, index) &*&
+           false == map_has_fp(m, key) &*&
+           1.0 == snd(nth(index, v)) &*&
+           0 <= index &*& index < length(v);
   ensures map_vec_chain_coherent<kt>(map_put_fp(m, key, index),
                                      update(index, pair(key, 0.75), v),
                                      dchain_allocate_fp(ch, index, time));
@@ -148,7 +159,9 @@ lemma void mvc_coherent_key_abscent<kt>(list<pair<kt, int> > m,
                                          int index,
                                          kt key);
   requires map_vec_chain_coherent<kt>(m, v, ch) &*&
-           nth(index, v) != pair(key, 1.0);
+           0 <= index &*& index < length(v) &*&
+           fst(nth(index, v)) == key &*&
+           snd(nth(index, v)) != 1.0;
   ensures map_vec_chain_coherent<kt>(map_erase_fp(m, key),
                                      vector_erase_fp(v, index),
                                      dchain_remove_index_fp(ch, index));
@@ -274,5 +287,56 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   ensures dmap_dchain_coherent(m, ch) &*&
           dmap_cap_fp(m) == dchain_index_range_fp(ch);
   @*/
+
+/*@
+fixpoint bool synced_pair<kt>(list<pair<kt, real> > keys, pair<kt, uint32_t> p) {
+  switch(p) {
+    case pair(addr, idx):
+      return 0 <= idx && idx < length(keys) &&
+             engaged_cell(nth(idx, keys)) && fst(nth(idx, keys)) == addr;
+  }
+}
+@*/
+
+/*@
+  lemma void mvc_coherent_keys_synced<kt>(list<pair<kt, int> > m,
+                                          list<pair<kt, real> > v, dchain ch);
+  requires map_vec_chain_coherent(m, v, ch);
+  ensures map_vec_chain_coherent(m, v, ch) &*&
+          true == forall(m, (synced_pair)(v)) &*&
+          true == msubset(map(snd, m), dchain_indexes_fp(ch));
+  @*/
+
+/*@
+  lemma void mvc_coherent_distinct<kt>(list<pair<kt, int> > m,
+                                       list<pair<kt, real> > v,
+                                       dchain ch);
+  requires map_vec_chain_coherent<kt>(m, v, ch);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          true == distinct(dchain_indexes_fp(ch)) &*&
+          true == distinct(map(fst, m)) &*&
+          true == distinct(map(snd, m)) &*&
+          true == distinct(map(fst, filter(engaged_cell, v))) &*&
+          true == msubset(map(snd, m), dchain_indexes_fp(ch));
+@*/
+
+/*@
+fixpoint bool bounded(int bound, int x) {
+  return 0 <= x && x < bound;
+}
+@*/
+
+/*@
+  lemma void mvc_coherent_dchain_indexes<kt>(list<pair<kt, int> > m,
+                                             list<pair<kt, real> > v,
+                                             dchain ch);
+  requires map_vec_chain_coherent<kt>(m, v, ch);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          true == distinct(dchain_indexes_fp(ch)) &*&
+          true == forall(dchain_indexes_fp(ch),
+                        (bounded)(length(v))) &*&
+          true == forall(dchain_indexes_fp(ch),
+                        (sup)(engaged_cell, (nth2)(v)));
+@*/
 
 #endif// _COHERENCE_H_INCLUDED_

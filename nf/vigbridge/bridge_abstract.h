@@ -16,6 +16,10 @@
     }
   }
 
+  fixpoint ether_addri get_dyn_addr(dyn_entry e) {
+    switch(e) { case dyn_entry(addr, port, time): return addr; }
+  }
+
   fixpoint list<stat_entry> get_stat_table(ml_table table) {
     switch(table) {
       case ml_table(dyn_table, stat_table, capacity):
@@ -141,16 +145,17 @@
                                     list<pair<ether_addri, real> > keys,
                                     dchain indices,
                                     time_t time);
-  requires true;
-  ensures set_eq(gen_dyn_entries(map_erase_all_fp
-                                  (dyn_map,
-                                   vector_get_values_fp
-                                     (keys, dchain_get_expired_indexes_fp
-                                              (indices, time))),
-                                 vals,
-                                 dchain_expire_old_indexes_fp(indices, time)),
-                 expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
-                                  time)) == true;
+  requires map_vec_chain_coherent(dyn_map, keys, indices);
+  ensures map_vec_chain_coherent(dyn_map, keys, indices) &*&
+          multiset_eq(gen_dyn_entries(map_erase_all_fp
+                                      (dyn_map,
+                                      vector_get_values_fp
+                                        (keys, dchain_get_expired_indexes_fp
+                                                  (indices, time))),
+                                    vals,
+                                    dchain_expire_old_indexes_fp(indices, time)),
+                    expire_addresses(gen_dyn_entries(dyn_map, vals, indices),
+                                      time)) == true;
 
   lemma void bridge_add_entry(list<pair<ether_addri, uint32_t> > dyn_map,
                               list<pair<uint16_t, real> > vals,
@@ -159,7 +164,9 @@
                               uint32_t index,
                               uint16_t port,
                               time_t time);
-  requires true;
+  requires false == mem(index, map(snd, dyn_map)) &*&
+           false == mem(index, dchain_indexes_fp(indices)) &*&
+           0 <= index &*& index < length(vals);
   ensures set_eq(gen_dyn_entries(map_put_fp(dyn_map, addr, index),
                                  update(index, pair(port, 1.0), vals),
                                  dchain_allocate_fp(indices, index, time)),
@@ -171,20 +178,30 @@
                                 dchain indices,
                                 ether_addri addr,
                                 time_t time);
-  requires true;
-  ensures set_eq(gen_dyn_entries(dyn_map,
-                                 vals,
-                                 dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
-                 rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
-                                      addr, time)) == true;
+  requires true == distinct(map(snd, dyn_map)) &*&
+           true == distinct(dchain_indexes_fp(indices)) &*&
+           true == mem(addr, map(fst, dyn_map));
+  ensures multiset_eq(gen_dyn_entries(dyn_map,
+                                      vals,
+                                      dchain_rejuvenate_fp(indices, map_get_fp(dyn_map, addr), time)),
+                      rejuvenate_dyn_entry(gen_dyn_entries(dyn_map, vals, indices),
+                                           addr, time)) == true;
 
-  lemma void bridge_rejuv_entry_set_eq(list<dyn_entry> dyn_table1,
-                                       list<dyn_entry> dyn_table2,
-                                       ether_addri addr,
-                                       time_t time);
-  requires true == set_eq(dyn_table1, dyn_table2);
-  ensures true == set_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
-                         rejuvenate_dyn_entry(dyn_table2, addr, time));
+  lemma void get_dyn_addr_gen_dyn_entries_eq(list<pair<ether_addri, uint32_t> > dyn_map,
+                                             list<pair<uint16_t, real> > vals,
+                                             dchain indices);
+  requires true;
+  ensures map(get_dyn_addr, gen_dyn_entries(dyn_map, vals, indices)) ==
+          map(fst, dyn_map);
+
+  lemma void bridge_rejuv_entry_mset_eq(list<dyn_entry> dyn_table1,
+                                        list<dyn_entry> dyn_table2,
+                                        ether_addri addr,
+                                        time_t time);
+  requires true == multiset_eq(dyn_table1, dyn_table2) &*&
+           true == distinct(map(get_dyn_addr, dyn_table1));
+  ensures true == multiset_eq(rejuvenate_dyn_entry(dyn_table1, addr, time),
+                              rejuvenate_dyn_entry(dyn_table2, addr, time));
 
   lemma void bridge_add_entry_set_eq(list<dyn_entry> dyn_table1,
                                      list<dyn_entry> dyn_table2,
@@ -223,7 +240,10 @@
                                                 list<pair<uint16_t, real> > vals,
                                                 dchain indices,
                                                 mapi<stat_keyi> stat_map);
-  requires true;
-  ensures dchain_out_of_space_fp(indices) ==
+  requires dyn_map == mapc(?dyn_capacity, ?dm, ?daddrs) &*&
+           map_vec_chain_coherent(dm, ?heap, indices) &*&
+           dyn_capacity == dchain_index_range_fp(indices);
+  ensures map_vec_chain_coherent(dm, heap, indices) &*&
+          dchain_out_of_space_fp(indices) ==
           dyn_table_out_of_space(bridge_abstract_function(dyn_map, vals, indices, stat_map));
 @*/

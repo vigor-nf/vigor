@@ -1684,13 +1684,12 @@ int dchain_expire_one_index(struct DoubleChain* chain,
   @*/
 
 /*@
-
-  lemma void dchain_rejuvenate_indexes_subset
+  lemma void dchain_rejuvenate_indexes_msubset
                (list<pair<int, time_t> > alist, int index, time_t time)
   requires true;
-  ensures true == subset(map(fst, alist),
-                         map(fst, append(remove_by_index_fp(alist, index),
-                                         cons(pair(index, time), nil))));
+  ensures true == msubset(map(fst, alist),
+                          map(fst, append(remove_by_index_fp(alist, index),
+                                          cons(pair(index, time), nil))));
   {
     remove_by_index_to_remove(alist, index);
     map_append(fst, remove_by_index_fp(alist, index),
@@ -1698,39 +1697,55 @@ int dchain_expire_one_index(struct DoubleChain* chain,
     assert(map(fst, append(remove_by_index_fp(alist, index),
                            cons(pair(index, time), nil))) ==
            append(remove(index, map(fst, alist)), cons(index, nil)));
+
+    msubset_refl(map(fst, alist));
+    assert true == msubset(map(fst, alist), map(fst, alist));
+    msubset_push_to_the_end(map(fst, alist), map(fst, alist), index);
+    assert true == msubset(map(fst, alist),
+                           append(remove(index, map(fst, alist)), cons(index, nil)));
     subset_push_to_the_end(map(fst, alist),
                            map(fst, alist),
                            index);
   }
 
-  lemma void dchain_rejuvenate_indexes_superset
+  lemma void dchain_rejuvenate_indexes_msuperset
                (list<pair<int, time_t> > alist, int index, time_t time)
   requires true == mem(index, map(fst, alist));
-  ensures true == subset(map(fst, append(remove_by_index_fp(alist, index),
-                                         cons(pair(index, time), nil))),
-                         map(fst, alist));
+  ensures true == msubset(map(fst, append(remove_by_index_fp(alist, index),
+                                          cons(pair(index, time), nil))),
+                          map(fst, alist));
   {
     remove_by_index_to_remove(alist, index);
     map_append(fst, remove_by_index_fp(alist, index),
                cons(pair(index, time), nil));
-    push_to_the_end_subset(map(fst, alist), map(fst, alist), index);
+    msubset_refl(map(fst, alist));
+    push_to_the_end_msubset(map(fst, alist), map(fst, alist), index);
   }
 
 lemma void dchain_rejuvenate_preserves_indexes_set(dchain ch, int index,
                                                    time_t time)
 requires true == dchain_allocated_fp(ch, index);
-ensures true == subset(dchain_indexes_fp(ch),
+ensures true == set_eq(dchain_indexes_fp(ch),
                        dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
                                                               time))) &*&
-        true == subset(dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
-                                                              time)),
-                       dchain_indexes_fp(ch));
+        true == multiset_eq(dchain_indexes_fp(ch),
+                            dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
+                                                                   time))) &*&
+        length(dchain_indexes_fp(ch)) ==
+        length(dchain_indexes_fp(dchain_rejuvenate_fp(ch, index, time)));
 {
   dchain_indexes_contain_index(ch, index);
   switch(ch) { case dchain(alist, ir, lo, hi):
-    dchain_rejuvenate_indexes_subset(alist, index, time);
-    dchain_rejuvenate_indexes_superset(alist, index, time);
+    dchain_rejuvenate_indexes_msubset(alist, index, time);
+    dchain_rejuvenate_indexes_msuperset(alist, index, time);
+    msubset_multiset_eq(dchain_indexes_fp(ch),
+                        dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
+                                                               time)));
   }
+  multiset_eq_same_len(dchain_indexes_fp(ch),
+                       dchain_indexes_fp(dchain_rejuvenate_fp(ch, index, time)));
+  multiset_eq_set_eq(dchain_indexes_fp(ch),
+                     dchain_indexes_fp(dchain_rejuvenate_fp(ch, index, time)));
 }
 
 @*/

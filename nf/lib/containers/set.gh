@@ -444,4 +444,12 @@ ensures true == set_eq(s1, s3);
   subset_trans(s3, s2, s1);
 }
 
+lemma void set_eq_cons<t>(list<t> l1, list<t> l2, t el)
+requires true == set_eq(l1, l2);
+ensures true == set_eq(cons(el, l1), cons(el, l2));
+{
+  subset_unremove_outer(l1, cons(el, l2), el);
+  subset_unremove_outer(l2, cons(el, l1), el);
+}
+
 #endif SET_GH

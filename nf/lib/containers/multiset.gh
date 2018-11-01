@@ -87,7 +87,7 @@ ensures true == subset(l1, l2);
   }
 }
 
-lemma void multiset_eq_set_eq<t>(list<t> l1, list<t> l2)
+lemma_auto void multiset_eq_set_eq<t>(list<t> l1, list<t> l2)
 requires true == multiset_eq(l1, l2);
 ensures true == set_eq(l1, l2);
 {
@@ -421,5 +421,17 @@ ensures true == multiset_eq(remove(x, append(l1, l2)),
       }
   }
 }//took 9m
+
+lemma void multiset_eq_cons_both<t>(list<t> l1, list<t> l2, t x)
+requires true == multiset_eq(l1, l2);
+ensures true == multiset_eq(cons(x, l1), cons(x, l2));
+{
+  multiset_eq_comm(l1, l2);
+  multiset_eq_msubset(l1, l2);
+  multiset_eq_msubset(l2, l1);
+  msubset_cons_preserves(l1, l2, x);
+  msubset_cons_preserves(l2, l1, x);
+  msubset_multiset_eq(cons(x, l1), cons(x, l2));
+}
 
 #endif//MULTISET_GH

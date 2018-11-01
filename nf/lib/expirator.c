@@ -110,7 +110,11 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
   requires true;
   ensures length(vec) == length(vector_erase_all_fp(vec, indices));
   {
-    assume(false);//TODO
+    switch(indices) {
+      case nil:
+      case cons(h,t):
+        vector_erase_all_same_len(vec, t);
+    }
   }
   @*/
 

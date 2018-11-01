@@ -313,12 +313,15 @@ struct DoubleChain;
   lemma void dchain_rejuvenate_preserves_indexes_set(dchain ch, int index,
                                                      time_t time);
   requires true == dchain_allocated_fp(ch, index);
-  ensures true == subset(dchain_indexes_fp(ch),
-                        dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
+  ensures true == set_eq(dchain_indexes_fp(ch),
+                         dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
                                                                 time))) &*&
-          true == subset(dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
-                                                                time)),
-                        dchain_indexes_fp(ch));
+          true == multiset_eq(dchain_indexes_fp(ch),
+                              dchain_indexes_fp(dchain_rejuvenate_fp(ch, index,
+                                                                     time))) &*&
+          length(dchain_indexes_fp(ch)) ==
+          length(dchain_indexes_fp(dchain_rejuvenate_fp(ch, index, time)));
+
   lemma void dchain_allocate_append_to_indexes(dchain ch, int ind,
                                                time_t time);
   requires true;
@@ -346,6 +349,15 @@ struct DoubleChain;
   ensures double_chainp(ch, chain) &*&
           dchain_high_fp(dchain_expire_old_indexes_fp(ch, time)) <=
           dchain_high_fp(ch);
+  @*/
+
+/*@
+  fixpoint dchain dchain_erase_indexes_fp(dchain ch, list<int> indexes) {
+    switch(ch) { case dchain(alist, index_range, low, high):
+      return dchain(fold_left(alist, remove_by_index_fp, indexes),
+                    index_range, low, high);
+    }
+  }
   @*/
 
 /**

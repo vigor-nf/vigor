@@ -138,7 +138,15 @@ let fun_types =
                       lemmas_before = [];
                       lemmas_after = [
                         (fun params ->
-                           "int64_t now = " ^ (params.ret_name) ^ ";\n")];};
+                           "int64_t now = " ^ (params.ret_name) ^ ";\n");
+                      tx_l "\
+                            switch(initial_dyn_map) {\
+                              case mapc(capacity, dyn_map, addrs):\n\
+                              bridge_expire_abstract(dyn_map, \
+                                                     initial_dyn_val_vec, \
+                                                     initial_dyn_key_vec, \
+                                                     initial_chain, now - 10);\n\
+                            } "];};
      "bridge_loop_invariant_consume", {ret_type = Static Void;
                                        arg_types = stt
                                            [Ptr (Ptr dchain_struct);
@@ -242,7 +250,13 @@ let fun_types =
                                           (params.tmp_gen "cur_ch") ^
                                           ", *" ^
                                           (List.nth_exn params.args 1) ^ ", " ^
-                                          (List.nth_exn params.args 2) ^ ");\n}");
+                                          (List.nth_exn params.args 2) ^
+                                          ");\n\
+                                           dchain_indexes_contain_index(" ^
+                                          (params.tmp_gen "cur_ch") ^
+                                          ", *" ^
+                                          (List.nth_exn params.args 1) ^
+                                          ");\n}");
                                      (fun params ->
                                         "//@ allocate_keeps_high_bounded(" ^
                                         (params.tmp_gen "cur_ch") ^
@@ -378,7 +392,16 @@ let fun_types =
                                       ";\nmvc_coherent_same_len<ether_addri>(" ^
                                       (tmp_gen "dm") ^ ", " ^
                                       (tmp_gen "dv") ^ ", " ^
-                                      (tmp_gen "dh") ^ ");\n} @*/"
+                                      (tmp_gen "dh") ^
+                                      ");\nmvc_coherent_distinct<ether_addri>(" ^
+                                      (tmp_gen "dm") ^ ", " ^
+                                      (tmp_gen "dv") ^ ", " ^
+                                      (tmp_gen "dh") ^
+                                      ");\n\ assert mapp<stat_keyi>(_, static_keyp, st_key_hash, nop_true, ?" ^
+                                      (tmp_gen "stat_map") ^
+                                      ");\n chain_out_of_space_ml_out_of_space(exprnd_dyn_map, \
+                                       exprnd_dyn_val_vec, exprnd_chain, " ^
+                                      (tmp_gen "stat_map") ^ ");\n} @*/"
                                          );
                                  ];};
      "map_allocate", {ret_type = Static Sint32;
