@@ -1522,12 +1522,12 @@ ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))
            fst(nth(index, v)) == key &*&
            snd(nth(index, v)) != 1.0 &*&
            true == map_has_fp(m, key) &*&
-           true == distinct(map(fst, m));
+           true == distinct(map(fst, m)) &*&
+           0 <= index;
   ensures true == msubset(map(fst, map_erase_fp(m, key)),
                           map(fst, filter(engaged_cell,
                                           vector_erase_fp(v, index))));
   {
-    assume(false);//TODO
     switch(m) {
       case nil:
       case cons(h,t):
@@ -1541,21 +1541,9 @@ ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))
                                    map(fst, filter(engaged_cell, v)));
             assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
             particular_mem_map_filter(cur_key, v);
-            assert true == mem(pair(cur_key, false), v);
-            if (index_of(pair(cur_key, false), v) == index) {
-              mem_nth_index_of(pair(cur_key, false), v);
-            }
-            mem_update_unrelevant(pair(cur_key, false),
-                                  index,
-                                  pair(fst(nth(index, v)), true),
-                                  v);
-            assert true == mem(pair(cur_key, false), vector_erase_fp(v, index));
-            filter_mem(pair(cur_key, false),
-                       vector_erase_fp(v, index),
-                       engaged_cell);
-            mem_map(pair(cur_key, false),
-                    filter(engaged_cell, vector_erase_fp(v, index)),
-                    fst);
+            assert (true == mem(cur_key, map(fst, filter(engaged_cell, v))));
+            erase_unrelevant_key_mem_engaged(v, cur_key, index);
+            assert true == mem(cur_key, map(fst, filter(engaged_cell, vector_erase_fp(v, index))));
             assert false == mem(cur_key, map(fst, t));
             map_has_to_mem(t, cur_key);
             map_erase_keeps_others(t, key, cur_key);
