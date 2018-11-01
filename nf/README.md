@@ -1,3 +1,3 @@
 - Folders beginning in `vig` are verified NFs.
-- `lib` is VigLib.
+- `lib` is libVig.
 - Folders beginning in `unverified-` are unverified NFs for benchmarking purposes.
