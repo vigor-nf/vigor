@@ -322,4 +322,15 @@ ensures true == f(nth(index, l1), nth(index, l2));
   }
 }
 
+lemma void nth_map<t1,t2>(int index, fixpoint (t1,t2) f, list<t1> l)
+requires 0 <= index &*& index < length(l);
+ensures nth(index, map(f, l)) == f(nth(index, l));
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      if (0 < index) nth_map(index - 1, f, t);
+  }
+}
+
 #endif//STDEX_GH

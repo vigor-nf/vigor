@@ -1047,21 +1047,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     }
   }
 @*/
+
 /*@
-
-  lemma void particular_map_remove<t>(t key, list<pair<t, real> > l)
-  requires true == forall(l, engaged_cell) &*& 1.0 != vector_getf(l, key);
-  ensures map(fst, remove(pair(key, vector_getf(l, key)), l)) == remove(key, map(fst, l));
-  {
-    switch(l) {
-      case nil:
-      case cons(h,t):
-        switch(h) { case pair(f,s): }
-        if (fst(h) != key)
-          particular_map_remove(key, t);
-    }
-  }
-
   lemma void particular_mem_map_filter<t>(t el, list<pair<t, real> > l)
   requires true == mem(el, map(fst, filter(engaged_cell, l)));
   ensures true == mem(el, map(fst, filter(engaged_cell, l))) &*&
@@ -1101,107 +1088,171 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   lemma void add_entry_preserves_msubset_tail<kt>(list<pair<kt, int> > m,
                                                   list<pair<kt, real> > v,
                                                   int index,
-                                                  kt key)
+                                                  kt key,
+                                                  real new_ownf)
   requires true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
            0 <= index &*& index < length(v) &*&
-           1.0 == snd(nth(index, v));
+           1.0 == snd(nth(index, v)) &*&
+           0.0 < new_ownf &*& new_ownf < 1.0;
   ensures true == msubset(map(fst, m),
                           map(fst, filter(engaged_cell,
-                                          update(index, pair(key, 0.75), v))));
+                                          update(index, pair(key, new_ownf), v))));
   {
-    assume(false);//TODO
     switch(m) {
       case nil:
       case cons(h,t): switch(h) { case pair(cur_key, cur_val):
         particular_mem_map_filter(cur_key, v);
-        mem_unfilter(pair(cur_key, false), engaged_cell, v);
-        if (index_of(pair(cur_key, false), v) == index) {
-          mem_nth_index_of(pair(cur_key, false), v);
+        assert true == mem(cur_key, map(fst, filter(engaged_cell, v)));
+        real ownf = snd(nth(index_of(cur_key,
+                                     map(fst, filter(engaged_cell, v))),
+                            filter(engaged_cell, v)));
+
+        map_preserves_length(fst, filter(engaged_cell, v));
+        assert 0 <= index_of(cur_key, map(fst, filter(engaged_cell, v)));
+        pair<kt, real> ppp = nth(index_of(cur_key,
+                                          map(fst, filter(engaged_cell, v))),
+                                 filter(engaged_cell, v));
+        switch(ppp) { case pair(car,cdr):
+          mem_nth_index_of(cur_key,
+                           map(fst, filter(engaged_cell, v)));
+          nth_map(index_of(cur_key,
+                           map(fst, filter(engaged_cell, v))),
+                  fst,
+                  filter(engaged_cell, v));
+          assert cur_key == fst(nth(index_of(cur_key,
+                                             map(fst, filter(engaged_cell, v))),
+                                    filter(engaged_cell, v)));
+          assert car == cur_key;
+          assert cdr == ownf;
         }
-        mem_update_unrelevant(pair(cur_key, false), index, pair(key, false), v);
-        filter_mem(pair(cur_key, false),
-                   update(index, pair(key, false), v), engaged_cell);
-        mem_map(pair(cur_key, false),
-                filter(engaged_cell, update(index, pair(key, false), v)), fst);
+        assert true == mem(pair(cur_key, ownf), filter(engaged_cell, v));
+        mem_unfilter(pair(cur_key, ownf), engaged_cell, v);
+        assert ppp == pair(cur_key, ownf);
+        assert true == mem(ppp, v);
+        filter_forall(engaged_cell, v);
+        forall_nth(filter(engaged_cell, v),
+                   engaged_cell,
+                   index_of(cur_key, map(fst, filter(engaged_cell, v))));
+        if (index_of(pair(cur_key, ownf), v) == index) {
+          mem_nth_index_of(pair(cur_key, ownf), v);
+          assert nth(index_of(pair(cur_key, ownf), v), v) == ppp;
+          assert false;
+        }
+        mem_update_unrelevant(pair(cur_key, ownf),
+                              index,
+                              pair(key, new_ownf),
+                              v);
+        filter_mem(pair(cur_key, ownf),
+                   update(index, pair(key, new_ownf), v), engaged_cell);
+        mem_map(pair(cur_key, ownf),
+                filter(engaged_cell,
+                       update(index, pair(key, new_ownf), v)),
+                fst);
         msubset_remove_map_filter(map(fst, t),
-                                  pair(cur_key, false),
+                                  pair(cur_key, ownf),
                                   fst,
                                   engaged_cell,
                                   v);
-        nth_remove(index, pair(cur_key, false), v);
-        if (index_of(pair(cur_key, false), v) < index) {
+        nth_remove(index, pair(cur_key, ownf), v);
+        if (index_of(pair(cur_key, ownf), v) < index) {
           add_entry_preserves_msubset_tail(t,
-                                           remove(pair(cur_key, false), v),
+                                           remove(pair(cur_key, ownf), v),
                                            index - 1,
-                                           key);
+                                           key,
+                                           new_ownf);
           update_remove_msubset(index - 1,
-                                pair(key, false),
-                                pair(cur_key, false),
+                                pair(key, new_ownf),
+                                pair(cur_key, ownf),
                                 v);
           msubset_filter(engaged_cell,
                          update(index - 1,
-                                pair(key, false),
-                                remove(pair(cur_key, false), v)),
-                         remove(pair(cur_key, false),
-                                update(index, pair(key, false), v)));
+                                pair(key, new_ownf),
+                                remove(pair(cur_key, ownf), v)),
+                         remove(pair(cur_key, ownf),
+                                update(index, pair(key, new_ownf), v)));
           msubset_map(fst,
                       filter(engaged_cell,
-                             update(index - 1, pair(key, false),
-                                    remove(pair(cur_key, false), v))),
+                             update(index - 1, pair(key, new_ownf),
+                                    remove(pair(cur_key, ownf), v))),
                       filter(engaged_cell,
-                             remove(pair(cur_key, false),
-                                    update(index, pair(key, false), v))));
+                             remove(pair(cur_key, ownf),
+                                    update(index, pair(key, new_ownf), v))));
           msubset_trans(map(fst, t),
                         map(fst, filter(engaged_cell,
                                         update(index - 1,
-                                               pair(key, false),
-                                               remove(pair(cur_key, false),
+                                               pair(key, new_ownf),
+                                               remove(pair(cur_key, ownf),
                                                       v)))),
                         map(fst, filter(engaged_cell,
-                                        remove(pair(cur_key, false),
+                                        remove(pair(cur_key, ownf),
                                                update(index,
-                                                      pair(key, false),
+                                                      pair(key, new_ownf),
                                                       v)))));
         } else {
-          mem_index_of(pair(cur_key, false), v);
+          mem_index_of(pair(cur_key, ownf), v);
           add_entry_preserves_msubset_tail
-            (t, remove(pair(cur_key, false), v), index, key);
+            (t, remove(pair(cur_key, ownf), v), index, key, new_ownf);
           update_remove_msubset
-            (index, pair(key, false), pair(cur_key, false), v);
+            (index, pair(key, new_ownf), pair(cur_key, ownf), v);
           msubset_filter(engaged_cell,
                          update(index,
-                                pair(key, false),
-                                remove(pair(cur_key, false), v)),
-                         remove(pair(cur_key, false),
-                                update(index, pair(key, false), v)));
+                                pair(key, new_ownf),
+                                remove(pair(cur_key, ownf), v)),
+                         remove(pair(cur_key, ownf),
+                                update(index, pair(key, new_ownf), v)));
           msubset_map(fst,
                       filter(engaged_cell,
                              update(index,
-                                    pair(key, false),
-                                    remove(pair(cur_key, false), v))),
+                                    pair(key, new_ownf),
+                                    remove(pair(cur_key, ownf), v))),
                       filter(engaged_cell,
-                             remove(pair(cur_key, false),
-                                    update(index, pair(key, false), v))));
+                             remove(pair(cur_key, ownf),
+                                    update(index, pair(key, new_ownf), v))));
           msubset_trans(map(fst, t),
                         map(fst, filter(engaged_cell,
                                         update(index,
-                                               pair(key, false),
-                                               remove(pair(cur_key, false),
+                                               pair(key, new_ownf),
+                                               remove(pair(cur_key, ownf),
                                                       v)))),
                         map(fst, filter(engaged_cell,
-                                        remove(pair(cur_key, false),
+                                        remove(pair(cur_key, ownf),
                                                update(index,
-                                                      pair(key, false),
+                                                      pair(key, new_ownf),
                                                       v)))));
         }
 
         filter_remove(engaged_cell,
-                      pair(cur_key, false),
-                      update(index, pair(key, false), v));
+                      pair(cur_key, ownf),
+                      update(index, pair(key, new_ownf), v));
         filter_forall(engaged_cell,
-                      update(index, pair(key, false), v));
-        particular_map_remove
-          (cur_key, filter(engaged_cell, update(index, pair(key, false), v)));
+                      update(index, pair(key, new_ownf), v));
+        multiset_eq_map_remove_swap(fst,
+                                    pair(cur_key, ownf),
+                                    filter(engaged_cell,
+                                           update(index,
+                                                  pair(key, new_ownf),
+                                                  v)));
+        multiset_eq_msubset(map(fst, remove(pair(cur_key, ownf),
+                                            filter(engaged_cell,
+                                                   update(index,
+                                                          pair(key, new_ownf),
+                                                          v)))),
+                            remove(cur_key,
+                                   map(fst, filter(engaged_cell,
+                                                   update(index,
+                                                          pair(key, new_ownf),
+                                                          v)))));
+        msubset_trans(map(fst, t),
+                      map(fst, remove(pair(cur_key, ownf),
+                                      filter(engaged_cell,
+                                             update(index,
+                                                    pair(key, new_ownf),
+                                                    v)))),
+                      remove(cur_key,
+                             map(fst, filter(engaged_cell,
+                                             update(index,
+                                                    pair(key, new_ownf),
+                                                    v)))));
       }
     }
   }
@@ -1209,25 +1260,29 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
   lemma void add_entry_preserves_msubset<kt>(list<pair<kt, int> > m,
                                              list<pair<kt, real> > v,
                                              int index,
-                                             kt key)
+                                             kt key,
+                                             real new_ownf)
   requires true == msubset(map(fst, m), map(fst, filter(engaged_cell, v))) &*&
            0 <= index &*& index < length(v) &*&
            false == mem(key, map(fst, m)) &*&
-           1.0 == snd(nth(index, v));
+           1.0 == snd(nth(index, v)) &*&
+           0.0 < new_ownf &*& new_ownf < 1.0;
   ensures true == msubset(map(fst, map_put_fp(m, key, index)),
                           map(fst, filter(engaged_cell,
-                                          update(index, pair(key, 0.75), v))));
+                                          update(index,
+                                                 pair(key, new_ownf),
+                                                 v))));
   {
-    add_entry_preserves_msubset_tail(m, v, index, key);
-    mem_update(pair(key, 0.75), index, v);
-    filter_mem(pair(key, 0.75),
-               update(index, pair(key, 0.75), v),
+    add_entry_preserves_msubset_tail(m, v, index, key, new_ownf);
+    mem_update(pair(key, new_ownf), index, v);
+    filter_mem(pair(key, new_ownf),
+               update(index, pair(key, new_ownf), v),
                engaged_cell);
-    mem_map(pair(key, 0.75),
-            filter(engaged_cell, update(index, pair(key, 0.75), v)), fst);
+    mem_map(pair(key, new_ownf),
+            filter(engaged_cell, update(index, pair(key, new_ownf), v)), fst);
     msubset_remove(map(fst, m),
                    map(fst, filter(engaged_cell,
-                                   update(index, pair(key, 0.75), v))),
+                                   update(index, pair(key, new_ownf), v))),
                    key);
     remove_nonmem(key, map(fst,m));
   }
@@ -1257,7 +1312,7 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
     dchain_allocate_append_to_indexes(ch, index, time);
     map_has_to_mem(m, key);
     add_entry_consistent_pairs(m, v, ch, index, time, key, 0);
-    add_entry_preserves_msubset(m, v, index, key);
+    add_entry_preserves_msubset(m, v, index, key, 0.75);
     close map_vec_chain_coherent(map_put_fp(m, key, index),
                                  update(index, pair(key, 0.75), v),
                                  dchain_allocate_fp(ch, index, time));
@@ -1266,7 +1321,8 @@ ensures dmappingp<t1,t2,vt>(m, a, b, c, d, e, g, h, i, j, k, l, n, f) &*&
 
 /*@
   lemma void consistent_pairs_has_key<kt>(list<pair<kt, int> > m,
-                                          list<pair<kt, real> > v, dchain ch,
+                                          list<pair<kt, real> > v,
+                                          dchain ch,
                                           int index,
                                           int start_idx,
                                           kt key)
