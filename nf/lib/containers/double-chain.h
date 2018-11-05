@@ -448,7 +448,7 @@ int dchain_expire_one_index(struct DoubleChain* chain,
                (double_chainp(ch, chain) &*&
                 result == 0)))); @*/
 
-int dchain_is_index_allocated(struct DoubleChain* chain, int index);
+bool dchain_is_index_allocated(struct DoubleChain* chain, int index);
 /*@ requires double_chainp(?ch, chain) &*&
              0 <= index &*& index < dchain_index_range_fp(ch); @*/
 /*@ ensures double_chainp(ch, chain) &*&

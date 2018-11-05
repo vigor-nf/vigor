@@ -46,7 +46,7 @@ struct LoadBalancedBackend {
   inductive lb_backendi = lb_backendc(int);
   predicate lb_backendp(struct LoadBalancedBackend* ptr; lb_backendi backend) =
     struct_LoadBalancedBackend_padding(ptr) &*&
-    ptr->index |-> ?i &*&
+    ptr->nic |-> ?i &*&
     backend == lb_backendc(i);
 
   fixpoint int lb_backend_get_index(lb_backendi b) {
