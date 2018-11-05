@@ -183,7 +183,7 @@ void map_put(struct Map* map, void* key, int value) {
   if (map->ent_cond) {
     klee_assert(map->ent_cond(key, value));
   }
-  map_increase_occupancy(map,1);
+  map->occupancy += 1;
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {
     if (map->keq(key, map->keyp[n])) {
       klee_assert(map->key_deleted[n] && "Duplicate key, otherwise");
@@ -226,7 +226,7 @@ void map_erase(struct Map* map, void* key, void** trash) {
   TRACE_KEY_FIELDS(key, map);
   klee_trace_param_ptr(trash, sizeof(void*), "trash");
 
-  map_decrease_occupancy(map,1);
+  map->occupancy -= 1;
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {
     if (map->keq(key, map->keyp[n])) {
       //It is important to differentiate the case

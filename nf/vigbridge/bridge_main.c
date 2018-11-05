@@ -145,7 +145,7 @@ struct str_field_descr dynamic_vector_value_fields[] = {
   {0, sizeof(uint16_t), "device"},
 };
 
-bool stat_map_condition(void* key, int index, void* state) {
+bool stat_map_condition(void* key, int index) {
   // Do not trace the model service function
   return 0 <= index & index < rte_eth_dev_count();
 }
@@ -165,7 +165,7 @@ void read_static_ft_from_file() {
                  sizeof(static_map_key_nested_fields)/
                  sizeof(static_map_key_nested_fields[0]),
                  "StaticKey");
-  map_set_entry_condition(static_ft.map, stat_map_condition, NULL);
+  map_set_entry_condition(static_ft.map, stat_map_condition);
   vector_set_layout(static_ft.keys, static_map_key_fields,
                     sizeof(static_map_key_fields)/
                     sizeof(static_map_key_fields[0]),
