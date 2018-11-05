@@ -1,4 +1,5 @@
 #pragma once
+#include <string.h>
 
 
 static inline int

@@ -9,7 +9,7 @@
 #define PREALLOC_SIZE (256)
 #define NUM_ELEMS (3)
 
-typedef int map_entry_condition(void* key, int index);
+typedef bool map_entry_condition(void* key, int index);
 
 struct Map {
   void* keyp[NUM_ELEMS];

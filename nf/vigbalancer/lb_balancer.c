@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 
 // KLEE doesn't tolerate && in a klee_assume (see klee/klee#809),
 // so we replace them with & during symbex but interpret them as && in the validator
@@ -72,7 +73,7 @@ lb_backend_condition(void* key, void* state) {
 
 bool
 lb_flow_id2backend_id_cond(void* key, void* state) {
-  return 0 <= *(uint32_t*)key AND *(uint32_t*)key < balancer->backend_capacity;
+  return *(uint32_t*)key < balancer->backend_capacity;
 }
 
 struct str_field_descr uint32_field = {0, sizeof(uint32_t), "value"};

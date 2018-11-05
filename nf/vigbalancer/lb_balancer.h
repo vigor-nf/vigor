@@ -103,11 +103,15 @@ void lb_process_heartbit(struct LoadBalancer* balancer,
                          time_t now);
 
 #ifdef KLEE_VERIFICATION
-
-struct Map** lb_get_indices(struct LoadBalancer* balancer);
-struct Vector** lb_get_heap(struct LoadBalancer* balancer);
+struct Map** lb_get_flow_to_flow_id(struct LoadBalancer* balancer);
+struct Vector** lb_get_flow_heap(struct LoadBalancer* balancer);
+struct DoubleChain** lb_get_flow_chain(struct LoadBalancer* balancer);
+struct Vector** lb_get_flow_id_to_backend_id(struct LoadBalancer* balancer);
+struct Vector** lb_get_backend_ips(struct LoadBalancer* balancer);
 struct Vector** lb_get_backends(struct LoadBalancer* balancer);
-struct DoubleChain** lb_get_chain(struct LoadBalancer* balancer);
+struct Map** lb_get_ip_to_backend_id(struct LoadBalancer* balancer);
+struct DoubleChain** lb_get_active_backends(struct LoadBalancer* balancer);
+struct Vector** lb_get_cht(struct LoadBalancer* balancer);
 
 extern struct str_field_descr lb_flow_fields[];
 extern struct str_field_descr lb_backend_fields[];
