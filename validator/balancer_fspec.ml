@@ -647,7 +647,7 @@ struct
                  ^ "//@ list<pair<lb_backendi, real> > expired_backends;\n"
                  ^ "//@ dchain expired_chain;\n"
                  ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
-                 "/*@ assume(sizeof(struct LoadBalancedFlow) == 12); @*/\n"
+                 "/*@ assume(sizeof(struct LoadBalancedFlow) == 16); @*/\n"
                ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 2); @*/\n"
                  ^ "bool vector_flow_allocated = false;\n\
                     bool vector_flow_borrowed = false;\n\
