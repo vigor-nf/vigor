@@ -333,8 +333,18 @@ let fun_types =
                                       (List.nth_exn args 3) ^
                                       ");\n\
                                        }} @*/");
+                                   tx_l
+                                      "if (!map_flow_expired) {\n\
+                                       } else {\n\
+                                       close hide_mapp<lb_flowi>(_, _, _, _, _);\n\
+                                       }";
                                  ];
                                  lemmas_after = [
+                                   (fun _ -> "if (!map_flow_expired) {\n\
+                                              map_flow_expired = true;\n\
+                                              } else {\n\
+                                              //@ open hide_mapp<lb_flowi>(_, _, _, _, _);\n\
+                                              }");
                                    (fun {tmp_gen;_} ->
                                       "/*@ {\n\
                                        assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
@@ -767,6 +777,7 @@ struct
                     bool vector_backends_allocated = false;\n\
                     bool map_flow_allocated = false;\n\
                     bool dchain_flow_allocated = false;\n\
+                    bool map_flow_expired = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
   let fun_types = fun_types
