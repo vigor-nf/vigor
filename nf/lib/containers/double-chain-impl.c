@@ -2486,12 +2486,60 @@ int dchain_impl_is_index_allocated(struct dchain_cell *cells, int index)
 /*@ requires dchainip(?dc, cells) &*&
              0 <= index &*& index < dchaini_irange_fp(dc); @*/
 /*@ ensures dchainip(dc, cells) &*&
-            result == dchaini_allocated_fp(dc, index); @*/
+            dchaini_allocated_fp(dc, index) ? result == 1 : result == 0; @*/
 {
+  //@ open dchainip(dc, cells);
+  //@ int size = dchaini_irange_fp(dc);
+  //@ assert dcellsp(cells, ?clen, ?cls);
+  //@ assert free_listp(cls, ?fl, FREE_LIST_HEAD, FREE_LIST_HEAD);
+  //@ assert alloc_listp(cls, ?al, ALLOC_LIST_HEAD, ALLOC_LIST_HEAD);
+  //@ dcellsp_length(cells);
+  //@ dcells_limits(cells);
+  //@ extract_heads(cells, cls);
   int lifted = index + INDEX_SHIFT;
   //@ extract_cell(cells, cls, lifted);
   struct dchain_cell *liftedp = cells + lifted;
-  return liftedp->next != liftedp->prev || liftedp->next == ALLOC_LIST_HEAD;
+  int lifted_next = liftedp->next;
+  int lifted_prev = liftedp->prev;
+  //@ forall_nth(cls, (dbounded)(size+INDEX_SHIFT), lifted);
+  //@ glue_cells(cells, cls, lifted);
+  int result;
+  if (lifted_next == lifted_prev) {
+    if (lifted_next != ALLOC_LIST_HEAD) {
+      //@ lbounded_then_start_nonmem(al, ALLOC_LIST_HEAD);
+      //@ symm_non_alloc(cls, al, ALLOC_LIST_HEAD, lifted);
+      //@ assert false == mem(lifted, al);
+      //@ shift_inds_mem(dchaini_alist_fp(dc), INDEX_SHIFT, lifted);
+      //@ assert false == mem(index, dchaini_alist_fp(dc));
+      //@ attach_heads(cells, cls);
+      //@ close dchainip(dc, cells);
+      return 0;
+    } else {
+      //@ lbounded_then_start_nonmem(fl, ALLOC_LIST_HEAD);
+      /*@ points_to_alloc_head_non_in_fl(cls, fl, FREE_LIST_HEAD,
+        lifted, ALLOC_LIST_HEAD); @*/
+      //@ free_alloc_disjoint(al, fl, lifted, nat_of_int(size));
+      //@ assert true == mem(lifted, al);
+      //@ lbounded_then_start_nonmem(al, ALLOC_LIST_HEAD);
+      //@ alloc_list_has_just_one_el(cls, al, ALLOC_LIST_HEAD, lifted);
+      //@ assert nth(0,cls) == dcell(lifted, lifted);
+      //@ assert al == cons(lifted, nil);
+      //@ shift_inds_single_element(dchaini_alist_fp(dc), INDEX_SHIFT);
+      //@ assert dchaini_alist_fp(dc) == cons(index, nil);
+      //@ attach_heads(cells, cls);
+      //@ close dchainip(dc, cells);
+      return 1;
+    }
+  } else {
+    /*@ asymm_non_in_free_list(cls, fl, FREE_LIST_HEAD, lifted,
+                               FREE_LIST_HEAD); @*/
+    //@ free_alloc_disjoint(al, fl, lifted, nat_of_int(size));
+    //@ assert true == mem(lifted, al);
+    //@ shift_inds_mem(dchaini_alist_fp(dc), INDEX_SHIFT, lifted);
+    //@ attach_heads(cells, cls);
+    //@ close dchainip(dc, cells);
+    return 1;
+  }
 }
 
 /*@

@@ -448,10 +448,10 @@ int dchain_expire_one_index(struct DoubleChain* chain,
                (double_chainp(ch, chain) &*&
                 result == 0)))); @*/
 
-bool dchain_is_index_allocated(struct DoubleChain* chain, int index);
+int dchain_is_index_allocated(struct DoubleChain* chain, int index);
 /*@ requires double_chainp(?ch, chain) &*&
              0 <= index &*& index < dchain_index_range_fp(ch); @*/
 /*@ ensures double_chainp(ch, chain) &*&
-            result == dchain_allocated_fp(ch, index); @*/
+            dchain_allocated_fp(ch, index) ? result == 1 : result == 0; @*/
 
 #endif //_DOUBLE_CHAIN_H_INCLUDED_

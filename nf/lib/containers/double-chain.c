@@ -825,14 +825,48 @@ int dchain_expire_one_index(struct DoubleChain* chain,
   return 0;
 }
 
+/*@
+  lemma void dchain_allocated_dchaini_allocated(list<int> bare_alist,
+                                                list<int> tstmps,
+                                                list<pair<int, time_t> > alist,
+                                                int index)
+  requires true == insync_fp(bare_alist, tstmps, alist);
+  ensures exists(alist, (same_index)(index)) == mem(index, bare_alist);
+  {
+    switch(bare_alist) {
+      case nil:
+      case cons(bh,bt):
+        switch(alist) {
+          case nil:
+          case cons(h,t):
+            dchain_allocated_dchaini_allocated(bt, tstmps, t, index);
+        }
+    }
+  }
+  @*/
 
 int dchain_is_index_allocated(struct DoubleChain* chain, int index)
 /*@ requires double_chainp(?ch, chain) &*&
              0 <= index &*& index < dchain_index_range_fp(ch); @*/
 /*@ ensures double_chainp(ch, chain) &*&
-            result == dchain_allocated_fp(ch, index); @*/
+            dchain_allocated_fp(ch, index) ? result == 1 : result == 0; @*/
 {
+  //@ open double_chainp(ch, chain);
+  //@ assert chain->cells |-> ?cells;
+  //@ assert dchainip(?chi, cells);
+  //@ assert chain->timestamps |-> ?timestamps;
+  //@ assert times(timestamps, _, ?tstamps);
+  /*@
+    switch(ch) {
+      case dchain(alist, index_range, low, high):
+        switch(chi) {
+          case dchaini(bare_alist, i_rng):
+            dchain_allocated_dchaini_allocated(bare_alist, tstamps, alist, index);
+        }
+    }
+    @*/
   return dchain_impl_is_index_allocated(chain->cells, index);
+  //@ close double_chainp(ch, chain);
 }
 
 /*@
