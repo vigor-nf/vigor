@@ -212,7 +212,7 @@ let fun_types =
                               empty_map_vec_dchain_coherent\
                               <lb_flowi>(allocated_vector);\n\
                               } else {\n\
-                              assert vectorp<uint32_t>(the_ip_vector, uintp, ?allocated_ip_vector, _);\n\
+                              assert vectorp<uint32_t>(the_ip_vector, u_integer, ?allocated_ip_vector, _);\n\
                               empty_map_vec_dchain_coherent\
                               <uint32_t>(allocated_ip_vector);\n\
                               }";
@@ -585,13 +585,13 @@ let fun_types =
                                 }\n\
                               } else if(!vector_flow_id_to_bknd_id_allocated) {\n\
                                 produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
-                                (uintp, sizeof(uint32_t))(a) \
+                                (u_integer, sizeof(uint32_t))(a) \
                                 {\
                                 call();\
                                 }\n\
                               } else if(!vector_backend_ips_allocated) {\n\
                                 produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
-                                (uintp, sizeof(uint32_t))(a) \
+                                (u_integer, sizeof(uint32_t))(a) \
                                 {\
                                 call();\
                                 }\n\
@@ -603,7 +603,7 @@ let fun_types =
                                 }\n\
                               } else {\n\
                                 produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
-                                (uintp, sizeof(uint32_t))(a) \
+                                (u_integer, sizeof(uint32_t))(a) \
                                 {\
                                 call();\
                                 }\n\

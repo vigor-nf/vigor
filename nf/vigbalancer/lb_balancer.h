@@ -77,13 +77,9 @@ void lb_backend_init(void* obj);
 /*@ requires chars(obj, sizeof(struct LoadBalancedBackend), _); @*/
 /*@ ensures lb_backendp(obj, _); @*/
 
-/*@
-  predicate uintp(void* x; uint32_t v) = u_integer((uint32_t*)x, v);
-  @*/
-
 void null_init(void* obj);
 /*@ requires chars(obj, sizeof(uint32_t), _); @*/
-/*@ ensures uintp(obj, _); @*/
+/*@ ensures u_integer(obj, _); @*/
 
 bool lb_ip_equality(void* objA, void* objB);
 /*@ requires [?fr1]u_integer(objA, ?f1) &*&
