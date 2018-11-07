@@ -42,3 +42,4 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 void umemcpy(void *array, void *array0, size_t count);
     //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
     //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);
+

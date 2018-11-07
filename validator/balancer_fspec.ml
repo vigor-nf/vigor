@@ -512,8 +512,14 @@ let fun_types =
                                 {\
                                 call();\
                                 }\n\
+                              } else if(!vector_flow_id_to_bknd_id_allocated) {\n\
+                                produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
+                                (uintp, sizeof(uint32_t))(a) \
+                                {\
+                                call();\
+                                }\n\
                               } else {\n\
-                                produce_function_pointer_chunk vector_init_elem<lb_backendi>(lb_backend_init)\
+                                produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
                                 (lb_backendp, sizeof(struct LoadBalancedBackend))(a) \
                                 {\
                                 call();\
@@ -648,8 +654,9 @@ struct
                  ^ "//@ dchain expired_chain;\n"
                  ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
                  "/*@ assume(sizeof(struct LoadBalancedFlow) == 16); @*/\n"
-               ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 2); @*/\n"
+                 ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 2); @*/\n"
                  ^ "bool vector_flow_allocated = false;\n\
+                    bool vector_flow_id_to_bknd_id_allocated = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
   let fun_types = fun_types
