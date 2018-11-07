@@ -335,7 +335,7 @@ let fun_types =
                       extra_ptr_types = [];
                       lemmas_before = [
                         (fun _ -> (* VeriFast will syntax-error on produce_function_pointer_chunk if not within a block *)
-                            "/*@ {\nproduce_function_pointer_chunk \
+                            "/*@ if (!map_flow_allocated) {\nproduce_function_pointer_chunk \
                             map_keys_equality<lb_flowi>(lb_flow_equality)\
                             (lb_flowp)(a, b) \
                             {\
@@ -347,10 +347,22 @@ let fun_types =
                             {\
                             call();\
                             }\n\
+                             } else {\nproduce_function_pointer_chunk \
+                            map_keys_equality<uint32_t>(lb_ip_equality)\
+                            (u_integer)(a, b) \
+                            {\
+                            call();\
+                            }\n\
+                            produce_function_pointer_chunk \
+                            map_key_hash<uint32_t>(lb_ip_hash)\
+                            (u_integer, lb_ip_hash_fp)(a) \
+                            {\
+                            call();\
+                            }\n\
                             } @*/ \n");];
                       lemmas_after = [
                         (fun params -> (* see remark above *)
-                            "/*@ {\n assert [?" ^ (params.tmp_gen "imkedy") ^
+                            "/*@ if (!map_flow_allocated) {\n assert [?" ^ (params.tmp_gen "imkedy") ^
                            "]is_map_keys_equality(lb_flow_equality,\
                             lb_flowp);\n\
                             close [" ^ (params.tmp_gen "imkedy") ^
@@ -362,7 +374,20 @@ let fun_types =
                             close [" ^ (params.tmp_gen "imkhdy") ^
                            "]hide_is_map_key_hash(lb_flow_hash, \
                             lb_flowp, lb_flow_hash_2);\n\
-                            } @*/")];};
+                            } else {\n assert [?" ^ (params.tmp_gen "imkedy") ^
+                           "]is_map_keys_equality(lb_ip_equality,\
+                            u_integer);\n\
+                            close [" ^ (params.tmp_gen "imkedy") ^
+                           "]hide_is_map_keys_equality(lb_ip_equality, \
+                            u_integer);\n\
+                            assert [?" ^ (params.tmp_gen "imkhdy") ^
+                           "]is_map_key_hash(lb_ip_hash,\
+                            u_integer, lb_ip_hash_fp);\n\
+                            close [" ^ (params.tmp_gen "imkhdy") ^
+                           "]hide_is_map_key_hash(lb_ip_hash, \
+                            u_integer, lb_ip_hash_fp);\n\
+                            } @*/");
+                        (fun _ -> "map_flow_allocated = true;")];};
      "map_get", {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
                               Static (Ptr lb_flow_struct);
@@ -669,6 +694,7 @@ struct
                  ^ "bool vector_flow_allocated = false;\n\
                     bool vector_flow_id_to_bknd_id_allocated = false;\n\
                     bool vector_backend_ips_allocated = false;\n\
+                    bool map_flow_allocated = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
   let fun_types = fun_types
