@@ -269,6 +269,7 @@ let parse_int str =
   if (String.equal str "18446744073709551606") then Some (-10)
   (* As another hack: handle -300 in 64bits. *)
   else if (String.equal str "18446744073709551316") then Some (-300)
+  else if (String.equal str "18446744073709551556") then Some (-60)
   else
     try Some (int_of_string str)
     with _ -> None
