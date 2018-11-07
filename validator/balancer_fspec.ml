@@ -588,6 +588,13 @@ let fun_types =
                                       } else {\n\
                                       vector_backends_allocated = true;\n\
                                       }}}");];};
+     "lb_fill_cht",        {ret_type = Static Void;
+                            arg_types = [Static (Ptr vector_struct);
+                                         Static Sint32;
+                                         Static Sint32];
+                            extra_ptr_types = [];
+                            lemmas_before = [];
+                            lemmas_after = []};
      "vector_borrow",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;

@@ -84,6 +84,9 @@ struct str_field_descr uint32_field = {0, sizeof(uint32_t), "value"};
 void
 lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
   klee_trace_ret();
+  klee_trace_param_u64((uint64_t)cht, "cht");
+  klee_trace_param_i32(cht_height, "cht_height");
+  klee_trace_param_i32(backend_capacity, "backend_capacity");
   //see how long we can run without doing any modelling here
 }
 #else//KLEE_VERIFICATION

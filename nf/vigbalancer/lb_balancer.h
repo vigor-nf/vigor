@@ -8,6 +8,8 @@
 #include <stdint.h>
 #include <rte_ether.h>
 
+#include "lib/containers/vector.h"
+
 #ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
 #include "lib/stubs/containers/str-descr.h"
@@ -94,6 +96,13 @@ uint32_t lb_ip_hash(void* obj);
 /*@ requires [?fr]u_integer(obj, ?f); @*/
 /*@ ensures [fr]u_integer(obj, f) &*&
             result == lb_ip_hash_fp(f); @*/
+
+void lb_fill_cht(struct Vector* cht,
+                 int cht_height,
+                 int backend_capacity);
+/*@ requires vectorp<uint32_t>(cht, ?entp, ?values, ?addrs); @*/
+/*@ ensures vectorp<uint32_t>(cht, entp, values, addrs); @*/
+
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity,
