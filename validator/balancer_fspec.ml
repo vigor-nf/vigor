@@ -121,9 +121,15 @@ let fun_types =
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
                                             Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
                                             Ptr (Ptr dchain_struct);
+                                            Ptr (Ptr vector_struct);
+                                            Ptr (Ptr vector_struct);
+                                            Ptr (Ptr vector_struct);
+                                            Ptr (Ptr map_struct);
+                                            Ptr (Ptr dchain_struct);
+                                            Ptr (Ptr vector_struct);
                                             Sint64;
+                                            Uint32;
                                             Uint32];
                                        extra_ptr_types = [];
                                        lemmas_before = [
@@ -132,17 +138,29 @@ let fun_types =
                                             (List.nth_exn args 0) ^ ", *" ^
                                             (List.nth_exn args 1) ^ ", *" ^
                                             (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", " ^
-                                            (List.nth_exn args 4) ^ ", " ^
-                                            (List.nth_exn args 5) ^ "); @*/");];
+                                            (List.nth_exn args 3) ^ ", *" ^
+                                            (List.nth_exn args 4) ^ ", *" ^
+                                            (List.nth_exn args 5) ^ ", *" ^
+                                            (List.nth_exn args 6) ^ ", *" ^
+                                            (List.nth_exn args 7) ^ ", *" ^
+                                            (List.nth_exn args 8) ^ ", " ^
+                                            (List.nth_exn args 9) ^ ", " ^
+                                            (List.nth_exn args 10) ^ ", " ^
+                                            (List.nth_exn args 11) ^ "); @*/");];
                                        lemmas_after = [];};
      "lb_loop_invariant_produce", {ret_type = Static Void;
                                        arg_types = stt
                                            [Ptr (Ptr map_struct);
                                             Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
                                             Ptr (Ptr dchain_struct);
+                                            Ptr (Ptr vector_struct);
+                                            Ptr (Ptr vector_struct);
+                                            Ptr (Ptr vector_struct);
+                                            Ptr (Ptr map_struct);
+                                            Ptr (Ptr dchain_struct);
+                                            Ptr (Ptr vector_struct);
                                             Ptr Sint64;
+                                            Uint32;
                                             Uint32];
                                        extra_ptr_types = [];
                                        lemmas_before = [];
@@ -153,8 +171,14 @@ let fun_types =
                                             (List.nth_exn args 1) ^ ", *" ^
                                             (List.nth_exn args 2) ^ ", *" ^
                                             (List.nth_exn args 3) ^ ", *" ^
-                                            (List.nth_exn args 4) ^ ", " ^
-                                            (List.nth_exn args 5) ^ "); @*/");
+                                            (List.nth_exn args 4) ^ ", *" ^
+                                            (List.nth_exn args 5) ^ ", *" ^
+                                            (List.nth_exn args 6) ^ ", *" ^
+                                            (List.nth_exn args 7) ^ ", *" ^
+                                            (List.nth_exn args 8) ^ ", *" ^
+                                            (List.nth_exn args 9) ^ ", " ^
+                                            (List.nth_exn args 10) ^ ", " ^
+                                            (List.nth_exn args 11) ^ "); @*/");
                                          (fun {tmp_gen;_} ->
                                             "\n/*@ {\n\
                                              assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
@@ -183,11 +207,16 @@ let fun_types =
                          lemmas_before = [];
                          lemmas_after = [
                            on_rez_nonzero
-                             "{\n\
+                             "if (!dchain_flow_allocated) {\n\
                               assert vectorp<lb_flowi>(_, _, ?allocated_vector, _);\n\
                               empty_map_vec_dchain_coherent\
                               <lb_flowi>(allocated_vector);\n\
+                              } else {\n\
+                              assert vectorp<uint32_t>(the_ip_vector, uintp, ?allocated_ip_vector, _);\n\
+                              empty_map_vec_dchain_coherent\
+                              <uint32_t>(allocated_ip_vector);\n\
                               }";
+                           (fun _ -> "dchain_flow_allocated = true;");
                            tx_l "index_range_of_empty(65536, 0);";];};
      "dchain_allocate_new_index", {ret_type = Static Sint32;
                                    arg_types = stt [Ptr dchain_struct; Ptr Sint32; Uint32;];
@@ -579,15 +608,18 @@ let fun_types =
                               ", " ^ (tmp_gen "addr_map") ^
                               ", " ^ (tmp_gen "cap") ^ ");\n\
                               } @*/");
-                           (fun _ -> "if (!vector_flow_allocated) {\n\
-                                      vector_flow_allocated = true; } else {\n\
-                                      if (!vector_flow_id_to_bknd_id_allocated) {\n\
-                                      vector_flow_id_to_bknd_id_allocated = true; } else {\n\
-                                      if (!vector_backend_ips_allocated) {\n\
-                                      vector_backend_ips_allocated = true;\n\
-                                      } else {\n\
-                                      vector_backends_allocated = true;\n\
-                                      }}}");];};
+                           (fun {args;_} ->
+                              "if (!vector_flow_allocated) {\n\
+                               vector_flow_allocated = true; } else {\n\
+                               if (!vector_flow_id_to_bknd_id_allocated) {\n\
+                               vector_flow_id_to_bknd_id_allocated = true; } else {\n\
+                               if (!vector_backend_ips_allocated) {\n\
+                               the_ip_vector = *" ^ (List.nth_exn args 3) ^
+                              ";\n\
+                               vector_backend_ips_allocated = true;\n\
+                               } else {\n\
+                               vector_backends_allocated = true;\n\
+                               }}}");];};
      "lb_fill_cht",        {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
@@ -695,6 +727,7 @@ struct
                   uint32_t pkt_sent_type;\n\
                   bool a_packet_sent = false;\n\
                   bool backend_known = false;\n\
+                  struct Vector* the_ip_vector;\n\
                   int32_t backend_index = -1;\n"
                  ^ "//@ mapi<lb_flowi> initial_indices;\n"
                  ^ "//@ list<pair<lb_flowi, real> > initial_heap;\n"
@@ -712,6 +745,7 @@ struct
                     bool vector_backend_ips_allocated = false;\n\
                     bool vector_backends_allocated = false;\n\
                     bool map_flow_allocated = false;\n\
+                    bool dchain_flow_allocated = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
   let fun_types = fun_types
