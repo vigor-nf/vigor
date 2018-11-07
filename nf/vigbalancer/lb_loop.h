@@ -21,18 +21,24 @@
                               struct DoubleChain* active_backends,
                               struct Vector* cht,
                               time_t time, uint32_t backend_capacity, uint32_t flow_capacity) =
-          mapp<lb_flowi>(flow_to_flow_id, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?flow_map, _)) &*&
-          vectorp<lb_flowi>(flow_heap, lb_flowp, ?flow_vec, _) &*&
+          mapp<lb_flowi>(flow_to_flow_id, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?flow_map, ?flow_mapv)) &*&
+          vectorp<lb_flowi>(flow_heap, lb_flowp, ?flow_vec, ?flow_veca) &*&
           double_chainp(?flow_ch, flow_chain) &*&
           vectorp<uint32_t>(flow_id_to_backend_id, uintp, _, _) &*&
-          vectorp<uint32_t>(backend_ips, uintp, ?ip_vec, _) &*&
+          vectorp<uint32_t>(backend_ips, uintp, ?ip_vec, ?ip_veca) &*&
           vectorp<lb_backendi>(backends, lb_backendp, _, _) &*&
-          mapp<uint32_t>(ip_to_backend_id, u_integer, lb_ip_hash_fp, nop_true, mapc(backend_capacity, ?ip_map, _)) &*&
+          mapp<uint32_t>(ip_to_backend_id, u_integer, lb_ip_hash_fp, nop_true, mapc(backend_capacity, ?ip_map, ?ip_mapv)) &*&
           double_chainp(?bknd_ch, active_backends) &*&
           vectorp<uint32_t>(cht, uintp, _, _) &*&
           map_vec_chain_coherent<lb_flowi>(flow_map, flow_vec, flow_ch) &*&
           map_vec_chain_coherent<uint32_t>(ip_map, ip_vec, bknd_ch) &*&
-          last_time(time);
+          true == forall2(flow_vec, flow_veca, (kkeeper)(flow_mapv)) &*&
+          true == forall2(ip_vec, ip_veca, (kkeeper)(ip_mapv)) &*&
+          length(flow_vec) == flow_capacity &*&
+          length(ip_vec) == backend_capacity &*&
+          last_time(time) &*&
+          dchain_high_fp(flow_ch) <= time &*&
+          dchain_high_fp(bknd_ch) <= time;
           @*/
 /*          mapp<lb_flowi>(indices, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?indicesi, ?indicesv)) &*&
           vectorp<lb_flowi>(heap, lb_flowp, ?heapv, ?heapa) &*&

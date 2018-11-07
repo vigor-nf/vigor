@@ -390,31 +390,48 @@ let fun_types =
                             }\n\
                             } @*/ \n");];
                       lemmas_after = [
-                        (fun params -> (* see remark above *)
-                            "/*@ if (!map_flow_allocated) {\n assert [?" ^ (params.tmp_gen "imkedy") ^
+                        (fun {tmp_gen;ret_name;_} -> (* see remark above *)
+                            "/*@ if (!map_flow_allocated) {\n assert [?" ^ (tmp_gen "imkedy") ^
                            "]is_map_keys_equality(lb_flow_equality,\
                             lb_flowp);\n\
-                            close [" ^ (params.tmp_gen "imkedy") ^
+                            close [" ^ (tmp_gen "imkedy") ^
                            "]hide_is_map_keys_equality(lb_flow_equality, \
                             lb_flowp);\n\
-                            assert [?" ^ (params.tmp_gen "imkhdy") ^
+                            assert [?" ^ (tmp_gen "imkhdy") ^
                            "]is_map_key_hash(lb_flow_hash,\
                             lb_flowp, lb_flow_hash_2);\n\
-                            close [" ^ (params.tmp_gen "imkhdy") ^
+                            close [" ^ (tmp_gen "imkhdy") ^
                            "]hide_is_map_key_hash(lb_flow_hash, \
                             lb_flowp, lb_flow_hash_2);\n\
-                            } else {\n assert [?" ^ (params.tmp_gen "imkedy") ^
+                            } else {\n assert [?" ^ (tmp_gen "imkedy") ^
                            "]is_map_keys_equality(lb_ip_equality,\
                             u_integer);\n\
-                            close [" ^ (params.tmp_gen "imkedy") ^
+                            close [" ^ (tmp_gen "imkedy") ^
                            "]hide_is_map_keys_equality(lb_ip_equality, \
                             u_integer);\n\
-                            assert [?" ^ (params.tmp_gen "imkhdy") ^
+                            assert [?" ^ (tmp_gen "imkhdy") ^
                            "]is_map_key_hash(lb_ip_hash,\
                             u_integer, lb_ip_hash_fp);\n\
-                            close [" ^ (params.tmp_gen "imkhdy") ^
+                            close [" ^ (tmp_gen "imkhdy") ^
                            "]hide_is_map_key_hash(lb_ip_hash, \
                             u_integer, lb_ip_hash_fp);\n\
+                            if (" ^ ret_name ^
+                            " == 1) {\n\
+                            assert mapp<uint32_t>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                            ", ?" ^ (tmp_gen "map") ^
+                            ", ?" ^ (tmp_gen "addr_map") ^
+                            "));\n\
+                             assert vectorp<uint32_t>(the_ip_vector, _, ?" ^
+                            (tmp_gen "dks") ^
+                            ", ?" ^ (tmp_gen "dkaddrs") ^
+                            ");\n\
+                             empty_kkeeper(" ^
+                            (tmp_gen "dkaddrs") ^
+                            ", " ^ (tmp_gen "dks") ^
+                            ", " ^ (tmp_gen "addr_map") ^
+                            ", " ^ (tmp_gen "cap") ^
+                            ");\n\
+                             }\n\
                             } @*/");
                         (fun _ -> "map_flow_allocated = true;")];};
      "map_get", {ret_type = Static Sint32;
@@ -594,7 +611,9 @@ let fun_types =
                          ];
                          lemmas_after = [
                            (fun {tmp_gen;ret_name;_} ->
-                              "/*@ if (" ^ ret_name ^ " && !vector_flow_allocated) {\n\
+                              "/*@ if (" ^ ret_name ^
+                              ") {\n\
+                               if (!vector_flow_allocated) {\n\
                                assert mapp<lb_flowi>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
                               ", ?" ^ (tmp_gen "map") ^
                               ", ?" ^ (tmp_gen "addr_map") ^
@@ -606,8 +625,10 @@ let fun_types =
                               (tmp_gen "dkaddrs") ^
                               ", " ^ (tmp_gen "dks") ^
                               ", " ^ (tmp_gen "addr_map") ^
-                              ", " ^ (tmp_gen "cap") ^ ");\n\
-                              } @*/");
+                              ", " ^ (tmp_gen "cap") ^
+                              ");\n\
+                               } \n\
+                               }@*/");
                            (fun {args;_} ->
                               "if (!vector_flow_allocated) {\n\
                                vector_flow_allocated = true; } else {\n\
