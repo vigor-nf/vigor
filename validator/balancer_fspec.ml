@@ -543,15 +543,21 @@ let fun_types =
                                 {\
                                 call();\
                                 }\n\
-                              } else if(!vector_backend_ips_allocated){\n\
+                              } else if(!vector_backend_ips_allocated) {\n\
                                 produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
                                 (uintp, sizeof(uint32_t))(a) \
                                 {\
                                 call();\
                                 }\n\
-                              } else {\n\
+                              } else if(!vector_backends_allocated) {\n\
                                 produce_function_pointer_chunk vector_init_elem<lb_backendi>(lb_backend_init)\
                                 (lb_backendp, sizeof(struct LoadBalancedBackend))(a) \
+                                {\
+                                call();\
+                                }\n\
+                              } else {\n\
+                                produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
+                                (uintp, sizeof(uint32_t))(a) \
                                 {\
                                 call();\
                                 }\n\
@@ -577,8 +583,11 @@ let fun_types =
                                       vector_flow_allocated = true; } else {\n\
                                       if (!vector_flow_id_to_bknd_id_allocated) {\n\
                                       vector_flow_id_to_bknd_id_allocated = true; } else {\n\
-                                      vector_backend_ips_allocated = true;
-                                      }}");];};
+                                      if (!vector_backend_ips_allocated) {\n\
+                                      vector_backend_ips_allocated = true;\n\
+                                      } else {\n\
+                                      vector_backends_allocated = true;\n\
+                                      }}}");];};
      "vector_borrow",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
@@ -694,6 +703,7 @@ struct
                  ^ "bool vector_flow_allocated = false;\n\
                     bool vector_flow_id_to_bknd_id_allocated = false;\n\
                     bool vector_backend_ips_allocated = false;\n\
+                    bool vector_backends_allocated = false;\n\
                     bool map_flow_allocated = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
