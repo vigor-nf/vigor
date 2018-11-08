@@ -110,25 +110,10 @@ void map_set_entry_condition(struct Map* map, map_entry_condition* cond) {
 __attribute__((noinline))
 int map_get(struct Map* map, void* key, int* value_out) {
   klee_trace_ret();
-  klee_trace_extra_ptr(&(map->occupancy), sizeof(map->occupancy),
-                       "map_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->backup_occupancy), sizeof(map->backup_occupancy),
-                       "map_backup_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->Num_bucket_traversals),
-                       sizeof(map->Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->Num_hash_collisions),
-                       sizeof(map->Num_hash_collisions),
-                       "Num_hash_collisions", "type", TD_BOTH);
   klee_assert(map->has_layout);
   //To avoid symbolic-pointer-dereference,
   // consciously trace "map" as a simple value.
   klee_trace_param_i32((uint32_t)map, "map");
- 
-  klee_trace_extra_ptr(&(map->occupancy), sizeof(map->occupancy),
-                       "map_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->backup_occupancy), sizeof(map->backup_occupancy),
-                       "map_backup_occupancy", "type", TD_BOTH);
 
   klee_trace_param_tagged_ptr(key, map->key_size, "key", map->key_type, TD_BOTH);
   klee_trace_param_ptr(value_out, sizeof(int), "value_out");
@@ -163,19 +148,10 @@ int map_get(struct Map* map, void* key, int* value_out) {
 __attribute__((noinline))
 void map_put(struct Map* map, void* key, int value) {
   klee_trace_ret();
-  klee_trace_extra_ptr(&(map->occupancy), sizeof(map->occupancy),
-                       "map_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->Num_bucket_traversals),
-                       sizeof(map->Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
   klee_assert(map->has_layout);
   //To avoid symbolic-pointer-dereference,
   // consciously trace "map" as a simple value.
   klee_trace_param_i32((uint32_t)map, "map");
-  klee_trace_extra_ptr(&(map->occupancy), sizeof(map->occupancy),
-                       "map_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->backup_occupancy), sizeof(map->backup_occupancy),
-                       "map_backup_occupancy", "type", TD_BOTH);
 
   klee_trace_param_tagged_ptr(key, map->key_size, "key", map->key_type, TD_BOTH);
   klee_trace_param_i32(value, "value");
@@ -203,24 +179,10 @@ void map_put(struct Map* map, void* key, int value) {
 __attribute__((noinline))
 void map_erase(struct Map* map, void* key, void** trash) {
   klee_trace_ret();
-  klee_trace_extra_ptr(&(map->occupancy), sizeof(map->occupancy),
-                       "map_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->backup_occupancy), sizeof(map->backup_occupancy),
-                       "map_backup_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->Num_bucket_traversals),
-                       sizeof(map->Num_bucket_traversals),
-                       "Num_bucket_traversals", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->Num_hash_collisions),
-                       sizeof(map->Num_hash_collisions),
-                       "Num_hash_collisions", "type", TD_BOTH);
   klee_assert(map->has_layout);
   //To avoid symbolic-pointer-dereference,
   // consciously trace "map" as a simple value.
   klee_trace_param_i32((uint32_t)map, "map");
-  klee_trace_extra_ptr(&(map->occupancy), sizeof(map->occupancy),
-                       "map_occupancy", "type", TD_BOTH);
-  klee_trace_extra_ptr(&(map->backup_occupancy), sizeof(map->backup_occupancy),
-                       "map_backup_occupancy", "type", TD_BOTH);
 
   klee_trace_param_tagged_ptr(key, map->key_size, "key", map->key_type, TD_BOTH);
   TRACE_KEY_FIELDS(key, map);
