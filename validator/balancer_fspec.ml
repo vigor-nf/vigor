@@ -246,7 +246,7 @@ let fun_types =
                                         (List.nth_exn params.args 1) ^ ";\n");
                                      on_rez_nz
                                        (fun {args;tmp_gen;_} ->
-                                          "{\n\
+                                          "if (last_map_accessed_lb_flowi) {\n\
                                            assert map_vec_chain_coherent<\
                                            lb_flowi>(?" ^
                                           (tmp_gen "cur_map") ^ ", ?" ^
@@ -254,6 +254,18 @@ let fun_types =
                                           (tmp_gen "cur_ch") ^
                                           ");\n\
                                            mvc_coherent_alloc_is_halfowned<lb_flowi>(" ^
+                                          (tmp_gen "cur_map") ^ ", " ^
+                                          (tmp_gen "cur_vec") ^ ", " ^
+                                          (tmp_gen "cur_ch") ^ ", *" ^
+                                          (List.nth_exn args 1) ^ ");\n} else " ^
+                                          "{\n\
+                                           assert map_vec_chain_coherent<\
+                                           uint32_t>(?" ^
+                                          (tmp_gen "cur_map") ^ ", ?" ^
+                                          (tmp_gen "cur_vec") ^ ", " ^
+                                          (tmp_gen "cur_ch") ^
+                                          ");\n\
+                                           mvc_coherent_alloc_is_halfowned<uint32_t>(" ^
                                           (tmp_gen "cur_map") ^ ", " ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^ ", *" ^
@@ -480,63 +492,74 @@ let fun_types =
                         (tmp_gen "dh") ^ ", " ^
                         (tmp_gen "dk") ^
                         ");\n\
-                         } @*/"
-                      | Ptr Uint32 -> ""
+                         } @*/\n\
+                        last_map_accessed_lb_flowi = true;"
+                      | Ptr Uint32 -> "last_map_accessed_lb_flowi = false;"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
-                              Static (Ptr lb_flow_struct);
+                              Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                       "uint32_t", Ptr Uint32];
                               Static Sint32];
                  extra_ptr_types = [];
                  lemmas_before = [
-                   (fun {tmp_gen;_} ->
-                       "\n//@ assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                       ", _));\n");
-                   (fun {tmp_gen;_} ->
-                      "\n/*@ {\n\
-                       assert map_vec_chain_coherent<lb_flowi>(" ^
-                      (tmp_gen "dm") ^ ", ?" ^
-                      (tmp_gen "dv") ^ ", ?" ^
-                      (tmp_gen "dh") ^
-                      ");\n\
-                       mvc_coherent_dchain_non_out_of_space_map_nonfull<lb_flowi>(" ^
-                      (tmp_gen "dm") ^ ", " ^
-                      (tmp_gen "dv") ^ ", " ^
-                      (tmp_gen "dh") ^ ");\n} @*/");
-                   (fun {args;_} ->
-                      let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                   "/*@ { \n\
-                    assert mapp<lb_flowi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                    assert vector_accp<lb_flowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
-                    assert map_vec_chain_coherent<lb_flowi>(?the_dm, the_dv, ?the_dh);\n\
-                    lb_flowi vvv = lb_flowc(" ^ arg1 ^
-                   "->src_ip, " ^ arg1 ^
-                   "->src_port, " ^ arg1 ^
-                   "->dst_port, " ^ arg1 ^
-                   "->protocol); \n\
-                    mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-                    kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
-                   "); \n\
-                    } @*/");];
+                   (fun {args;tmp_gen;arg_types;_} ->
+                      match List.nth_exn arg_types 1 with
+                      | Ptr (Str ("LoadBalancedFlow", _)) ->
+                        "\n//@ assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                        ", _));\n" ^
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<lb_flowi>(" ^
+                        (tmp_gen "dm") ^ ", ?" ^
+                        (tmp_gen "dv") ^ ", ?" ^
+                        (tmp_gen "dh") ^
+                        ");\n\
+                         mvc_coherent_dchain_non_out_of_space_map_nonfull<lb_flowi>(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ");\n} @*/\n" ^
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "/*@ { \n\
+                         assert mapp<lb_flowi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                         assert vector_accp<lb_flowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<lb_flowi>(?the_dm, the_dv, ?the_dh);\n\
+                         lb_flowi vvv = lb_flowc(" ^ arg1 ^
+                        "->src_ip, " ^ arg1 ^
+                        "->src_port, " ^ arg1 ^
+                        "->dst_port, " ^ arg1 ^
+                        "->protocol); \n\
+                         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
+                         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                        "); \n\
+                         } @*/"
+                      | Ptr Uint32 ->
+                        ""
+                      | _ -> failwith "unexpected key type for map_put.");];
                  lemmas_after = [
-                   (fun {tmp_gen;args;_} -> let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                      "\n/*@ {\n\
-                       assert map_vec_chain_coherent<lb_flowi>(" ^ (tmp_gen "dm") ^
-                      ", ?" ^ (tmp_gen "dv") ^
-                      ", ?" ^ (tmp_gen "dh") ^
-                      ");\n\
-                       lb_flowi " ^ (tmp_gen "ea") ^ " = lb_flowc(" ^ arg1 ^
-                      "->src_ip, " ^ arg1 ^
-                      "->src_port, " ^ arg1 ^
-                      "->dst_port, " ^ arg1 ^
-                      "->protocol);\n\
-                       mvc_coherent_put<lb_flowi>(" ^ (tmp_gen "dm") ^
-                      ", " ^ (tmp_gen "dv") ^
-                      ", " ^ (tmp_gen "dh") ^
-                      ", " ^ (List.nth_exn args 2) ^
-                      ", time_for_allocated_index, " ^ (tmp_gen "ea") ^ ");\n\
-                       } @*/");
+                   (fun {args;tmp_gen;arg_types;_} ->
+                      match List.nth_exn arg_types 1 with
+                      | Ptr (Str ("LoadBalancedFlow", _)) ->
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<lb_flowi>(" ^ (tmp_gen "dm") ^
+                        ", ?" ^ (tmp_gen "dv") ^
+                        ", ?" ^ (tmp_gen "dh") ^
+                        ");\n\
+                         lb_flowi " ^ (tmp_gen "ea") ^ " = lb_flowc(" ^ arg1 ^
+                        "->src_ip, " ^ arg1 ^
+                        "->src_port, " ^ arg1 ^
+                        "->dst_port, " ^ arg1 ^
+                        "->protocol);\n\
+                         mvc_coherent_put<lb_flowi>(" ^ (tmp_gen "dm") ^
+                        ", " ^ (tmp_gen "dv") ^
+                        ", " ^ (tmp_gen "dh") ^
+                        ", " ^ (List.nth_exn args 2) ^
+                        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
+                        ");\n\
+                         } @*/"
+                      | Ptr Uint32 -> ""
+                      | _ -> failwith "unexpected key type for map_put.");
                    (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
      "map_size", {ret_type = Static Sint32;
                   arg_types = [Static (Ptr map_struct);];
@@ -788,6 +811,7 @@ struct
                     bool map_flow_allocated = false;\n\
                     bool dchain_flow_allocated = false;\n\
                     bool map_flow_expired = false;\n\
+                    bool last_map_accessed_lb_flowi = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n"
   let fun_types = fun_types
