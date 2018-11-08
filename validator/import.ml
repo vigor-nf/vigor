@@ -774,7 +774,8 @@ let rec add_to_known_addresses
           b_value value.break_down
           addr callid (depth+1);)
   | _ ->
-    assert((List.length breakdown) = 0)
+    assert((List.length breakdown) = 0 ||
+           (List.length breakdown) = 1) (* for boxed integers *)
   end;
   lprintf "allocating *%Ld = %s : %s at %s\n"
     addr

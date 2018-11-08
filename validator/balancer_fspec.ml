@@ -446,7 +446,8 @@ let fun_types =
                         (fun _ -> "map_flow_allocated = true;")];};
      "map_get", {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
-                              Static (Ptr lb_flow_struct);
+                              Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                       "uint32_t", Ptr Uint32];
                               Static (Ptr Sint32)];
                  extra_ptr_types = [];
                  lemmas_before = [
