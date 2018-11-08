@@ -50,7 +50,6 @@ int dchain_allocate_new_index(struct DoubleChain* chain, int *index_out,
     klee_trace_param_i32(time, "time");
 
     ALLOW(chain);
-    klee_trace_extra_ptr(&chain->out_of_space, sizeof(chain->out_of_space), "out_of_space", "type", TD_BOTH);
     if (chain->out_of_space) {
       DENY(chain);
       return 0;
