@@ -451,14 +451,21 @@ let fun_types =
                               Static (Ptr Sint32)];
                  extra_ptr_types = [];
                  lemmas_before = [
-                   (fun ({tmp_gen;arg_exps;_} as params) ->
+                   (fun ({arg_types;arg_exps;tmp_gen;_} as params) ->
+                      match List.nth_exn arg_types 1 with
+                      | Ptr (Str ("LoadBalancedFlow", _)) ->
                         "//@ assert lb_flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
                         (capture_a_chain "dh" params ^
                          capture_a_map "lb_flowi" "dm" params ^
-                         capture_a_vector "lb_flowi" "dv" params));];
+                         capture_a_vector "lb_flowi" "dv" params)
+                      | Ptr Uint32 ->
+                        "/*@ { close hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
+                      | _ -> failwith "unexpected key type for map_get.");];
                  lemmas_after = [
-                   (fun {ret_name;tmp_gen;_} ->
+                   (fun {arg_types;ret_name;tmp_gen;_} ->
+                      match List.nth_exn arg_types 1 with
+                      | Ptr (Str ("LoadBalancedFlow", _)) ->
                         "/*@ if (" ^ ret_name ^
                         " != 0) {\n\
                          mvc_coherent_map_get_bounded(" ^
@@ -473,7 +480,9 @@ let fun_types =
                         (tmp_gen "dh") ^ ", " ^
                         (tmp_gen "dk") ^
                         ");\n\
-                         } @*/");
+                         } @*/"
+                      | Ptr Uint32 -> ""
+                      | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
