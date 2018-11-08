@@ -26,7 +26,7 @@
           double_chainp(?flow_ch, flow_chain) &*&
           vectorp<uint32_t>(flow_id_to_backend_id, u_integer, _, _) &*&
           vectorp<uint32_t>(backend_ips, u_integer, ?ip_vec, ?ip_veca) &*&
-          vectorp<lb_backendi>(backends, lb_backendp, _, _) &*&
+          vectorp<lb_backendi>(backends, lb_backendp, ?backends_vec, ?backends_veca) &*&
           mapp<uint32_t>(ip_to_backend_id, u_integer, lb_ip_hash_fp, nop_true, mapc(backend_capacity, ?ip_map, ?ip_mapv)) &*&
           double_chainp(?bknd_ch, active_backends) &*&
           vectorp<uint32_t>(cht, u_integer, _, _) &*&
@@ -40,7 +40,9 @@
           dchain_high_fp(flow_ch) <= time &*&
           dchain_high_fp(bknd_ch) <= time &*&
           dchain_index_range_fp(flow_ch) == flow_capacity &*&
-          dchain_index_range_fp(bknd_ch) == backend_capacity;
+          dchain_index_range_fp(bknd_ch) == backend_capacity &*&
+          length(backends_vec) == backend_capacity &*&
+          true == forall(backends_vec, is_one);
           @*/
 /*          mapp<lb_flowi>(indices, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?indicesi, ?indicesv)) &*&
           vectorp<lb_flowi>(heap, lb_flowp, ?heapv, ?heapa) &*&
