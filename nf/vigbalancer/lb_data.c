@@ -21,8 +21,12 @@ struct str_field_descr lb_flow_fields[] = {
 
 struct str_field_descr lb_backend_fields[] = {
 	BFIELD(nic, uint16_t),
-  {offsetof(struct LoadBalancedBackend, mac), 6 * sizeof(uint8_t), "mac"},
+  {offsetof(struct LoadBalancedBackend, mac), sizeof(struct ether_addr), "mac"},
 	BFIELD(ip, uint32_t)
+};
+
+struct nested_field_descr lb_backend_nested_fields[] = {
+  {offsetof(struct LoadBalancedBackend, mac), 0, 6 * sizeof(uint8_t), "addr_bytes"},
 };
 
 #undef BFIELD
@@ -35,6 +39,10 @@ int lb_flow_fields_number() {
 
 int lb_backend_fields_number() {
   return sizeof(lb_backend_fields)/sizeof(lb_backend_fields[0]);
+}
+
+int lb_backend_nested_fields_number() {
+  return sizeof(lb_backend_nested_fields)/sizeof(lb_backend_nested_fields[0]);
 }
 #endif//KLEE_VERIFICATION
 

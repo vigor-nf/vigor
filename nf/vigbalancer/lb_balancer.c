@@ -212,7 +212,10 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   vector_set_entry_condition(balancer->flow_id_to_backend_id, lb_flow_id2backend_id_cond, balancer);
   //vector_set_layout(balancer->backend_ips, &uint32_field, 1, NULL, 0, "uint32_t");
   vector_set_layout(balancer->backend_ips, NULL, 0, NULL, 0, "uint32_t");
-  vector_set_layout(balancer->backends, lb_backend_fields, lb_backend_fields_number(), NULL, 0, "LoadBalancedBackend");
+  vector_set_layout(balancer->backends,
+                    lb_backend_fields, lb_backend_fields_number(),
+                    lb_backend_nested_fields, lb_backend_nested_fields_number(),
+                    "LoadBalancedBackend");
   vector_set_entry_condition(balancer->backends, lb_backend_condition, balancer);
   map_set_layout(balancer->ip_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
   map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition);

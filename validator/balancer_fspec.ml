@@ -22,13 +22,15 @@ let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
 
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let lb_flow_struct = Ir.Str ( "LoadBalancedFlow", ["src_ip", Uint32;
                                                    "src_port", Uint16;
                                                    "dst_port", Uint16;
                                                    "protocol", Uint8;])
-let lb_backend_struct = Ir.Str ( "LoadBalancedBackend", ["index", Uint16;])
+let lb_backend_struct = Ir.Str ( "LoadBalancedBackend", ["nic", Uint16;
+                                                         "mac", ether_addr_struct;
+                                                         "ip", Uint32])
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
                                              "s_addr", ether_addr_struct;
                                              "ether_type", Uint16;])
