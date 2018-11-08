@@ -696,11 +696,13 @@ let fun_types =
      "vector_borrow",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", (Ptr (Ptr lb_flow_struct));
-                                                  "LoadBalancedBackend", (Ptr (Ptr lb_backend_struct));];];
+                                         Dynamic ["LoadBalancedFlow", Ptr (Ptr lb_flow_struct);
+                                                  "LoadBalancedBackend", Ptr (Ptr lb_backend_struct);
+                                                  "uint32_t", Ptr (Ptr Uint32)];];
                             extra_ptr_types = ["borrowed_cell",
-                                               Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                                        "LoadBalancedBackend", (Ptr lb_backend_struct);];];
+                                               Dynamic ["LoadBalancedFlow", Ptr lb_flow_struct;
+                                                        "LoadBalancedBackend", Ptr lb_backend_struct;
+                                                        "uint32_t", Ptr Uint32];];
                             lemmas_before = [
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
@@ -709,7 +711,11 @@ let fun_types =
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "/*@ { assert vectorp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
-                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n } @*/"
+                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n } @*/\n" ^
+                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n"
+                                 | Ptr (Ptr Uint32) -> ""
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
@@ -721,15 +727,20 @@ let fun_types =
                                    "vector_flow_borrowed = true;"
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { open hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
-                                   "vector_backend_borrowed = true;"
+                                   "vector_backend_borrowed = true; \n" ^
+                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n"
+                                 | Ptr (Ptr Uint32) -> ""
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};
      "vector_return",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                                  "LoadBalancedBackend", (Ptr lb_backend_struct);];];
+                                         Dynamic ["LoadBalancedFlow", Ptr lb_flow_struct;
+                                                  "LoadBalancedBackend", Ptr lb_backend_struct;
+                                                  "uint32_t", Ptr Uint32];];
                             extra_ptr_types = [];
                             lemmas_before = [
                               (fun params ->
@@ -753,6 +764,7 @@ let fun_types =
                                    ", pair(" ^ (params.tmp_gen "bknd_logical") ^
                                    ", 1.0));\n\
                                     update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
+                                 | Ptr Uint32 -> ""
                                  | _ ->
                                    failwith "Unsupported type for vector!");
                               (fun params ->
@@ -761,6 +773,7 @@ let fun_types =
                                    "/*@ if (vector_backend_borrowed) { close hide_vector_acc<lb_backendi>(_, _, _, _, _, _); } @*/\n"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
                                    "/*@ if (vector_flow_borrowed) { close hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n"
+                                 | Ptr Uint32 -> ""
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
@@ -773,6 +786,7 @@ let fun_types =
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
                                    "/*@ if (vector_flow_borrowed) { open hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = false;"
+                                 | Ptr Uint32 -> ""
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};]
