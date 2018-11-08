@@ -44,18 +44,6 @@
           length(backends_vec) == backend_capacity &*&
           true == forall(backends_vec, is_one);
           @*/
-/*          mapp<lb_flowi>(indices, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?indicesi, ?indicesv)) &*&
-          vectorp<lb_flowi>(heap, lb_flowp, ?heapv, ?heapa) &*&
-          double_chainp(?chainv, chain) &*&
-          vectorp<lb_backendi>(backends, lb_backendp, ?backendsv, ?backendsa) &*&
-          true == forall2(heapv, heapa, (kkeeper)(indicesv)) &*&
-          length(heapv) == flow_capacity &*&
-          length(backendsv) == flow_capacity &*&
-          map_vec_chain_coherent<lb_flowi>(indicesi, heapv, chainv) &*&
-          true == forall(backendsv, is_one) &*&
-          last_time(time) &*&
-          dchain_high_fp(chainv) <= time;
-@*/
 
 void lb_loop_iteration_assumptions(
 				struct Map** flow_to_flow_id,

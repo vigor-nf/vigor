@@ -92,6 +92,9 @@ let generate_2step_dereference tterm tmpgen =
   | Str_idx ({v=Deref {v=Id x;t=xt};t=dt}, fname) -> (* don't 2step-deref if there is only 1 step *)
     let binding = "//@ assert *&" ^ x ^ "|-> ?" ^ (tmpgen ("pp" ^ x)) ^ ";" in
     ([binding],{v=Str_idx ({v=Deref {v=Id (tmpgen ("pp" ^ x));t=xt};t=dt}, fname);t=tterm.t})
+  | Str_idx ({v=Str_idx ({v=Deref {v=Id x; t=xt};t=ft1}, fname1);t=ft2}, fname2) -> (*Keep the last deref*)
+    let binding = "//@ assert *&" ^ x ^ "|-> ?" ^ (tmpgen ("pp" ^ x)) ^ ";" in
+    ([binding],{v=Str_idx ({v=Str_idx ({v=Deref {v=Id (tmpgen ("pp" ^ x)); t=xt};t=ft1}, fname1);t=ft2}, fname2);t=tterm.t})
   | _ when tterm_has_no_derefs tterm -> (* don't do anything, can't use points-to if no derefs *)
     ([], tterm)
   | _ ->

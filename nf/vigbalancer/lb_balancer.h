@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <rte_ether.h>
 
+#include "lib/stubs/mbuf_content.h"
 #include "lib/containers/vector.h"
 
 #ifdef KLEE_VERIFICATION
@@ -45,15 +46,15 @@ struct LoadBalancedBackend {
 
   fixpoint unsigned lb_ip_hash_fp(unsigned ip);
 
-  inductive lb_backendi = lb_backendc(int);
+  inductive lb_backendi = lb_backendc(int, ether_addri, int);
+
   predicate lb_backendp(struct LoadBalancedBackend* ptr; lb_backendi backend) =
     struct_LoadBalancedBackend_padding(ptr) &*&
     ptr->nic |-> ?i &*&
-    backend == lb_backendc(i);
+    ether_addrp(&ptr->mac, ?mac) &*&
+    ptr->ip |-> ?ip &*&
+    backend == lb_backendc(i, mac, ip);
 
-  fixpoint int lb_backend_get_index(lb_backendi b) {
-    switch(b) { case lb_backendc(i): return i; }
-  }
 @*/
 
 

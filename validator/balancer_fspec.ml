@@ -738,10 +738,21 @@ let fun_types =
                                    "/*@ { assert vector_accp<lb_flowi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
                                           update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
-                                          forall_update<pair<lb_backendi, real> >(" ^ (params.tmp_gen "vec") ^ ", is_one, " ^ (List.nth_exn params.args 1) ^
-                                                                                  ", pair(lb_backendc(" ^ (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^ "->index), 1.0));\n\
-                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
+                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^
+                                   ", _, _, _); \n\
+                                    assert *&" ^
+                                   (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^
+                                   " |-> ? " ^ (params.tmp_gen "bknd") ^
+                                   ";\n\
+                                    assert lb_backendp(" ^
+                                   (params.tmp_gen "bknd") ^
+                                   ", ?" ^ (params.tmp_gen "bknd_logical") ^
+                                   ");\n\
+                                    forall_update<pair<lb_backendi, real> >(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one, " ^ (List.nth_exn params.args 1) ^
+                                   ", pair(" ^ (params.tmp_gen "bknd_logical") ^
+                                   ", 1.0));\n\
+                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");
                               (fun params ->

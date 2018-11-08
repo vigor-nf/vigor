@@ -33,7 +33,7 @@
 
   fixpoint lb_backendi lb_table_get(list<lb_entry> entries, lb_flowi key) {
     switch(entries) {
-      case nil: return lb_backendc(0);
+      case nil: return lb_backendc(0, eaddrc(0, 0, 0, 0, 0, 0), 0);
       case cons(h,t):
         return switch(h) { case lb_entry(k,v,timestamp):
            return (k == key) ? v : lb_table_get(t, key);
