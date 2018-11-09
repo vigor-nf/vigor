@@ -536,7 +536,29 @@ let fun_types =
                         "); \n\
                          } @*/"
                       | Ptr Uint32 ->
-                        ""
+                        "\n//@ assert mapp<uint32_t>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                        ", _));\n" ^
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<uint32_t>(" ^
+                        (tmp_gen "dm") ^ ", ?" ^
+                        (tmp_gen "dv") ^ ", ?" ^
+                        (tmp_gen "dh") ^
+                        ");\n\
+                         mvc_coherent_dchain_non_out_of_space_map_nonfull<uint32_t>(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ");\n} @*/\n" ^
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "/*@ { \n\
+                         assert mapp<uint32_t>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                         assert vector_accp<uint32_t>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<uint32_t>(?the_dm, the_dv, ?the_dh);\n\
+                         uint32_t vvv = *" ^ arg1 ^
+                        "; \n\
+                         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
+                         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                        "); \n\
+                         } @*/"
                       | _ -> failwith "unexpected key type for map_put.");];
                  lemmas_after = [
                    (fun {args;tmp_gen;arg_types;_} ->
