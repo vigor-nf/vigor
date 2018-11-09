@@ -496,7 +496,8 @@ let fun_types =
                         ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = true;"
-                      | Ptr Uint32 -> "last_map_accessed_lb_flowi = false;"
+                      | Ptr Uint32 -> "last_map_accessed_lb_flowi = false; \n" ^
+                                      "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;
@@ -558,7 +559,8 @@ let fun_types =
                          mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                          kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
                         "); \n\
-                         } @*/"
+                         } @*/\n" ^
+                        "/*@ { close hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_put.");];
                  lemmas_after = [
                    (fun {args;tmp_gen;arg_types;_} ->
@@ -582,7 +584,23 @@ let fun_types =
                         ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
                         ");\n\
                          } @*/"
-                      | Ptr Uint32 -> ""
+                      | Ptr Uint32 ->
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<uint32_t>(" ^ (tmp_gen "dm") ^
+                        ", ?" ^ (tmp_gen "dv") ^
+                        ", ?" ^ (tmp_gen "dh") ^
+                        ");\n\
+                         uint32_t " ^ (tmp_gen "ea") ^ " = *" ^ arg1 ^
+                        ";\n\
+                         mvc_coherent_put<uint32_t>(" ^ (tmp_gen "dm") ^
+                        ", " ^ (tmp_gen "dv") ^
+                        ", " ^ (tmp_gen "dh") ^
+                        ", " ^ (List.nth_exn args 2) ^
+                        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
+                        ");\n\
+                         } @*/\n" ^
+                        "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_put.");
                    (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
      "map_size", {ret_type = Static Sint32;
@@ -868,7 +886,7 @@ struct
   let finishing_fun = "lb_loop_invariant_consume"
   let eventproc_iteration_begin = "lb_loop_invariant_produce"
   let eventproc_iteration_end = "lb_loop_invariant_consume"
-  let user_check_for_complete_iteration = In_channel.read_all "lb_forwarding_property.tmpl"
+  let user_check_for_complete_iteration = "" (* TODO: In_channel.read_all "lb_forwarding_property.tmpl" *)
 end
 
 (* Register the module *)
