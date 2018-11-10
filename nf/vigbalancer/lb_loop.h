@@ -43,7 +43,8 @@
           dchain_index_range_fp(flow_ch) == flow_capacity &*&
           dchain_index_range_fp(bknd_ch) == backend_capacity &*&
           length(backends_vec) == backend_capacity &*&
-          true == forall(backends_vec, is_one);
+          true == forall(backends_vec, is_one) &*&
+          true == forall(fidbid_vec, is_one);
           @*/
 
 void lb_loop_iteration_assumptions(

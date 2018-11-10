@@ -830,7 +830,13 @@ let fun_types =
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n"
                                  | Ptr (Ptr Uint32) ->
-                                   "//@ close hide_vector<lb_backendi>(_, _, _, _);\n"
+                                   "//@ close hide_vector<lb_backendi>(_, _, _, _);\n" ^
+                                   "/*@ { assert vectorp<uint32_t>(" ^ (List.nth_exn params.args 0) ^ ", _, ?" ^
+                                   (params.tmp_gen "vec") ^
+                                   ", _);\n\
+                                    if (forall(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one)) {\n\
+                                    forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n }\n}\n @*/\n"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
