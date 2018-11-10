@@ -889,7 +889,8 @@ let fun_types =
                                    ", pair(" ^ (params.tmp_gen "bknd_logical") ^
                                    ", 1.0));\n\
                                     update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
-                                 | Ptr Uint32 -> ""
+                                 | Ptr Uint32 -> "/*@ if (vector_flow_borrowed) {\n\
+                                                  close hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");
                               (fun params ->
@@ -911,7 +912,8 @@ let fun_types =
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
                                    "/*@ if (vector_flow_borrowed) { open hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = false;"
-                                 | Ptr Uint32 -> ""
+                                 | Ptr Uint32 -> "/*@ if (vector_flow_borrowed) {\n\
+                                                  open hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};]
