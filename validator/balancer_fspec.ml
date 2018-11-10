@@ -276,7 +276,7 @@ let fun_types =
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct;
-                                                  Sint32; Uint32;];
+                                                  Sint32; Sint64;];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;
@@ -347,7 +347,7 @@ let fun_types =
                                  arg_types = stt [Ptr dchain_struct;
                                                   Ptr vector_struct;
                                                   Ptr map_struct;
-                                                  Uint32];
+                                                  Sint64];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    (fun {tmp_gen;args;_} ->

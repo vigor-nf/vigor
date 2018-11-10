@@ -503,8 +503,8 @@ let fun_types =
                         ];};
      "expire_items", {ret_type = Static Sint32;
                       arg_types = stt [Ptr dchain_struct;
-                                   Ptr dmap_struct;
-                                   Uint32;];
+                                       Ptr dmap_struct;
+                                       Sint64];
                       extra_ptr_types = [];
                       lemmas_before = [
                         capture_chain "cur_ch" 0;
@@ -593,7 +593,7 @@ let fun_types =
                                         (List.nth_exn params.args 1) ^ ";\n");
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
-                                 arg_types = stt [Ptr dchain_struct; Sint32; Uint32;];
+                                 arg_types = stt [Ptr dchain_struct; Sint32; Sint64;];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;

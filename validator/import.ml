@@ -61,6 +61,19 @@ let ttype_of_guess = function
   | {precise=Unknown;s=Noidea;w=_;} -> Unknown
   | {precise;s=_;w=_} -> precise
 
+let parse_int str =
+  (* As a hack: handle -10 in 64bits.
+     TODO: handle more generally*)
+  if (String.equal str "18446744073709551606") then Some (-10)
+  (* As another hack: handle -300 in 64bits. *)
+  else if (String.equal str "18446744073709551316") then Some (-300)
+  else if (String.equal str "18446744073709551556") then Some (-60)
+  else
+    try Some (int_of_string str)
+    with _ -> None
+
+let is_int str = match parse_int str with Some _ -> true | None -> false
+
 (* TODO: elaborate. *)
 let guess_type exp t =
   match t with
@@ -87,17 +100,17 @@ let guess_type exp t =
       | _ -> failwith ("GUESS TYPE FAILURE SUnknown " ^ (Sexp.to_string exp))
     end
   | Unknown ->  begin match exp with
-    | Sexp.Atom f when f = "false" || f = "true" -> Boolean
-    | Sexp.List [Sexp.Atom w; Sexp.Atom f] when w = "w32" && f = "0" -> lprintf "GUESS TYPE BOOL\n"; Boolean
-    | Sexp.List [Sexp.Atom w; _] when w = "w8" -> Uint8
-    | Sexp.List [Sexp.Atom w; _] when w = "w16" -> Uint16
-    | Sexp.List [Sexp.Atom w; _] when w = "w32" -> Uint32
-    | Sexp.List [Sexp.Atom w; _] when w = "w64" -> Uint64
-    | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w8" :: _) -> Uint8
-    | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w16" :: _) -> Uint16
-    | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w32" :: _) -> Uint32
-    | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w64" :: _) -> Uint64
-    | _ -> failwith ("GUESS TYPE FAILURE Unknown " ^ (Sexp.to_string exp))
+      | Sexp.Atom f when f = "false" || f = "true" -> Boolean
+      | Sexp.List [Sexp.Atom w; Sexp.Atom f] when w = "w32" && f = "0" -> lprintf "GUESS TYPE BOOL\n"; Boolean
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w8" -> if (is_int v) then Sint8 else Uint8
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w16" -> if (is_int v) then Sint16 else Uint16
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w32" -> if (is_int v) then Sint32 else Uint32
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w64" -> if (is_int v) then Sint64 else Uint64
+      | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w8" :: _) -> Uint8
+      | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w16" :: _) -> Uint16
+      | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w32" :: _) -> Uint32
+      | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w64" :: _) -> Uint64
+      | _ -> failwith ("GUESS TYPE FAILURE Unknown " ^ (Sexp.to_string exp))
     end
   | _  -> t
 
@@ -263,19 +276,6 @@ let rec canonicalize_sexp sexp =
 let map_set_n_update_alist mp lst =
   List.fold lst ~init:mp ~f:(fun acc (key,data) -> String.Map.set acc ~key ~data)
 
-let parse_int str =
-  (* As a hack: handle -10 in 64bits.
-     TODO: handle more generally*)
-  if (String.equal str "18446744073709551606") then Some (-10)
-  (* As another hack: handle -300 in 64bits. *)
-  else if (String.equal str "18446744073709551316") then Some (-300)
-  else if (String.equal str "18446744073709551556") then Some (-60)
-  else
-    try Some (int_of_string str)
-    with _ -> None
-
-let is_int str = match parse_int str with Some _ -> true | None -> false
-
 let guess_sign exp known_vars =
   match get_var_name_of_sexp exp with
   | Some v -> begin match String.Map.find known_vars v with
@@ -440,6 +440,8 @@ let get_sint_in_bounds v =
   if (String.equal v "18446744073709551606") then -10
   (* also -300 *)
   else if (String.equal v "18446744073709551316") then -300
+  (* and -60 *)
+  else if (String.equal v "18446744073709551556") then -60
   else
     let integer_val = Int.of_string v in
     if Int.(integer_val > 2147483647) then
@@ -564,7 +566,8 @@ let make_cast_if_needed tt srct dstt =
   if srct = dstt then tt
   else {v=Cast(dstt, tt);t=dstt}
 
-let rec get_sexp_value exp ?(at=Beginning) t = lprintf "SEXP %s : %s\n" (Sexp.to_string exp) (ttype_to_str t);
+let rec get_sexp_value exp ?(at=Beginning) t =
+  lprintf "SEXP %s : %s\n" (Sexp.to_string exp) (ttype_to_str t);
   let exp = canonicalize_sexp exp in
   let exp = eliminate_false_eq_0 exp t in
   let t = match t with
@@ -627,15 +630,20 @@ let rec get_sexp_value exp ?(at=Beginning) t = lprintf "SEXP %s : %s\n" (Sexp.to
     let mt = guess_type_l [lhs;rhs] Unknown in
     {v=Bop(Mul, get_sexp_value lhs mt ~at, get_sexp_value rhs mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "Add"; Sexp.Atom _; lhs; rhs] ->
-    begin (* Prefer a variable in the left position
+    let res_type = guess_type_l [lhs;rhs] Unknown in
+    let res_type = if is_unknown res_type then t else res_type in
+    let expression =
+      begin (* Prefer a variable in the left position
              due to the weird VeriFast type inference rules.*)
-      match lhs with
-      | Sexp.Atom str ->
-        begin match parse_int str with
-        | Some n -> {v=Bop (Sub,(get_sexp_value rhs t ~at),{v=(Int n);t});t}
-        | _ -> {v=Bop (Add,(get_sexp_value lhs t ~at),(get_sexp_value rhs t ~at));t} end
-      | _ -> {v=Bop (Add,(get_sexp_value lhs t ~at),(get_sexp_value rhs t ~at));t}
-    end
+        match lhs with
+        | Sexp.Atom str ->
+          begin match parse_int str with
+            | Some n -> {v=Bop (Sub,(get_sexp_value rhs res_type ~at),{v=(Int n);t=res_type});t=res_type}
+            | _ -> {v=Bop (Add,(get_sexp_value lhs res_type ~at),(get_sexp_value rhs res_type ~at));t=res_type} end
+        | _ -> {v=Bop (Add,(get_sexp_value lhs res_type ~at),(get_sexp_value rhs res_type ~at));t=res_type}
+      end
+    in
+    make_cast_if_needed expression expression.t t
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Slt") ->
     (*FIXME: get the actual type*)
@@ -1114,11 +1122,14 @@ let extract_fun_args ftype_of (call:Trace_prefix.call_node) =
     | None -> {v=(Utility (Ptr_placeholder addr));
                t=arg_type}
   in
+  lprintf "extracting function: %s\n" call.fun_name;
   List.mapi call.args
     ~f:(fun i arg ->
         let a_type = get_fun_arg_type ftype_of call i in
         match arg.ptr with
-        | Nonptr -> get_sexp_value arg.value a_type
+        | Nonptr -> let vv = get_sexp_value arg.value a_type in
+          lprintf "arg: %s = %s\n" arg.aname (Sexp.to_string (sexp_of_tterm vv));
+          vv
         | Funptr fname -> {v=Fptr fname;t=a_type}
         | Apathptr ->
           get_allocated_arg arg a_type
@@ -1685,8 +1696,8 @@ let render_tip_lemmas ftype_of (tip_call : tip_call) =
                   (ttypes_of_tterms (call_args tip_call.context))
                   tmp_gen}}
 
-let fix_term (known_vars: var_spec list) term =
-  fix_type_of_id_in_tterm known_vars term
+let fix_tterm (known_vars: var_spec list) tterm ~cast =
+  fix_type_of_id_in_tterm known_vars tterm ~cast
 
 let build_ir fun_types fin preamble boundary_fun finishing_fun
   eventproc_iteration_begin eventproc_iteration_end =
@@ -1732,13 +1743,20 @@ let build_ir fun_types fin preamble boundary_fun finishing_fun
 
   (* And now for some type-assignments... *)
   let known_vars = (arguments@(String.Map.data free_vars)@(String.Map.data cmplxs)) in
-  let fix_condition cond = {lhs=fix_term known_vars cond.lhs;rhs=fix_term known_vars cond.rhs} in
-  let context_assumptions = List.map context_assumptions ~f:(fix_term known_vars) in
-  let hist_calls = List.map hist_calls ~f:(fun c -> {context={c.context with extra_pre_conditions=(List.map c.context.extra_pre_conditions ~f:fix_condition)};
-                                                     result={c.result with args_post_conditions=(List.map c.result.args_post_conditions ~f:fix_condition)}}) in
-  let tip_call = {context={tip_call.context with extra_pre_conditions=(List.map tip_call.context.extra_pre_conditions ~f:fix_condition)};
-                  results=List.map tip_call.results ~f:(fun r -> {r with args_post_conditions=(List.map r.args_post_conditions ~f:fix_condition);
-                                                                         post_statements=List.map r.post_statements ~f:(fix_term known_vars)})} in
+  let fix_condition cond = {lhs=fix_tterm known_vars cond.lhs ~cast:false;
+                            rhs=fix_tterm known_vars cond.rhs ~cast:false} in
+  let context_assumptions = List.map context_assumptions ~f:(fix_tterm known_vars ~cast:false) in
+  let hist_calls = List.map hist_calls ~f:(fun c -> {context={c.context with
+                                                              extra_pre_conditions=(List.map c.context.extra_pre_conditions ~f:fix_condition);
+                                                              application=(fix_tterm known_vars {v=c.context.application;t=Unknown} ~cast:true).v};
+                                                     result={c.result with
+                                                             args_post_conditions=(List.map c.result.args_post_conditions ~f:fix_condition)}}) in
+  let tip_call = {context={tip_call.context with
+                           extra_pre_conditions=(List.map tip_call.context.extra_pre_conditions ~f:fix_condition);
+                           application=(fix_tterm known_vars {v=tip_call.context.application;t=Unknown} ~cast:true).v};
+                  results=List.map tip_call.results ~f:(fun r -> {r with
+                                                                  args_post_conditions=(List.map r.args_post_conditions ~f:fix_condition);
+                                                                  post_statements=List.map r.post_statements ~f:(fix_tterm known_vars ~cast:false)})} in
 
   (* Do not render the allocated_dummies *)
   {preamble;free_vars;arguments;
