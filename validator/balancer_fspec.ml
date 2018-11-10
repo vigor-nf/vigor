@@ -581,6 +581,7 @@ let fun_types =
                          assert map_vec_chain_coherent<lb_flowi>(?the_dm, the_dv, ?the_dh);\n\
                          lb_flowi vvv = lb_flowc(" ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
+                        "->dst_ip, " ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->protocol); \n\
@@ -626,6 +627,7 @@ let fun_types =
                         ");\n\
                          lb_flowi " ^ (tmp_gen "ea") ^ " = lb_flowc(" ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
+                        "->dst_ip, " ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->protocol);\n\
