@@ -499,9 +499,11 @@ let fun_types =
                       | Ptr (Str ("LoadBalancedFlow", _)) ->
                         "//@ assert lb_flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
-                        (capture_a_chain "dh" params ^
                          capture_a_map "lb_flowi" "dm" params ^
-                         capture_a_vector "lb_flowi" "dv" params) ^
+                         "//@ assert map_vec_chain_coherent<lb_flowi>(" ^
+                         (tmp_gen "dm") ^ ", ?" ^
+                         (tmp_gen "dv") ^ ", ?" ^
+                         (tmp_gen "dh") ^ ");\n" ^
                         "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
                       | Ptr Uint32 ->
                          capture_a_map "uint32_t" "dm" params ^
