@@ -501,7 +501,8 @@ let fun_types =
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
                         (capture_a_chain "dh" params ^
                          capture_a_map "lb_flowi" "dm" params ^
-                         capture_a_vector "lb_flowi" "dv" params)
+                         capture_a_vector "lb_flowi" "dv" params) ^
+                        "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
                       | Ptr Uint32 ->
                          capture_a_map "uint32_t" "dm" params ^
                          "//@ assert map_vec_chain_coherent<uint32_t>(" ^
@@ -529,7 +530,8 @@ let fun_types =
                         (tmp_gen "dk") ^
                         ");\n\
                          } @*/\n\
-                        last_map_accessed_lb_flowi = true;"
+                        last_map_accessed_lb_flowi = true;\n" ^
+                        "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
                       | Ptr Uint32 ->
                         "/*@ if (" ^ ret_name ^
                         " != 0) {\n\
@@ -547,7 +549,7 @@ let fun_types =
                         ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = false; \n" ^
-                                      "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
+                        "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;

@@ -308,7 +308,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
   int flow_index;
   struct LoadBalancedBackend backend;
   if (map_get(balancer->flow_to_flow_id, flow, &flow_index) == 0) {
-    int backend_index;
+    int backend_index = 0;
     int found =
       lb_find_preferred_available_backend((uint64_t) lb_flow_hash(flow),
                                           balancer->cht,
