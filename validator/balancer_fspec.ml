@@ -588,7 +588,8 @@ let fun_types =
                          mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                          kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
                         "); \n\
-                         } @*/"
+                         } @*/\n" ^
+                        "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
                       | Ptr Uint32 ->
                         "\n//@ assert mapp<uint32_t>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
                         ", _));\n" ^
@@ -637,7 +638,8 @@ let fun_types =
                         ", " ^ (List.nth_exn args 2) ^
                         ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
                         ");\n\
-                         } @*/"
+                         } @*/\n" ^
+                        "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
                       | Ptr Uint32 ->
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "\n/*@ {\n\
@@ -891,8 +893,21 @@ let fun_types =
                                    ", pair(" ^ (params.tmp_gen "bknd_logical") ^
                                    ", 1.0));\n\
                                     update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
-                                 | Ptr Uint32 -> "/*@ if (vector_flow_borrowed) {\n\
-                                                  close hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/"
+                                 | Ptr Uint32 ->
+                                   let arg2 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2) in
+                                   "/*@ if (vector_flow_borrowed) {\n\
+                                    close hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n" ^
+                                   " uint32_t " ^ (params.tmp_gen "put_value") ^ " = *" ^ arg2 ^
+                                   ";\n" ^
+                                   "/*@ { assert vector_accp<uint32_t>(_, _, ?" ^ (params.tmp_gen "vec") ^
+                                   ", _, _, _); \n\
+                                    if (forall(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one)) {\n\
+                                    forall_update<pair<uint32_t, real> >(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one, " ^ (List.nth_exn params.args 1) ^
+                                   ", pair(" ^ (params.tmp_gen "put_value") ^
+                                   ", 1.0));\n\
+                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); }\n}@*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");
                               (fun params ->
