@@ -333,7 +333,8 @@ let fun_types =
                                       (List.nth_exn params.args 2) ^
                                       ");\n}\n}@*/");
                                    (fun params ->
-                                      "uint32_t the_index_rejuvenated = " ^
+                                      (ttype_to_str (List.nth_exn params.arg_types 1)) ^
+                                      " the_index_rejuvenated = " ^
                                       (List.nth_exn params.args 1) ^ ";\n");
                                  ];};
 
