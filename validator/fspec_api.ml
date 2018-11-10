@@ -115,6 +115,8 @@ type fun_spec = {ret_type: type_set; arg_types: type_set list;
                  extra_ptr_types: (string * type_set) list;
                  lemmas_before: blemma list; lemmas_after: lemma list;}
 
+let time_t = Sint64
+
 module type Spec =
 sig
   val preamble  : string
