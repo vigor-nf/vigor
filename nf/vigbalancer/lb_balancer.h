@@ -33,14 +33,15 @@ struct LoadBalancedBackend {
 
 
 /*@
-  inductive lb_flowi = lb_flowc(int, int, int, int);
+  inductive lb_flowi = lb_flowc(int, int, int, int, int);
   predicate lb_flowp(struct LoadBalancedFlow* ptr; lb_flowi flow) =
     struct_LoadBalancedFlow_padding(ptr) &*&
     ptr->src_ip |-> ?sip &*&
+    ptr->dst_ip |-> ?dip &*&
     ptr->src_port |-> ?sp &*&
     ptr->dst_port |-> ?dp &*&
     ptr->protocol |-> ?p &*&
-    flow == lb_flowc(sip, sp, dp, p);
+    flow == lb_flowc(sip, dip, sp, dp, p);
 
   fixpoint unsigned lb_flow_hash_2(lb_flowi ea);
 

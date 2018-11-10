@@ -58,6 +58,7 @@ lb_flow_equality(void* objA, void* objB)
 	struct LoadBalancedFlow* flowB = objB;
 
 	return flowA->src_ip == flowB->src_ip
+    AND flowA->dst_ip == flowB->dst_ip
     AND flowA->src_port == flowB->src_port
     AND flowA->dst_port == flowB->dst_port
     AND flowA->protocol == flowB->protocol;
@@ -92,6 +93,9 @@ lb_flow_hash(void* obj)
 	uint64_t hash = 31;
 
 	hash += flow->src_ip;
+	hash *= 17;
+
+	hash += flow->dst_ip;
 	hash *= 17;
 
 	hash += flow->src_port;
