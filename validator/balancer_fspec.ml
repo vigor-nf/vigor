@@ -280,7 +280,7 @@ let fun_types =
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;
                                    (fun {tmp_gen;_} ->
-                                      "/*@ {\n\
+                                      "/*@ if (last_map_accessed_lb_flowi) {\n\
                                         assert map_vec_chain_coherent<\
                                        lb_flowi>(?" ^
                                       (tmp_gen "cur_map") ^ ", ?" ^
@@ -290,7 +290,17 @@ let fun_types =
                                        mvc_coherent_same_len(" ^
                                       (tmp_gen "cur_map") ^ ", " ^
                                       (tmp_gen "cur_vec") ^ ", " ^
-                                      (tmp_gen "cur_ch") ^ ");\n} @*/");
+                                      (tmp_gen "cur_ch") ^ ");\n} else {" ^
+                                        "assert map_vec_chain_coherent<\
+                                       uint32_t>(?" ^
+                                      (tmp_gen "cur_map") ^ ", ?" ^
+                                      (tmp_gen "cur_vec") ^ ", " ^
+                                      (tmp_gen "cur_ch") ^
+                                      ");\n\
+                                       mvc_coherent_same_len(" ^
+                                      (tmp_gen "cur_map") ^ ", " ^
+                                      (tmp_gen "cur_vec") ^ ", " ^
+                                      (tmp_gen "cur_ch") ^ ");\n} @*/";);
                                    (fun {args;tmp_gen;_} ->
                                       "//@ rejuvenate_keeps_high_bounded(" ^
                                       (tmp_gen "cur_ch") ^
@@ -301,7 +311,8 @@ let fun_types =
                                    (fun params ->
                                       "/*@ if (" ^ params.ret_name ^
                                       " != 0) { \n" ^
-                                      "assert map_vec_chain_coherent<lb_flowi>\
+                                      "if (last_map_accessed_lb_flowi) {\n\
+                                       assert map_vec_chain_coherent<lb_flowi>\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
                                        cur_vec, cur_ch, " ^
@@ -309,7 +320,17 @@ let fun_types =
                                       ^ (List.nth_exn params.args 2) ^ ");\n\
                                        rejuvenate_preserves_index_range(cur_ch," ^
                                       (List.nth_exn params.args 1) ^ ", " ^
-                                      (List.nth_exn params.args 2) ^ ");\n}@*/");
+                                      (List.nth_exn params.args 2) ^ ");\n } else {\n" ^
+                                       "assert map_vec_chain_coherent<uint32_t>\
+                                       (?cur_map,?cur_vec,?cur_ch);\n" ^
+                                      "mvc_rejuvenate_preserves_coherent(cur_map,\
+                                       cur_vec, cur_ch, " ^
+                                      (List.nth_exn params.args 1) ^ ", "
+                                      ^ (List.nth_exn params.args 2) ^ ");\n\
+                                       rejuvenate_preserves_index_range(cur_ch," ^
+                                      (List.nth_exn params.args 1) ^ ", " ^
+                                      (List.nth_exn params.args 2) ^
+                                      ");\n}\n}@*/");
                                    (fun params ->
                                       "int the_index_rejuvenated = " ^
                                       (List.nth_exn params.args 1) ^ ";\n");
@@ -474,10 +495,15 @@ let fun_types =
                          capture_a_map "lb_flowi" "dm" params ^
                          capture_a_vector "lb_flowi" "dv" params)
                       | Ptr Uint32 ->
+                         capture_a_map "uint32_t" "dm" params ^
+                         "//@ assert map_vec_chain_coherent<uint32_t>(" ^
+                         (tmp_gen "dm") ^ ", ?" ^
+                         (tmp_gen "dv") ^ ", ?" ^
+                         (tmp_gen "dh") ^ ");\n" ^
                         "/*@ { close hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");];
                  lemmas_after = [
-                   (fun {arg_types;ret_name;tmp_gen;_} ->
+                   (fun {arg_types;ret_name;tmp_gen;args;_} ->
                       match List.nth_exn arg_types 1 with
                       | Ptr (Str ("LoadBalancedFlow", _)) ->
                         "/*@ if (" ^ ret_name ^
@@ -496,7 +522,23 @@ let fun_types =
                         ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = true;"
-                      | Ptr Uint32 -> "last_map_accessed_lb_flowi = false; \n" ^
+                      | Ptr Uint32 ->
+                        "/*@ if (" ^ ret_name ^
+                        " != 0) {\n\
+                         mvc_coherent_map_get_bounded(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", *" ^
+                        (List.nth_exn args 1) ^
+                        ");\n\
+                         mvc_coherent_map_get_vec_half(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", *" ^
+                        (List.nth_exn args 1) ^
+                        ");\n\
+                         } @*/\n\
+                        last_map_accessed_lb_flowi = false; \n" ^
                                       "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
