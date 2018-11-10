@@ -358,7 +358,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
       vector_return(balancer->flow_heap, flow_index, (void*)flow_key);
       return lb_get_backend(balancer, flow, now);
     } else {
-      dchain_rejuvenate_index(balancer->flow_chain, backend_index, now);
+      dchain_rejuvenate_index(balancer->flow_chain, flow_index, now);
 
       struct LoadBalancedBackend* vec_backend;
       vector_borrow(balancer->backends, backend_index, (void**)&vec_backend);
