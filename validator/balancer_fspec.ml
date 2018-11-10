@@ -675,7 +675,7 @@ let fun_types =
                         Ptr dchain_struct;
                         Uint32;
                         Uint32;
-                        Ptr Uint32];
+                        Ptr Sint32];
        extra_ptr_types = [];
        lemmas_before = [];
        lemmas_after = [];};

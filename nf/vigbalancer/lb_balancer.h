@@ -10,6 +10,7 @@
 
 #include "lib/stubs/mbuf_content.h"
 #include "lib/containers/vector.h"
+#include "lib/containers/double-chain.h"
 
 #ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
@@ -101,6 +102,18 @@ void lb_fill_cht(struct Vector* cht,
 /*@ requires vectorp<uint32_t>(cht, ?entp, ?values, ?addrs); @*/
 /*@ ensures vectorp<uint32_t>(cht, entp, values, addrs); @*/
 
+int
+lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
+                                    struct DoubleChain* active_backends,
+                                    uint32_t cht_height,
+                                    uint32_t backend_capacity,
+                                    int *chosen_backend);
+/*@ requires vectorp<uint32_t>(cht, ?entp, ?values, ?addrs) &*&
+             double_chainp(?ch, active_backends) &*&
+             *chosen_backend |-> _; @*/
+/*@ ensures vectorp<uint32_t>(cht, entp, values, addrs) &*&
+            double_chainp(ch, active_backends) &*&
+            *chosen_backend |-> _; @*/
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity,
