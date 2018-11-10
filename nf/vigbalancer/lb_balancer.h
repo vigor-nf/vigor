@@ -113,7 +113,12 @@ lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
              *chosen_backend |-> _; @*/
 /*@ ensures vectorp<uint32_t>(cht, entp, values, addrs) &*&
             double_chainp(ch, active_backends) &*&
-            *chosen_backend |-> _; @*/
+            *chosen_backend |-> ?chosen &*&
+            (result == 0 ?
+              true        :
+              result == 1 &*&
+              0 <= chosen &*&
+              chosen < dchain_index_range_fp(ch)); @*/
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity,
