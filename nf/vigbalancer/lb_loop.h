@@ -24,7 +24,7 @@
           mapp<lb_flowi>(flow_to_flow_id, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?flow_map, ?flow_mapv)) &*&
           vectorp<lb_flowi>(flow_heap, lb_flowp, ?flow_vec, ?flow_veca) &*&
           double_chainp(?flow_ch, flow_chain) &*&
-          vectorp<uint32_t>(flow_id_to_backend_id, u_integer, _, _) &*&
+          vectorp<uint32_t>(flow_id_to_backend_id, u_integer, ?fidbid_vec, ?fidbid_veca) &*&
           vectorp<uint32_t>(backend_ips, u_integer, ?ip_vec, ?ip_veca) &*&
           vectorp<lb_backendi>(backends, lb_backendp, ?backends_vec, ?backends_veca) &*&
           mapp<uint32_t>(ip_to_backend_id, u_integer, lb_ip_hash_fp, nop_true, mapc(backend_capacity, ?ip_map, ?ip_mapv)) &*&
@@ -35,6 +35,7 @@
           true == forall2(flow_vec, flow_veca, (kkeeper)(flow_mapv)) &*&
           true == forall2(ip_vec, ip_veca, (kkeeper)(ip_mapv)) &*&
           length(flow_vec) == flow_capacity &*&
+          length(fidbid_vec) == flow_capacity &*&
           length(ip_vec) == backend_capacity &*&
           last_time(time) &*&
           dchain_high_fp(flow_ch) <= time &*&

@@ -818,7 +818,10 @@ let fun_types =
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ if (!vector_backend_borrowed) { close hide_vector<lb_backendi>(_, _, _, _); } @*/\n"
+                                   "/*@ if (!vector_backend_borrowed) { close hide_vector<lb_backendi>(_, _, _, _); } @*/\n" ^
+                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n"
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "/*@ { assert vectorp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
@@ -826,7 +829,8 @@ let fun_types =
                                    "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n"
-                                 | Ptr (Ptr Uint32) -> ""
+                                 | Ptr (Ptr Uint32) ->
+                                   "//@ close hide_vector<lb_backendi>(_, _, _, _);\n"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
@@ -835,14 +839,18 @@ let fun_types =
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
                                    "/*@ if (!vector_backend_borrowed) { open hide_vector<lb_backendi>(_, _, _, _); } @*/\n" ^
-                                   "vector_flow_borrowed = true;"
+                                   "vector_flow_borrowed = true;\n" ^
+                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n"
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { open hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = true; \n" ^
                                    "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<uint32_t>(_, _, _, _);\n"
-                                 | Ptr (Ptr Uint32) -> ""
+                                 | Ptr (Ptr Uint32) ->
+                                   "//@ open hide_vector<lb_backendi>(_, _, _, _);\n"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};
