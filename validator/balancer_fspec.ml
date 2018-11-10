@@ -336,6 +336,13 @@ let fun_types =
                                       "int the_index_rejuvenated = " ^
                                       (List.nth_exn params.args 1) ^ ";\n");
                                  ];};
+
+     "dchain_is_index_allocated", {ret_type = Static Sint32;
+                                   arg_types = stt [Ptr dchain_struct;
+                                                    Sint32];
+                                   extra_ptr_types = [];
+                                   lemmas_before = [];
+                                   lemmas_after = [];};
      "expire_items_single_map", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct;
                                                   Ptr vector_struct;
@@ -646,11 +653,30 @@ let fun_types =
                         "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_put.");
                    (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
+     "map_erase", {ret_type = Static Void;
+                   arg_types = [Static (Ptr map_struct);
+                                Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                         "uint32_t", Ptr Uint32];
+                                Static (Ptr (Ptr Void));];
+                  extra_ptr_types = [];
+                  lemmas_before = [];
+                  lemmas_after = [];};
      "map_size", {ret_type = Static Sint32;
                   arg_types = [Static (Ptr map_struct);];
                   extra_ptr_types = [];
                   lemmas_before = [];
                   lemmas_after = [];};
+     "lb_find_preferred_available_backend", {
+       ret_type = Static Sint32;
+       arg_types = stt [Uint64;
+                        Ptr vector_struct;
+                        Ptr dchain_struct;
+                        Uint32;
+                        Uint32;
+                        Ptr Uint32];
+       extra_ptr_types = [];
+       lemmas_before = [];
+       lemmas_after = [];};
      "stub_core_trace_rx", {
                  ret_type = Static Void;
                  arg_types = stt [Ptr (Ptr rte_mbuf_struct);];
