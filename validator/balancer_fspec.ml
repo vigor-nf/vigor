@@ -363,7 +363,9 @@ let fun_types =
                                 (List.nth_exn args 1) ^ ");\n" ^
                                 "//@ remove_index_keeps_high_bounded(" ^
                                 (tmp_gen "ch") ^ ", " ^
-                                (List.nth_exn args 1) ^ ");\n"
+                                (List.nth_exn args 1) ^ ");\n" ^
+                                "//@ dchain_remove_keeps_ir(" ^
+                                (tmp_gen "ch") ^ ", allocated_index_0);\n"
                              )];
                            lemmas_after = [];};
      "expire_items_single_map", {ret_type = Static Sint32;
