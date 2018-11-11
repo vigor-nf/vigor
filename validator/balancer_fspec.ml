@@ -666,10 +666,26 @@ let fun_types =
                    arg_types = [Static (Ptr map_struct);
                                 Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
                                          "uint32_t", Ptr Uint32];
-                                Static (Ptr (Ptr Void));];
-                  extra_ptr_types = [];
-                  lemmas_before = [];
-                  lemmas_after = [];};
+                                Dynamic ["LoadBalancedFlow", Ptr (Ptr lb_flow_struct);
+                                         "uint32_t", Ptr (Ptr Uint32)];];
+                   extra_ptr_types = [];
+                   lemmas_before = [
+                     (fun {args;tmp_gen;arg_types;_} ->
+                        match List.nth_exn arg_types 1 with
+                        | Ptr (Str ("LoadBalancedFlow", _)) ->
+                          "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
+                        | Ptr Uint32 ->
+                          "/*@ { close hide_mapp<lb_flowi>(_, u_integer, _, _, _); } @*/\n"
+                        | _ -> failwith "unexpected key type for map_erase")
+                   ];
+                   lemmas_after = [
+                     (fun {args;tmp_gen;arg_types;_} ->
+                        match List.nth_exn arg_types 1 with
+                        | Ptr (Str ("LoadBalancedFlow", _)) ->
+                          "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
+                        | Ptr Uint32 ->
+                          "/*@ { open hide_mapp<lb_flowi>(_, u_integer, _, _, _); } @*/\n"
+                        | _ -> failwith "unexpected key type for map_erase")];};
      "map_size", {ret_type = Static Sint32;
                   arg_types = [Static (Ptr map_struct);];
                   extra_ptr_types = [];

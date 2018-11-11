@@ -186,7 +186,7 @@ void map_erase(struct Map* map, void* key, void** trash) {
 
   klee_trace_param_tagged_ptr(key, map->key_size, "key", map->key_type, TD_BOTH);
   TRACE_KEY_FIELDS(key, map);
-  klee_trace_param_ptr(trash, sizeof(void*), "trash");
+  klee_trace_param_tagged_ptr(trash, sizeof(void*), "trash", map->key_type, TD_OUT);
 
   map->occupancy -= 1;
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {
