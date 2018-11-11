@@ -348,7 +348,19 @@ let fun_types =
                            arg_types = stt [Ptr dchain_struct;
                                             Sint32];
                            extra_ptr_types = [];
-                           lemmas_before = [];
+                           lemmas_before = [
+                             (fun ({tmp_gen;args;_} as params) ->
+                                capture_a_chain "ch" params ^
+                                "//@ assert map_vec_chain_coherent<lb_flowi>(?" ^
+                                (tmp_gen "map") ^ ", ?" ^
+                                (tmp_gen "vec") ^ ", " ^
+                                (tmp_gen "ch") ^ ");\n" ^
+                                "//@ mvc_coherent_erase(" ^
+                                (tmp_gen "map") ^ ", " ^
+                                (tmp_gen "vec") ^ ", " ^
+                                (tmp_gen "ch") ^ ", last_flow_searched_in_the_map, " ^
+                                (List.nth_exn args 1) ^ ");\n"
+                             )];
                            lemmas_after = [];};
      "expire_items_single_map", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct;
@@ -506,6 +518,8 @@ let fun_types =
                       | Ptr (Str ("LoadBalancedFlow", _)) ->
                         "//@ assert lb_flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
+                        "//@ last_flow_searched_in_the_map = " ^
+                        (tmp_gen "dk") ^ ";\n" ^
                          capture_a_map "lb_flowi" "dm" params ^
                          "//@ assert map_vec_chain_coherent<lb_flowi>(" ^
                          (tmp_gen "dm") ^ ", ?" ^
@@ -1031,7 +1045,8 @@ struct
                     bool map_flow_expired = false;\n\
                     bool last_map_accessed_lb_flowi = false;\n\
                     bool vector_flow_borrowed = false;\n\
-                    bool vector_backend_borrowed = false;\n"
+                    bool vector_backend_borrowed = false;\n\
+                   //@ lb_flowi last_flow_searched_in_the_map;\n"
   let fun_types = fun_types
   let boundary_fun = "lb_loop_invariant_produce"
   let finishing_fun = "lb_loop_invariant_consume"

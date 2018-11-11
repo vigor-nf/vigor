@@ -2122,3 +2122,19 @@ ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
     assume(false);//TODO
   }
   @*/
+
+/*@
+  lemma void mvc_coherent_erase<kt>(list<pair<kt, int> > m,
+                                    list<pair<kt, real> > v, dchain ch,
+                                    kt key, int index)
+  requires map_vec_chain_coherent<kt>(m, v, ch) &*&
+           true == dchain_allocated_fp(ch, index) &*&
+           true == map_has_fp(m, key);
+  ensures map_vec_chain_coherent<kt>
+            (map_erase_fp(m, key),
+             update(map_get_fp(m, key), pair(key, 1.0), v),
+             dchain_remove_index_fp(ch, map_get_fp(m, key)));
+  {
+    assume(false);//TODO
+  }
+  @*/
