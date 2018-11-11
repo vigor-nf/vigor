@@ -459,9 +459,10 @@ int dchain_free_index(struct DoubleChain* chain, int index);
              0 <= index &*& index < dchain_index_range_fp(ch); @*/
 /*@ ensures double_chainp(?new_ch, chain) &*&
             dchain_allocated_fp(ch, index)            ?
-             (result == 1 &&
-              new_ch == dchain_remove_index_fp(ch, index)) :
-             (result == 0 && new_ch == ch); @*/
+             (result == 1 &*&
+              new_ch == dchain_remove_index_fp(ch, index) &*&
+              false == dchain_out_of_space_fp(new_ch)) :
+             (result == 0 &*& new_ch == ch); @*/
 
 
 #endif //_DOUBLE_CHAIN_H_INCLUDED_

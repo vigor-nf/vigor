@@ -874,9 +874,10 @@ int dchain_free_index(struct DoubleChain* chain, int index)
              0 <= index &*& index < dchain_index_range_fp(ch); @*/
 /*@ ensures double_chainp(?new_ch, chain) &*&
             dchain_allocated_fp(ch, index)            ?
-             (result == 1 &&
-              new_ch == dchain_remove_index_fp(ch, index)) :
-             (result == 0 && new_ch == ch); @*/
+              (result == 1 &*&
+               new_ch == dchain_remove_index_fp(ch, index) &*&
+               false == dchain_out_of_space_fp(new_ch)) :
+              (result == 0 &*& new_ch == ch); @*/
 {
   //@ open double_chainp(ch, chain);
   //@ assert chain->cells |-> ?cells;
@@ -889,6 +890,7 @@ int dchain_free_index(struct DoubleChain* chain, int index)
         switch(chi) {
           case dchaini(bare_alist, i_rng):
             dchain_allocated_dchaini_allocated(bare_alist, tstamps, alist, index);
+            dchaini_alist_upperbound(cells, chi);
         }
     }
   @*/
@@ -900,6 +902,9 @@ int dchain_free_index(struct DoubleChain* chain, int index)
                     tstamps, index);
       remove_index_keeps_bnd_sorted(dchain_alist_fp(ch), index,
                                     dchain_low_fp(ch), dchain_high_fp(ch));
+      insync_both_out_of_space(dchaini_remove_fp(chi, index),
+                               dchain_remove_index_fp(ch, index),
+                               tstamps);
       close double_chainp(dchain_remove_index_fp(ch, index), chain);
     } else {
       close double_chainp(ch, chain);
