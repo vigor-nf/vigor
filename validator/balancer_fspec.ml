@@ -360,6 +360,9 @@ let fun_types =
                                 (tmp_gen "map") ^ ", " ^
                                 (tmp_gen "vec") ^ ", " ^
                                 (tmp_gen "ch") ^ ", last_flow_searched_in_the_map, " ^
+                                (List.nth_exn args 1) ^ ");\n" ^
+                                "//@ remove_index_keeps_high_bounded(" ^
+                                (tmp_gen "ch") ^ ", " ^
                                 (List.nth_exn args 1) ^ ");\n"
                              )];
                            lemmas_after = [];};
@@ -602,6 +605,10 @@ let fun_types =
                          mvc_coherent_dchain_non_out_of_space_map_nonfull<lb_flowi>(" ^
                         (tmp_gen "dm") ^ ", " ^
                         (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ");\n" ^
+                         "mvc_coherent_bounds<lb_flowi>(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
                         (tmp_gen "dh") ^ ");\n} @*/\n" ^
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
@@ -699,7 +706,15 @@ let fun_types =
                      (fun {args;tmp_gen;arg_types;_} ->
                         match List.nth_exn arg_types 1 with
                         | Ptr (Str ("LoadBalancedFlow", _)) ->
-                          "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
+                          "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n" ^
+                          let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "/*@ { \n\
+                         assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
+                         assert vector_accp<lb_flowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<lb_flowi>(?the_dm, the_dv, ?the_dh);\n\
+                          assert lb_flowp(" ^ arg1 ^ ", ?vvv);\n\
+                         kkeeper_erase_one(dv_addrs, the_dv, dm_addrs, map_get_fp(dm, vvv));\n\
+                         } @*/\n"
                         | Ptr Uint32 ->
                           "/*@ { close hide_mapp<lb_flowi>(_, u_integer, _, _, _); } @*/\n"
                         | _ -> failwith "unexpected key type for map_erase")

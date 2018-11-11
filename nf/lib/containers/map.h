@@ -78,6 +78,7 @@ void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash);
             *trash |-> ?k_out &*&
             k_out == map_get_fp(addrs, k) &*&
             false == map_has_fp(map_erase_fp(contents, k), k) &*&
+            length(map_erase_fp(contents, k)) + 1 == length(contents) &*&
             [0.25]kp(k_out, k); @*/
 
 unsigned map_size/*@ <t> @*/(struct Map* map);
