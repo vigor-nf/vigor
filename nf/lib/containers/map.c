@@ -228,6 +228,7 @@ void map_erase/*@ <t> @*/(struct Map* map, void* key, void** trash)
             [fk]kp(key, k) &*&
             *trash |-> ?k_out &*&
             k_out == map_get_fp(addrs, k) &*&
+            false == map_has_fp(map_erase_fp(contents, k), k) &*&
             [0.25]kp(k_out, k); @*/
 {
   //@ open mapp<t>(map, kp, hsh, recp, mapc(capacity, contents, addrs));

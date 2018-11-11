@@ -2416,6 +2416,22 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
   }
   @*/
 
+/*@
+  lemma void map_erase_hasnt<kt,vt>(list<pair<kt,vt> > m, kt k)
+  requires true == no_dup_keys(m);
+  ensures false == map_has_fp(map_erase_fp(m, k), k);
+  {
+    switch(m) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(key,value):
+          if (key != k) map_erase_hasnt(t, k);
+        }
+    }
+  }
+  @*/
+
+
 void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
                                 unsigned* k_hashes, int* chns,
                                 void* keyp,
@@ -2433,6 +2449,7 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
             *keyp_out |-> ?nko &*&
             nko == map_get_fp(addrs, k) &*&
             [0.25]kp(nko, k) &*&
+            false == map_has_fp(map_erase_fp(m, k), k) &*&
             mapping<kt>(map_erase_fp(m, k), map_erase_fp(addrs, k),
                         kp, recp, hsh,
                         capacity, busybits, keyps, k_hashes, chns, values); @*/
@@ -2440,6 +2457,8 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
   //@ open mapping(m, addrs, kp, recp, hsh, capacity, busybits, keyps, k_hashes, chns, values);
   //@ open hmapping(kp, hsh, capacity, busybits, ?kps, k_hashes, ?hm);
   //@ close hmapping(kp, hsh, capacity, busybits, kps, k_hashes, hm);
+  //@ map_no_dups(hmap_ks_fp(hm), m);
+  //@ map_erase_hasnt(m, k);
   //@ hmap_exists_iff_map_has(hm, m, k);
   find_key_remove_chain(busybits, keyps, k_hashes, chns,
                         keyp, eq, hash, capacity, keyp_out);

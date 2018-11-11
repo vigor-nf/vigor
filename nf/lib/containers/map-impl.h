@@ -208,6 +208,7 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps, unsigned* key_hashe
             *keyp_out |-> ?nko &*&
             nko == map_get_fp(addrs, k) &*&
             [0.25]kp(nko, k) &*&
+            false == map_has_fp(map_erase_fp(m, k), k) &*&
             mapping<kt>(map_erase_fp(m, k),
                         map_erase_fp(addrs, k),
                         kp, recp, hsh,
