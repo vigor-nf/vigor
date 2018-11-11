@@ -110,6 +110,9 @@ int dchain_free_index(struct DoubleChain* chain, int index) {
   klee_trace_param_i32(index, "index");
 
   klee_assert(chain != NULL);
+  ALLOW(chain);
+  chain->out_of_space = 0;
+  DENY(chain);
   return 1;
 }
 
