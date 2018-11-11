@@ -344,6 +344,12 @@ let fun_types =
                                    extra_ptr_types = [];
                                    lemmas_before = [];
                                    lemmas_after = [];};
+     "dchain_free_index", {ret_type = Static Sint32;
+                           arg_types = stt [Ptr dchain_struct;
+                                            Sint32];
+                           extra_ptr_types = [];
+                           lemmas_before = [];
+                           lemmas_after = [];};
      "expire_items_single_map", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct;
                                                   Ptr vector_struct;
