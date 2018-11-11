@@ -2109,3 +2109,16 @@ ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
 
 }
 @*/
+/*@
+  lemma void mvc_coherent_map_get<kt>(list<pair<kt, int> > m,
+                                      list<pair<kt, real> > v,
+                                      dchain ch,
+                                      kt key)
+  requires map_vec_chain_coherent<kt>(m, v, ch) &*&
+           true == map_has_fp(m, key);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          fst(nth(map_get_fp(m, key), v)) == key;
+  {
+    assume(false);//TODO
+  }
+  @*/

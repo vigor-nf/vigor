@@ -532,6 +532,11 @@ let fun_types =
                         (tmp_gen "dh") ^ ", " ^
                         (tmp_gen "dk") ^
                         ");\n\
+                         mvc_coherent_map_get(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", " ^
+                        (tmp_gen "dk") ^ ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = true;\n" ^
                         "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
@@ -844,7 +849,10 @@ let fun_types =
                                    "/*@ if (!vector_backend_borrowed) { close hide_vector<lb_backendi>(_, _, _, _); } @*/\n" ^
                                    "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n"
+                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n" ^
+                                   "//@ assert vectorp<lb_flowi>(" ^ (List.nth_exn params.args 0) ^
+                                   ", lb_flowp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
+                                   ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n"
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "/*@ { assert vectorp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
@@ -872,7 +880,19 @@ let fun_types =
                                    "vector_flow_borrowed = true;\n" ^
                                    "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n"
+                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n" ^
+                                   "struct LoadBalancedFlow * " ^ (params.tmp_gen "elem") ^
+                                   " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
+                                   "//@ assert [?" ^ (params.tmp_gen "fr") ^
+                                   "]lb_flowp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
+                                   "/*@ if (" ^ (params.tmp_gen "fr") ^
+                                   " != 1.0) {\n\
+                                    assert mapp<lb_flowi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
+                                   ", ?" ^ (params.tmp_gen "fma") ^
+                                   "));\n\
+                                    forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
+                                   ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
+                                   ");\n} @*/ "
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
                                    "/*@ if (!vector_flow_borrowed) { open hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = true; \n" ^

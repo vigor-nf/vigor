@@ -21,7 +21,7 @@
     return snd(entry) == 1.0 ? true :
              (snd(entry) == 0.75 &&
               map_has_fp(addr_map, fst(entry)) &&
-               ptr == map_get_fp(addr_map, fst(entry)));
+              ptr == map_get_fp(addr_map, fst(entry)));
   }
   @*/
 
@@ -338,5 +338,16 @@ fixpoint bool bounded(int bound, int x) {
           true == forall(dchain_indexes_fp(ch),
                         (sup)(engaged_cell, (nth2)(v)));
 @*/
+
+/*@
+  lemma void mvc_coherent_map_get<kt>(list<pair<kt, int> > m,
+                                      list<pair<kt, real> > v,
+                                      dchain ch,
+                                      kt key);
+  requires map_vec_chain_coherent<kt>(m, v, ch) &*&
+           true == map_has_fp(m, key);
+  ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
+          fst(nth(map_get_fp(m, key), v)) == key;
+  @*/
 
 #endif// _COHERENCE_H_INCLUDED_
