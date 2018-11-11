@@ -350,7 +350,8 @@ let fun_types =
                            extra_ptr_types = [];
                            lemmas_before = [
                              (fun ({tmp_gen;args;_} as params) ->
-                                capture_a_chain "ch" params ^
+                                "//@ assert double_chainp(?" ^ (tmp_gen "ch") ^
+                                ", " ^ (List.nth_exn args 0) ^ ");\n" ^
                                 "//@ assert map_vec_chain_coherent<lb_flowi>(?" ^
                                 (tmp_gen "map") ^ ", ?" ^
                                 (tmp_gen "vec") ^ ", " ^
