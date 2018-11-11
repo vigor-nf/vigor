@@ -355,6 +355,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
       // current impl of symbex models does not support
       // connecting a map with its keystore.
       map_erase(balancer->flow_to_flow_id, flow, (void**)&flow_key);
+      dchain_free_index(balancer->flow_chain, flow_index);
       vector_return(balancer->flow_heap, flow_index, (void*)flow_key);
       return lb_get_backend(balancer, flow, now);
     } else {

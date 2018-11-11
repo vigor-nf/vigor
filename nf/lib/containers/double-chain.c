@@ -869,6 +869,44 @@ int dchain_is_index_allocated(struct DoubleChain* chain, int index)
   //@ close double_chainp(ch, chain);
 }
 
+int dchain_free_index(struct DoubleChain* chain, int index)
+/*@ requires double_chainp(?ch, chain) &*&
+             0 <= index &*& index < dchain_index_range_fp(ch); @*/
+/*@ ensures double_chainp(?new_ch, chain) &*&
+            dchain_allocated_fp(ch, index)            ?
+             (result == 1 &&
+              new_ch == dchain_remove_index_fp(ch, index)) :
+             (result == 0 && new_ch == ch); @*/
+{
+  //@ open double_chainp(ch, chain);
+  //@ assert chain->cells |-> ?cells;
+  //@ assert chain->timestamps |-> ?timestamps;
+  //@ assert dchainip(?chi, cells);
+  //@ assert times(timestamps, _, ?tstamps);
+  /*@
+    switch(ch) {
+      case dchain(alist, index_range, low, high):
+        switch(chi) {
+          case dchaini(bare_alist, i_rng):
+            dchain_allocated_dchaini_allocated(bare_alist, tstamps, alist, index);
+        }
+    }
+  @*/
+  return dchain_impl_free_index(chain->cells, index);
+  /*@
+    if (dchain_allocated_fp(ch, index)) {
+      remove_def(ch, chi, index);
+      insync_remove(dchaini_alist_fp(chi), dchain_alist_fp(ch),
+                    tstamps, index);
+      remove_index_keeps_bnd_sorted(dchain_alist_fp(ch), index,
+                                    dchain_low_fp(ch), dchain_high_fp(ch));
+      close double_chainp(dchain_remove_index_fp(ch, index), chain);
+    } else {
+      close double_chainp(ch, chain);
+    }
+  @*/
+}
+
 /*@
   lemma void remove_by_index_decreases(list<pair<int, time_t> > alist,
                                        int i)

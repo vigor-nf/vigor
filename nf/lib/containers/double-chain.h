@@ -454,4 +454,14 @@ int dchain_is_index_allocated(struct DoubleChain* chain, int index);
 /*@ ensures double_chainp(ch, chain) &*&
             dchain_allocated_fp(ch, index) ? result == 1 : result == 0; @*/
 
+int dchain_free_index(struct DoubleChain* chain, int index);
+/*@ requires double_chainp(?ch, chain) &*&
+             0 <= index &*& index < dchain_index_range_fp(ch); @*/
+/*@ ensures double_chainp(?new_ch, chain) &*&
+            dchain_allocated_fp(ch, index)            ?
+             (result == 1 &&
+              new_ch == dchain_remove_index_fp(ch, index)) :
+             (result == 0 && new_ch == ch); @*/
+
+
 #endif //_DOUBLE_CHAIN_H_INCLUDED_
