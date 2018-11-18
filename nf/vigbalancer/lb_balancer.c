@@ -79,80 +79,6 @@ lb_flow_id2backend_id_cond(void* key, void* state) {
 struct str_field_descr uint32_field = {0, sizeof(uint32_t), "value"};
 #endif//KLEE_VERIFICATION
 
-
-#ifdef KLEE_VERIFICATION
-void
-lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
-  klee_trace_ret();
-  klee_trace_param_u64((uint64_t)cht, "cht");
-  klee_trace_param_i32(cht_height, "cht_height");
-  klee_trace_param_i32(backend_capacity, "backend_capacity");
-  //see how long we can run without doing any modelling here
-}
-#else//KLEE_VERIFICATION
-void
-lb_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
-  //Make sure cht_height is prime.
-  for (int i = 2; i*i <= cht_height; ++i) {
-    assert(i*(cht_height/i) != cht_height);
-  }
-
-  assert(backend_capacity < cht_height);
-
-  // Generate the permutations of 0..(cht_height - 1) for each backend
-  int* permutations = malloc(sizeof(int)*cht_height*(backend_capacity + 1));
-  for (int i = 0; i < backend_capacity; ++i) {
-    int offset = (i*31)%cht_height;
-    int shift = i%cht_height + 1;
-    for (int j = 0; j < cht_height; ++j) {
-      permutations[i*cht_height + j] = (offset + shift*j)%cht_height;
-      //printf("%d, ", permutations[i*cht_height + j]);
-    }
-    //printf("\n");
-  }
-  // Fill the priority lists for each hash in [0, cht_height)
-  for (int i = 0; i < cht_height; ++i) {
-    int bknd = 0;
-    int perm_pos = 0;
-    //printf("looking for %d\n", i);
-    for (int j = 0; j < backend_capacity; ++j) {
-      assert(perm_pos < cht_height);
-      while (permutations[bknd*cht_height + perm_pos] != i) {
-        //printf("%02d ", permutations[bknd*cht_height + perm_pos]);
-        ++bknd;
-        if (backend_capacity <= bknd) {
-          //printf("..\n");
-          bknd = 0;
-          ++perm_pos;
-          assert(perm_pos < cht_height);
-        }
-      }
-      //printf("** ");
-      uint32_t* value;
-      vector_borrow(cht, i*backend_capacity + j, (void**)&value);
-      *value = bknd;
-      vector_return(cht, i*backend_capacity + j, (void*)value);
-      ++bknd;
-      if (backend_capacity <= bknd) {
-        bknd = 0;
-        ++perm_pos;
-      }
-    }
-  }
-  //printf("preferences:\n");
-  //for (int i = 0; i < cht_height; ++i) {
-  //  for (int j = 0; j < backend_capacity; ++j) {
-  //    uint32_t* value;
-  //    vector_borrow(cht, i*backend_capacity + j, (void**)&value);
-  //    printf("%02d, ", *value);
-  //    vector_return(cht, i*backend_capacity + j, (void*)value);
-  //  }
-  //  printf("\n");
-  //}
-  free(permutations);
-}
-#endif//KLEE_VERIFICATION
-
 void null_init(void* obj) {
   *(uint32_t*)obj = 0;
 }
@@ -222,7 +148,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   vector_set_layout(balancer->cht, NULL, 0, NULL, 0, "uint32_t");
 #endif//KLEE_VERIFICATION
 
-  lb_fill_cht(balancer->cht, cht_height, backend_capacity);
+  cht_fill_cht(balancer->cht, cht_height, backend_capacity);
 
   balancer->flow_capacity = flow_capacity;
   balancer->backend_capacity = backend_capacity;
@@ -251,58 +177,6 @@ err:
   return NULL;
 }
 
-#ifdef KLEE_VERIFICATION
-int
-lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
-                                    struct DoubleChain* active_backends,
-                                    uint32_t cht_height,
-                                    uint32_t backend_capacity,
-                                    int *chosen_backend) {
-  klee_trace_ret();
-  klee_trace_param_u64(hash, "hash");
-  klee_trace_param_u64((uint64_t)cht, "cht");
-  klee_trace_param_u64((uint64_t)active_backends, "active_backends");
-  klee_trace_param_u32(cht_height, "cht_height");
-  klee_trace_param_u32(backend_capacity, "backend_capacity");
-  klee_trace_param_ptr(chosen_backend, sizeof(int), "chosen_backend");
-  if (klee_int("prefered_backend_found")) {
-    *chosen_backend = klee_int("chosen_backend");
-    klee_assume(0 <= *chosen_backend);
-    klee_assume(*chosen_backend < balancer->backend_capacity);
-    return 1;
-  } else {
-    return 0;
-  }
-}
-#else//KLEE_VERIFICATION
-int
-lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
-                                    struct DoubleChain* active_backends,
-                                    uint32_t cht_height,
-                                    uint32_t backend_capacity,
-                                    int *chosen_backend) {
-  for (int i = 0; i < backend_capacity; ++i) {
-
-    int candidate_idx = (hash + i) % cht_height;
-
-    int* candidate;
-    vector_borrow(cht, candidate_idx, (void**)&candidate);
-    //printf("%d:%d ", candidate_idx, *candidate);
-
-    if (dchain_is_index_allocated(active_backends, *candidate)) {
-      *chosen_backend = *candidate;
-      vector_return(cht, candidate_idx, candidate);
-      //printf("FOUND\n");
-      return 1;
-    }
-    vector_return(cht, candidate_idx, candidate);
-  }
-  //printf("give up\n");
-  return 0;
-}
-
-#endif//KLEE_VERIFICATION
-
 struct LoadBalancedBackend
 lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, time_t now) {
   int flow_index;
@@ -310,12 +184,12 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
   if (map_get(balancer->flow_to_flow_id, flow, &flow_index) == 0) {
     int backend_index = 0;
     int found =
-      lb_find_preferred_available_backend((uint64_t) lb_flow_hash(flow),
-                                          balancer->cht,
-                                          balancer->active_backends,
-                                          balancer->cht_height,
-                                          balancer->backend_capacity,
-                                          &backend_index);
+      cht_find_preferred_available_backend((uint64_t) lb_flow_hash(flow),
+                                           balancer->cht,
+                                           balancer->active_backends,
+                                           balancer->cht_height,
+                                           balancer->backend_capacity,
+                                           &backend_index);
     if (found) {
       if (dchain_allocate_new_index(balancer->flow_chain, &flow_index, now) != 0) {
         struct LoadBalancedFlow* vec_flow;

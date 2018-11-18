@@ -733,7 +733,7 @@ let fun_types =
                   extra_ptr_types = [];
                   lemmas_before = [];
                   lemmas_after = [];};
-     "lb_find_preferred_available_backend", {
+     "cht_find_preferred_available_backend", {
        ret_type = Static Sint32;
        arg_types = stt [Uint64;
                         Ptr vector_struct;
@@ -862,13 +862,13 @@ let fun_types =
                                } else {\n\
                                vector_backends_allocated = true;\n\
                                }}}");];};
-     "lb_fill_cht",        {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Static Sint32];
-                            extra_ptr_types = [];
-                            lemmas_before = [];
-                            lemmas_after = []};
+     "cht_fill_cht",        {ret_type = Static Void;
+                             arg_types = [Static (Ptr vector_struct);
+                                          Static Sint32;
+                                          Static Sint32];
+                             extra_ptr_types = [];
+                             lemmas_before = [];
+                             lemmas_after = []};
      "vector_borrow",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;

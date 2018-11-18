@@ -11,6 +11,7 @@
 #include "lib/stubs/mbuf_content.h"
 #include "lib/containers/vector.h"
 #include "lib/containers/double-chain.h"
+#include "lib/containers/cht.h"
 
 #ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
@@ -95,30 +96,6 @@ uint32_t lb_ip_hash(void* obj);
 /*@ requires [?fr]u_integer(obj, ?f); @*/
 /*@ ensures [fr]u_integer(obj, f) &*&
             result == lb_ip_hash_fp(f); @*/
-
-void lb_fill_cht(struct Vector* cht,
-                 int cht_height,
-                 int backend_capacity);
-/*@ requires vectorp<uint32_t>(cht, ?entp, ?values, ?addrs); @*/
-/*@ ensures vectorp<uint32_t>(cht, entp, values, addrs); @*/
-
-int
-lb_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
-                                    struct DoubleChain* active_backends,
-                                    uint32_t cht_height,
-                                    uint32_t backend_capacity,
-                                    int *chosen_backend);
-/*@ requires vectorp<uint32_t>(cht, ?entp, ?values, ?addrs) &*&
-             double_chainp(?ch, active_backends) &*&
-             *chosen_backend |-> _; @*/
-/*@ ensures vectorp<uint32_t>(cht, entp, values, addrs) &*&
-            double_chainp(ch, active_backends) &*&
-            *chosen_backend |-> ?chosen &*&
-            (result == 0 ?
-              true        :
-              result == 1 &*&
-              0 <= chosen &*&
-              chosen < dchain_index_range_fp(ch)); @*/
 
 struct LoadBalancer;
 struct LoadBalancer* lb_allocate_balancer(uint32_t flow_capacity,
