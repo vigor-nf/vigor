@@ -2119,7 +2119,24 @@ ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
   ensures map_vec_chain_coherent<kt>(m, v, ch) &*&
           fst(nth(map_get_fp(m, key), v)) == key;
   {
-    assume(false);//TODO
+    mvc_coherent_map_get_bounded(m, v, ch, key);
+    mvc_coherent_distinct(m, v, ch);
+    assert true == dchain_allocated_fp(ch, map_get_fp(m, key));
+    open map_vec_chain_coherent(m, v, ch);
+    close map_vec_chain_coherent(m, v, ch);
+    int i = map_get_fp(m, key);
+    extract_prop_by_idx(v, (consistent_pair)(m, ch), 0, i);
+    pair<kt, real> el = nth(i, v);
+    assert true == consistent_pair(m, ch, i, el);
+    switch(el) {
+      case pair(car, cdr):
+        map_get_mem(m, key);
+        map_get_mem(m, car);
+        assert true == mem(pair(key, i), m);
+        assert true == mem(pair(car, i), m);
+        distinct_unique(map(snd, m), i);
+        unique_map_identical_elems(snd, m, pair(car, i), pair(key, i));
+    }
   }
   @*/
 
