@@ -359,8 +359,7 @@ let fun_types =
                                 "//@ mvc_coherent_erase(" ^
                                 (tmp_gen "map") ^ ", " ^
                                 (tmp_gen "vec") ^ ", " ^
-                                (tmp_gen "ch") ^ ", last_flow_searched_in_the_map, " ^
-                                (List.nth_exn args 1) ^ ");\n" ^
+                                (tmp_gen "ch") ^ ", last_flow_searched_in_the_map);\n" ^
                                 "//@ remove_index_keeps_high_bounded(" ^
                                 (tmp_gen "ch") ^ ", " ^
                                 (List.nth_exn args 1) ^ ");\n" ^
