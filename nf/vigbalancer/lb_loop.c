@@ -18,7 +18,10 @@ void lb_loop_iteration_assumptions(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-                                   time_t time, uint32_t backend_capacity, uint32_t flow_capacity) {
+        time_t time,
+        uint32_t backend_capacity,
+        uint32_t flow_capacity,
+        uint32_t cht_height) {
 	map_reset(*flow_to_flow_id);
 	vector_reset(*flow_heap);
 	dchain_reset(*flow_chain, flow_capacity);
@@ -40,7 +43,8 @@ void lb_loop_invariant_consume(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-                               time_t time, uint32_t backend_capacity, uint32_t flow_capacity) {
+        time_t time, uint32_t backend_capacity, uint32_t flow_capacity,
+        uint32_t cht_height) {
 	klee_trace_ret();
 	klee_trace_param_ptr(flow_to_flow_id, sizeof(struct Map*), "flow_to_flow_id");
 	klee_trace_param_ptr(flow_heap, sizeof(struct Vector*), "flow_heap");
@@ -54,6 +58,7 @@ void lb_loop_invariant_consume(
 	klee_trace_param_u64(time, "time");
 	klee_trace_param_u32(backend_capacity, "backend_capacity");
 	klee_trace_param_u32(flow_capacity, "flow_capacity");
+	klee_trace_param_u32(cht_height, "cht_height");
 }
 
 void lb_loop_invariant_produce(
@@ -66,7 +71,10 @@ void lb_loop_invariant_produce(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-                               time_t* time, uint32_t backend_capacity, uint32_t flow_capacity) {
+        time_t* time,
+        uint32_t backend_capacity,
+        uint32_t flow_capacity,
+        uint32_t cht_height) {
 	klee_trace_ret();
 	klee_trace_param_ptr(flow_to_flow_id, sizeof(struct Map*), "flow_to_flow_id");
 	klee_trace_param_ptr(flow_heap, sizeof(struct Vector*), "flow_heap");
@@ -80,8 +88,21 @@ void lb_loop_invariant_produce(
 	klee_trace_param_ptr(time, sizeof(time_t), "time");
 	klee_trace_param_u32(backend_capacity, "backend_capacity");
 	klee_trace_param_u32(flow_capacity, "flow_capacity");
+	klee_trace_param_u32(cht_height, "cht_height");
 
-	lb_loop_iteration_assumptions(flow_to_flow_id, flow_heap, flow_chain, flow_id_to_backend_id, backend_ips, backends, ip_to_backend_id, active_backends, cht, *time, backend_capacity, flow_capacity);
+	lb_loop_iteration_assumptions(flow_to_flow_id,
+                                flow_heap,
+                                flow_chain,
+                                flow_id_to_backend_id,
+                                backend_ips,
+                                backends,
+                                ip_to_backend_id,
+                                active_backends,
+                                cht,
+                                *time,
+                                backend_capacity,
+                                flow_capacity,
+                                cht_height);
 	*time = restart_time();
 }
 
@@ -95,9 +116,36 @@ void lb_loop_iteration_begin(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-                             time_t time, uint32_t backend_capacity, uint32_t flow_capacity) {
-	lb_loop_invariant_consume(flow_to_flow_id, flow_heap, flow_chain, flow_id_to_backend_id, backend_ips, backends, ip_to_backend_id, active_backends, cht, time, backend_capacity, flow_capacity);
-	lb_loop_invariant_produce(flow_to_flow_id, flow_heap, flow_chain, flow_id_to_backend_id, backend_ips, backends, ip_to_backend_id, active_backends, cht, &time, backend_capacity, flow_capacity);
+        time_t time,
+        uint32_t backend_capacity,
+        uint32_t flow_capacity,
+        uint32_t cht_height) {
+	lb_loop_invariant_consume(flow_to_flow_id,
+                            flow_heap,
+                            flow_chain,
+                            flow_id_to_backend_id,
+                            backend_ips,
+                            backends,
+                            ip_to_backend_id,
+                            active_backends,
+                            cht,
+                            time,
+                            backend_capacity,
+                            flow_capacity,
+                            cht_height);
+	lb_loop_invariant_produce(flow_to_flow_id,
+                            flow_heap,
+                            flow_chain,
+                            flow_id_to_backend_id,
+                            backend_ips,
+                            backends,
+                            ip_to_backend_id,
+                            active_backends,
+                            cht,
+                            &time,
+                            backend_capacity,
+                            flow_capacity,
+                            cht_height);
 }
 
 void lb_loop_iteration_end(
@@ -110,7 +158,34 @@ void lb_loop_iteration_end(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-                           time_t time, uint32_t backend_capacity, uint32_t flow_capacity) {
-	lb_loop_invariant_consume(flow_to_flow_id, flow_heap, flow_chain, flow_id_to_backend_id, backend_ips, backends, ip_to_backend_id, active_backends, cht, time, backend_capacity, flow_capacity);
-	lb_loop_invariant_produce(flow_to_flow_id, flow_heap, flow_chain, flow_id_to_backend_id, backend_ips, backends, ip_to_backend_id, active_backends, cht, &time, backend_capacity, flow_capacity);
+        time_t time,
+        uint32_t backend_capacity,
+        uint32_t flow_capacity,
+        uint32_t cht_height) {
+	lb_loop_invariant_consume(flow_to_flow_id,
+                            flow_heap,
+                            flow_chain,
+                            flow_id_to_backend_id,
+                            backend_ips,
+                            backends,
+                            ip_to_backend_id,
+                            active_backends,
+                            cht,
+                            time,
+                            backend_capacity,
+                            flow_capacity,
+                            cht_height);
+	lb_loop_invariant_produce(flow_to_flow_id,
+                            flow_heap,
+                            flow_chain,
+                            flow_id_to_backend_id,
+                            backend_ips,
+                            backends,
+                            ip_to_backend_id,
+                            active_backends,
+                            cht,
+                            &time,
+                            backend_capacity,
+                            flow_capacity,
+                            cht_height);
 }

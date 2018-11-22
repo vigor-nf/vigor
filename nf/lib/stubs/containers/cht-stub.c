@@ -3,11 +3,11 @@
 #include "lib/containers/cht.h"
 
 void
-cht_fill_cht(struct Vector* cht, int cht_height, int backend_capacity) {
+cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)cht, "cht");
-  klee_trace_param_i32(cht_height, "cht_height");
-  klee_trace_param_i32(backend_capacity, "backend_capacity");
+  klee_trace_param_u32(cht_height, "cht_height");
+  klee_trace_param_u32(backend_capacity, "backend_capacity");
   //see how long we can run without doing any modelling here
 }
 

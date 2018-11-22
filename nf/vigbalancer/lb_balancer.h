@@ -128,6 +128,7 @@ extern struct str_field_descr lb_backend_fields[];
 extern struct nested_field_descr lb_backend_nested_fields[];
 int lb_flow_fields_number();
 int lb_backend_fields_number();
+int lb_backend_nested_fields_number();
 #endif//KLEE_VERIFICATION
 
 

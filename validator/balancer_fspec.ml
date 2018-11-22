@@ -133,6 +133,7 @@ let fun_types =
                                             Ptr (Ptr vector_struct);
                                             Sint64;
                                             Uint32;
+                                            Uint32;
                                             Uint32];
                                        extra_ptr_types = [];
                                        lemmas_before = [
@@ -149,7 +150,8 @@ let fun_types =
                                             (List.nth_exn args 8) ^ ", " ^
                                             (List.nth_exn args 9) ^ ", " ^
                                             (List.nth_exn args 10) ^ ", " ^
-                                            (List.nth_exn args 11) ^ "); @*/");];
+                                            (List.nth_exn args 11) ^ ", " ^
+                                            (List.nth_exn args 12) ^ "); @*/");];
                                        lemmas_after = [];};
      "lb_loop_invariant_produce", {ret_type = Static Void;
                                        arg_types = stt
@@ -163,6 +165,7 @@ let fun_types =
                                             Ptr (Ptr dchain_struct);
                                             Ptr (Ptr vector_struct);
                                             Ptr Sint64;
+                                            Uint32;
                                             Uint32;
                                             Uint32];
                                        extra_ptr_types = [];
@@ -181,7 +184,8 @@ let fun_types =
                                             (List.nth_exn args 8) ^ ", *" ^
                                             (List.nth_exn args 9) ^ ", " ^
                                             (List.nth_exn args 10) ^ ", " ^
-                                            (List.nth_exn args 11) ^ "); @*/");
+                                            (List.nth_exn args 11) ^ ", " ^
+                                            (List.nth_exn args 12) ^ "); @*/");
                                          (fun {tmp_gen;_} ->
                                             "\n/*@ {\n\
                                              assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\

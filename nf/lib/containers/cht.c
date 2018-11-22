@@ -25,11 +25,15 @@ uint64_t loop(uint64_t k, uint64_t capacity)
 }
 
 void
-cht_fill_cht(struct Vector* cht, int cht_height, int backend_capacity)
-/*@ requires vectorp<uint32_t>(cht, ?entp, _, ?addrs) &*&
+cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
+/*@ requires vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
              0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*&
-             0 < backend_capacity &*& backend_capacity < cht_height; @*/
-/*@ ensures vectorp<uint32_t>(cht, entp, ?values, addrs) &*&
+             MAX_CHT_HEIGHT*backend_capacity < INT_MAX &*&
+             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
+             0 < backend_capacity &*& backend_capacity < cht_height &*&
+             length(old_values) == cht_height*backend_capacity &*&
+             true == forall(old_values, is_one); @*/
+/*@ ensures vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
             true == valid_cht(values, backend_capacity, cht_height); @*/
 {
   //Make sure cht_height is prime.
@@ -39,59 +43,98 @@ cht_fill_cht(struct Vector* cht, int cht_height, int backend_capacity)
   //  assert(i*(cht_height/i) != cht_height);
   //}
 
-  assert(backend_capacity < cht_height);
-  //@ assume(false);//TODO
+  //assert(backend_capacity < cht_height);
+ 
   
-  //@ assume((int)sizeof(int)*cht_height*(backend_capacity + 1) < INT_MAX);//TODO
-  //@ assume(0 < (int)sizeof(int)*cht_height*(backend_capacity + 1));//TODO
+  //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
+  //@ mul_bounds(sizeof(int)*cht_height, sizeof(int)*MAX_CHT_HEIGHT, backend_capacity + 1, backend_capacity + 1);
+  //@ assert((int)sizeof(int)*cht_height*(backend_capacity + 1) < INT_MAX);//TODO
+  //@ assert(0 < (int)sizeof(int)*cht_height*(backend_capacity + 1));//TODO
 
   // Generate the permutations of 0..(cht_height - 1) for each backend
-  int* permutations = malloc((int)sizeof(int)*cht_height*(backend_capacity + 1));
-  for (int i = 0; i < backend_capacity; ++i)
-  /*@ invariant 0 <= i &*& i < backend_capacity; @*/
+  int* permutations = malloc(sizeof(int)*(int)(cht_height*(backend_capacity + 1)));
+  //@ assume(permutations != 0);//TODO: report failure
+  for (uint32_t i = 0; i < backend_capacity; ++i)
+  /*@ invariant 0 <= i &*& i <= backend_capacity &*&
+                vectorp<uint32_t>(cht, u_integer, old_values, addrs) &*&
+                ints(permutations, cht_height*(backend_capacity + 1), _); @*/
   {
-    int offset = (i*31)%cht_height;
-    //@ assume(0 <= i%cht_height); //TODO
-    //@ assume(i%cht_height < cht_height);//TODO
-    int shift = i%cht_height + 1;
-    for (int j = 0; j < cht_height; ++j)
-    /*@ invariant 0 <= j &*& j < cht_height; @*/
+    uint32_t offset_absolut = i*31;
+    uint64_t offset = loop(offset_absolut, cht_height);
+    uint64_t base_shift = loop(i, cht_height);
+    uint64_t shift = base_shift + 1;
+    for (uint32_t j = 0; j < cht_height; ++j)
+    /*@ invariant 0 <= j &*& j <= cht_height &*&
+                  vectorp<uint32_t>(cht, u_integer, old_values, addrs) &*&
+                  ints(permutations, cht_height*(backend_capacity + 1), _); @*/
     {
-      //@ assume(0 <= i*cht_height); //TODO
-      permutations[i*cht_height + j] = (offset + shift*j)%cht_height;
-      //printf("%d, ", permutations[i*cht_height + j]);
+      //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
+      //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
+      //@ mul_bounds(shift, MAX_CHT_HEIGHT, j, MAX_CHT_HEIGHT);
+      uint64_t permut = loop(offset + shift*j, cht_height);
+      //@ mul_bounds(i, backend_capacity, cht_height, cht_height);
+      permutations[i*cht_height + j] = (int)permut;
     }
-    //printf("\n");
   }
   // Fill the priority lists for each hash in [0, cht_height)
-  for (int i = 0; i < cht_height; ++i)
-  /*@ invariant true; @*/
+  for (uint32_t i = 0; i < cht_height; ++i)
+  /*@ invariant ints(permutations, cht_height*(backend_capacity + 1), _) &*&
+                vectorp<uint32_t>(cht, u_integer, ?vals, addrs) &*&
+                0 <= i &*& i <= cht_height &*&
+                length(vals) == cht_height*backend_capacity &*&
+                true == forall(vals, is_one) &*&
+                true == forall(map(fst, take(i*backend_capacity, vals)), (lt)(backend_capacity)) &*&
+                true == forall(map(fst, take(i*backend_capacity, vals)), (ge)(0)); @*/
   {
-    int bknd = 0;
-    int perm_pos = 0;
-    //printf("looking for %d\n", i);
-    for (int j = 0; j < backend_capacity; ++j)
-    /*@ invariant true; @*/
+    uint32_t bknd = 0;
+    uint32_t perm_pos = 0;
+    for (uint32_t j = 0; j < backend_capacity; ++j)
+    /*@ invariant ints(permutations, cht_height*(backend_capacity + 1), _) &*&
+                  vectorp<uint32_t>(cht, u_integer, ?new_vals, addrs) &*&
+                  bknd < backend_capacity &*&
+                  perm_pos < cht_height &*&
+                  0 <= j &*& j <= backend_capacity &*&
+                  length(new_vals) == cht_height*backend_capacity &*&
+                  true == forall(new_vals, is_one) &*&
+                  true == forall(map(fst, take(i*backend_capacity + j, new_vals)), (lt)(backend_capacity)) &*&
+                  true == forall(map(fst, take(i*backend_capacity + j, new_vals)), (ge)(0)); @*/
     {
-      assert(perm_pos < cht_height);
-      while (permutations[bknd*cht_height + perm_pos] != i)
-      /*@ invariant true; @*/
+      uint32_t* value;
+      //@ mul_bounds(bknd, backend_capacity, cht_height, MAX_CHT_HEIGHT);
+      //@ mul_bounds(bknd, backend_capacity, cht_height, cht_height);
+      uint32_t row = bknd*cht_height;
+      uint32_t index = row + perm_pos;
+      while (permutations[index] != (int)i)
+      /*@ invariant ints(permutations, cht_height*(backend_capacity + 1), _) &*&
+                    vectorp<uint32_t>(cht, u_integer, new_vals, addrs) &*&
+                    bknd < backend_capacity &*&
+                    perm_pos < cht_height; @*/
       {
         ++bknd;
         if (backend_capacity <= bknd) {
           bknd = 0;
           ++perm_pos;
+          //@ assume(perm_pos < cht_height);//TODO
           assert(perm_pos < cht_height);
         }
       }
-      uint32_t* value;
-      vector_borrow(cht, i*backend_capacity + j, (void**)&value);
+      //@ mul_bounds(backend_capacity, backend_capacity, i, cht_height);
+      //@ mul_bounds(backend_capacity, backend_capacity, i + 1, cht_height);
+      vector_borrow(cht, (int)(backend_capacity*i + j), (void**)&value);
+      //@ forall_nth(new_vals, is_one, backend_capacity*i + j);
       *value = bknd;
-      vector_return(cht, i*backend_capacity + j, (void*)value);
+      vector_return(cht, (int)(backend_capacity*i + j), (void*)value);
+      //@ forall_update(new_vals, is_one, backend_capacity*i + j, pair(bknd, 1.0));
+      //@ append_take_nth_to_take(update(backend_capacity*i + j, pair(bknd, 1.0), new_vals), backend_capacity*i + j);
+      //@ take_update_unrelevant(backend_capacity*i + j, backend_capacity*i + j, pair(bknd, 1.0), new_vals);
+      //@ map_append(fst, take(backend_capacity*i + j, new_vals), cons(pair(bknd, 1.0), nil));
+      //@ forall_append(map(fst, take(backend_capacity*i + j, new_vals)), cons(bknd, nil), (lt)(backend_capacity));
+      //@ forall_append(map(fst, take(backend_capacity*i + j, new_vals)), cons(bknd, nil), (ge)(0));
       ++bknd;
       if (backend_capacity <= bknd) {
         bknd = 0;
         ++perm_pos;
+        //@ assume(perm_pos < cht_height);//TODO
       }
     }
   }
@@ -122,12 +165,15 @@ cht_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
   for (uint32_t i = 0; i < backend_capacity; ++i)
   /*@ invariant 0 <= i &*& i <= backend_capacity &*&
                 vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
-                cht_height == length(values) &*&
+                cht_height*backend_capacity == length(values) &*&
                 double_chainp(ch, active_backends) &*&
                 *chosen_backend |-> _ &*&
                 0 <= start &*& start < cht_height; @*/
   {
-    uint64_t candidate_idx = loop(start + i, cht_height);
+    //@ mul_bounds(start, cht_height, backend_capacity, backend_capacity);
+    //@ mul_bounds(start+1, cht_height, backend_capacity, backend_capacity);
+    //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, backend_capacity, backend_capacity);
+    uint64_t candidate_idx = start*backend_capacity + i; //There was a bug, right here, untill I tried to prove this.
 
     uint32_t* candidate;
     vector_borrow(cht, (int)candidate_idx, (void**)&candidate);
