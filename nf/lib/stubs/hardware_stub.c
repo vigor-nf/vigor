@@ -7,7 +7,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-// NO DPDK HEADERS HERE! we're implementing a reference implementation...
+// NO OTHER DPDK HEADERS HERE! we're implementing a reference implementation...
+#include "rte_cycles.h" // to include the next one cleanly
+#include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
 #include <klee/klee.h>
 
@@ -2378,7 +2380,8 @@ stub_hardware_init(void)
 	klee_alias_function_regex("rte_pktmbuf_free[0-9]*", "stub_free");
 
 	// DPDK "delay" method override
-	klee_alias_function("rte_delay_us_block", "stub_delay");
+	// cannot be done with klee_alias because it's called via a function pointer :(
+	rte_delay_us_callback_register(stub_delay);
 
 	// Register models initializations
 	stub_registers_init();
