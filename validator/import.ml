@@ -564,6 +564,7 @@ let find_first_known_address_or_dummy addr t at =
 
 let make_cast_if_needed tt srct dstt =
   if srct = dstt then tt
+  else if srct = Uint32 && dstt = Uint16 then {v=Cast(dstt, {v=Bop(Bit_and, tt, {v=Int 0xFFFF;t=Uint32});t=Uint32});t=dstt}
   else {v=Cast(dstt, tt);t=dstt}
 
 let rec get_sexp_value exp ?(at=Beginning) t =

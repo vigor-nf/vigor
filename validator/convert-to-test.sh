@@ -4,7 +4,7 @@ PREFIX=$1
 TEST_NAME=$2
 PLUGIN=$3
 
-set -eux
+set -eu
 
 if [ "$PREFIX" = "" ]; then
     echo "Please specify the trace prefix."
