@@ -30,6 +30,13 @@ ensures 0x00 == (0x00 & 0x10)
   assume(false);
 }
 
+lemma_auto void bit_and_equiv(unsigned int i)
+requires i < 65536;
+ensures i == (i & 65535);
+{
+  assume(false);
+}
+
 // VeriFast can't reason about modulo either, let's help it a bit...
 lemma void modulo_hack()
 requires true;
