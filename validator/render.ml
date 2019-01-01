@@ -215,6 +215,7 @@ let make_assignments_for_eqs equalities =
 let split_assignments assignments =
   let rec unfold_casts v = match v with
   | Cast (_, {v=v2;t=_}) -> unfold_casts v2
+  | Bop (Bit_and, v2, {v=Int 65535;t=_} ) -> unfold_casts v2.v
   | _ -> v
   in
   List.fold assignments ~init:([],[]) ~f:(fun (concrete,symbolic) assignment ->
