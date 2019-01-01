@@ -376,7 +376,7 @@ let fun_types =
                      "close flow_idp(" ^ (List.nth_exn args 1) ^
                     ".external_id, flid(dp, new_index_2_0, dip, external_ip, user_buf_23));\n" ^
                     " close flowp(" ^ (List.nth_exn args 1) ^
-                    ", flw(flid(isp, dp, isip, dip, user_buf_23),
+                    ", flw(flid(isp, dp, isip, dip, user_buf_23),\
                            flid(dp, new_index_2_0, dip, external_ip, user_buf_23), received_on_port));\n" ^
                        "assert dmap_dchain_coherent(" ^
                          (tmp_gen "cur_map") ^

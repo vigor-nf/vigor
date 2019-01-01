@@ -1,0 +1,159 @@
+//mapi<lb_flowi> flow_map;
+//list<pair<lb_flowi, real> > flow_vec;
+//dchain flow_chain;
+//list<pair<uint32_t, real> > fidbid_veca;
+//list<pair<uint32_t, real> > ip_veca;
+//list<pair<lb_backendi, real> > backends_veca;
+//mapi<uint32_t> backend_ip_map; 
+//dchain active_backends;
+//list<pair<uint32_t, real> > cht;
+
+assert map_vec_chain_coherent<lb_flowi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
+assert map_vec_chain_coherent<uint32_t>(?final_backend_ip_map, ?final_ip_veca, ?final_active_backends);
+
+close hide_vector<uint32_t>(_, u_integer, final_ip_veca, _);
+assert vectorp<uint32_t>(_, u_integer, ?final_cht, _);
+close hide_vector<uint32_t>(_, u_integer, final_cht, _);
+assert vectorp<uint32_t>(_, u_integer, ?final_fidbid_veca, _);
+open hide_vector<uint32_t>(_, u_integer, final_cht, _);
+assert vectorp<lb_backendi>(_, lb_backendp, ?final_backends_veca, _);
+open hide_vector<uint32_t>(_, u_integer, final_ip_veca, _);
+
+//mapi<lb_flowi> final_flow_map;
+//list<pair<lb_flowi, real> > final_flow_vec;
+//dchain final_flow_chain;
+//list<pair<uint32_t, real> > final_fidbid_veca;
+//list<pair<uint32_t, real> > final_ip_veca;
+//list<pair<lb_backendi, real> > final_backends_veca;
+//mapi<uint32_t> final_backend_ip_map; 
+//dchain final_active_backends;
+//list<pair<uint32_t, real> > final_cht;
+
+//TODO: refine the predicate
+#define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
+    after.ether.ether_type     == before.ether.ether_type &&      \
+    after.ipv4.version_ihl     == before.ipv4.version_ihl &&      \
+    after.ipv4.type_of_service == before.ipv4.type_of_service &&  \
+    after.ipv4.total_length    == before.ipv4.total_length &&     \
+    after.ipv4.packet_id       == before.ipv4.packet_id &&        \
+    after.ipv4.fragment_offset == before.ipv4.fragment_offset &&  \
+    after.ipv4.time_to_live    == before.ipv4.time_to_live &&     \
+    after.ipv4.next_proto_id   == before.ipv4.next_proto_id       \
+    before.ipv4.next_proto_id != 6 ||                             \
+    (after.tcp.sent_seq         == before.tcp.sent_seq &&        \
+     after.tcp.recv_ack         == before.tcp.recv_ack &&      \
+     after.tcp.data_off         == before.tcp.data_off &&      \
+     after.tcp.tcp_flags        == before.tcp.tcp_flags &&     \
+     after.tcp.rx_win           == before.tcp.rx_win &&        \
+     after.tcp.tcp_urp          == before.tcp.tcp_urp)
+
+#define UNRELEVANT_TCP_FIELDS_UNCHANGED(before,after)         \
+
+// Consider only normal moments, remote from the start of the epoch
+if (10 < now) {
+
+  // 0x10 -> IPv4
+  if (a_packet_received && ((received_packet_type & 0x10) == 0x10)) {
+
+    // 6/17 -> TCP/UDP
+    if (pkt_recv.ipv4.next_proto_id == 6 ||
+        pkt_recv.ipv4.next_proto_id == 17) {
+
+      // 0 -> Packet received from the external network
+      if (received_on_port == 0) {
+
+        lb_flowi packet_flow = lb_flowc(pkt_recv.ipv4.src_addr,
+                                        pkt_recv.tcp.src_port,
+                                        pkt_recv.tcp.dst_port,
+                                        pkt_recv.ipv4.next_proto_id);
+
+        flow_map = emap_expire_all(flow_map, flow_chain, now - EXP_TIME);
+        flow_vec = emap_expire_all(flow_vec, flow_chain, now - EXP_TIME);
+        flow_chain = emap_expire_all(flow_chain, now - EXP_TIME);
+        backend_ip_map = emap_expire_all(backend_ip_map, active_backends, now - BACKEND_EXP_TIME);
+        backends_veca = emap_expire_all(backends_veca, active_backends, now - BACKEND_EXP_TIME);
+        active_backends = emap_expire_all(active_backends, now - BACKEND_EXP_TIME);
+        bool alloc_flow_and_process_packet = false;
+        if (emap_has(flow_map, packet_flow)) {
+          backnd = emap_get(flow_map, packet_flow);
+          if (emap_has(backend_ip_map, backnd)) {
+            flow_map = emap_rejuvente(flow_map, packet_flow, now);
+            lb_backendi backend = nth(backnd, backends_veca);
+            switch(backend) { case lb_backendc(nic, ip, mac):
+              assert sent_on_port == nic;
+              assert sent_packet.ether.d_addr == mac;
+              assert sent_packet.ipv4.dst_addr == ip;
+            }
+            assert UNRELEVANT_FIELDS_UNCHANGES(pkt_recv, sent_packet);
+          } else {
+            flow_map = emap_erase(flow_map, packet_flow);
+            flow_vec = emap_erase(flow_vec, packet_flow);
+            alloc_flow_and_process_packet = true;
+          }
+        } else {
+          alloc_flow_and_and_process_packet = true;
+        }
+        //flow_map, fwd_flow, out_dev = pp_with_flow_alloc(paket_flow, flow_map, backend_ip_map, now);
+        // pp_with_flow_alloc(p : Packet, f : map<flow>, t : Timestamp) -> (map<flow>, packet, uint32_t)
+        if (alloc_flow_and_process_packet) {
+          if (cht_exists(hash(packet_flow), cht, (emap_has_index)(active_backends))) {
+            int bknd = cht_choose(hash(packet_flow), cht, (emap_has_index)(active_backends));
+            if (emap_full(flow_map)) {
+              // do not change the state
+            } else {
+              int idx = emap_get_next_int(flow_chain);
+              flow_chain = emap_allocate_int(flow_chain, now);
+              flow_map = emap_add(flow_map, packet_flow, idx);
+              flow_vec = update(flow_vec, idx, packet_flow);
+              fidbid_veca = update(fidbid_veca, idx, bknd);
+            }
+            lb_backendi backend = nth(bknd, backends_veca);
+            assert true == a_packet_sent;
+            switch(backend) { case lb_backendc(nic, ip, mac):
+              assert sent_on_port == nic;
+              assert sent_packet.ether.d_addr == mac;
+              assert sent_packet.ipv4.dst_addr == ip;
+            }
+            assert UNRELEVANT_FIELDS_UNCHANGES(pkt_recv, sent_packet);
+          } else {
+            assert false == a_packet_sent;
+          }
+        }
+      } else { // A heartbeat packet from a backend
+        // process_heartbeat(ip : uint32, mac : uint48, nic : uint8, t : Timestamp) -> (map<uint32_t>, list<backend>, list<pair<uint32_t, real> >)
+        {
+          if (emap_has(backend_ip_map, pkt_recv_ipv4.src_addr)) {
+            active_backends = emap_rejuvenate(active_backends, emap_get(backend_ip_map, pkt_recv_ipv4.src_addr), now);
+          } else {
+            if (emap_full(backend_ip_map)) {
+              // What you gonna do? (nothing, the question is rhetorical)
+            } else {
+              int idx = emap_get_next_int(active_backends);
+              active_backends = emap_allocate_int(active_backends, now);
+              backend_ip_map = emap_add(backend_ip_map, pkt_recv_ipv4.src_addr, idx);
+              backends_veca == update(backends_veca, index, backendc(pkt_recv.ipv4.src_addr, pkt_recv.ether.s_addr, received_on_port));
+              ip_veca = update(ip_veca, index, pkt_recv.ipv4.src_addr);
+            }
+          }
+        }
+        assert false == a_packet_sent;
+      }
+    } else {
+      // Non-TCP/UDP packet
+      assert false == a_packet_sent;
+    }
+  } else {
+    // Non-IPv4 packet
+    assert false == a_packet_sent;
+  }
+
+assert final_flow_map == flow_map;
+assert final_flow_vec == flow_vec;
+assert final_flow_chain == flow_chain;
+assert final_fidbid_veca == fidbid_veca;
+assert final_ip_veca == ip_veca;
+assert final_backends_veca == backends_veca;
+assert final_backend_ip_map == backend_ip_map;
+assert final_active_backends == active_backends;
+assert final_cht == cht;//redundant, should be immutable.
+}

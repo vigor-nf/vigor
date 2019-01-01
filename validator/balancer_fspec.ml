@@ -186,7 +186,7 @@ let fun_types =
                                             (List.nth_exn args 10) ^ ", " ^
                                             (List.nth_exn args 11) ^ ", " ^
                                             (List.nth_exn args 12) ^ "); @*/");
-                                         (fun {tmp_gen;_} ->
+                                         (fun {tmp_gen;args;_} ->
                                             "\n/*@ {\n\
                                              assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
                                              assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
@@ -202,10 +202,49 @@ let fun_types =
                                             ", " ^ (tmp_gen "ch") ^
                                             ");\n\
                                              assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n" ^ 
-                                            "initial_indices = " ^ (tmp_gen "fi_full") ^
-                                            ";\ninitial_heap = " ^ (tmp_gen "fh") ^
-                                            ";\ninitial_backends = " ^ (tmp_gen "fb") ^
-                                            ";\ninitial_chain = " ^ (tmp_gen "ch") ^
+                                            "assert mapp<lb_flowi>(_ "^
+                                            ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
+                                            ", _));\n" ^
+                                            "assert vectorp<lb_flowi>(_" ^
+                                            ", _, ?" ^ (tmp_gen "initial_flow_vec") ^
+                                            ", _);\n" ^
+                                            "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
+                                            ";\nassert double_chainp(?" ^ (tmp_gen "initial_flow_chain") ^
+                                            ", " ^ (tmp_gen "arg2bis") ^
+                                            ");\n" ^
+                                            "assert *" ^ (List.nth_exn args 3) ^ " |-> ?" ^ (tmp_gen "arg3bis") ^
+                                            ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg3bis") ^
+                                            ", _, ?" ^ (tmp_gen "initial_fidbid_veca") ^
+                                            ", _);\n" ^
+                                            "assert *" ^ (List.nth_exn args 4) ^ " |-> ?" ^ (tmp_gen "arg4bis") ^
+                                            ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg4bis") ^
+                                            ", _, ?" ^ (tmp_gen "initial_ip_veca") ^
+                                            ", _);\n" ^
+                                            "assert *" ^ (List.nth_exn args 5) ^ " |-> ?" ^ (tmp_gen "arg5bis") ^
+                                            ";\nassert vectorp<lb_backendi>(" ^ (tmp_gen "arg5bis") ^
+                                            ", _, ?" ^ (tmp_gen "initial_backends_veca") ^
+                                            ", _);\n" ^
+                                            "assert *" ^ (List.nth_exn args 6) ^ " |-> ?" ^ (tmp_gen "arg6bis") ^
+                                            ";\nassert mapp<uint32_t>(" ^ (tmp_gen "arg6bis") ^
+                                            ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_backend_ip_map") ^
+                                            ", _));\n" ^
+                                            "assert *" ^ (List.nth_exn args 7) ^ " |-> ?" ^ (tmp_gen "arg7bis") ^
+                                            ";\nassert double_chainp(?" ^ (tmp_gen "initial_active_backends") ^
+                                            ", " ^ (tmp_gen "arg7bis") ^
+                                            ");\n" ^
+                                            "assert *" ^ (List.nth_exn args 8) ^ " |-> ?" ^ (tmp_gen "arg8bis") ^
+                                            ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg8bis") ^
+                                            ", _, ?" ^ (tmp_gen "initial_cht") ^
+                                            ", _);\n" ^
+                                            ";\nflow_map = " ^ (tmp_gen "initial_flow_map") ^
+                                            ";\nflow_vec = " ^ (tmp_gen "initial_flow_vec") ^
+                                            ";\nflow_chain = " ^ (tmp_gen "initial_flow_chain") ^
+                                            ";\nfidbid_veca = " ^ (tmp_gen "initial_fidbid_veca") ^
+                                            ";\nip_veca = " ^ (tmp_gen "initial_ip_veca") ^
+                                            ";\nbackends_veca = " ^ (tmp_gen "initial_backends_veca") ^
+                                            ";\nbackend_ip_map = " ^ (tmp_gen "initial_backend_ip_map") ^
+                                            ";\nactive_backends = " ^ (tmp_gen "initial_active_backends") ^
+                                            ";\ncht = " ^ (tmp_gen "initial_cht") ^
                                             ";\n} @*/");
                                        ];};
      "dchain_allocate", {ret_type = Static Sint32;
@@ -353,7 +392,7 @@ let fun_types =
                                             Sint32];
                            extra_ptr_types = [];
                            lemmas_before = [
-                             (fun ({tmp_gen;args;_} as params) ->
+                             (fun {tmp_gen;args;_} ->
                                 "//@ assert double_chainp(?" ^ (tmp_gen "ch") ^
                                 ", " ^ (List.nth_exn args 0) ^ ");\n" ^
                                 "//@ assert map_vec_chain_coherent<lb_flowi>(?" ^
@@ -708,7 +747,7 @@ let fun_types =
                                          "uint32_t", Ptr (Ptr Uint32)];];
                    extra_ptr_types = [];
                    lemmas_before = [
-                     (fun {args;tmp_gen;arg_types;_} ->
+                     (fun {args;arg_types;_} ->
                         match List.nth_exn arg_types 1 with
                         | Ptr (Str ("LoadBalancedFlow", _)) ->
                           "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n" ^
@@ -725,7 +764,7 @@ let fun_types =
                         | _ -> failwith "unexpected key type for map_erase")
                    ];
                    lemmas_after = [
-                     (fun {args;tmp_gen;arg_types;_} ->
+                     (fun {arg_types;_} ->
                         match List.nth_exn arg_types 1 with
                         | Ptr (Str ("LoadBalancedFlow", _)) ->
                           "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
@@ -1046,11 +1085,16 @@ struct
                   bool backend_known = false;\n\
                   struct Vector* the_ip_vector;\n\
                   int32_t backend_index = -1;\n"
-                 ^ "//@ mapi<lb_flowi> initial_indices;\n"
-                 ^ "//@ list<pair<lb_flowi, real> > initial_heap;\n"
-                 ^ "//@ list<pair<lb_backendi, real> > initial_backends;\n"
-                 ^ "//@ dchain initial_chain;\n"
-                 ^ "//@ mapi<lb_flowi> expired_indices;\n"
+                 ^ "//@ list<pair<lb_flowi, uint32_t> > flow_map;\n"
+                 ^ "//@ list<pair<lb_flowi, real> > flow_vec;\n"
+                 ^ "//@ dchain flow_chain;\n"
+                 ^ "//@ list<pair<uint32_t, real> > fidbid_veca;\n"
+                 ^ "//@ list<pair<uint32_t, real> > ip_veca;\n"
+                 ^ "//@ list<pair<lb_backendi, real> > backends_veca;\n"
+                 ^ "//@ list<pair<uint32_t, uint32_t> > backend_ip_map;\n"
+                 ^ "//@ dchain active_backends;\n"
+                 ^ "//@ list<pair<uint32_t, real> > cht;\n"
+                 ^ "//@ mapi<lb_flowi> expired_indices;\n" (*FIXME: these should not be necessary*)
                  ^ "//@ list<pair<lb_flowi, real> > expired_heap;\n"
                  ^ "//@ list<pair<lb_backendi, real> > expired_backends;\n"
                  ^ "//@ dchain expired_chain;\n"
@@ -1073,7 +1117,7 @@ struct
   let finishing_fun = "lb_loop_invariant_consume"
   let eventproc_iteration_begin = "lb_loop_invariant_produce"
   let eventproc_iteration_end = "lb_loop_invariant_consume"
-  let user_check_for_complete_iteration = "" (* TODO: In_channel.read_all "lb_forwarding_property.tmpl" *)
+  let user_check_for_complete_iteration = In_channel.read_all "balancer_forwarding_property.tmpl"
 end
 
 (* Register the module *)
