@@ -1,0 +1,154 @@
+{
+assert mapp<ether_addri>(_, ether_addrp, eth_addr_hash, nop_true, ?final_dyn_map);
+assert mapp<stat_keyi>(_, static_keyp, st_key_hash, nop_true, ?stat_map);//TODO: do not assume that stat_map does not change
+assert vectorp<ether_addri>(_, ether_addrp, ?final_dyn_key_vec, _);
+assert vectorp<stat_keyi>(_, static_keyp, ?final_stat_key_vec, _);
+assert vectorp<uint16_t>(_, dyn_valp, ?final_dyn_val_vec, _);
+assert double_chainp(?final_chain,_);
+
+//TODO: check that the packet is intact
+#define PACKETS_EQUAL(pkta, pktb) true
+
+ml_table initial_table = bridge_abstract_function(initial_dyn_map,
+                                                  initial_dyn_val_vec,
+                                                  initial_chain,
+                                                  stat_map);
+ml_table final_table = bridge_abstract_function(final_dyn_map,
+                                                final_dyn_val_vec,
+                                                final_chain,
+                                                stat_map);
+
+bit_and_hack();
+if (300 < now) {// consider only normal moments, remote from the start of the epoch
+
+  if (a_packet_received) {
+    ml_table exprnd_table = bridge_abstract_function(exprnd_dyn_map,
+                                                     exprnd_dyn_val_vec,
+                                                     exprnd_chain,
+                                                     stat_map);
+
+    assert ether_addrp(&(the_received_packet.ether.d_addr), ?dst_addr);
+    assert ether_addrp(&(the_received_packet.ether.s_addr), ?src_addr);
+    stat_keyi static_key = stkc(received_on_port, dst_addr);
+
+    switch(stat_map) { case mapc(capacity, st_map, addrs):
+      stat_map_has(st_map, static_key);
+    }
+    switch(final_dyn_map) { case mapc(capacity, dyn_map, addrs):
+      dyn_map_has(dyn_map, final_dyn_val_vec, final_chain, dst_addr);
+    }
+    switch(exprnd_dyn_map) { case mapc(capacity, dyn_map, addrs):
+      dyn_map_has(dyn_map, exprnd_dyn_val_vec, exprnd_chain, src_addr);
+    }
+
+    assert get_stat_table(final_table) == get_stat_table(initial_table);
+    assert true == set_eq(get_dyn_table(exprnd_table),
+                          expire_addresses(get_dyn_table(initial_table), now - 10));
+
+
+   // State postcondition
+   if (dyn_table_has_key(get_dyn_table(exprnd_table), src_addr)) {
+      switch(exprnd_dyn_map) { case mapc(capacity, dyn_map, addrs):
+        dyn_map_has(dyn_map, exprnd_dyn_val_vec, exprnd_chain, src_addr);
+        map_has_to_mem(dyn_map, src_addr);
+        bridge_rejuv_entry(dyn_map, exprnd_dyn_val_vec, exprnd_chain,
+                           src_addr, now);
+        assert true == set_eq(gen_dyn_entries(dyn_map,
+                                              exprnd_dyn_val_vec,
+                                              dchain_rejuvenate_fp(exprnd_chain,
+                                                                  the_index_rejuvenated,
+                                                                  now)),
+                              rejuvenate_dyn_entry(get_dyn_table(exprnd_table),
+                                                   src_addr, now));
+        assert true == set_eq(get_dyn_table(final_table),
+                              rejuvenate_dyn_entry(get_dyn_table(exprnd_table),
+                                                   src_addr, now));
+        get_dyn_addr_gen_dyn_entries_eq(dyn_map, exprnd_dyn_val_vec, exprnd_chain);
+      }
+      bridge_rejuv_entry_mset_eq(get_dyn_table(exprnd_table),
+                                 expire_addresses(get_dyn_table(initial_table), now - 10),
+                                 src_addr, now);
+
+      set_eq_trans(get_dyn_table(final_table), rejuvenate_dyn_entry(get_dyn_table(exprnd_table), src_addr, now),
+                   rejuvenate_dyn_entry(expire_addresses(get_dyn_table(initial_table), now - 10),
+                                        src_addr, now));
+
+      assert true == set_eq(get_dyn_table(final_table),
+                            rejuvenate_dyn_entry(expire_addresses(get_dyn_table(initial_table), now - 10),
+                                                 src_addr, now));
+   } else {
+      if (dyn_table_out_of_space(exprnd_table)) {
+        assert true == set_eq(get_dyn_table(final_table),
+                              expire_addresses(get_dyn_table(initial_table), now - 10));
+      } else {
+        switch(exprnd_dyn_map) { case mapc(capacity, dyn_map, addrs):
+          msubset_subset(map(snd, dyn_map), dchain_indexes_fp(exprnd_chain));
+          if (mem(the_index_allocated, map(snd, dyn_map))) {
+            subset_mem_trans(map(snd, dyn_map), dchain_indexes_fp(exprnd_chain), the_index_allocated);
+          }
+          bridge_add_entry(dyn_map, exprnd_dyn_val_vec, exprnd_chain,
+                          src_addr, the_index_allocated, received_on_port, time_for_allocated_index);
+          assert true == set_eq(gen_dyn_entries(map_put_fp(dyn_map, src_addr, the_index_allocated),
+                                                update(the_index_allocated, pair(received_on_port, 1.0), exprnd_dyn_val_vec),
+                                                dchain_allocate_fp(exprnd_chain,
+                                                                  the_index_allocated,
+                                                                  time_for_allocated_index)),
+                                add_dyn_entry(get_dyn_table(exprnd_table),
+                                              src_addr, received_on_port, time_for_allocated_index));
+          assert true == set_eq(get_dyn_table(final_table),
+                                add_dyn_entry(get_dyn_table(exprnd_table),
+                                              src_addr, received_on_port, time_for_allocated_index));
+        }
+
+        bridge_add_entry_set_eq(get_dyn_table(exprnd_table),
+                                expire_addresses(get_dyn_table(initial_table), now - 10),
+                                src_addr, received_on_port, time_for_allocated_index);
+
+        set_eq_trans(get_dyn_table(final_table), add_dyn_entry(get_dyn_table(exprnd_table), src_addr, received_on_port, now),
+                    add_dyn_entry(expire_addresses(get_dyn_table(initial_table), now - 10), src_addr, received_on_port, now));
+        assert true == set_eq(get_dyn_table(final_table),
+                              add_dyn_entry(expire_addresses(get_dyn_table(initial_table), now - 10),
+                                            src_addr, received_on_port, now));
+      }
+    }
+
+    // Output packet postcondition
+    if (stat_table_has_key(get_stat_table(final_table), static_key)) {
+      switch(stat_map) { case mapc(capacity, st_map, addrs):
+        stat_map_has_get(st_map, static_key);
+      }
+      int output_port = stat_table_get(get_stat_table(final_table), static_key);
+      if (output_port == -2 ||
+          output_port == received_on_port) {
+        assert false == a_packet_sent;
+        assert false == a_packet_flooded;
+      } else {
+        assert true == a_packet_sent;
+        assert false == a_packet_flooded;
+        assert sent_on_port == output_port;
+        assert PACKETS_EQUAL(the_received_packet, sent_packet);
+      }
+    } else {
+      if (dyn_table_has_key(get_dyn_table(final_table), dst_addr)) {
+        int output_port = dyn_table_get(get_dyn_table(final_table), dst_addr);
+        switch(final_dyn_map) { case mapc(capacity, dyn_map, addrs):
+          dyn_map_has_get(dyn_map, final_dyn_val_vec, final_chain, dst_addr);
+        }
+        if (output_port == received_on_port) {
+          assert false == a_packet_sent;
+          assert false == a_packet_flooded;
+        } else {
+          assert true == a_packet_sent;
+          assert false == a_packet_flooded;
+          assert sent_on_port == output_port;
+          assert PACKETS_EQUAL(the_received_packet, sent_packet);
+        }
+      } else {
+        assert true == a_packet_flooded;
+        assert flooded_except_port == received_on_port;
+        assert PACKETS_EQUAL(the_received_packet, sent_packet);
+      }
+    }
+  }
+}
+}

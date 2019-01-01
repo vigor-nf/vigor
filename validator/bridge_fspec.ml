@@ -896,6 +896,7 @@ struct
   let eventproc_iteration_begin = "bridge_loop_invariant_produce"
   let eventproc_iteration_end = "bridge_loop_invariant_consume"
   let user_check_for_complete_iteration =
+    In_channel.read_all "bridge_abstract_proofs.tmpl" ^
     In_channel.read_all "bridge_forwarding_property.tmpl"
 end
 
