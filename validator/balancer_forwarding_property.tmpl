@@ -69,6 +69,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
         if (received_on_port == 0) {
 
           lb_flowi packet_flow = lb_flowc(pkt_recv.ipv4.src_addr,
+                                          pkt_recv.ipv4.dst_addr,
                                           pkt_recv.tcp.src_port,
                                           pkt_recv.tcp.dst_port,
                                           pkt_recv.ipv4.next_proto_id);
@@ -92,7 +93,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               alloc_flow_and_process_packet = true;
             }
           } else {
-            alloc_flow_and_and_process_packet = true;
+            alloc_flow_and_process_packet = true;
           }
           //flow_map, fwd_flow, out_dev = pp_with_flow_alloc(paket_flow, flow_map, backend_ip_map, now);
           // pp_with_flow_alloc(p : Packet, f : map<flow>, t : Timestamp) -> (map<flow>, packet, uint32_t)
