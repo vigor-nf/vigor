@@ -88,9 +88,9 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               }
               assert UNRELEVANT_FIELDS_UNCHANGED(pkt_recv,pkt_sent);
             } else {
-              flow_map = emap_erase_map(flow_map, flow_vec, flow_chain, packet_flow);
               flow_vec = emap_erase_vec(flow_map, flow_vec, flow_chain, packet_flow);
               flow_chain = emap_erase_chain(flow_map, flow_vec, flow_chain, packet_flow);
+              flow_map = emap_erase_map(flow_map, flow_vec, flow_chain, packet_flow);
               alloc_flow_and_process_packet = true;
             }
           } else {

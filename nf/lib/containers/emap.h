@@ -27,9 +27,15 @@
     return dchain_rejuvenate_fp(ch, map_get_fp(m, k), t);
   }
 
-  fixpoint list<pair<t, int> > emap_erase_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
-  fixpoint list<pair<t, real> > emap_erase_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
-  fixpoint dchain emap_erase_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
+  fixpoint list<pair<t, int> > emap_erase_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k) {
+    return map_erase_fp(m, k);
+  }
+  fixpoint list<pair<t, real> > emap_erase_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k) {
+    return update(map_get_fp(m, k), pair(k, 1.0), v);
+  }
+  fixpoint dchain emap_erase_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k) {
+    return dchain_remove_index_fp(ch, map_get_fp(m, k));
+  }
 
   fixpoint bool emap_has_index<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i) {
     return dchain_allocated_fp(ch, i);
