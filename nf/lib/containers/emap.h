@@ -46,7 +46,7 @@
   }
 
   fixpoint bool emap_full<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch) {
-    return dchain_index_range_fp(ch) <= length(m);
+    return dchain_out_of_space_fp(ch); //dchain_index_range_fp(ch) <= length(m);
   }
   @*/
 
