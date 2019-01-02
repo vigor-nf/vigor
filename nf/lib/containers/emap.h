@@ -19,7 +19,7 @@
 
   fixpoint bool emap_has<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
   fixpoint int emap_get<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
-  fixpoint dchain emap_rejuvente_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, time_t t);
+  fixpoint dchain emap_rejuvenate_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, time_t t);
 
   fixpoint list<pair<t, int> > emap_erase_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
   fixpoint list<pair<t, real> > emap_erase_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
@@ -31,6 +31,8 @@
   fixpoint dchain emap_allocate_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, time_t t);
   fixpoint list<pair<t, int> > emap_add_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, t k);
   fixpoint list<pair<t, real> > emap_add_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, t k);
+
+  fixpoint bool emap_full<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch);
   @*/
 
 

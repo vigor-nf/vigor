@@ -74,9 +74,9 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                                           pkt_recv.ipv4.next_proto_id);
 
           bool alloc_flow_and_process_packet = false;
-          if (emap_has(flow_map, packet_flow)) {
-            backnd = emap_get(flow_map, packet_flow);
-            if (emap_has(backend_ip_map, backnd)) {
+          if (emap_has(flow_map, flow_vec, flow_chain, packet_flow)) {
+            backnd = emap_get(flow_map, flow_vec, flow_chain, packet_flow);
+            if (emap_has(backend_ip_map, ip_veca, active_backends, backnd)) {
               flow_chain = emap_rejuvente_chain(flow_map, flow_vec, flow_chain, packet_flow, now);
               lb_backendi backend = nth(backnd, backends_veca);
               switch(backend) { case lb_backendc(nic, ip, mac):
@@ -99,13 +99,13 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
           if (alloc_flow_and_process_packet) {
             if (cht_exists(hash(packet_flow), cht, (emap_has_index)(active_backends))) {
               int bknd = cht_choose(hash(packet_flow), cht, (emap_has_index)(active_backends));
-              if (emap_full(flow_map)) {
+              if (emap_full(flow_map, flow_vec, flow_chain)) {
                 // do not change the state
               } else {
-                int idx = emap_get_next_int(flow_chain);
-                flow_chain = emap_allocate_int(flow_chain, now);
-                flow_map = emap_add_map(flow_map, packet_flow, idx);
-                flow_vec = emap_add_vec(flow_vec, idx, packet_flow);
+                int idx = emap_get_next_int(flow_map, flow_vec, flow_chain);
+                flow_chain = emap_allocate_int(flow_map, flow_vec, flow_chain, now);
+                flow_map = emap_add_map(flow_map, flow_vec, flow_chain, packet_flow, idx);
+                flow_vec = emap_add_vec(flow_map, flow_vec, flow_chain, idx, packet_flow);
                 fidbid_veca = update(fidbid_veca, idx, bknd);
               }
               lb_backendi backend = nth(bknd, backends_veca);
@@ -123,17 +123,17 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
         } else { // A heartbeat packet from a backend
           // process_heartbeat(ip : uint32, mac : uint48, nic : uint8, t : Timestamp) -> (map<uint32_t>, list<backend>, list<pair<uint32_t, real> >)
           {
-            if (emap_has(backend_ip_map, pkt_recv_ipv4.src_addr)) {
-              active_backends = emap_rejuvenate_chain(active_backends, emap_get(backend_ip_map, pkt_recv_ipv4.src_addr), now);
+            if (emap_has(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr)) {
+              active_backends = emap_rejuvenate_chain(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, now);
             } else {
-              if (emap_full(backend_ip_map)) {
+              if (emap_full(backend_ip_map, ip_veca, active_backends)) {
                 // What you gonna do? (nothing, the question is rhetorical)
               } else {
-                int idx = emap_get_next_int(active_backends);
-                active_backends = emap_allocate_int(active_backends, now);
-                backend_ip_map = emap_add_map(backend_ip_map, pkt_recv_ipv4.src_addr, idx);
-                backends_veca == emap_add_vec(backends_veca, index, backendc(pkt_recv.ipv4.src_addr, pkt_recv.ether.s_addr, received_on_port));
-                ip_veca = update(ip_veca, index, pkt_recv.ipv4.src_addr);
+                int idx = emap_get_next_int(backend_ip_map, ip_veca, active_backends);
+                active_backends = emap_allocate_int(backend_ip_map, ip_veca, active_backends, now);
+                backend_ip_map = emap_add_map(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, idx);
+                ip_veca = emap_add_vec(backedn_ip_map, ip_veca, active_backends, index, pkt_recv.ipv4.src_addr);
+                backends_veca == update(backends_veca, index, backendc(pkt_recv.ipv4.src_addr, pkt_recv.ether.s_addr, received_on_port));
               }
             }
           }
