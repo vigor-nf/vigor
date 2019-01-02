@@ -139,6 +139,8 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
     }
   }
   free(permutations);
+  //@ assert vectorp<uint32_t>(cht, u_integer, ?values, addrs);
+  //@ assume(valid_cht(values, backend_capacity, cht_height));//TODO
 }
 
 int
@@ -156,7 +158,9 @@ cht_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
             double_chainp(ch, active_backends) &*&
             *chosen_backend |-> ?chosen &*&
             (result == 0 ?
-              true        :
+              false == cht_exists(hash, values, ch)        :
+              true == cht_exists(hash, values, ch) &*&
+              chosen == cht_choose(hash, values, ch) &*&
               result == 1 &*&
               0 <= chosen &*&
               chosen < dchain_index_range_fp(ch)); @*/
@@ -186,9 +190,13 @@ cht_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
     if (dchain_is_index_allocated(active_backends, (int)*candidate)) {
       *chosen_backend = (int)*candidate;
       vector_return(cht, (int)candidate_idx, candidate);
+      //@ assume(cht_exists(hash, values, ch));//TODO
+      //@ assert candidate |-> ?chosen_candidate;
+      //@ assume(fst(nth(candidate_idx, values)) == cht_choose(hash, values, ch));//TODO
       return 1;
     }
     vector_return(cht, (int)candidate_idx, candidate);
   }
+  //@ assume(!cht_exists(hash, values, ch));//TODO
   return 0;
 }
