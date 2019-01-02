@@ -47,7 +47,7 @@ assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca
 
 
 // Consider only normal moments, remote from the start of the epoch
-if (10 < now) {
+if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
 
   if (a_packet_received) {
 
