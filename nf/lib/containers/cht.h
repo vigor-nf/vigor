@@ -19,6 +19,9 @@
            true == forall(map(fst, values), (ge)(0)) &&
            true == forall(values, is_one);
   }
+
+  fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter);
+  fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter);
 @*/
 
 void cht_fill_cht(struct Vector* cht,
@@ -51,7 +54,9 @@ cht_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
             double_chainp(ch, active_backends) &*&
             *chosen_backend |-> ?chosen &*&
             (result == 0 ?
-              true        :
+              false == cht_exists(hash, values, ch)        :
+              true == cht_exists(hash, values, ch) &*&
+              chosen == cht_choose(hash, values, ch) &*&
               result == 1 &*&
               0 <= chosen &*&
               chosen < dchain_index_range_fp(ch)); @*/
