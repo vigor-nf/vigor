@@ -76,10 +76,11 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
 
           bool alloc_flow_and_process_packet = false;
           if (emap_has(flow_map, flow_vec, flow_chain, packet_flow)) {
-            int backnd = emap_get(flow_map, flow_vec, flow_chain, packet_flow);
-            if (emap_has(backend_ip_map, ip_veca, active_backends, backnd)) {
+            int flow_id = emap_get(flow_map, flow_vec, flow_chain, packet_flow);
+            int backend_id = fst(nth(flow_id, fidbid_veca));
+            if (emap_has_index(backend_ip_map, ip_veca, active_backends, backend_id)) {
               flow_chain = emap_rejuvenate_chain(flow_map, flow_vec, flow_chain, packet_flow, now);
-              lb_backendi backend = fst(nth(backnd, backends_veca));
+              lb_backendi backend = fst(nth(backend_id, backends_veca));
               switch(backend) { case lb_backendc(nic, mac, ip):
                 assert sent_on_port == nic;
                 assert ether_addrp(&pkt_sent.ether.d_addr, mac);
@@ -89,7 +90,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
             } else {
               flow_map = emap_erase_map(flow_map, flow_vec, flow_chain, packet_flow);
               flow_vec = emap_erase_vec(flow_map, flow_vec, flow_chain, packet_flow);
-              flow_vec = emap_erase_chain(flow_map, flow_vec, flow_chain, packet_flow);
+              flow_chain = emap_erase_chain(flow_map, flow_vec, flow_chain, packet_flow);
               alloc_flow_and_process_packet = true;
             }
           } else {
