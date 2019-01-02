@@ -35,10 +35,15 @@
     return dchain_allocated_fp(ch, i);
   }
 
-  fixpoint int emap_get_next_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch);
-  fixpoint dchain emap_allocate_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, time_t t);
-  fixpoint list<pair<t, int> > emap_add_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, t k);
-  fixpoint list<pair<t, real> > emap_add_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, t k);
+  fixpoint dchain emap_allocate_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, time_t t, int i) {
+    return dchain_allocate_fp(ch, i, t);
+  }
+  fixpoint list<pair<t, int> > emap_add_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, int i) {
+    return map_put_fp(m, k, i);
+  }
+  fixpoint list<pair<t, real> > emap_add_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, int i) {
+    return update(i, pair(k, 0.75), v);
+  }
 
   fixpoint bool emap_full<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch) {
     return dchain_index_range_fp(ch) <= length(m);

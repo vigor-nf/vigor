@@ -102,11 +102,11 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               if (emap_full(flow_map, flow_vec, flow_chain)) {
                 // do not change the state
               } else {
-                int idx = emap_get_next_int(flow_map, flow_vec, flow_chain);
-                flow_chain = emap_allocate_int(flow_map, flow_vec, flow_chain, now);
+                int idx = the_index_allocated;//emap_get_next_int(flow_map, flow_vec, flow_chain);
+                flow_chain = emap_allocate_int(flow_map, flow_vec, flow_chain, now, idx);
                 flow_map = emap_add_map(flow_map, flow_vec, flow_chain, packet_flow, idx);
-                flow_vec = emap_add_vec(flow_map, flow_vec, flow_chain, idx, packet_flow);
-                fidbid_veca = update(fidbid_veca, idx, bknd);
+                flow_vec = emap_add_vec(flow_map, flow_vec, flow_chain, packet_flow, idx);
+                fidbid_veca = update(idx, bknd, fidbid_veca);
               }
               lb_backendi backend = nth(bknd, backends_veca);
               assert true == a_packet_sent;
@@ -129,11 +129,12 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               if (emap_full(backend_ip_map, ip_veca, active_backends)) {
                 // What you gonna do? (nothing, the question is rhetorical)
               } else {
-                int idx = emap_get_next_int(backend_ip_map, ip_veca, active_backends);
-                active_backends = emap_allocate_int(backend_ip_map, ip_veca, active_backends, now);
+                int idx = the_index_allocated;//emap_get_next_int(backend_ip_map, ip_veca, active_backends);
+                active_backends = emap_allocate_int(backend_ip_map, ip_veca, active_backends, now, idx);
                 backend_ip_map = emap_add_map(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, idx);
-                ip_veca = emap_add_vec(backedn_ip_map, ip_veca, active_backends, index, pkt_recv.ipv4.src_addr);
-                backends_veca == update(backends_veca, index, backendc(pkt_recv.ipv4.src_addr, pkt_recv.ether.s_addr, received_on_port));
+                ip_veca = emap_add_vec(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, idx);
+                assert ether_addrp(&pkt_recv.ether.s_addr, ?source_mac);
+                backends_veca = update(idx, pair(lb_backendc(received_on_port, source_mac, pkt_recv.ipv4.src_addr), 1.0), backends_veca);
               }
             }
           }
