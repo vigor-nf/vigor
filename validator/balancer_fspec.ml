@@ -236,6 +236,9 @@ let fun_types =
                                             ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg8bis") ^
                                             ", _, ?" ^ (tmp_gen "initial_cht") ^
                                             ", _);\n" ^
+                                            ";\nfidbid_veca_ptr = " ^ (tmp_gen "arg3bis") ^
+                                            ";\nbackends_veca_ptr = " ^ (tmp_gen "arg5bis") ^
+                                            ";\ncht_ptr = " ^ (tmp_gen "arg8bis") ^
                                             ";\nflow_map = " ^ (tmp_gen "initial_flow_map") ^
                                             ";\nflow_vec = " ^ (tmp_gen "initial_flow_vec") ^
                                             ";\nflow_chain = " ^ (tmp_gen "initial_flow_chain") ^
@@ -1085,6 +1088,9 @@ struct
                   bool backend_known = false;\n\
                   struct Vector* the_ip_vector;\n\
                   int32_t backend_index = -1;\n"
+                 ^ "//@ struct Vector* fidbid_veca_ptr;\n\
+                    //@ struct Vector* cht_ptr;\n\
+                    //@ struct Vector* backends_veca_ptr;\n"
                  ^ "//@ list<pair<lb_flowi, uint32_t> > flow_map;\n"
                  ^ "//@ list<pair<lb_flowi, real> > flow_vec;\n"
                  ^ "//@ dchain flow_chain;\n"

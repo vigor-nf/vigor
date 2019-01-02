@@ -13,14 +13,9 @@
 
 assert map_vec_chain_coherent<lb_flowi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
 assert map_vec_chain_coherent<uint32_t>(?final_backend_ip_map, ?final_ip_veca, ?final_active_backends);
-
-close hide_vector<uint32_t>(_, u_integer, final_ip_veca, _);
-assert vectorp<uint32_t>(_, u_integer, ?final_cht, _);
-close hide_vector<uint32_t>(_, u_integer, final_cht, _);
-assert vectorp<uint32_t>(_, u_integer, ?final_fidbid_veca, _);
-open hide_vector<uint32_t>(_, u_integer, final_cht, _);
-assert vectorp<lb_backendi>(_, lb_backendp, ?final_backends_veca, _);
-open hide_vector<uint32_t>(_, u_integer, final_ip_veca, _);
+assert vectorp<uint32_t>(fidbid_veca_ptr, u_integer, ?final_fidbid_veca, _);
+assert vectorp<uint32_t>(cht_ptr, u_integer, ?final_cht, _);
+assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca, _);
 
 //mapi<lb_flowi> final_flow_map;
 //list<pair<lb_flowi, real> > final_flow_vec;
