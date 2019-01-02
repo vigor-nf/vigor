@@ -17,22 +17,32 @@
     return dchain_expire_old_indexes_fp(ch, t);
   }
 
-  fixpoint bool emap_has<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
-  fixpoint int emap_get<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
-  fixpoint dchain emap_rejuvenate_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, time_t t);
+  fixpoint bool emap_has<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k) {
+    return map_has_fp(m, k);
+  }
+  fixpoint int emap_get<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k) {
+    return map_get_fp(m, k);
+  }
+  fixpoint dchain emap_rejuvenate_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, time_t t) {
+    return dchain_rejuvenate_fp(ch, map_get_fp(m, k), t);
+  }
 
   fixpoint list<pair<t, int> > emap_erase_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
   fixpoint list<pair<t, real> > emap_erase_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
   fixpoint dchain emap_erase_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k);
 
-  fixpoint bool emap_has_index<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i);
+  fixpoint bool emap_has_index<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i) {
+    return dchain_allocated_fp(ch, i);
+  }
 
   fixpoint int emap_get_next_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch);
   fixpoint dchain emap_allocate_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, time_t t);
   fixpoint list<pair<t, int> > emap_add_map<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, t k);
   fixpoint list<pair<t, real> > emap_add_vec<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, t k);
 
-  fixpoint bool emap_full<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch);
+  fixpoint bool emap_full<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch) {
+    return dchain_index_range_fp(ch) <= length(m);
+  }
   @*/
 
 
