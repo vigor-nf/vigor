@@ -18,6 +18,9 @@ fixpoint bool nat_flow_fp(int start_port, dchain filter, int index, pair<flow, r
   }
 }
 
+// TODO: probably this part of the invariant will be necessary for
+// the semantic verification:
+//true == forall_idx(ivs, 0, (nat_flow_fp)(start_port, ch)) &*&
 
 predicate evproc_loop_invariant(struct Map* mp,
                                 struct Vector* in_keys,
@@ -31,7 +34,6 @@ predicate evproc_loop_invariant(struct Map* mp,
           vectorp<flow>(in_values, flowp, ?ivs, ?ivaddrs) &*&
           map_vec_chain_coherent<flow_id>(m, iks, ch) &*&
           true == forall2(iks, ikaddrs, (kkeeper)(maddr)) &*&
-          true == forall_idx(ivs, 0, (nat_flow_fp)(start_port, ch)) &*&
           lcore_id == 0 &*& //<-- We are verifying for a single core.
           last_time(time) &*&
           dchain_high_fp(ch) <= time &*&
