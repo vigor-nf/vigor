@@ -566,7 +566,7 @@ let fun_types =
                         ", ?" ^ (tmp_gen "dv") ^
                         ", ?" ^ (tmp_gen "dh") ^
                         ");\n\
-                         flow_id " ^ (tmp_gen "ea") ^ " = flw(" ^ arg1 ^
+                         flow_id " ^ (tmp_gen "ea") ^ " = flid(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
@@ -862,6 +862,20 @@ let fun_types =
                                      (fun params ->
                                         "the_index_allocated = *" ^
                                         (List.nth_exn params.args 1) ^ ";\n");
+                                     on_rez_nz
+                                       (fun {args;tmp_gen;_} ->
+                                          "{\n\
+                                           assert map_vec_chain_coherent<\
+                                           flow_id>(?" ^
+                                          (tmp_gen "cur_map") ^ ", ?" ^
+                                          (tmp_gen "cur_vec") ^ ", " ^
+                                          (tmp_gen "cur_ch") ^
+                                          ");\n\
+                                           mvc_coherent_alloc_is_halfowned<flow_id>(" ^
+                                          (tmp_gen "cur_map") ^ ", " ^
+                                          (tmp_gen "cur_vec") ^ ", " ^
+                                          (tmp_gen "cur_ch") ^ ", *" ^
+                                          (List.nth_exn args 1) ^ ");\n}");
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct; Sint32; time_t;];
