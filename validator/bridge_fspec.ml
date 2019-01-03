@@ -138,15 +138,7 @@ let fun_types =
                       lemmas_before = [];
                       lemmas_after = [
                         (fun params ->
-                           "int64_t now = " ^ (params.ret_name) ^ ";\n");
-                      tx_l "\
-                            switch(initial_dyn_map) {\
-                              case mapc(capacity, dyn_map, addrs):\n\
-                              bridge_expire_abstract(dyn_map, \
-                                                     initial_dyn_val_vec, \
-                                                     initial_dyn_key_vec, \
-                                                     initial_chain, now - 10);\n\
-                            } "];};
+                           "int64_t now = " ^ (params.ret_name) ^ ";\n");];};
      "bridge_loop_invariant_consume", {ret_type = Static Void;
                                        arg_types = stt
                                            [Ptr (Ptr dchain_struct);
@@ -205,6 +197,8 @@ let fun_types =
                                             ", _);\n\
                                              assert vectorp<uint16_t>(_, _, ?" ^ (tmp_gen "dv_init") ^
                                             ", _);\n\
+                                             assert vectorp<stat_keyi>(_, _, ?" ^ (tmp_gen "sv") ^
+                                            ", _);\n\
                                              assert map_vec_chain_coherent<ether_addri>(" ^
                                             (tmp_gen "dm") ^ ", " ^
                                             (tmp_gen "dv") ^ ", ?" ^
@@ -214,12 +208,14 @@ let fun_types =
                                             ", " ^ (tmp_gen "dv") ^
                                             ", " ^ (tmp_gen "dh") ^
                                             ");\n\
-                                             assert mapp<ether_addri>(_, _, _, _, ?" ^ (tmp_gen "dm_full") ^
-                                            ");\n\
-                                            initial_dyn_map = " ^ (tmp_gen "dm_full") ^
+                                             assert mapp<stat_keyi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "sm") ^
+                                            ", _));\n\
+                                            initial_dyn_map = " ^ (tmp_gen "dm") ^
                                             ";\ninitial_dyn_val_vec = " ^ (tmp_gen "dv_init") ^
                                             ";\ninitial_dyn_key_vec = " ^ (tmp_gen "dv") ^
                                             ";\ninitial_chain = " ^ (tmp_gen "dh") ^
+                                            ";\ninitial_stat_map = " ^ (tmp_gen "sm") ^
+                                            ";\ninitial_stat_key_vec = " ^ (tmp_gen "sv") ^
                                             ";\n} @*/");
                                        ];};
      "dchain_allocate", {ret_type = Static Sint32;
@@ -382,14 +378,7 @@ let fun_types =
                                       (tmp_gen "dv") ^ ", ?" ^
                                       (tmp_gen "dh") ^
                                       ");\n\
-                                       assert vectorp<uint16_t>(_, _, ?" ^ (tmp_gen "dv_exprnd") ^
-                                      ", _);\n\
-                                       assert mapp<ether_addri>(_, _, _, _, ?" ^ (tmp_gen "dm_full") ^
-                                      ");\n\
-                                       exprnd_dyn_map = " ^ (tmp_gen "dm_full") ^
-                                      ";\nexprnd_dyn_val_vec = " ^ (tmp_gen "dv_exprnd") ^
-                                      ";\nexprnd_chain = " ^ (tmp_gen "dh") ^
-                                      ";\nmvc_coherent_same_len<ether_addri>(" ^
+                                       mvc_coherent_same_len<ether_addri>(" ^
                                       (tmp_gen "dm") ^ ", " ^
                                       (tmp_gen "dv") ^ ", " ^
                                       (tmp_gen "dh") ^
@@ -397,11 +386,7 @@ let fun_types =
                                       (tmp_gen "dm") ^ ", " ^
                                       (tmp_gen "dv") ^ ", " ^
                                       (tmp_gen "dh") ^
-                                      ");\n\ assert mapp<stat_keyi>(_, static_keyp, st_key_hash, nop_true, ?" ^
-                                      (tmp_gen "stat_map") ^
-                                      ");\n chain_out_of_space_ml_out_of_space(exprnd_dyn_map, \
-                                       exprnd_dyn_val_vec, exprnd_chain, " ^
-                                      (tmp_gen "stat_map") ^ ");\n} @*/"
+                                      ");\n} @*/"
                                          );
                                  ];};
      "map_allocate", {ret_type = Static Sint32;
@@ -866,13 +851,12 @@ struct
                   bool a_packet_flooded = false;\n\
                   uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n"
-                 ^ "//@ mapi<ether_addri> initial_dyn_map;\n"
+                 ^ "//@ list<pair<ether_addri, int> > initial_dyn_map;\n"
                  ^ "//@ dchain initial_chain;\n"
                  ^ "//@ list<pair<uint16_t, real> > initial_dyn_val_vec;\n"
                  ^ "//@ list<pair<ether_addri, real> > initial_dyn_key_vec;\n"
-                 ^ "//@ mapi<ether_addri> exprnd_dyn_map;\n"
-                 ^ "//@ list<pair<uint16_t, real> > exprnd_dyn_val_vec;\n"
-                 ^ "//@ dchain exprnd_chain;\n"
+                 ^ "//@ list<pair<stat_keyi, int> > initial_stat_map;\n"
+                 ^ "//@ list<pair<stat_keyi, real> > initial_stat_key_vec;\n"
                  ^
                  "/*@ //TODO: this hack should be \
                   converted to a system \n\
@@ -895,9 +879,7 @@ struct
   let finishing_fun = "bridge_loop_invariant_consume"
   let eventproc_iteration_begin = "bridge_loop_invariant_produce"
   let eventproc_iteration_end = "bridge_loop_invariant_consume"
-  let user_check_for_complete_iteration =
-    In_channel.read_all "bridge_abstract_proofs.tmpl" ^
-    In_channel.read_all "bridge_forwarding_property.tmpl"
+  let user_check_for_complete_iteration = In_channel.read_all "bridge_forwarding_property.tmpl"
 end
 
 (* Register the module *)
