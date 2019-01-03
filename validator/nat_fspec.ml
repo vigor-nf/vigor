@@ -975,7 +975,7 @@ struct
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
                   int the_index_allocated = -1;\n\
-                  int the_index_rejuvented = -1;\n\
+                  int the_index_rejuvenated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   struct stub_mbuf_content the_received_packet;\n\
                   bool a_packet_received = false;\n\
