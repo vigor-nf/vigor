@@ -35,6 +35,10 @@ predicate evproc_loop_invariant(struct Map* mp,
           lcore_id == 0 &*& //<-- We are verifying for a single core.
           last_time(time) &*&
           dchain_high_fp(ch) <= time &*&
+          length(iks) == max_flows &*&
+          length(ivs) == max_flows &*&
+          dchain_index_range_fp(ch) == max_flows &*&
+          true == forall(ivs, is_one) &*&
           max_flows < INT_MAX;
 @*/
 
@@ -62,7 +66,7 @@ void loop_invariant_consume(struct Map** m,
              *v_vals |-> ?vvp &*&
              evproc_loop_invariant(mp, vkp, chp, vvp, lcore_id,
                                    time, max_flows, start_port); @*/
-/*@ ensures *m |-> mp &*& *ch |-> chp; @*/
+/*@ ensures *m |-> mp &*& *v_keys |-> vkp &*& *ch |-> chp &*& *v_vals |-> vvp; @*/
 
 void loop_invariant_produce(struct Map** m,
                             struct Vector** v_keys,
