@@ -870,17 +870,16 @@ let fun_types =
                                    capture_chain "cur_ch" 0;
                                    (fun {args;tmp_gen;_} ->
                                       "/*@ {\n\
-                                       assert dmap_dchain_coherent(?cur_map, " ^
+                                        assert map_vec_chain_coherent<\
+                                       flow_id>(?" ^
+                                      (tmp_gen "cur_map") ^ ", ?" ^
+                                      (tmp_gen "cur_vec") ^ ", " ^
                                       (tmp_gen "cur_ch") ^
-                                      ");\n coherent_same_cap(cur_map, " ^
-                                      (tmp_gen "cur_ch") ^ ");\n" ^
-                                      "rejuvenate_flow_abstract(cur_map," ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      "dmap_get_val_fp(cur_map, " ^
-                                      (List.nth_exn args 1) ^ ")," ^
-                                      (List.nth_exn args 1) ^ ", " ^
-                                      (List.nth_exn args 2) ^ ");\n" ^
-                                      "} @*/");
+                                      ");\n\
+                                       mvc_coherent_same_len(" ^
+                                      (tmp_gen "cur_map") ^ ", " ^
+                                      (tmp_gen "cur_vec") ^ ", " ^
+                                      (tmp_gen "cur_ch") ^ ");\n} @*/");
                                    (fun {args;tmp_gen;_} ->
                                       "//@ rejuvenate_keeps_high_bounded(" ^
                                       (tmp_gen "cur_ch") ^
@@ -891,13 +890,15 @@ let fun_types =
                                    (fun params ->
                                       "/*@ if (" ^ params.ret_name ^
                                       " != 0) { \n" ^
-                                      "assert dmap_dchain_coherent(?cur_map,?ch);\n" ^
-                                      "rejuvenate_preserves_coherent(cur_map, ch, " ^
+                                       "assert map_vec_chain_coherent<flow_id>\
+                                       (?cur_map,?cur_vec,?cur_ch);\n" ^
+                                      "mvc_rejuvenate_preserves_coherent(cur_map,\
+                                       cur_vec, cur_ch, " ^
                                       (List.nth_exn params.args 1) ^ ", "
                                       ^ (List.nth_exn params.args 2) ^ ");\n\
-                                       rejuvenate_preserves_index_range(ch," ^
+                                       rejuvenate_preserves_index_range(cur_ch," ^
                                       (List.nth_exn params.args 1) ^ ", " ^
-                                      (List.nth_exn params.args 2) ^ ");\n}@*/");
+                                      (List.nth_exn params.args 2) ^ ");\n }@*/");
                                    (fun params ->
                                       "int the_index_rejuvenated = " ^
                                       (List.nth_exn params.args 1) ^ ";\n");
@@ -965,6 +966,7 @@ struct
 #include \"vignat/nat_loop.h\"\n\
 //@ #include \"vignat/nat_abstract.h\"\n" ^
                   (In_channel.read_all "preamble.tmpl") ^
+                  (In_channel.read_all "preamble_hide.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
