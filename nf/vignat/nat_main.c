@@ -130,7 +130,10 @@ void nf_print_config() {
 
 void nf_loop_iteration_begin(unsigned lcore_id,
                              time_t time) {
-  loop_iteration_begin(flow_manager_get_table(flow_manager), flow_manager_get_chain(flow_manager),
+  loop_iteration_begin(flow_manager_get_in_table(flow_manager),
+                       flow_manager_get_in_keys(flow_manager),
+                       flow_manager_get_chain(flow_manager),
+                       flow_manager_get_in_values(flow_manager),
                        lcore_id, time,
                        config.max_flows,
                        config.start_port);
@@ -138,7 +141,10 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
                                        time_t time) {
-  loop_iteration_assumptions(flow_manager_get_table(flow_manager), flow_manager_get_chain(flow_manager),
+  loop_iteration_assumptions(flow_manager_get_in_table(flow_manager),
+                             flow_manager_get_in_keys(flow_manager),
+                             flow_manager_get_chain(flow_manager),
+                             flow_manager_get_in_values(flow_manager),
                              lcore_id, time,
                              config.max_flows,
                              config.start_port);
@@ -146,7 +152,10 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 
 void nf_loop_iteration_end(unsigned lcore_id,
                            time_t time) {
-  loop_iteration_end(flow_manager_get_table(flow_manager), flow_manager_get_chain(flow_manager),
+  loop_iteration_end(flow_manager_get_in_table(flow_manager),
+                     flow_manager_get_in_keys(flow_manager),
+                     flow_manager_get_chain(flow_manager),
+                     flow_manager_get_in_values(flow_manager),
                      lcore_id, time,
                      config.max_flows,
                      config.start_port);

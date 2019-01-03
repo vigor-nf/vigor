@@ -2,9 +2,11 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>//for memcpy
 
 #include "lib/containers/double-chain.h"
-#include "lib/containers/double-map.h"
+#include "lib/containers/map.h"
+#include "lib/containers/vector.h"
 #include "lib/expirator.h"
 
 struct FlowManager {
@@ -13,35 +15,48 @@ struct FlowManager {
 	uint16_t nat_device;
 	uint32_t expiration_time; /*seconds*/
 	struct DoubleChain* chain;
-	struct DoubleMap* table;
+	//struct DoubleMap* table;
+  struct Map* in_table;
+  struct Vector* in_keys;
+  struct Vector* in_values;
 };
 
 #ifdef KLEE_VERIFICATION
 #include <rte_ethdev.h>
-#include "lib/stubs/containers/double-map-stub-control.h" //<- for set entry cond
+#include "lib/stubs/containers/map-stub-control.h" //<- for set layout
+#include "lib/stubs/containers/vector-stub-control.h" //<- for set entry cond
 
 struct DoubleChain**
 flow_manager_get_chain(struct FlowManager* manager) {
 	return &(manager->chain);
 }
 
-struct DoubleMap**
-flow_manager_get_table(struct FlowManager* manager) {
-	return &(manager->table);
+struct Map**
+flow_manager_get_in_table(struct FlowManager* manager) {
+	return &(manager->in_table);
 }
 
-int
-flow_consistency(void* key_a, void* key_b,
-                     int index, void* value, void* state) {
-	struct FlowId* int_id = key_a;
-	struct FlowId* ext_id = key_b;
+struct Vector**
+flow_manager_get_in_keys(struct FlowManager* manager) {
+	return &(manager->in_keys);
+}
+
+struct Vector**
+flow_manager_get_in_values(struct FlowManager* manager) {
+	return &(manager->in_values);
+}
+
+bool
+flow_consistency(void* value, int index, void* state) {
+	//struct FlowId* int_id = key_a;
+	//struct FlowId* ext_id = key_b;
 	struct Flow* flow = value;
 	struct FlowManager* manager = state;
 	return ( 0 <= flow->internal_device ) & ( flow->internal_device < rte_eth_dev_count() ) &
 		( flow->internal_device != manager->nat_device ) &
-		( flow->external_id.src_port == flow->internal_id.dst_port ) &
-		( flow->external_id.src_ip == flow->internal_id.dst_ip ) &
-		( flow->external_id.protocol == flow->internal_id.protocol ) &
+		/* ( flow->external_id.src_port == flow->internal_id.dst_port ) & */
+		/* ( flow->external_id.src_ip == flow->internal_id.dst_ip ) & */
+		/* ( flow->external_id.protocol == flow->internal_id.protocol ) & */
 		( flow->external_id.dst_port == manager->starting_port + index );
 }
 
@@ -72,27 +87,49 @@ flow_manager_allocate(uint16_t starting_port,
 	manager->nat_device = nat_device;
 	manager->expiration_time = expiration_time;
 
-	if (dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash,
-			  sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys,
-			  max_flows, max_flows,
-			  &(manager->table)) == 0) {
-		free(manager);
-		return NULL;
-	}
+	/* if (dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash, */
+	/* 		  sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys, */
+	/* 		  max_flows, max_flows, */
+	/* 		  &(manager->table)) == 0) { */
+	/* 	free(manager); */
+	/* 	return NULL; */
+	/* } */
+  if (map_allocate(flow_id_eq, flow_id_hash, max_flows, &(manager->in_table)) == 0) {
+    // Do not free stuff, as we are exiting anyway
+    return NULL;
+  }
+
+  if (vector_allocate(sizeof(struct FlowId), max_flows, flow_id_allocate, &(manager->in_keys)) == 0) {
+    // Do not free stuff, as we are exiting anyway
+    return NULL;
+  }
+
+  if (vector_allocate(sizeof(struct Flow), max_flows, flow_allocate, &(manager->in_values)) == 0) {
+    // Do not free stuff, as we are exiting anyway
+    return NULL;
+  }
 
 	if (dchain_allocate(max_flows, &(manager->chain)) == 0) {
-		free(manager->table);
-		free(manager);
+    // Do not free stuff, as we are exiting anyway
 		return NULL;
 	}
 
 #ifdef KLEE_VERIFICATION
-	dmap_set_layout(manager->table,
-			flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr),
-			flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr),
-			flow_descrs, sizeof(flow_descrs)/sizeof(struct str_field_descr),
-			flow_nests, sizeof(flow_nests)/sizeof(struct nested_field_descr));
-	dmap_set_entry_condition(manager->table, flow_consistency, manager);
+  //NOTE: need more entry conditions? e.g. to ensure that the in_table value indexes
+  // fit into the in_values vector, or that flow_ids feature a proper internal port.
+  map_set_layout(manager->in_table, flow_id_descrs, sizeof(flow_id_descrs)/sizeof(flow_id_descrs[0]),
+                 NULL, 0, "FlowId");
+  vector_set_layout(manager->in_keys, flow_id_descrs, sizeof(flow_id_descrs)/sizeof(flow_id_descrs[0]),
+                    NULL, 0, "FlowId");
+  vector_set_layout(manager->in_values, flow_descrs, sizeof(flow_descrs)/sizeof(flow_descrs[0]),
+                    flow_nests, sizeof(flow_nests)/sizeof(flow_nests[0]), "Flow");
+  vector_set_entry_condition(manager->in_values, flow_consistency, manager);
+	/* dmap_set_layout(manager->table, */
+	/* 		flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr), */
+	/* 		flow_id_descrs, sizeof(flow_id_descrs)/sizeof(struct str_field_descr), */
+	/* 		flow_descrs, sizeof(flow_descrs)/sizeof(struct str_field_descr), */
+	/* 		flow_nests, sizeof(flow_nests)/sizeof(struct nested_field_descr)); */
+	/* dmap_set_entry_condition(manager->table, flow_consistency, manager); */
 #endif
 
 	return manager;
@@ -118,11 +155,19 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id, uint1
 		.internal_device = internal_device
 	};
 
-	if (dmap_put(manager->table, &flow, index) == 0) {
-		return false;
-	}
+  struct FlowId* key = 0;
+  struct Flow* value = 0;
+  vector_borrow(manager->in_keys, index, (void**)&key);
+  vector_borrow(manager->in_values, index, (void**)&value);
+  memcpy((void*)key, (void*)id, sizeof(struct FlowId));
+  memcpy((void*)value, (void*)&flow, sizeof(struct Flow));
+  map_put(manager->in_table, key, index);
 
-	dmap_get_value(manager->table, index, out_flow);
+  //This can be optimized out, if we use "out_flow" rightaway, without going through "flow"
+  memcpy((void*)out_flow, (void*)value, sizeof(struct Flow));
+
+  vector_return(manager->in_keys, index, key);
+  vector_return(manager->in_values, index, value);
 	return true;
 }
 
@@ -143,14 +188,16 @@ flow_manager_expire(struct FlowManager* manager, time_t time) {
 	assert(sizeof(uint64_t) <= sizeof(time_t));
 	time_t last_time = (time_t) last_time_u; // OK since the assert above passed
 
-	expire_items(manager->chain, manager->table, last_time);
+	expire_items_single_map(manager->chain, manager->in_keys, manager->in_table, last_time);
 }
 
 
 static void
 flow_manager_get_and_rejuvenate(struct FlowManager* manager, int index, time_t time, struct Flow* out_flow) {
-	dmap_get_value(manager->table, index, out_flow);
-	// TODO: technically there's a return value here - should we just remove it altogether? or check it? it'll never be 0 in practice (verified!)
+  struct Flow* value;
+  vector_borrow(manager->in_values, index, (void**)&value);
+  memcpy((void*)out_flow, (void*)value, sizeof(struct Flow));
+  vector_return(manager->in_values, index, value);
 	dchain_rejuvenate_index(manager->chain, index, time);
 
 #ifdef KLEE_VERIFICATION
@@ -161,7 +208,7 @@ flow_manager_get_and_rejuvenate(struct FlowManager* manager, int index, time_t t
 bool
 flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id, time_t time, struct Flow* out_flow) {
 	int index;
-	if (dmap_get_a(manager->table, id, &index) == 0) {
+	if (map_get(manager->in_table, id, &index) == 0) {
 		return false;
 	}
 
@@ -171,10 +218,10 @@ flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id, time_t
 
 bool
 flow_manager_get_external(struct FlowManager* manager, struct FlowId* id, time_t time, struct Flow* out_flow) {
-	int index;
-	if (dmap_get_b(manager->table, id, &index) == 0) {
-		return false;
-	}
+	int index = id->dst_port - manager->starting_port;
+  if (dchain_is_index_allocated(manager->chain, index) == 0) {
+    return false;
+  }
 
 	flow_manager_get_and_rejuvenate(manager, index, time, out_flow);
 	return true;

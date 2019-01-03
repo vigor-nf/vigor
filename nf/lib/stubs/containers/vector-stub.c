@@ -128,7 +128,7 @@ void vector_borrow(struct Vector* vector, int index, void** val_out) {
   klee_allow_access(vector->data, vector->elem_size*NUM_ELEMS);
 
   if (vector->ent_cond) {
-    klee_assume(vector->ent_cond(cell, vector->ent_cond_state));
+    klee_assume(vector->ent_cond(cell, index, vector->ent_cond_state));
   }
 
   klee_assert(vector->elems_claimed < NUM_ELEMS);
@@ -163,7 +163,7 @@ void vector_return(struct Vector* vector, int index, void* value) {
   }
 
   if (vector->ent_cond) {
-    klee_assert(vector->ent_cond(value, vector->ent_cond_state));
+    klee_assert(vector->ent_cond(value, index, vector->ent_cond_state));
   }
 
   int belongs = 0;

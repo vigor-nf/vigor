@@ -66,13 +66,13 @@ lb_flow_id_condition(void* key, int value) {
 }
 
 bool
-lb_backend_condition(void* key, void* state) {
+lb_backend_condition(void* key, int index, void* state) {
   return 0 < ((struct LoadBalancedBackend*) key)->nic AND
          ((struct LoadBalancedBackend*) key)->nic < rte_eth_dev_count();
 }
 
 bool
-lb_flow_id2backend_id_cond(void* key, void* state) {
+lb_flow_id2backend_id_cond(void* key, int index, void* state) {
   return *(uint32_t*)key < balancer->backend_capacity;
 }
 

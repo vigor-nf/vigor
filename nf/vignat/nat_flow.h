@@ -164,4 +164,12 @@ void flow_destroy(void* flow);
 //@ requires flowp(flow, _);
 //@ ensures chars(flow, sizeof(struct Flow), _);
 
+void flow_allocate(void* flow);
+//@ requires chars(flow, sizeof(struct Flow), _);
+//@ ensures flowp(flow, _);
+
+void flow_id_allocate(void* flow_id);
+//@ requires chars(flow_id, sizeof(struct FlowId), _);
+//@ ensures flow_idp(flow_id, _);
+
 #endif //_FLOW_H_INCLUDED_

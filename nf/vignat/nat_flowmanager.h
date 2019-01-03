@@ -22,7 +22,9 @@ bool flow_manager_get_external(struct FlowManager* manager, struct FlowId* id, t
 
 #ifdef KLEE_VERIFICATION
 struct DoubleChain** flow_manager_get_chain(struct FlowManager* manager);
-struct DoubleMap** flow_manager_get_table(struct FlowManager* manager);
+struct Map** flow_manager_get_in_table(struct FlowManager* manager);
+struct Vector** flow_manager_get_in_keys(struct FlowManager* manager);
+struct Vector** flow_manager_get_in_values(struct FlowManager* manager);
 #endif
 
 #endif //_FLOWMANAGER_H_INCLUDED_

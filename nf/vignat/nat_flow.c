@@ -116,6 +116,24 @@ void flow_destroy(void* flow)
   //@ open_struct((struct Flow*) flow);
 }
 
+void flow_allocate(void* flow)
+//@ requires chars(flow, sizeof(struct Flow), _);
+//@ ensures flowp(flow, _);
+{
+  IGNORE(flow);
+  //@ close_struct((struct Flow*) flow);
+  //@ close flowp(flow, _);
+}
+
+void flow_id_allocate(void* flow_id)
+//@ requires chars(flow_id, sizeof(struct FlowId), _);
+//@ ensures flow_idp(flow_id, _);
+{
+  IGNORE(flow_id);
+  //@ close_struct((struct FlowId*) flow_id);
+  //@ close flow_idp(flow_id, _);
+}
+
 #ifdef KLEE_VERIFICATION
 struct str_field_descr flow_id_descrs[] = {
   {offsetof(struct FlowId, src_port), sizeof(uint16_t), "src_port"},

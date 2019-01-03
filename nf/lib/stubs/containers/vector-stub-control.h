@@ -13,7 +13,7 @@ void vector_set_layout(struct Vector* vector,
                        int nest_field_count,
                        char* type_tag);
 
-typedef bool vector_entry_condition(void* value, void* state);
+typedef bool vector_entry_condition(void* value, int index, void* state);
 
 void vector_set_entry_condition(struct Vector* vector, vector_entry_condition* cond, void* state);
 

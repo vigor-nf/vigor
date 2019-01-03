@@ -8,26 +8,29 @@
 #include "lib/nf_time.h"
 
 /*@
-fixpoint bool nat_int_fp(flow_id ik, int index) {
-    return true;
+fixpoint bool nat_flow_fp(int start_port, dchain filter, int index, pair<flow, real> flw_cell) {
+  switch(flw_cell) { case pair(flw, presence):
+    return switch(flw) { case flw(iid, eid, dev):
+      return switch(eid) { case flid(sp, dp, sip, dip, prot):
+        return dchain_index_allocated_fp(filter, index) ? dp == start_port + index : true;
+      }
+    };
+  }
 }
 
-fixpoint bool nat_ext_fp(int start_port, flow_id ek, int index) {
-    switch(ek) { case flid(sp,dp,sip,dip,prot):
-        return dp == start_port + index;
-    }
-}
 
-
-predicate evproc_loop_invariant(struct DoubleMap* mp, struct DoubleChain *chp,
+predicate evproc_loop_invariant(struct Map* mp,
+                                struct Vector* in_keys,
+                                struct DoubleChain *chp,
+                                struct Vector* in_values,
                                 unsigned int lcore_id,
                                 time_t time, int max_flows, int start_port) =
-          dmappingp<flow_id,flow_id,flow>(?m, flow_idp, flow_idp, _flow_id_hash, _flow_id_hash,
-                                          flowp, flowp_bare, flow_ids_offsets_fp,
-                                          sizeof(struct Flow), flow_get_internal_id, flow_get_external_id,
-                                          nat_int_fp, (nat_ext_fp)(start_port), mp) &*&
+          mapp<flow_id>(mp, flow_idp, _flow_id_hash, nop_true, mapc(max_flows, ?m, ?maddr)) &*&
+          vectorp<flow_id>(in_keys, flow_idp, ?iks, ?ikaddrs) &*&
           double_chainp(?ch, chp) &*&
-          dmap_dchain_coherent(m, ch) &*&
+          vectorp<flow>(in_values, flowp, ?ivs, ?ivaddrs) &*&
+          map_vec_chain_coherent<flow_id>(m, ivs, ch) &*&
+          true == forall_idx(ivs, 0, (nat_flow_fp)(start_port, ch)) &*&
           lcore_id == 0 &*& //<-- We are verifying for a single core.
           last_time(time) &*&
           dchain_high_fp(ch) <= time &*&
@@ -35,15 +38,24 @@ predicate evproc_loop_invariant(struct DoubleMap* mp, struct DoubleChain *chp,
           max_flows < INT_MAX;
 @*/
 
-void loop_iteration_assumptions(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_iteration_assumptions(struct Map** m,
+                                struct Vector** v_keys,
+                                struct DoubleChain** ch,
+                                struct Vector** v_vals,
                                 unsigned int lcore_id,
                                 time_t time, int max_flows, int start_port);
 
-void loop_iteration_assertions(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_iteration_assertions(struct Map** m,
+                               struct Vector** v_keys,
+                               struct DoubleChain** ch,
+                               struct Vector** v_vals,
                                unsigned int lcore_id,
                                time_t time, int max_flows, int start_port);
 
-void loop_invariant_consume(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_invariant_consume(struct Map** m,
+                            struct Vector** v_keys,
+                            struct DoubleChain** ch,
+                            struct Vector** v_vals,
                             unsigned int lcore_id,
                             time_t time, int max_flows, int start_port);
 /*@ requires *m |-> ?mp &*& *ch |-> ?chp &*&
@@ -51,7 +63,10 @@ void loop_invariant_consume(struct DoubleMap** m, struct DoubleChain** ch,
                                    time, max_flows, start_port); @*/
 /*@ ensures *m |-> mp &*& *ch |-> chp; @*/
 
-void loop_invariant_produce(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_invariant_produce(struct Map** m,
+                            struct Vector** v_keys,
+                            struct DoubleChain** ch,
+                            struct Vector** v_vals,
                             unsigned int* lcore_id,
                             time_t *time, int max_flows, int start_port);
 /*@ requires *m |-> ?mp &*& *ch |-> ?chp &*&
@@ -63,22 +78,34 @@ void loop_invariant_produce(struct DoubleMap** m, struct DoubleChain** ch,
             evproc_loop_invariant(mp, chp, lcid,
                                   t, max_flows, start_port); @*/
 
-void loop_iteration_begin(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_iteration_begin(struct Map** m,
+                          struct Vector** v_keys,
+                          struct DoubleChain** ch,
+                          struct Vector** v_vals,
                           unsigned int lcore_id,
                           time_t time, int max_flows, int start_port);
 
-void loop_iteration_end(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_iteration_end(struct Map** m,
+                        struct Vector** v_keys,
+                        struct DoubleChain** ch,
+                        struct Vector** v_vals,
                         unsigned int lcore_id,
                         time_t time, int max_flows, int start_port);
 
-void loop_enumeration_begin(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_enumeration_begin(struct Map** m,
+                            struct Vector** v_keys,
+                            struct DoubleChain** ch,
+                            struct Vector** v_vals,
                             unsigned int lcore_id,
                             time_t time, int max_flows, int start_port,
                             int cnt);
 //@ requires true;
 //@ ensures true;
 
-void loop_enumeration_end(struct DoubleMap** m, struct DoubleChain** ch,
+void loop_enumeration_end(struct Map** m,
+                          struct Vector** v_keys,
+                          struct DoubleChain** ch,
+                          struct Vector** v_vals,
                           unsigned int lcore_id,
                           time_t time, int max_flows, int start_port);
 //@ requires true;
