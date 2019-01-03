@@ -860,7 +860,7 @@ let fun_types =
                                           (List.nth_exn params.args 2);
                                         "");
                                      (fun params ->
-                                        "int the_index_allocated = *" ^
+                                        "the_index_allocated = *" ^
                                         (List.nth_exn params.args 1) ^ ";\n");
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
@@ -900,7 +900,7 @@ let fun_types =
                                       (List.nth_exn params.args 1) ^ ", " ^
                                       (List.nth_exn params.args 2) ^ ");\n }@*/");
                                    (fun params ->
-                                      "int the_index_rejuvenated = " ^
+                                      "the_index_rejuvenated = " ^
                                       (List.nth_exn params.args 1) ^ ";\n");
                                  ];};
      "dchain_is_index_allocated", {ret_type = Static Sint32;
@@ -975,6 +975,7 @@ struct
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
                   int the_index_allocated = -1;\n\
+                  int the_index_rejuvented = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   struct stub_mbuf_content the_received_packet;\n\
                   bool a_packet_received = false;\n\
