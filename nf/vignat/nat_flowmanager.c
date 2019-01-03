@@ -87,6 +87,11 @@ flow_manager_allocate(uint16_t starting_port,
 	manager->nat_device = nat_device;
 	manager->expiration_time = expiration_time;
 
+  manager->in_table = NULL;
+  manager->in_keys = NULL;
+  manager->in_values = NULL;
+  manager->chain = NULL;
+
 	/* if (dmap_allocate(flow_id_eq, flow_id_hash, flow_id_eq, flow_id_hash, */
 	/* 		  sizeof(struct Flow), flow_copy, flow_destroy, flow_extract_keys, flow_pack_keys, */
 	/* 		  max_flows, max_flows, */

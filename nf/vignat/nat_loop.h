@@ -12,8 +12,8 @@ fixpoint bool nat_flow_fp(int start_port, dchain filter, int index, pair<flow, r
   switch(flw_cell) { case pair(flw, presence):
     return switch(flw) { case flw(iid, eid, dev):
       return switch(eid) { case flid(sp, dp, sip, dip, prot):
-        return dchain_index_allocated_fp(filter, index) ? dp == start_port + index : true;
-      }
+        return dchain_allocated_fp(filter, index) ? dp == start_port + index : true;
+      };
     };
   }
 }
@@ -29,12 +29,12 @@ predicate evproc_loop_invariant(struct Map* mp,
           vectorp<flow_id>(in_keys, flow_idp, ?iks, ?ikaddrs) &*&
           double_chainp(?ch, chp) &*&
           vectorp<flow>(in_values, flowp, ?ivs, ?ivaddrs) &*&
-          map_vec_chain_coherent<flow_id>(m, ivs, ch) &*&
+          map_vec_chain_coherent<flow_id>(m, iks, ch) &*&
+          true == forall2(iks, ikaddrs, (kkeeper)(maddr)) &*&
           true == forall_idx(ivs, 0, (nat_flow_fp)(start_port, ch)) &*&
           lcore_id == 0 &*& //<-- We are verifying for a single core.
           last_time(time) &*&
           dchain_high_fp(ch) <= time &*&
-          dmap_cap_fp(m) == max_flows &*&
           max_flows < INT_MAX;
 @*/
 
@@ -58,8 +58,9 @@ void loop_invariant_consume(struct Map** m,
                             struct Vector** v_vals,
                             unsigned int lcore_id,
                             time_t time, int max_flows, int start_port);
-/*@ requires *m |-> ?mp &*& *ch |-> ?chp &*&
-             evproc_loop_invariant(mp, chp, lcore_id,
+/*@ requires *m |-> ?mp &*& *v_keys |-> ?vkp &*& *ch |-> ?chp &*&
+             *v_vals |-> ?vvp &*&
+             evproc_loop_invariant(mp, vkp, chp, vvp, lcore_id,
                                    time, max_flows, start_port); @*/
 /*@ ensures *m |-> mp &*& *ch |-> chp; @*/
 
@@ -69,13 +70,15 @@ void loop_invariant_produce(struct Map** m,
                             struct Vector** v_vals,
                             unsigned int* lcore_id,
                             time_t *time, int max_flows, int start_port);
-/*@ requires *m |-> ?mp &*& *ch |-> ?chp &*&
+/*@ requires *m |-> ?mp &*& *v_keys |-> ?vkp &*& *ch |-> ?chp &*&
+             *v_vals |-> ?vvp &*&
              *lcore_id |-> _ &*&
              *time |-> _; @*/
-/*@ ensures *m |-> mp &*& *ch |-> chp &*&
+/*@ ensures *m |-> mp &*& *v_keys |-> vkp &*& *ch |-> chp &*&
+            *v_vals |-> vvp &*&
             *lcore_id |-> ?lcid &*&
             *time |-> ?t &*&
-            evproc_loop_invariant(mp, chp, lcid,
+            evproc_loop_invariant(mp, vkp, chp, vvp, lcid,
                                   t, max_flows, start_port); @*/
 
 void loop_iteration_begin(struct Map** m,
