@@ -990,7 +990,7 @@ struct
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration =
-    (In_channel.read_all "forwarding_property.tmpl")
+    ""(*TODO: (In_channel.read_all "forwarding_property.tmpl") *)
 end
 
 (* Register the module *)
