@@ -162,17 +162,18 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id, uint1
 
   struct FlowId* key = 0;
   struct Flow* value = 0;
-  vector_borrow(manager->in_keys, index, (void**)&key);
   vector_borrow(manager->in_values, index, (void**)&value);
-  memcpy((void*)key, (void*)id, sizeof(struct FlowId));
-  memcpy((void*)value, (void*)&flow, sizeof(struct Flow));
-  map_put(manager->in_table, key, index);
-
   //This can be optimized out, if we use "out_flow" rightaway, without going through "flow"
   memcpy((void*)out_flow, (void*)value, sizeof(struct Flow));
+  memcpy((void*)value, (void*)&flow, sizeof(struct Flow));
+  vector_return(manager->in_values, index, value);
+
+  vector_borrow(manager->in_keys, index, (void**)&key);
+  memcpy((void*)key, (void*)id, sizeof(struct FlowId));
+  map_put(manager->in_table, key, index);
+
 
   vector_return(manager->in_keys, index, key);
-  vector_return(manager->in_values, index, value);
 	return true;
 }
 
