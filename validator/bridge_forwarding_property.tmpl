@@ -5,8 +5,37 @@ assert vectorp<stat_keyi>(_, static_keyp, ?final_stat_key_vec, _);
 assert vectorp<uint16_t>(_, dyn_valp, ?final_dyn_val_vec, _);
 assert double_chainp(?final_chain,_);
 
-//TODO: check that the packet is intact
-#define PACKETS_EQUAL(pkta, pktb) true
+//TODO: compare the mac and ip addressess 
+#define PACKETS_EQUAL(pkta, pktb)                                 \
+    pkta.ether.ether_type     == pktb.ether.ether_type &&      \
+    pkta.ether.s_addr.addr_bytes[0]     == pktb.ether.s_addr.addr_bytes[0] &&      \
+    pkta.ether.s_addr.addr_bytes[1]     == pktb.ether.s_addr.addr_bytes[1] &&      \
+    pkta.ether.s_addr.addr_bytes[2]     == pktb.ether.s_addr.addr_bytes[2] &&      \
+    pkta.ether.s_addr.addr_bytes[3]     == pktb.ether.s_addr.addr_bytes[3] &&      \
+    pkta.ether.s_addr.addr_bytes[4]     == pktb.ether.s_addr.addr_bytes[4] &&      \
+    pkta.ether.s_addr.addr_bytes[5]     == pktb.ether.s_addr.addr_bytes[5] &&      \
+    pkta.ether.d_addr.addr_bytes[0]     == pktb.ether.d_addr.addr_bytes[0] &&      \
+    pkta.ether.d_addr.addr_bytes[1]     == pktb.ether.d_addr.addr_bytes[1] &&      \
+    pkta.ether.d_addr.addr_bytes[2]     == pktb.ether.d_addr.addr_bytes[2] &&      \
+    pkta.ether.d_addr.addr_bytes[3]     == pktb.ether.d_addr.addr_bytes[3] &&      \
+    pkta.ether.d_addr.addr_bytes[4]     == pktb.ether.d_addr.addr_bytes[4] &&      \
+    pkta.ether.d_addr.addr_bytes[5]     == pktb.ether.d_addr.addr_bytes[5] &&      \
+    pkta.ipv4.version_ihl     == pktb.ipv4.version_ihl &&      \
+    pkta.ipv4.type_of_service == pktb.ipv4.type_of_service &&  \
+    pkta.ipv4.total_length    == pktb.ipv4.total_length &&     \
+    pkta.ipv4.packet_id       == pktb.ipv4.packet_id &&        \
+    pkta.ipv4.fragment_offset == pktb.ipv4.fragment_offset &&  \
+    pkta.ipv4.time_to_live    == pktb.ipv4.time_to_live &&     \
+    pkta.ipv4.next_proto_id   == pktb.ipv4.next_proto_id &&    \
+    pkta.ipv4.src_addr   == pktb.ipv4.src_addr &&    \
+    pkta.ipv4.dst_addr   == pktb.ipv4.dst_addr &&    \
+    (pktb.ipv4.next_proto_id != 6 ||                             \
+     (pkta.tcp.sent_seq         == pktb.tcp.sent_seq &&        \
+      pkta.tcp.recv_ack         == pktb.tcp.recv_ack &&      \
+      pkta.tcp.data_off         == pktb.tcp.data_off &&      \
+      pkta.tcp.tcp_flags        == pktb.tcp.tcp_flags &&     \
+      pkta.tcp.rx_win           == pktb.tcp.rx_win &&        \
+      pkta.tcp.tcp_urp          == pktb.tcp.tcp_urp))
 
 ml_table initial_table = bridge_abstract_function(initial_dyn_map,
                                                   initial_dyn_val_vec,
