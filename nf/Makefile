@@ -62,9 +62,7 @@ verifast:
 		$(SELF_DIR)/lib/expirator.c \
 		$(SELF_DIR)/vignat/nat_flow.c \
 		$(SELF_DIR)/vignat/nat_abstract.c \
-		$(SELF_DIR)/vigbridge/bridge_abstract.c \
-		$(SELF_DIR)/vigbridge/bridge_data.c \
-		$(SELF_DIR)/vigbalancer/lb_abstract.c
+		$(SELF_DIR)/vigbridge/bridge_data.c
 
 
 ### KLEE verification ###

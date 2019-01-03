@@ -1066,7 +1066,6 @@ struct
 #include \"lib/stubs/time_stub_control.h\"\n\
 #include \"lib/containers/map.h\"\n\
 #include \"lib/containers/double-chain.h\"\n\
-#include \"vigbalancer/lb_abstract.h\"\n\
 #include \"vigbalancer/lb_loop.h\"\n\
 #include \"vigbalancer/lb_balancer.h\"\n" ^
                  (In_channel.read_all "preamble.tmpl") ^

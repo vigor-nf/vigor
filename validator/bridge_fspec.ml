@@ -832,8 +832,7 @@ struct
 #include \"lib/stubs/time_stub_control.h\"\n\
 #include \"lib/containers/map.h\"\n\
 #include \"lib/containers/double-chain.h\"\n\
-#include \"vigbridge/bridge_loop.h\"\n\
-#include \"vigbridge/bridge_abstract.h\"\n" ^
+#include \"vigbridge/bridge_loop.h\"\n" ^
                  (In_channel.read_all "preamble.tmpl") ^
                  (In_channel.read_all "preamble_hide.tmpl") ^
                  "void to_verify()\n\
