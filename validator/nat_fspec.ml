@@ -38,7 +38,9 @@ let capture_chain ch_name ptr_num {args;tmp_gen;_} =
   "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
   (List.nth_exn args ptr_num) ^ ");\n"
 
-let dmap_struct = Ir.Str ( "DoubleMap", [] )
+let map_struct = Ir.Str ("Map", [])
+let dmap_struct = Ir.Str ("Map", []) (*FIXME: delete this line*)
+let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
 let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
                                          "dst_port", Uint16;
@@ -135,143 +137,258 @@ let fun_types =
                     extra_ptr_types = [];
                     lemmas_before = [];
                     lemmas_after = [];};
-     "dmap_allocate", {ret_type = Static Sint32;
-                       arg_types = stt
-                         [Ptr (Ctm "map_keys_equality"); Ptr (Ctm "map_key_hash");
-                          Ptr (Ctm "map_keys_equality"); Ptr (Ctm "map_key_hash");
-                          Sint32; Ptr (Ctm "uq_value_copy");
-                          Ptr (Ctm "uq_value_destr");
-                          Ptr (Ctm "dmap_extract_keys"); Ptr (Ctm "dmap_pack_keys");
-                          Uint32; Uint32;
-                          Ptr (Ptr dmap_struct)];
-                       extra_ptr_types = [];
-                       lemmas_before = [
-                         tx_bl "produce_function_pointer_chunk \
-                                map_keys_equality<flow_id>(flow_id_eq)(flow_idp)(a, b) \
+     "map_allocate", {ret_type = Static Sint32;
+                      arg_types = stt [Fptr "map_keys_equality";
+                                       Fptr "map_key_hash";
+                                       Uint32;
+                                       Ptr (Ptr map_struct)];
+                      extra_ptr_types = [];
+                      lemmas_before = [
+                        (fun _ ->
+                           "/*@ {\nproduce_function_pointer_chunk \
+                            map_keys_equality<flow_id>(flow_id_eq)\
+                            (flow_idp)(a, b) \
+                            {\
+                            call();\
+                            }\n\
+                            produce_function_pointer_chunk \
+                            map_key_hash<flow_id>(flow_id_hash)\
+                            (flow_idp, _flow_id_hash)(a) \
+                            {\
+                            call();\
+                            }\n} @*/ \n");
+                        ];
+                      lemmas_after = [
+                        ];};
+     "vector_allocate", {ret_type = Static Sint32;
+                         arg_types = stt [Sint32;
+                                          Uint32;
+                                          Fptr "vector_init_elem";
+                                          Ptr (Ptr vector_struct)];
+                         extra_ptr_types = [];
+                         lemmas_before = [
+                           tx_bl (* note that produce_function_pointer_chunk can only be done in an 'if', otherwise VeriFast complains *)
+                              "if(!keys_v_allocated) {\n\
+                                produce_function_pointer_chunk vector_init_elem<flow_id>(flow_id_allocate)\
+                                (flow_idp, sizeof(struct FlowId))(a) \
                                 {\
                                 call();\
-                                }";
-                         tx_bl "produce_function_pointer_chunk \
-                                map_key_hash<flow_id>(flow_id_hash)\
-                                (flow_idp, _flow_id_hash)(a)\
+                                }\n\
+                               } else {\n\
+                                produce_function_pointer_chunk vector_init_elem<flow>(flow_allocate)\
+                                (flowp, sizeof(struct Flow))(a) \
                                 {\
                                 call();\
-                                }";
-                         tx_bl "produce_function_pointer_chunk \
-                                map_keys_equality<flow_id>(flow_id_eq)(flow_idp)(a, b)\
-                                {\
-                                call();\
-                                }";
-                         tx_bl "produce_function_pointer_chunk \
-                                map_key_hash<flow_id>(flow_id_hash)\
-                                (flow_idp, _flow_id_hash)(a)\
-                                {\
-                                call();\
-                                }";
-                         tx_bl "produce_function_pointer_chunk \
-                                dmap_extract_keys<flow_id,flow_id,flow>\
-                                (flow_extract_keys)\
-                                (flow_idp, flow_idp, flowp, flowp_bare,\
-                                 flow_ids_offsets_fp,\
-                                 flow_get_internal_id,\
-                                 flow_get_external_id)(a, b, c)\
-                                {\
-                                call();\
-                                }";
-                         tx_bl "produce_function_pointer_chunk \
-                                dmap_pack_keys<flow_id,flow_id,flow>\
-                                (flow_pack_keys)\
-                                (flow_idp, flow_idp, flowp, flowp_bare,\
-                                 flow_ids_offsets_fp,\
-                                 flow_get_internal_id,\
-                                 flow_get_external_id)(a, b, c)\
-                                {\
-                                call();\
-                                }";
-                         tx_bl "produce_function_pointer_chunk \
-                                uq_value_destr<flow>\
-                                (flow_destroy)\
-                                (flowp, sizeof(struct Flow))(a)\
-                                {\
-                                call();\
-                                }";
-                         (fun {args;_} ->
-                            "/*@\
-                             assume(sizeof(struct Flow) == " ^
-                            (List.nth_exn args 4) ^ ");\n@*/ " ^
-                             "/*@ produce_function_pointer_chunk \
-                             uq_value_copy<flow>(flow_copy)\
-                             (flowp, " ^ (List.nth_exn args 4) ^ ")(a,b)\
-                             {\
-                             call();\
-                             }@*/");
-                         tx_bl "close dmap_key_val_types\
-                                (flid(0,0,0,0,0), flid(0,0,0,0,0),\
-                                      flw(flid(0,0,0,0,0),flid(0,0,0,0,0),0));";
-                         tx_bl "close dmap_record_property1(nat_int_fp);";
-                         (fun _ -> "int start_port;\n");
-                         tx_bl "close dmap_record_property2\
-                                ((nat_ext_fp)(start_port));"];
-                       lemmas_after = [
-                         tx_l "empty_dmap_cap\
-                               <flow_id,flow_id,flow>(65536);";];};
+                                }\n\
+                              }\n";
+                           (fun {args;_} ->
+                              "/*@ if (!keys_v_allocated) { \n\
+                               assume(sizeof(struct FlowId) == " ^
+                              (List.nth_exn args 0) ^
+                              ");\n } else { \n\
+                               assume(sizeof(struct Flow) == " ^
+                              (List.nth_exn args 0) ^ ");\n} @*/ ");
+                         ];
+                         lemmas_after = [
+                           (fun {tmp_gen;ret_name;_} ->
+                              "/*@ if (" ^ ret_name ^
+                              ") {\n\
+                               if (!keys_v_allocated) {\n\
+                               assert mapp<flow_id>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                              ", ?" ^ (tmp_gen "map") ^
+                              ", ?" ^ (tmp_gen "addr_map") ^
+                              "));\n\
+                               assert vectorp<flow_id>(_, _, ?" ^ (tmp_gen "dks") ^
+                              ", ?" ^ (tmp_gen "dkaddrs") ^
+                              ");\n\
+                               empty_kkeeper(" ^
+                              (tmp_gen "dkaddrs") ^
+                              ", " ^ (tmp_gen "dks") ^
+                              ", " ^ (tmp_gen "addr_map") ^
+                              ", " ^ (tmp_gen "cap") ^
+                              ");\n\
+                               } \n\
+                               }@*/");
+                           (fun {args;_} ->
+                              "if (!keys_v_allocated) {\n\
+                               keys_v_allocated = true; }");];};
+     "vector_borrow",      {ret_type = Static Void;
+                            arg_types = [Static (Ptr vector_struct);
+                                         Static Sint32;
+                                         Dynamic ["FlowId", Ptr (Ptr flow_id_struct);
+                                                  "Flow", Ptr (Ptr flow_struct)];];
+                            extra_ptr_types = ["borrowed_cell",
+                                               Dynamic ["FlowId", Ptr flow_id_struct;
+                                                        "Flow", Ptr flow_struct];];
+                            lemmas_before = [
+                              (fun params ->
+                                 match List.nth_exn params.arg_types 2 with
+                                 | Ptr (Ptr (Str ("FlowId", _))) ->
+                                   "/*@ if (!values_v_borrowed) { close hide_vector<flow>(_, _, _, _); } @*/\n" ^
+                                   "//@ assert vectorp<flow_id>(" ^ (List.nth_exn params.args 0) ^
+                                   ", flow_idp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
+                                   ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n"
+                                 | Ptr (Ptr (Str ("Flow", _))) ->
+                                   "/*@ if (!keys_v_borrowed) { close hide_vector<flow_id>(_, _, _, _); } @*/\n" ^
+                                   "/*@ { assert vectorp<flow>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
+                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n } @*/\n"
+                                 | _ ->
+                                   failwith "Unsupported type for vector!")
+                            ];
+                            lemmas_after = [
+                              (fun params ->
+                                 match List.nth_exn params.arg_types 2 with
+                                 | Ptr (Ptr (Str ("FlowId", _))) ->
+                                   "/*@ if (!values_v_borrowed) { open hide_vector<flow>(_, _, _, _); } @*/\n" ^
+                                   "keys_v_borrowed = true;\n" ^
+                                   "struct FlowId * " ^ (params.tmp_gen "elem") ^
+                                   " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
+                                   "//@ assert [?" ^ (params.tmp_gen "fr") ^
+                                   "]flow_idp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
+                                   "/*@ if (" ^ (params.tmp_gen "fr") ^
+                                   " != 1.0) {\n\
+                                    assert mapp<flow_id>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
+                                   ", ?" ^ (params.tmp_gen "fma") ^
+                                   "));\n\
+                                    forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
+                                   ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
+                                   ");\n} @*/ "
+                                 | Ptr (Ptr (Str ("Flow", _))) ->
+                                   "/*@ if (!keys_v_borrowed) { open hide_vector<flow_id>(_, _, _, _); } @*/\n" ^
+                                   "values_v_borrowed = true; \n"
+                                 | _ ->
+                                   failwith "Unsupported type for vector!")
+                            ];};
+     "vector_return",      {ret_type = Static Void;
+                            arg_types = [Static (Ptr vector_struct);
+                                         Static Sint32;
+                                         Dynamic ["FlowId", Ptr flow_id_struct;
+                                                  "Flow", Ptr flow_struct];];
+                            extra_ptr_types = [];
+                            lemmas_before = [
+                              (fun params ->
+                                 match List.nth_exn params.arg_types 2 with
+                                 | Ptr (Str ("FlowId", _)) ->
+                                   "/*@ { assert vector_accp<flow_id>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
+                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
+                                 | Ptr (Str ("Flow", _)) ->
+                                   "/*@ { assert vector_accp<flow>(_, _, ?" ^ (params.tmp_gen "vec") ^
+                                   ", _, _, _); \n\
+                                    assert *&" ^
+                                   (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^
+                                   " |-> ? " ^ (params.tmp_gen "flw") ^
+                                   ";\n\
+                                    assert flowp(" ^
+                                   (params.tmp_gen "flw") ^
+                                   ", ?" ^ (params.tmp_gen "flw_logical") ^
+                                   ");\n\
+                                    forall_update<pair<flow, real> >(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one, " ^ (List.nth_exn params.args 1) ^
+                                   ", pair(" ^ (params.tmp_gen "flw_logical") ^
+                                   ", 1.0));\n\
+                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
+                                 | _ ->
+                                   failwith "Unsupported type for vector!");
+                              (fun params ->
+                                 match List.nth_exn params.arg_types 2 with
+                                 | Ptr (Str ("FlowId", _)) ->
+                                   "/*@ if (values_v_borrowed) { close hide_vector_acc<flow>(_, _, _, _, _, _); } @*/\n"
+                                 | Ptr (Str ("Flow", _)) ->
+                                   "/*@ if (keys_v_borrowed) { close hide_vector_acc<flow_id>(_, _, _, _, _, _); } @*/\n"
+                                 | _ ->
+                                   failwith "Unsupported type for vector!")
+                            ];
+                            lemmas_after = [
+                              (fun params ->
+                                 match List.nth_exn params.arg_types 2 with
+                                 | Ptr (Str ("FlowId", _)) ->
+                                   "/*@ if (values_v_borrowed) { open hide_vector_acc<flow>(_, _, _, _, _, _); } @*/\n" ^
+                                   "keys_v_borrowed = false;"
+                                 | Ptr (Str ("Flow", _)) ->
+                                   "/*@ if (keys_v_borrowed) { open hide_vector_acc<flow_id>(_, _, _, _, _, _); } @*/\n" ^
+                                   "values_v_borrowed = false;"
+                                 | _ ->
+                                   failwith "Unsupported type for vector!")
+                            ];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];
                          lemmas_before = [];
                          lemmas_after = [
                            on_rez_nonzero
-                               "empty_dmap_dchain_coherent\
-                                <flow_id,flow_id,flow>(65536);";
+                             "{\n\
+                              assert vectorp<flow_id>(_, _, ?allocated_vector, _);\n\
+                              empty_map_vec_dchain_coherent\
+                              <flow_id>(allocated_vector);\n}";
                            tx_l "index_range_of_empty(65536, 0);";];};
      "loop_invariant_consume", {ret_type = Static Void;
-                                arg_types = stt [Ptr (Ptr dmap_struct);
-                                             Ptr (Ptr dchain_struct);
-                                             Uint32;
-                                             Sint64;
-                                             Sint32;
-                                             Sint32];
+                                arg_types = stt [Ptr (Ptr map_struct);
+                                                 Ptr (Ptr vector_struct);
+                                                 Ptr (Ptr dchain_struct);
+                                                 Ptr (Ptr vector_struct);
+                                                 Uint32;
+                                                 Sint64;
+                                                 Sint32;
+                                                 Sint32];
                                 extra_ptr_types = [];
                                 lemmas_before = [
                                   (fun {args;_} ->
-                                     "//@ assume(start_port == " ^
-                                     List.nth_exn args 5 ^");");
+                                     "start_port = " ^ List.nth_exn args 7 ^ ";");
                                   (fun {args;_} ->
                                      "/*@ close evproc_loop_invariant(*" ^
                                      List.nth_exn args 0 ^ ", *" ^
-                                     List.nth_exn args 1 ^ ", " ^
-                                     List.nth_exn args 2 ^ ", " ^
+                                     List.nth_exn args 1 ^ ", *" ^
+                                     List.nth_exn args 2 ^ ", *" ^
                                      List.nth_exn args 3 ^ ", " ^
                                      List.nth_exn args 4 ^ ", " ^
-                                     List.nth_exn args 5 ^ "); @*/");
+                                     List.nth_exn args 5 ^ ", " ^
+                                     List.nth_exn args 6 ^ ", " ^
+                                     List.nth_exn args 7 ^ "); @*/");
                                 ];
                                 lemmas_after = [];};
      "loop_invariant_produce", {ret_type = Static Void;
-                                arg_types = stt [Ptr (Ptr dmap_struct);
-                                             Ptr (Ptr dchain_struct);
-                                             Ptr Uint32;
-                                             Ptr Sint64;
-                                             Sint32;
-                                             Sint32];
+                                arg_types = stt [Ptr (Ptr map_struct);
+                                                 Ptr (Ptr vector_struct);
+                                                 Ptr (Ptr dchain_struct);
+                                                 Ptr (Ptr vector_struct);
+                                                 Ptr Uint32;
+                                                 Ptr Sint64;
+                                                 Sint32;
+                                                 Sint32];
                                 extra_ptr_types = [];
-                                lemmas_before = [
-                                  (fun _ ->
-                                     "int start_port;\n");];
+                                lemmas_before = [];
                                 lemmas_after = [
+                                  (fun {args;_} ->
+                                     "/*@ open evproc_loop_invariant (*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", *" ^
+                                     (List.nth_exn args 4) ^ ", *" ^
+                                     (List.nth_exn args 5) ^ ", " ^
+                                     (List.nth_exn args 6) ^ ", " ^
+                                     (List.nth_exn args 7) ^ "); @*/");
                                   (fun params ->
-                                     "/*@ open evproc_loop_invariant(?mp, \
-                                      ?chp, *" ^
-                                     List.nth_exn params.args 2 ^ ", *" ^
-                                     List.nth_exn params.args 3 ^ ", " ^
-                                     List.nth_exn params.args 4 ^ ", " ^
-                                     List.nth_exn params.args 5 ^ ");@*/");
-                                  (fun params ->
-                                     "//@ assume(" ^
-                                     List.nth_exn params.args 5 ^ " == start_port);");
-                                  tx_l "assert dmap_dchain_coherent(?map,?chain);";
-                                  tx_l "coherent_same_cap(map, chain);";
-                                  tx_l "dmap<flow_id,flow_id,flow> initial_double_map = map;";
-                                  tx_l "dchain initial_double_chain = chain;"
+                                     "start_port = " ^ List.nth_exn params.args 7 ^ ";");
+                                  (fun {tmp_gen;args;_} ->
+                                     "\n/*@ {\n\
+                                      assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
+                                     ", _));\n\
+                                      assert vectorp<flow_id>(_, _, ?" ^ (tmp_gen "fvk") ^
+                                     ", _);\n\
+                                      assert vectorp<flow>(_, _, ?" ^ (tmp_gen "fvv") ^
+                                     ", _);\n\
+                                      assert map_vec_chain_coherent<flow_id>(" ^
+                                     (tmp_gen "fm") ^ ", " ^
+                                     (tmp_gen "fvk") ^ ", ?" ^
+                                     (tmp_gen "ch") ^
+                                     ");\n\
+                                      mvc_coherent_same_len<flow_id>(" ^ 
+                                     (tmp_gen "fm") ^
+                                     ", " ^ (tmp_gen "fvk") ^
+                                     ", " ^ (tmp_gen "ch") ^
+                                     ");\n" ^ (*TODO: capture initial_* values*)
+                                     "} @*/");
                                 ];};
      "dmap_get_b", {ret_type = Static Sint32;
                     arg_types = stt [Ptr dmap_struct; Ptr flow_id_struct; Ptr Sint32;];
@@ -691,6 +808,7 @@ struct
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
+                  int start_port;\n\
                   uint32_t external_ip = 0;\n\
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
@@ -699,7 +817,11 @@ struct
                   struct stub_mbuf_content sent_packet;\n\
                   uint16_t sent_on_port;\n\
                   uint32_t sent_packet_type;\n\
-                  bool a_packet_sent = false;\n"
+                  bool a_packet_sent = false;\n\
+                  bool keys_v_allocated = false;\n\
+                  bool keys_v_borrowed = false;\n\
+                  bool values_v_borrowed = false;\n\
+                 "
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
