@@ -444,10 +444,8 @@ let fun_types =
                  extra_ptr_types = [];
                  lemmas_before = [
                    (fun ({arg_exps;tmp_gen;_} as params) ->
-                        "//@ assert flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                        "//@ assert flow_idp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
-                        "//@ last_flow_searched_in_the_map = " ^
-                        (tmp_gen "fk") ^ ";\n" ^
                          capture_a_map "flow_id" "dm" params ^
                          "//@ assert map_vec_chain_coherent<flow_id>(" ^
                          (tmp_gen "dm") ^ ", ?" ^
@@ -904,6 +902,12 @@ let fun_types =
                                       "int the_index_rejuvenated = " ^
                                       (List.nth_exn params.args 1) ^ ";\n");
                                  ];};
+     "dchain_is_index_allocated", {ret_type = Static Sint32;
+                                   arg_types = stt [Ptr dchain_struct;
+                                                    Sint32];
+                                   extra_ptr_types = [];
+                                   lemmas_before = [];
+                                   lemmas_after = [];};
      "stub_core_trace_rx", {
                  ret_type = Static Void;
                  arg_types = stt [Ptr (Ptr rte_mbuf_struct);];
