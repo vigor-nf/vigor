@@ -390,7 +390,22 @@ let fun_types =
                                      (tmp_gen "fm") ^
                                      ", " ^ (tmp_gen "fvk") ^
                                      ", " ^ (tmp_gen "ch") ^
-                                     ");\n" ^ (*TODO: capture initial_* values*)
+                                     ");\n" ^
+                                     "assert mapp<flow_id>(_ "^
+                                     ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
+                                     ", _));\n" ^
+                                     "assert vectorp<flow_id>(_" ^
+                                     ", _, ?" ^ (tmp_gen "initial_keys_vec") ^
+                                     ", _);\n" ^
+                                     "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
+                                     ";\nassert double_chainp(?" ^ (tmp_gen "initial_flow_chain") ^
+                                     ", _);\n" ^
+                                     ";\nassert vectorp<flow>(_, _, ?" ^ (tmp_gen "initial_vals_vec") ^
+                                     ", _);\n" ^
+                                     "flow_chain = " ^ (tmp_gen "initial_flow_chain") ^ ";\n\
+                                      flow_map = " ^ (tmp_gen "initial_flow_map") ^ ";\n\
+                                      keys_vec = " ^ (tmp_gen "initial_keys_vec") ^ ";\n\
+                                      vals_vec = " ^ (tmp_gen "initial_vals_vec") ^ ";\n" ^
                                      "} @*/");
                                 ];};
      "dmap_get_b", {ret_type = Static Sint32;
@@ -1000,6 +1015,10 @@ struct
                   bool keys_v_allocated = false;\n\
                   bool keys_v_borrowed = false;\n\
                   bool values_v_borrowed = false;\n\
+                  //@ dchain flow_chain;\n\
+                  //@ list<pair<flow_id, int> > flow_map;\n\
+                  //@ list<pair<flow_id, real> > keys_vec;\n\
+                  //@ list<pair<flow, real> > vals_vec;\n\
                  "
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
@@ -1007,7 +1026,7 @@ struct
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration =
-    ""(*TODO: (In_channel.read_all "forwarding_property.tmpl") *)
+    (In_channel.read_all "forwarding_property.tmpl")
 end
 
 (* Register the module *)

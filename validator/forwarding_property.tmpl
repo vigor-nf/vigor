@@ -1,5 +1,7 @@
-assert dmappingp<flow_id,flow_id,flow>(?final_map,_,_,_,_,_,_,_,_,_,_,_,_,_);
-assert double_chainp(?final_chain,_);
+assert map_vec_chain_coherent<flow_id>(?final_flow_map, ?final_keys_vec, ?final_flow_chain);
+assert vectorp<flow>(_, _, ?final_vals_vec, _);
+
+#define EXP_TIME (10)
 
 #define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
     after.ether.ether_type     == before.ether.ether_type &&      \
@@ -19,42 +21,36 @@ assert double_chainp(?final_chain,_);
     after.tcp.rx_win           == before.tcp.rx_win &&        \
     after.tcp.tcp_urp          == before.tcp.tcp_urp
 
-flowtable initial_ft = abstract_function(initial_double_map,
-                                         initial_double_chain);
-flowtable final_ft = abstract_function(final_map, final_chain);
+//flowtable initial_ft = abstract_function(initial_double_map,
+//                                         initial_double_chain);
+//flowtable final_ft = abstract_function(final_map, final_chain);
    
 bit_and_hack();
-if (10 < now) {// consider only normal moments, remote from the start of the epoch
+if (EXP_TIME < now) {// consider only normal moments, remote from the start of the epoch
 
   // 0x10 -> IPv4
   if (a_packet_received && ((received_packet_type & 0x10) == 0x10)) {
 
-    flowtable after_expiration_ft =
-      abstract_function(map_after_expiration, chain_after_expiration);
+    flow_map = emap_expire_all_map(flow_map, keys_vec, flow_chain, now - EXP_TIME);
+    keys_vec = emap_expire_all_vec(flow_map, keys_vec, flow_chain, now - EXP_TIME);
+    flow_chain = emap_expire_all_chain(flow_map, keys_vec, flow_chain, now - EXP_TIME);
 
-    assert after_expiration_ft == flowtable_expire_flows(initial_ft, now - 10);
+    //flowtable after_expiration_ft =
+    //  abstract_function(map_after_expiration, chain_after_expiration);
+
+    //assert after_expiration_ft == flowtable_expire_flows(initial_ft, now - 10);
 
     // 6/17 -> TCP/UDP
     if (the_received_packet.ipv4.next_proto_id == 6 ||
         the_received_packet.ipv4.next_proto_id == 17) {
       if (received_on_port == 1) {
         // packet from the external network
-        flow_id external_flow_id = flid(the_received_packet.tcp.src_port,
-                                        the_received_packet.tcp.dst_port,
-                                        the_received_packet.ipv4.src_addr,
-                                        the_received_packet.ipv4.dst_addr,
-                                        the_received_packet.ipv4.next_proto_id);
-        if (flowtable_contains_ext_flow_id(after_expiration_ft,
-                                           external_flow_id)) {
+        int flow_indx = the_received_packet.tcp.dst_port + start_port;
+        if (emap_has_index(flow_map, keys_vec, flow_chain, flow_indx)) { 
           // flow is present in the table
           assert true == a_packet_sent;
-          flow flw = flowtable_get_by_ext_flow_id(after_expiration_ft,
-                                                  external_flow_id);
-          assert final_ft ==
-                   flowtable_add_flow(flowtable_remove_flow(after_expiration_ft,
-                                                            flw),
-                                      flw,
-                                      now);
+          flow flw = fst(nth(flow_indx, vals_vec));
+          flow_chain = emap_rejuvenate_idx_chain(flow_map, keys_vec, flow_chain, flow_indx, now);
           assert flid(sent_packet.tcp.dst_port,
                       sent_packet.tcp.src_port,
                       sent_packet.ipv4.dst_addr,
@@ -79,17 +75,11 @@ if (10 < now) {// consider only normal moments, remote from the start of the epo
                                         the_received_packet.ipv4.src_addr,
                                         the_received_packet.ipv4.dst_addr,
                                         the_received_packet.ipv4.next_proto_id);
-        if (flowtable_contains_int_flow_id(after_expiration_ft,
-                                           internal_flow_id)) {
+        if (emap_has(flow_map, keys_vec, flow_chain, internal_flow_id)) {
           // flow present in the table
           assert true == a_packet_sent;
-          flow flw = flowtable_get_by_int_flow_id(after_expiration_ft,
-                                                  internal_flow_id);
-          assert final_ft ==
-                   flowtable_add_flow(flowtable_remove_flow(after_expiration_ft,
-                                                            flw),
-                                      flw,
-                                      now);
+          flow flw = emap_get(flow_map, keys_vec, flow_chain, internal_flow_id);
+          flow_chain = emap_rejuvenate_idx_chain(flow_map, keys_vec, flow_chain, internal_flow_id, now);
           assert flid(sent_packet.tcp.dst_port,
                       sent_packet.tcp.src_port,
                       sent_packet.ipv4.dst_addr,
@@ -103,20 +93,28 @@ if (10 < now) {// consider only normal moments, remote from the start of the epo
           }
         } else {
           // No flow in the table
-          if (flowtable_out_of_space(after_expiration_ft)) {
+          if (emap_full(flow_map, keys_vec, flow_chain)) {
             // Flowtable overflow
             assert false == a_packet_sent;
-            assert final_ft == after_expiration_ft;
           } else {
             // The flow must have been inserted
+            int idx = the_index_allocated;
+
+            flow_id external_flow_id = flid(the_received_packet.tcp.dst_port,
+                                            idx + start_port,
+                                            the_received_packet.ipv4.dst_addr,
+                                            0, //FIXME: should be the NAT ip
+                                            the_received_packet.ipv4.next_proto_id);
+            flow flow_inserted = flow(internal_flow_id,
+                                      external_flow_id,
+                                      received_on_port);
+
+            flow_chain = emap_allocate_int(flow_map, keys_vec, flow_chain, now, idx);
+            flow_map = emap_add_map(flow_map, keys_vec, flow_chain, internal_flow_id, idx);
+            keys_vec = emap_add_vec(flow_map, keys_vec, flow_chain, internal_flow_id, idx);
+            vals_vec = update(idx, pair(flow_inserted, 1.0), vals_vec);
+
             assert true == a_packet_sent;
-            assert final_ft == flowtable_add_flow(after_expiration_ft,
-                                                  the_inserted_flow,
-                                                  now);
-            flow_id external_flow_id = flow_get_external_id(the_inserted_flow);
-            assert false == flowtable_contains_ext_flow_id(after_expiration_ft,
-                                                           external_flow_id);
-            assert flow_get_internal_device(the_inserted_flow) == received_on_port;
             assert flid(sent_packet.tcp.dst_port,
                         sent_packet.tcp.src_port,
                         sent_packet.ipv4.dst_addr,
@@ -139,4 +137,8 @@ if (10 < now) {// consider only normal moments, remote from the start of the epo
     // Non IPv4 packet
     assert false == a_packet_sent;
   }
+assert final_flow_map == flow_map;
+assert final_keys_vec == keys_vec;
+assert final_flow_chain == flow_chain;
+assert final_vals_vec == vals_vec;
 }

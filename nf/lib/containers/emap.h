@@ -23,6 +23,9 @@
   fixpoint int emap_get<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k) {
     return map_get_fp(m, k);
   }
+  fixpoint dchain emap_rejuvenate_idx_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, time_t t) {
+    return dchain_rejuvenate_fp(ch, i, t);
+  }
   fixpoint dchain emap_rejuvenate_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, time_t t) {
     return dchain_rejuvenate_fp(ch, map_get_fp(m, k), t);
   }
