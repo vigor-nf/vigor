@@ -20,6 +20,9 @@ let capture_map map_name ptr_num {args;tmp_gen;_} =
   "//@ assert dmappingp<flow_id,flow_id,flow>(?" ^ (tmp_gen map_name) ^
   ",_,_,_,_,_,_,_,_,_,_,_,_," ^ (List.nth_exn args ptr_num) ^ ");\n"
 
+let capture_a_map t name {tmp_gen;_} =
+  "//@ assert mapp<" ^ t ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen name) ^ ", _));\n"
+
 let capture_map_after map_name ptr_num (params:lemma_params) =
   "//@ assert dmappingp<flow_id,flow_id,flow>(?" ^ (params.tmp_gen map_name) ^
   ",_,_,_,_,_,_,_,_,_,_,_,_," ^ (List.nth_exn params.args ptr_num) ^ ");\n"
@@ -434,6 +437,46 @@ let fun_types =
                          last_indexing_succ_ret_var := params.ret_name;
                          "");
                     ];};
+     "map_get", {ret_type = Static Sint32;
+                 arg_types = stt [Ptr map_struct;
+                                  Ptr flow_id_struct;
+                                  Ptr Sint32];
+                 extra_ptr_types = [];
+                 lemmas_before = [
+                   (fun ({arg_exps;tmp_gen;_} as params) ->
+                        "//@ assert flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                        ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                        "//@ last_flow_searched_in_the_map = " ^
+                        (tmp_gen "fk") ^ ";\n" ^
+                         capture_a_map "flow_id" "dm" params ^
+                         "//@ assert map_vec_chain_coherent<flow_id>(" ^
+                         (tmp_gen "dm") ^ ", ?" ^
+                         (tmp_gen "dv") ^ ", ?" ^
+                         (tmp_gen "dh") ^ ");\n"
+                      );];
+                 lemmas_after = [
+                   (fun {ret_name;tmp_gen;args;_} ->
+                        "/*@ if (" ^ ret_name ^
+                        " != 0) {\n\
+                         mvc_coherent_map_get_bounded(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", " ^
+                        (tmp_gen "fk") ^
+                        ");\n\
+                         mvc_coherent_map_get_vec_half(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", " ^
+                        (tmp_gen "fk") ^
+                        ");\n\
+                         mvc_coherent_map_get(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", " ^
+                        (tmp_gen "fk") ^ ");\n} @*/"
+                      );
+                   ];};
      "dmap_get_a", {ret_type = Static Sint32;
                     arg_types = stt [Ptr dmap_struct; Ptr flow_id_struct; Ptr Sint32;];
                     extra_ptr_types = [];
@@ -478,6 +521,67 @@ let fun_types =
                          last_indexing_succ_ret_var := params.ret_name;
                          "");
                     ];};
+     "map_put", {ret_type = Static Void;
+                 arg_types = stt [Ptr map_struct;
+                                  Ptr flow_id_struct;
+                                  Sint32];
+                 extra_ptr_types = [];
+                 lemmas_before = [
+                   (fun {args;tmp_gen;_} ->
+                        "\n//@ assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                        ", _));\n" ^
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<flow_id>(" ^
+                        (tmp_gen "dm") ^ ", ?" ^
+                        (tmp_gen "dv") ^ ", ?" ^
+                        (tmp_gen "dh") ^
+                        ");\n\
+                         mvc_coherent_dchain_non_out_of_space_map_nonfull<flow_id>(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ");\n" ^
+                         "mvc_coherent_bounds<flow_id>(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ");\n} @*/\n" ^
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "/*@ { \n\
+                         assert mapp<flow_id>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                         assert vector_accp<flow_id>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<flow_id>(?the_dm, the_dv, ?the_dh);\n\
+                         flow_id vvv = flid(" ^ arg1 ^
+                        "->src_port, " ^ arg1 ^
+                        "->dst_port, " ^ arg1 ^
+                        "->src_ip, " ^ arg1 ^
+                        "->dst_ip, " ^ arg1 ^
+                        "->protocol); \n\
+                         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
+                         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                        "); \n\
+                         } @*/\n"
+                      );];
+                 lemmas_after = [
+                   (fun {args;tmp_gen;_} ->
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<flow_id>(" ^ (tmp_gen "dm") ^
+                        ", ?" ^ (tmp_gen "dv") ^
+                        ", ?" ^ (tmp_gen "dh") ^
+                        ");\n\
+                         flow_id " ^ (tmp_gen "ea") ^ " = flw(" ^ arg1 ^
+                        "->src_port, " ^ arg1 ^
+                        "->dst_port, " ^ arg1 ^
+                        "->src_ip, " ^ arg1 ^
+                        "->dst_ip, " ^ arg1 ^
+                        "->protocol);\n\
+                         mvc_coherent_put<flow_id>(" ^ (tmp_gen "dm") ^
+                        ", " ^ (tmp_gen "dv") ^
+                        ", " ^ (tmp_gen "dh") ^
+                        ", " ^ (List.nth_exn args 2) ^
+                        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
+                        ");\n\
+                         } @*/\n"
+                      );];};
      "dmap_put", {ret_type = Static Sint32;
                   arg_types = stt [Ptr dmap_struct; Ptr flow_struct; Sint32;];
                   extra_ptr_types = [];
@@ -618,6 +722,55 @@ let fun_types =
                           tx_l "open flow_idp(_,_);";
                           tx_l "open flow_idp(_,_);";
                         ];};
+     "expire_items_single_map", {ret_type = Static Sint32;
+                                 arg_types = stt [Ptr dchain_struct;
+                                                  Ptr vector_struct;
+                                                  Ptr map_struct;
+                                                  time_t];
+                                 extra_ptr_types = [];
+                                 lemmas_before = [
+                                   (fun {tmp_gen;args;_} ->
+                                      "//@ assert double_chainp(?" ^
+                                      (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
+                                      "//@ expire_olds_keeps_high_bounded(" ^
+                                      (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
+                                   (fun {args;tmp_gen;_} ->
+                                      "/*@ {\n\
+                                       expire_preserves_index_range(" ^
+                                      (tmp_gen "cur_ch") ^ ", " ^
+                                      (List.nth_exn args 3) ^
+                                      ");\n\
+                                       length_nonnegative(\
+                                       dchain_get_expired_indexes_fp(" ^
+                                      (tmp_gen "cur_ch") ^ ", " ^
+                                      (List.nth_exn args 3) ^
+                                      "));\n\
+                                       if (length(dchain_get_expired_indexes_fp(" ^
+                                      (tmp_gen "cur_ch") ^ ", " ^
+                                      (List.nth_exn args 3) ^
+                                      ")) > 0 ) {\n\
+                                       expire_old_dchain_nonfull\
+                                       (" ^ (List.nth_exn args 0) ^ ", " ^
+                                      (tmp_gen "cur_ch") ^ ", " ^
+                                      (List.nth_exn args 3) ^
+                                      ");\n\
+                                       }} @*/");
+                                 ];
+                                 lemmas_after = [
+                                   (fun {tmp_gen;_} ->
+                                      "/*@ {\n\
+                                       assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^ ", _));\n\
+                                       assert vectorp<flow_id>(_, _, ?" ^ (tmp_gen "fvk") ^ ", _);\n\
+                                       assert map_vec_chain_coherent<flow_id>(" ^
+                                      (tmp_gen "fm") ^ ", " ^
+                                      (tmp_gen "fvk") ^ ", ?" ^
+                                      (tmp_gen "ch") ^
+                                      ");\n\
+                                      mvc_coherent_same_len<flow_id>(" ^
+                                      (tmp_gen "fm") ^ ", " ^
+                                      (tmp_gen "fvk") ^ ", " ^
+                                      (tmp_gen "ch") ^ ");\n} @*/");
+                                 ];};
      "expire_items", {ret_type = Static Sint32;
                       arg_types = stt [Ptr dchain_struct;
                                        Ptr dmap_struct;
@@ -688,6 +841,9 @@ let fun_types =
                                      capture_chain "cur_ch" 0;
                                    ];
                                    lemmas_after = [
+                                     (fun {args;_} ->
+                                        "time_for_allocated_index = " ^ (List.nth_exn args 2) ^
+                                        ";\n");
                                      on_rez_nz
                                        (fun params ->
                                           "{\n allocate_preserves_index_range(" ^
@@ -812,6 +968,8 @@ struct
                   uint32_t external_ip = 0;\n\
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
+                  int the_index_allocated = -1;\n\
+                  int64_t time_for_allocated_index = 0;\n\
                   struct stub_mbuf_content the_received_packet;\n\
                   bool a_packet_received = false;\n\
                   struct stub_mbuf_content sent_packet;\n\
