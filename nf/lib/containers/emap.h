@@ -8,9 +8,9 @@
 #include "lib/containers/cht.h"
 
 /*@
-  inductive emap<t> = emap(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch);
+  inductive emap<T> = emap(list<pair<T, int> > m, list<pair<T, real> > v, dchain ch);
 
-  fixpoint emap<t> emap_expire_all<t>(emap<t> em, time_t t) {
+  fixpoint emap<T> emap_expire_all<T>(emap<T> em, time_t t) {
     switch(em) { case emap(m, v, ch):
       return emap(map_erase_all_fp(m, vector_get_values_fp(v, dchain_get_expired_indexes_fp(ch, t))),
                   vector_erase_all_fp(v, dchain_get_expired_indexes_fp(ch, t)),
@@ -18,23 +18,25 @@
     }
   }
 
-  fixpoint bool emap_has<t>(emap<t> em, t k) {
+  fixpoint bool emap_has<T>(emap<T> em, T k) {
     switch(em) { case emap(m, v, ch):
       return map_has_fp(m, k);
     }
   }
-  fixpoint int emap_get<t>(emap<t> em, t k) {
+
+  fixpoint int emap_get<T>(emap<T> em, T k) {
     switch(em) { case emap(m, v, ch):
       return map_get_fp(m, k);
     }
   }
-  fixpoint emap<t> emap_rejuvenate_idx<t>(emap<t> em, int i, time_t t) {
+
+  fixpoint emap<T> emap_refresh_idx<T>(emap<T> em, int i, time_t t) {
     switch(em) { case emap(m, v, ch):
       return emap(m, v, dchain_rejuvenate_fp(ch, i, t));
     }
   }
 
-  fixpoint emap<t> emap_erase<t>(emap<t> em, t k) {
+  fixpoint emap<T> emap_erase<T>(emap<T> em, T k) {
     switch(em) { case emap(m, v, ch):
       return emap(map_erase_fp(m, k),
                   update(map_get_fp(m, k), pair(k, 1.0), v),
@@ -42,45 +44,56 @@
     }
   }
 
-  fixpoint bool emap_has_index<t>(emap<t> em, int i) {
+  fixpoint bool emap_has_idx<T>(emap<T> em, int i) {
     switch(em) { case emap(m, v, ch):
       return dchain_allocated_fp(ch, i);
     }
   }
 
-  fixpoint t emap_get_key<t>(emap<t> em, int i) {
+  fixpoint T emap_get_key<T>(emap<T> em, int i) {
     switch(em) { case emap(m, v, ch):
       return fst(nth(i, v));
     }
   }
 
-  fixpoint emap<t> emap_allocate_int<t>(emap<t> em, time_t t, int i) {
+  fixpoint emap<T> emap_add<T>(emap<T> em, T k, int i, time_t t) {
     switch(em) { case emap(m, v, ch):
-      return emap(m, v, dchain_allocate_fp(ch, i, t));
+      return emap(map_put_fp(m, k, i), update(i, pair(k, 0.75), v), dchain_allocate_fp(ch, i, t));
     }
   }
 
-  fixpoint emap<t> emap_add<t>(emap<t> em, t k, int i) {
-    switch(em) { case emap(m, v, ch):
-      return emap(map_put_fp(m, k, i), update(i, pair(k, 0.75), v), ch);
-    }
-  }
-
-  fixpoint bool emap_full<t>(emap<t> em) {
+  fixpoint bool emap_full<T>(emap<T> em) {
     switch(em) { case emap(m, v, ch):
       return dchain_out_of_space_fp(ch);
     }
   }
 
-  fixpoint bool emap_exists_with_cht<t>(emap<t> em, list<pair<uint32_t, real> > cht, int hash) {
+  // Consistent hashing table-related
+
+  fixpoint bool emap_exists_with_cht<T>(emap<T> em, list<pair<uint32_t, real> > cht, int hash) {
     switch(em) { case emap(m, v, ch):
       return cht_exists(hash, cht, ch);
     }
   }
 
-  fixpoint int emap_choose_with_cht<t>(emap<t> em, list<pair<uint32_t, real> > cht, int hash) {
+  fixpoint int emap_choose_with_cht<T>(emap<T> em, list<pair<uint32_t, real> > cht, int hash) {
     switch(em) { case emap(m, v, ch):
       return cht_choose(hash, cht, ch);
+    }
+  }
+
+  // Vector
+  inductive vector<T> = vector(list<pair<T, real> >);
+
+  fixpoint T vector_get<T>(vector<T> v, int i) {
+    switch(v) { case vector(l):
+      return fst(nth(i, l));
+    }
+  }
+
+  fixpoint vector<T> vector_set<T>(vector<T> vec, int i, T val) {
+    switch(vec) { case vector(l):
+      return vector(update(i, pair(val, 1.0), l));
     }
   }
   @*/

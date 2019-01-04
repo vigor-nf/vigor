@@ -1,3 +1,4 @@
+//Capture the final state.
 assert map_vec_chain_coherent<flow_id>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
 emap<flow_id> flow_emap = emap(flow_map, flow_vec, flow_chain);
 emap<flow_id> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
@@ -39,13 +40,13 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
         if (received_on_port == EXT_PORT) {
           // packet from the external network
           int flow_indx = the_received_packet.tcp.dst_port - start_port;
-          if (emap_has_index(flow_emap, flow_indx)) { 
+          if (emap_has_idx(flow_emap, flow_indx)) { 
             // flow is present in the table
             flow_id internal_flow = emap_get_key(flow_emap, flow_indx);
-            flow_emap = emap_rejuvenate_idx(flow_emap, flow_indx, now);
+            flow_emap = emap_refresh_idx(flow_emap, flow_indx, now);
             switch(internal_flow) { case flid(sp, dp, sip, dip, idev, prot):
               if (dip  != the_received_packet.ipv4.src_addr ||
-                  dp   != the_received_packet.tcp.src_port ||
+                  dp   != the_received_packet.tcp.src_port  ||
                   prot != the_received_packet.ipv4.next_proto_id) {
                 assert false == a_packet_sent;
               } else {
@@ -74,7 +75,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           if (emap_has(flow_emap, internal_flow_id)) {
             // flow present in the table
             int idx = emap_get(flow_emap, internal_flow_id);
-            flow_emap = emap_rejuvenate_idx(flow_emap, idx, now);
+            flow_emap = emap_refresh_idx(flow_emap, idx, now);
             assert true == a_packet_sent;
             assert sent_packet.tcp.src_port == idx + start_port;
             assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
@@ -92,8 +93,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
               // The flow must have been inserted
               int idx = the_index_allocated;
 
-              flow_emap = emap_allocate_int(flow_emap, now, idx);
-              flow_emap = emap_add(flow_emap, internal_flow_id, idx);
+              flow_emap = emap_add(flow_emap, internal_flow_id, idx, now);
 
               assert true == a_packet_sent;
               assert sent_packet.tcp.src_port == idx + start_port;

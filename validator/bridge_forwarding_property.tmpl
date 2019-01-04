@@ -1,3 +1,4 @@
+// Captrue the final state
 assert mapp<ether_addri>(_, ether_addrp, eth_addr_hash, nop_true, mapc(_, ?final_dyn_map, _));
 assert mapp<stat_keyi>(_, static_keyp, st_key_hash, nop_true, mapc(_, ?final_stat_map, _));
 assert vectorp<ether_addri>(_, ether_addrp, ?final_dyn_key_vec, _);
@@ -40,9 +41,11 @@ emap<ether_addri> dyn_emap = emap(initial_dyn_map, initial_dyn_key_vec, initial_
 list<pair<uint16_t, real> > dyn_val_vec = initial_dyn_val_vec;
 dchain stat_chain;//dummy
 emap<stat_keyi> stat_emap = emap(initial_stat_map, initial_stat_key_vec, stat_chain);
+vector<uint16_t> dyn_val_vector = vector(dyn_val_vec);
 
 emap<ether_addri> final_dyn_emap = emap(final_dyn_map, final_dyn_key_vec, final_chain);
 emap<stat_keyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_chain);
+vector<uint16_t> final_dyn_val_vector = vector(final_dyn_val_vec);
 
 bit_and_hack();
 if (300 < now) {// consider only normal moments, remote from the start of the epoch
@@ -57,13 +60,12 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
 
    // State postcondition
    if (emap_has(dyn_emap, src_addr)) {
-     dyn_emap = emap_rejuvenate_idx(dyn_emap, emap_get(dyn_emap, src_addr), now);
+     dyn_emap = emap_refresh_idx(dyn_emap, emap_get(dyn_emap, src_addr), now);
    } else {
       if (!emap_full(dyn_emap)) {
         int idx = the_index_allocated;
-        dyn_emap = emap_allocate_int(dyn_emap, now, idx);
-        dyn_emap = emap_add(dyn_emap, src_addr, idx);
-        dyn_val_vec = update(idx, pair(received_on_port, 1.0), dyn_val_vec);
+        dyn_emap = emap_add(dyn_emap, src_addr, idx, now);
+        dyn_val_vector = vector_set(dyn_val_vector, idx, received_on_port);
       }
     }
 
@@ -83,7 +85,7 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
     } else {
       if (emap_has(dyn_emap, dst_addr)) {
         int idx = emap_get(dyn_emap, dst_addr);
-        int output_port = fst(nth(idx, dyn_val_vec));
+        int output_port = vector_get(dyn_val_vector, idx);
         if (output_port == received_on_port) {
           assert false == a_packet_sent;
           assert false == a_packet_flooded;
@@ -102,6 +104,6 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
   }
 
 assert final_dyn_emap == dyn_emap;
-assert final_dyn_val_vec == dyn_val_vec;
+assert final_dyn_val_vector == dyn_val_vector;
 assert final_stat_emap == stat_emap;
 }

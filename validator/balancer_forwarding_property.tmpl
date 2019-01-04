@@ -2,6 +2,7 @@
 #define EXP_TIME 10
 #define BACKEND_EXP_TIME 60
 
+//Capture the final state.
 assert map_vec_chain_coherent<lb_flowi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
 assert map_vec_chain_coherent<uint32_t>(?final_backend_ip_map, ?final_ip_veca, ?final_active_backends);
 assert vectorp<uint32_t>(fidbid_veca_ptr, u_integer, ?final_fidbid_veca, _);
@@ -28,9 +29,13 @@ assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca
 
 emap<lb_flowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
 emap<uint32_t> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
+vector<uint32_t> fidbid_vec = vector(fidbid_veca);
+vector<lb_backendi> backends_vec = vector(backends_veca);
 
 emap<lb_flowi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
 emap<uint32_t> final_backend_ip_emap = emap(final_backend_ip_map, final_ip_veca, final_active_backends);
+vector<uint32_t> final_fidbid_vec = vector(final_fidbid_veca);
+vector<lb_backendi> final_backends_vec = vector(final_backends_veca);
 
 // Consider only normal moments, remote from the start of the epoch
 if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
@@ -59,10 +64,10 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
           bool alloc_flow_and_process_packet = false;
           if (emap_has(flow_emap, packet_flow)) {
             int flow_id = emap_get(flow_emap, packet_flow);
-            int backend_id = fst(nth(flow_id, fidbid_veca));
-            if (emap_has_index(backend_ip_emap, backend_id)) {
-              flow_emap = emap_rejuvenate_idx(flow_emap, emap_get(flow_emap, packet_flow), now);
-              lb_backendi backend = fst(nth(backend_id, backends_veca));
+            int backend_id = vector_get(fidbid_veca, flow_id);
+            if (emap_has_idx(backend_ip_emap, backend_id)) {
+              flow_emap = emap_refresh_idx(flow_emap, emap_get(flow_emap, packet_flow), now);
+              lb_backendi backend = vector_get(backends_vec, backend_id);
               switch(backend) { case lb_backendc(nic, mac, ip):
                 assert sent_on_port == nic;
                 assert ether_addrp(&pkt_sent.ether.d_addr, mac);
@@ -84,11 +89,10 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                 // do not change the state
               } else {
                 int idx = the_index_allocated;
-                flow_emap = emap_allocate_int(flow_emap, now, idx);
-                flow_emap = emap_add(flow_emap, packet_flow, idx);
-                fidbid_veca = update(idx, pair(bknd, 1.0), fidbid_veca);
+                flow_emap = emap_add(flow_emap, packet_flow, idx, now);
+                fidbid_vec = vector_set(fidbid_vec, idx, bknd);
               }
-              lb_backendi backend = fst(nth(bknd, backends_veca));
+              lb_backendi backend = vector_get(backends_vec, bknd);
               assert true == a_packet_sent;
               switch(backend) { case lb_backendc(nic, mac, ip):
                 assert sent_on_port == nic;
@@ -103,19 +107,19 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
         } else { // A heartbeat packet from a backend
           {
             if (emap_has(backend_ip_emap, pkt_recv.ipv4.src_addr)) {
-              backend_ip_emap = emap_rejuvenate_idx(backend_ip_emap,
-                                                    emap_get(backend_ip_emap,
-                                                             pkt_recv.ipv4.src_addr),
-                                                    now);
+              backend_ip_emap = emap_refresh_idx(backend_ip_emap,
+                                                 emap_get(backend_ip_emap,
+                                                          pkt_recv.ipv4.src_addr),
+                                                 now);
             } else {
               if (emap_full(backend_ip_emap)) {
                 // What you gonna do? (nothing, the question is rhetorical)
               } else {
                 int idx = the_index_allocated;
-                backend_ip_emap = emap_allocate_int(backend_ip_emap, now, idx);
-                backend_ip_emap = emap_add(backend_ip_emap, pkt_recv.ipv4.src_addr, idx);
+                backend_ip_emap = emap_add(backend_ip_emap, pkt_recv.ipv4.src_addr, idx, now);
                 assert ether_addrp(&pkt_recv.ether.s_addr, ?source_mac);
-                backends_veca = update(idx, pair(lb_backendc(received_on_port, source_mac, pkt_recv.ipv4.src_addr), 1.0), backends_veca);
+                backends_vec = vector_set(backends_vec, idx,
+                                          lb_backendc(received_on_port, source_mac, pkt_recv.ipv4.src_addr));
               }
             }
           }
@@ -133,8 +137,8 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
   }//a packet received
 
 assert final_flow_emap == flow_emap;
-assert final_fidbid_veca == fidbid_veca;
-assert final_backends_veca == backends_veca;
+assert final_fidbid_vec == fidbid_vec;
+assert final_backends_vec == backends_vec;
 assert final_backend_ip_emap == backend_ip_emap;
 assert final_cht == cht;//redundant, should be immutable.
 }
