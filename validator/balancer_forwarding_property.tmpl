@@ -64,7 +64,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
           bool alloc_flow_and_process_packet = false;
           if (emap_has(flow_emap, packet_flow)) {
             int flow_id = emap_get(flow_emap, packet_flow);
-            int backend_id = vector_get(fidbid_veca, flow_id);
+            int backend_id = vector_get(fidbid_vec, flow_id);
             if (emap_has_idx(backend_ip_emap, backend_id)) {
               flow_emap = emap_refresh_idx(flow_emap, emap_get(flow_emap, packet_flow), now);
               lb_backendi backend = vector_get(backends_vec, backend_id);
