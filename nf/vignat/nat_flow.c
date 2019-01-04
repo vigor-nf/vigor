@@ -23,7 +23,8 @@ bool flow_id_eq(void* a, void* b)
      AND id1->dst_port  == id2->dst_port
      AND id1->src_ip    == id2->src_ip
      AND id1->dst_ip    == id2->dst_ip
-     AND id1->protocol  == id2->protocol;
+     AND id1->protocol  == id2->protocol
+     AND id1->internal_device == id2->internal_device;
 }
 
 static unsigned long long wrap(unsigned long long x)
@@ -53,76 +54,13 @@ unsigned flow_id_hash(void* obj)
   hash *= 31;
 
   hash += id->protocol;
+  hash *= 31;
+
+  hash += id->internal_device;
 
   hash = wrap(hash);
 
   return (unsigned) hash;
-}
-
-
-void flow_extract_keys(void* flow, void** int_id, void** ext_id)
-//@ requires [?f]flowp(flow, ?flw) &*& *int_id |-> _ &*& *ext_id |-> _;
-/*@ ensures [f]flowp_bare(flow, flw) &*& *int_id |-> ?iidp &*& *ext_id |-> ?eidp &*&
-            [0.5*f]flow_idp(iidp, ?iid) &*& [0.5*f]flow_idp(eidp, ?eid) &*&
-            true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
-            iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
-{
-  //@ open [f]flowp(flow, flw);
-  struct Flow* fl = flow;
-  *int_id = &(fl->internal_id);
-  *ext_id = &(fl->external_id);
-  //@ close [f]flowp_bare(flow, flw);
-}
-
-void flow_pack_keys(void* flow, void* iidp, void* eidp)
-/*@ requires [?f]flowp_bare(flow, ?flw) &*&
-             [0.5*f]flow_idp(iidp, ?iid) &*& [0.5*f]flow_idp(eidp, ?eid) &*&
-             true == flow_ids_offsets_fp(flow, iidp, eidp) &*&
-             iid == flow_get_internal_id(flw) &*& eid == flow_get_external_id(flw); @*/
-//@ ensures [f]flowp(flow, flw);
-{
-  IGNORE(flow);
-  IGNORE(iidp);
-  IGNORE(eidp);
-  //@ open flowp_bare(flow, flw);
-}
-
-void flow_copy(char* dst, void* src)
-//@ requires [?f]flowp(src, ?flw) &*& dst[0..sizeof(struct Flow)] |-> _;
-//@ ensures [f]flowp(src, flw) &*& flowp((void*) dst, flw);
-{
-  struct Flow* source = src;
-  struct Flow* destination = (void*) dst;
-  //@ close_struct(destination);
-  destination->internal_id.src_port = source->internal_id.src_port;
-  destination->internal_id.dst_port = source->internal_id.dst_port;
-  destination->internal_id.src_ip = source->internal_id.src_ip;
-  destination->internal_id.dst_ip = source->internal_id.dst_ip;
-  destination->internal_id.protocol = source->internal_id.protocol;
-  destination->external_id.src_port = source->external_id.src_port;
-  destination->external_id.dst_port = source->external_id.dst_port;
-  destination->external_id.src_ip = source->external_id.src_ip;
-  destination->external_id.dst_ip = source->external_id.dst_ip;
-  destination->external_id.protocol = source->external_id.protocol;
-  destination->internal_device = source->internal_device;
-}
-
-void flow_destroy(void* flow)
-//@ requires flowp(flow, _);
-//@ ensures chars(flow, sizeof(struct Flow), _);
-{
-  IGNORE(flow);
-  //@ open flowp(flow, _);
-  //@ open_struct((struct Flow*) flow);
-}
-
-void flow_allocate(void* flow)
-//@ requires chars(flow, sizeof(struct Flow), _);
-//@ ensures flowp(flow, _);
-{
-  IGNORE(flow);
-  //@ close_struct((struct Flow*) flow);
-  //@ close flowp(flow, _);
 }
 
 void flow_id_allocate(void* flow_id)
@@ -140,25 +78,8 @@ struct str_field_descr flow_id_descrs[] = {
   {offsetof(struct FlowId, dst_port), sizeof(uint16_t), "dst_port"},
   {offsetof(struct FlowId, src_ip), sizeof(uint32_t), "src_ip"},
   {offsetof(struct FlowId, dst_ip), sizeof(uint32_t), "dst_ip"},
+  {offsetof(struct FlowId, internal_device), sizeof(uint16_t), "internal_device"},
   {offsetof(struct FlowId, protocol), sizeof(uint8_t), "protocol"},
-};
-struct nested_field_descr flow_nests[] = {
-  {offsetof(struct Flow, internal_id), offsetof(struct FlowId, src_port), sizeof(uint16_t), "src_port"},
-  {offsetof(struct Flow, internal_id), offsetof(struct FlowId, dst_port), sizeof(uint16_t), "dst_port"},
-  {offsetof(struct Flow, internal_id), offsetof(struct FlowId, src_ip), sizeof(uint32_t), "src_ip"},
-  {offsetof(struct Flow, internal_id), offsetof(struct FlowId, dst_ip), sizeof(uint32_t), "dst_ip"},
-  {offsetof(struct Flow, internal_id), offsetof(struct FlowId, protocol), sizeof(uint8_t), "protocol"},
-  {offsetof(struct Flow, external_id), offsetof(struct FlowId, src_port), sizeof(uint16_t), "src_port"},
-  {offsetof(struct Flow, external_id), offsetof(struct FlowId, dst_port), sizeof(uint16_t), "dst_port"},
-  {offsetof(struct Flow, external_id), offsetof(struct FlowId, src_ip), sizeof(uint32_t), "src_ip"},
-  {offsetof(struct Flow, external_id), offsetof(struct FlowId, dst_ip), sizeof(uint32_t), "dst_ip"},
-  {offsetof(struct Flow, external_id), offsetof(struct FlowId, protocol), sizeof(uint8_t), "protocol"},
-};
-
-struct str_field_descr flow_descrs[] = {
-  {offsetof(struct Flow, internal_id), sizeof(struct FlowId), "internal_id"},
-  {offsetof(struct Flow, external_id), sizeof(struct FlowId), "external_id"},
-  {offsetof(struct Flow, internal_device), sizeof(uint16_t), "internal_device"},
 };
 #endif//KLEE_VERIFICATION
 
@@ -180,27 +101,13 @@ void flow_log_id(struct FlowId* id) {
   log_ip(id->src_ip);
   NF_DEBUG( "; dst_ip: ");
   log_ip(id->dst_ip);
-  NF_DEBUG(" protocol: %d}",
+  NF_DEBUG(" protocol: %d;",
            id->protocol);
-}
-
-void flow_log(struct Flow* flow) {
-  NF_DEBUG("{internal_id:");
-  flow_log_id(&(flow->internal_id));
-  NF_DEBUG(" external_id:");
-  flow_log_id(&(flow->external_id));
-  NF_DEBUG(" internal_device: %d}", flow->internal_device);
+  NF_DEBUG(" internal_device: %d}",
+           id->internal_device);
 }
 #else
-void flow_log_ip(uint32_t addr) {
-	IGNORE(addr);
-}
-
 void flow_log_id(struct FlowId* id) {
 	IGNORE(id);
-}
-
-void flow_log(struct Flow* flow) {
-	IGNORE(flow);
 }
 #endif

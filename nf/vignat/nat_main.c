@@ -57,51 +57,51 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 
 	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, mbuf->port);
 
-	struct FlowId id = {
-		.src_port = tcpudp_header->src_port,
-		.dst_port = tcpudp_header->dst_port,
-		.src_ip = ipv4_header->src_addr,
-		.dst_ip = ipv4_header->dst_addr,
-		.protocol = ipv4_header->next_proto_id
-	};
-
-	NF_DEBUG("For id:");
-	flow_log_id(&id);
-
 	uint16_t dst_device;
 	if (mbuf->port == config.wan_device) {
 		NF_DEBUG("Device %" PRIu16 " is external", mbuf->port);
 
-		struct Flow f;
-		if (flow_manager_get_external(flow_manager, &id, now, &f)) {
-			NF_DEBUG("Found flow:");
-			flow_log(&f);
+    struct FlowId internal_flow;
+		if (flow_manager_get_external(flow_manager, mbuf->port, now, &internal_flow)) {
+			NF_DEBUG("Found internal flow.");
+      flow_log_id(&internal_flow);
 
-			ipv4_header->dst_addr = f.internal_id.src_ip;
-			tcpudp_header->dst_port = f.internal_id.src_port;
-			dst_device = f.internal_device;
+			ipv4_header->dst_addr = internal_flow.src_ip;
+			tcpudp_header->dst_port = internal_flow.src_port;
+			dst_device = internal_flow.internal_device;
 		} else {
 			NF_DEBUG("Unknown flow, dropping");
 			return mbuf->port;
 		}
 	} else {
+    struct FlowId id = {
+      .src_port = tcpudp_header->src_port,
+      .dst_port = tcpudp_header->dst_port,
+      .src_ip = ipv4_header->src_addr,
+      .dst_ip = ipv4_header->dst_addr,
+      .protocol = ipv4_header->next_proto_id,
+      .internal_device = mbuf->port
+    };
+
+    NF_DEBUG("For id:");
+    flow_log_id(&id);
+
 		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", mbuf->port, config.wan_device);
 
-		struct Flow f;
-		if (!flow_manager_get_internal(flow_manager, &id, now, &f)) {
+    uint16_t external_port;
+		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
 			NF_DEBUG("New flow");
 
-			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &f)) {
+			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &external_port)) {
 				NF_DEBUG("No space for the flow, dropping");
 				return mbuf->port;
 			}
 		}
 
-		NF_DEBUG("Forwarding to:");
-		flow_log(&f);
+		NF_DEBUG("Forwarding from ext port:%d", external_port);
 
-		ipv4_header->src_addr = f.external_id.dst_ip;
-		tcpudp_header->src_port = f.external_id.dst_port;
+		ipv4_header->src_addr = config.external_addr;
+		tcpudp_header->src_port = external_port;
 		dst_device = config.wan_device;
 	}
 
@@ -131,9 +131,8 @@ void nf_print_config() {
 void nf_loop_iteration_begin(unsigned lcore_id,
                              time_t time) {
   loop_iteration_begin(flow_manager_get_in_table(flow_manager),
-                       flow_manager_get_in_keys(flow_manager),
+                       flow_manager_get_in_vec(flow_manager),
                        flow_manager_get_chain(flow_manager),
-                       flow_manager_get_in_values(flow_manager),
                        lcore_id, time,
                        config.max_flows,
                        config.start_port);
@@ -142,9 +141,8 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
                                        time_t time) {
   loop_iteration_assumptions(flow_manager_get_in_table(flow_manager),
-                             flow_manager_get_in_keys(flow_manager),
+                             flow_manager_get_in_vec(flow_manager),
                              flow_manager_get_chain(flow_manager),
-                             flow_manager_get_in_values(flow_manager),
                              lcore_id, time,
                              config.max_flows,
                              config.start_port);
@@ -153,9 +151,8 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 void nf_loop_iteration_end(unsigned lcore_id,
                            time_t time) {
   loop_iteration_end(flow_manager_get_in_table(flow_manager),
-                     flow_manager_get_in_keys(flow_manager),
+                     flow_manager_get_in_vec(flow_manager),
                      flow_manager_get_chain(flow_manager),
-                     flow_manager_get_in_values(flow_manager),
                      lcore_id, time,
                      config.max_flows,
                      config.start_port);
