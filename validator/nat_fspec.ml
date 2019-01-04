@@ -208,15 +208,12 @@ let fun_types =
                             extra_ptr_types = estt ["borrowed_cell", Ptr flow_id_struct;];
                             lemmas_before = [
                               (fun params ->
-                                   "/*@ if (!values_v_borrowed) { close hide_vector<flow>(_, _, _, _); } @*/\n" ^
                                    "//@ assert vectorp<flow_id>(" ^ (List.nth_exn params.args 0) ^
                                    ", flow_idp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
                                    ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n")
                             ];
                             lemmas_after = [
                               (fun params ->
-                                   "/*@ if (!values_v_borrowed) { open hide_vector<flow>(_, _, _, _); } @*/\n" ^
-                                   "keys_v_borrowed = true;\n" ^
                                    "struct FlowId * " ^ (params.tmp_gen "elem") ^
                                    " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
                                    "//@ assert [?" ^ (params.tmp_gen "fr") ^
@@ -917,7 +914,6 @@ struct
 #include \"lib/stubs/containers/double-map-stub-control.h\"\n\
 #include \"vignat/nat_loop.h\"\n" ^
                   (In_channel.read_all "preamble.tmpl") ^
-                  (In_channel.read_all "preamble_hide.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
@@ -934,9 +930,6 @@ struct
                   uint16_t sent_on_port;\n\
                   uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n\
-                  bool keys_v_allocated = false;\n\
-                  bool keys_v_borrowed = false;\n\
-                  bool values_v_borrowed = false;\n\
                   //@ dchain flow_chain;\n\
                   //@ list<pair<flow_id, int> > flow_map;\n\
                   //@ list<pair<flow_id, real> > keys_vec;\n\
