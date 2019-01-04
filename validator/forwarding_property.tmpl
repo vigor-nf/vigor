@@ -106,9 +106,9 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
                                             the_received_packet.ipv4.dst_addr,
                                             0, //FIXME: should be the NAT ip
                                             the_received_packet.ipv4.next_proto_id);
-            flow flow_inserted = flow(internal_flow_id,
-                                      external_flow_id,
-                                      received_on_port);
+            flow flow_inserted = flw(internal_flow_id,
+                                     external_flow_id,
+                                     received_on_port);
 
             flow_chain = emap_allocate_int(flow_map, keys_vec, flow_chain, now, idx);
             flow_map = emap_add_map(flow_map, keys_vec, flow_chain, internal_flow_id, idx);
