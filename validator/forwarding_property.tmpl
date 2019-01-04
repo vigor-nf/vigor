@@ -43,20 +43,27 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           int flow_indx = the_received_packet.tcp.dst_port - start_port;
           if (emap_has_index(flow_map, flow_vec, flow_chain, flow_indx)) { 
             // flow is present in the table
-            assert true == a_packet_sent;
             flow_id internal_flow = fst(nth(flow_indx, flow_vec));
             flow_chain = emap_rejuvenate_idx_chain(flow_map, flow_vec, flow_chain, flow_indx, now);
-            assert flid(sent_packet.tcp.dst_port,
-                        sent_packet.tcp.src_port,
-                        sent_packet.ipv4.dst_addr,
-                        sent_packet.ipv4.src_addr,
-                        sent_on_port,
-                        sent_packet.ipv4.next_proto_id) ==
-                  internal_flow;
-            assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
-            if (the_received_packet.ipv4.next_proto_id == 6) {
-              assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
-                                                    sent_packet);
+            switch(internal_flow) { case flid(sp, dp, sip, dip, idev, prot):
+              if (dip  != the_received_packet.ipv4.src_addr ||
+                  dp   != the_received_packet.tcp.src_port ||
+                  prot != the_received_packet.ipv4.next_proto_id) {
+                assert false == a_packet_sent;
+              } else {
+                assert true == a_packet_sent;
+                assert sent_packet.tcp.dst_port == sp;
+                assert sent_packet.tcp.src_port == dp;
+                assert sent_packet.ipv4.dst_addr == sip;
+                assert sent_packet.ipv4.src_addr == dip;
+                assert sent_on_port == idev;
+                assert sent_packet.ipv4.next_proto_id == prot;
+                assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
+                if (the_received_packet.ipv4.next_proto_id == 6) {
+                  assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
+                                                        sent_packet);
+                }
+              }
             }
           } else {
             // no flow in the table
