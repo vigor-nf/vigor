@@ -36,16 +36,16 @@ extern struct str_field_descr flow_id_descrs[6];
     idptr->dst_port |-> ?dp &*&
     idptr->src_ip |-> ?sip &*&
     idptr->dst_ip |-> ?dip &*&
-    idptr->protocol |-> ?prot &*&
     idptr->internal_device |-> ?idev &*&
-    id == flid(sp, dp, sip, dip, prot, idev);
+    idptr->protocol |-> ?prot &*&
+    id == flid(sp, dp, sip, dip, idev, prot);
 
 
   fixpoint long long _wrap(long long x) { return x % INT_MAX; }
 
   fixpoint unsigned _flow_id_hash(flow_id id) {
-    switch(id) {case flid(sp, dp, sip, dip, prot, idev):
-                     return _wrap((((((sp * 31) + dp) * 31 + sip) * 31 + dip) * 31 + prot) * 31 + idev);}
+    switch(id) {case flid(sp, dp, sip, dip, idev, prot):
+      return _wrap((((((sp * 31) + dp) * 31 + sip) * 31 + dip) * 31 + prot) * 31 + idev);}
   }
   @*/
 
