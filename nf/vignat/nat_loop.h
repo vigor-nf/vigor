@@ -12,7 +12,9 @@ predicate evproc_loop_invariant(struct Map* mp,
                                 struct Vector* in_vec,
                                 struct DoubleChain *chp,
                                 unsigned int lcore_id,
-                                time_t time, int max_flows, int start_port) =
+                                time_t time, int max_flows,
+                                int start_port,
+                                uint32_t ext_ip) =
           mapp<flow_id>(mp, flow_idp, _flow_id_hash, nop_true, mapc(max_flows, ?m, ?maddr)) &*&
           vectorp<flow_id>(in_vec, flow_idp, ?ifs, ?ifaddrs) &*&
           double_chainp(?ch, chp) &*&
@@ -30,29 +32,34 @@ void loop_iteration_assumptions(struct Map** m,
                                 struct Vector** v,
                                 struct DoubleChain** ch,
                                 unsigned int lcore_id,
-                                time_t time, int max_flows, int start_port);
+                                time_t time, int max_flows, int start_port,
+                                uint32_t ext_ip);
 
 void loop_iteration_assertions(struct Map** m,
                                struct Vector** v,
                                struct DoubleChain** ch,
                                unsigned int lcore_id,
-                               time_t time, int max_flows, int start_port);
+                               time_t time, int max_flows, int start_port,
+                               uint32_t ext_ip);
 
 void loop_invariant_consume(struct Map** m,
                             struct Vector** v,
                             struct DoubleChain** ch,
                             unsigned int lcore_id,
-                            time_t time, int max_flows, int start_port);
+                            time_t time, int max_flows, int start_port,
+                            uint32_t ext_ip);
 /*@ requires *m |-> ?mp &*& *v |-> ?vkp &*& *ch |-> ?chp &*&
              evproc_loop_invariant(mp, vkp, chp, lcore_id,
-                                   time, max_flows, start_port); @*/
+                                   time, max_flows, start_port,
+                                   ext_ip); @*/
 /*@ ensures *m |-> mp &*& *v |-> vkp &*& *ch |-> chp; @*/
 
 void loop_invariant_produce(struct Map** m,
                             struct Vector** v,
                             struct DoubleChain** ch,
                             unsigned int* lcore_id,
-                            time_t *time, int max_flows, int start_port);
+                            time_t *time, int max_flows, int start_port,
+                            uint32_t ext_ip);
 /*@ requires *m |-> ?mp &*& *v |-> ?vkp &*& *ch |-> ?chp &*&
              *lcore_id |-> _ &*&
              *time |-> _; @*/
@@ -60,25 +67,29 @@ void loop_invariant_produce(struct Map** m,
             *lcore_id |-> ?lcid &*&
             *time |-> ?t &*&
             evproc_loop_invariant(mp, vkp, chp, lcid,
-                                  t, max_flows, start_port); @*/
+                                  t, max_flows, start_port,
+                                  ext_ip); @*/
 
 void loop_iteration_begin(struct Map** m,
                           struct Vector** v,
                           struct DoubleChain** ch,
                           unsigned int lcore_id,
-                          time_t time, int max_flows, int start_port);
+                          time_t time, int max_flows, int start_port,
+                          uint32_t ext_ip);
 
 void loop_iteration_end(struct Map** m,
                         struct Vector** v,
                         struct DoubleChain** ch,
                         unsigned int lcore_id,
-                        time_t time, int max_flows, int start_port);
+                        time_t time, int max_flows, int start_port,
+                        uint32_t ext_ip);
 
 void loop_enumeration_begin(struct Map** m,
                             struct Vector** v,
                             struct DoubleChain** ch,
                             unsigned int lcore_id,
                             time_t time, int max_flows, int start_port,
+                            uint32_t ext_ip,
                             int cnt);
 //@ requires true;
 //@ ensures true;
@@ -87,7 +98,8 @@ void loop_enumeration_end(struct Map** m,
                           struct Vector** v,
                           struct DoubleChain** ch,
                           unsigned int lcore_id,
-                          time_t time, int max_flows, int start_port);
+                          time_t time, int max_flows, int start_port,
+                          uint32_t ext_ip);
 //@ requires true;
 //@ ensures true;
 

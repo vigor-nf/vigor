@@ -142,7 +142,8 @@ void nf_loop_iteration_begin(unsigned lcore_id,
                        flow_manager_get_chain(flow_manager),
                        lcore_id, time,
                        config.max_flows,
-                       config.start_port);
+                       config.start_port,
+                       config.external_addr);
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
@@ -152,7 +153,8 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
                              flow_manager_get_chain(flow_manager),
                              lcore_id, time,
                              config.max_flows,
-                             config.start_port);
+                             config.start_port,
+                             config.external_addr);
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
@@ -162,7 +164,8 @@ void nf_loop_iteration_end(unsigned lcore_id,
                      flow_manager_get_chain(flow_manager),
                      lcore_id, time,
                      config.max_flows,
-                     config.start_port);
+                     config.start_port,
+                     config.external_addr);
 }
 #endif
 

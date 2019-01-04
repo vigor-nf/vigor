@@ -258,11 +258,14 @@ let fun_types =
                                                  Uint32;
                                                  Sint64;
                                                  Sint32;
-                                                 Sint32];
+                                                 Sint32;
+                                                 Uint32];
                                 extra_ptr_types = [];
                                 lemmas_before = [
                                   (fun {args;_} ->
                                      "start_port = " ^ List.nth_exn args 6 ^ ";");
+                                  (fun {args;_} ->
+                                     "external_addr = " ^ List.nth_exn args 7 ^ ";");
                                   (fun {args;_} ->
                                      "/*@ close evproc_loop_invariant(*" ^
                                      List.nth_exn args 0 ^ ", *" ^
@@ -271,7 +274,8 @@ let fun_types =
                                      List.nth_exn args 3 ^ ", " ^
                                      List.nth_exn args 4 ^ ", " ^
                                      List.nth_exn args 5 ^ ", " ^
-                                     List.nth_exn args 6 ^ "); @*/");
+                                     List.nth_exn args 6 ^ ", " ^
+                                     List.nth_exn args 7 ^ "); @*/");
                                 ];
                                 lemmas_after = [];};
      "loop_invariant_produce", {ret_type = Static Void;
@@ -281,7 +285,8 @@ let fun_types =
                                                  Ptr Uint32;
                                                  Ptr Sint64;
                                                  Sint32;
-                                                 Sint32];
+                                                 Sint32;
+                                                 Uint32];
                                 extra_ptr_types = [];
                                 lemmas_before = [];
                                 lemmas_after = [
@@ -293,9 +298,12 @@ let fun_types =
                                      (List.nth_exn args 3) ^ ", *" ^
                                      (List.nth_exn args 4) ^ ", " ^
                                      (List.nth_exn args 5) ^ ", " ^
-                                     (List.nth_exn args 6) ^ "); @*/");
+                                     (List.nth_exn args 6) ^ ", " ^
+                                     (List.nth_exn args 7) ^ "); @*/");
                                   (fun params ->
                                      "start_port = " ^ List.nth_exn params.args 6 ^ ";");
+                                  (fun {args;_} ->
+                                     "external_addr = " ^ List.nth_exn args 7 ^ ";");
                                   (fun {tmp_gen;args;_} ->
                                      "\n/*@ {\n\
                                       assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
@@ -918,6 +926,7 @@ struct
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
                   int start_port;\n\
+                  int external_addr;\n\
                   uint32_t external_ip = 0;\n\
                   uint16_t received_on_port;\n\
                   uint32_t received_packet_type;\n\
