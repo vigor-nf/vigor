@@ -1,7 +1,9 @@
-assert map_vec_chain_coherent<flow_id>(?final_flow_map, ?final_keys_vec, ?final_flow_chain);
-assert vectorp<flow>(_, _, ?final_vals_vec, _);
+assert map_vec_chain_coherent<flow_id>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
 
 #define EXP_TIME (10)
+//TODO: get the nat addr
+#define EXT_IP_ADDR (0)
+#define EXT_PORT 1
 
 #define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
     after.ether.ether_type     == before.ether.ether_type &&      \
@@ -21,43 +23,34 @@ assert vectorp<flow>(_, _, ?final_vals_vec, _);
     after.tcp.rx_win           == before.tcp.rx_win &&        \
     after.tcp.tcp_urp          == before.tcp.tcp_urp
 
-//flowtable initial_ft = abstract_function(initial_double_map,
-//                                         initial_double_chain);
-//flowtable final_ft = abstract_function(final_map, final_chain);
-   
 bit_and_hack();
 if (EXP_TIME < now) {// consider only normal moments, remote from the start of the epoch
 
   // 0x10 -> IPv4
   if (a_packet_received && ((received_packet_type & 0x10) == 0x10)) {
 
-    flow_map = emap_expire_all_map(flow_map, keys_vec, flow_chain, now - EXP_TIME);
-    keys_vec = emap_expire_all_vec(flow_map, keys_vec, flow_chain, now - EXP_TIME);
-    flow_chain = emap_expire_all_chain(flow_map, keys_vec, flow_chain, now - EXP_TIME);
-
-    //flowtable after_expiration_ft =
-    //  abstract_function(map_after_expiration, chain_after_expiration);
-
-    //assert after_expiration_ft == flowtable_expire_flows(initial_ft, now - 10);
+    flow_map = emap_expire_all_map(flow_map, flow_vec, flow_chain, now - EXP_TIME);
+    keys_vec = emap_expire_all_vec(flow_map, flow_vec, flow_chain, now - EXP_TIME);
+    flow_chain = emap_expire_all_chain(flow_map, flow_vec, flow_chain, now - EXP_TIME);
 
     // 6/17 -> TCP/UDP
     if (the_received_packet.ipv4.next_proto_id == 6 ||
         the_received_packet.ipv4.next_proto_id == 17) {
-      if (received_on_port == 1) {
+      if (received_on_port == EXT_PORT) {
         // packet from the external network
-        int flow_indx = the_received_packet.tcp.dst_port + start_port;
-        if (emap_has_index(flow_map, keys_vec, flow_chain, flow_indx)) { 
+        int flow_indx = the_received_packet.tcp.dst_port - start_port;
+        if (emap_has_index(flow_map, flow_vec, flow_chain, flow_indx)) { 
           // flow is present in the table
           assert true == a_packet_sent;
-          flow flw = fst(nth(flow_indx, vals_vec));
-          flow_chain = emap_rejuvenate_idx_chain(flow_map, keys_vec, flow_chain, flow_indx, now);
+          flow_id internal_flow = fst(nth(flow_indx, flow_vec));
+          flow_chain = emap_rejuvenate_idx_chain(flow_map, flow_vec, flow_chain, flow_indx, now);
           assert flid(sent_packet.tcp.dst_port,
                       sent_packet.tcp.src_port,
                       sent_packet.ipv4.dst_addr,
                       sent_packet.ipv4.src_addr,
+                      sent_on_port,
                       sent_packet.ipv4.next_proto_id) ==
-                 flow_get_internal_id(flw);
-          assert sent_on_port == flow_get_internal_device(flw);
+                 internal_flow;
           assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
           if (the_received_packet.ipv4.next_proto_id == 6) {
             assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
@@ -66,7 +59,6 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
         } else {
           // no flow in the table
           assert false == a_packet_sent;
-          //assert final_ft == after_expiration_ft;
         }
       } else {
         // packet from the internal network
@@ -74,58 +66,47 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
                                         the_received_packet.tcp.dst_port,
                                         the_received_packet.ipv4.src_addr,
                                         the_received_packet.ipv4.dst_addr,
+                                        received_on_port,
                                         the_received_packet.ipv4.next_proto_id);
-        if (emap_has(flow_map, keys_vec, flow_chain, internal_flow_id)) {
+        if (emap_has(flow_map, flow_vec, flow_chain, internal_flow_id)) {
           // flow present in the table
+          int idx = emap_get(flow_map, flow_vec, flow_chain, internal_flow_id);
+          //flow flw = fst(nth(idx, flow_vec));
+          flow_chain = emap_rejuvenate_idx_chain(flow_map, flow_vec, flow_chain, idx, now);
           assert true == a_packet_sent;
-          int idx = emap_get(flow_map, keys_vec, flow_chain, internal_flow_id);
-          flow flw = fst(nth(idx, vals_vec));
-          flow_chain = emap_rejuvenate_idx_chain(flow_map, keys_vec, flow_chain, idx, now);
-          assert flid(sent_packet.tcp.dst_port,
-                      sent_packet.tcp.src_port,
-                      sent_packet.ipv4.dst_addr,
-                      sent_packet.ipv4.src_addr,
-                      sent_packet.ipv4.next_proto_id) ==
-                 flow_get_external_id(flw);
+          assert sent_packet.tcp.src_port == idx + start_port;
+          assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
+          assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
+          assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
+          assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
+          assert sent_on_port == EXTERNAL_PORT;
           assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
           if (the_received_packet.ipv4.next_proto_id == 6) {
-            assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
-                                                   sent_packet);
+            assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet, sent_packet);
           }
         } else {
           // No flow in the table
-          if (emap_full(flow_map, keys_vec, flow_chain)) {
+          if (emap_full(flow_map, flow_vec, flow_chain)) {
             // Flowtable overflow
             assert false == a_packet_sent;
           } else {
             // The flow must have been inserted
             int idx = the_index_allocated;
 
-            flow_id external_flow_id = flid(the_received_packet.tcp.dst_port,
-                                            idx + start_port,
-                                            the_received_packet.ipv4.dst_addr,
-                                            0, //FIXME: should be the NAT ip
-                                            the_received_packet.ipv4.next_proto_id);
-            flow flow_inserted = flw(internal_flow_id,
-                                     external_flow_id,
-                                     received_on_port);
-
-            flow_chain = emap_allocate_int(flow_map, keys_vec, flow_chain, now, idx);
-            flow_map = emap_add_map(flow_map, keys_vec, flow_chain, internal_flow_id, idx);
-            keys_vec = emap_add_vec(flow_map, keys_vec, flow_chain, internal_flow_id, idx);
-            vals_vec = update(idx, pair(flow_inserted, 1.0), vals_vec);
+            flow_chain = emap_allocate_int(flow_map, flow_vec, flow_chain, now, idx);
+            flow_map = emap_add_map(flow_map, flow_vec, flow_chain, internal_flow_id, idx);
+            flow_vec = emap_add_vec(flow_map, flow_vec, flow_chain, internal_flow_id, idx);
 
             assert true == a_packet_sent;
-            assert flid(sent_packet.tcp.dst_port,
-                        sent_packet.tcp.src_port,
-                        sent_packet.ipv4.dst_addr,
-                        sent_packet.ipv4.src_addr,
-                        sent_packet.ipv4.next_proto_id) ==
-                   external_flow_id;
+            assert sent_packet.tcp.src_port == idx + start_port;
+            assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
+            assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
+            assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
+            assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
+            assert sent_on_port == EXTERNAL_PORT;
             assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
             if (the_received_packet.ipv4.next_proto_id == 6) {
-              assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet,
-                                                     sent_packet);
+              assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet, sent_packet);
             }
           }
         }
@@ -139,7 +120,6 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
     assert false == a_packet_sent;
   }
 assert final_flow_map == flow_map;
-assert final_keys_vec == keys_vec;
+assert final_flow_vec == flow_vec;
 assert final_flow_chain == flow_chain;
-assert final_vals_vec == vals_vec;
 }
