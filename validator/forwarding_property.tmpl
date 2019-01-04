@@ -66,7 +66,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
         } else {
           // no flow in the table
           assert false == a_packet_sent;
-          assert final_ft == after_expiration_ft;
+          //assert final_ft == after_expiration_ft;
         }
       } else {
         // packet from the internal network
@@ -78,8 +78,9 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
         if (emap_has(flow_map, keys_vec, flow_chain, internal_flow_id)) {
           // flow present in the table
           assert true == a_packet_sent;
-          flow flw = emap_get(flow_map, keys_vec, flow_chain, internal_flow_id);
-          flow_chain = emap_rejuvenate_idx_chain(flow_map, keys_vec, flow_chain, internal_flow_id, now);
+          int idx = emap_get(flow_map, keys_vec, flow_chain, internal_flow_id);
+          flow flw = fst(nth(idx, vals_vec));
+          flow_chain = emap_rejuvenate_idx_chain(flow_map, keys_vec, flow_chain, idx, now);
           assert flid(sent_packet.tcp.dst_port,
                       sent_packet.tcp.src_port,
                       sent_packet.ipv4.dst_addr,
