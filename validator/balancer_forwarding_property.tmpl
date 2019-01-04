@@ -70,7 +70,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               }
               assert UNRELEVANT_FIELDS_UNCHANGED(pkt_recv,pkt_sent);
             } else {
-              flow_map = emap_erase(flow_emap, packet_flow);
+              flow_emap = emap_erase(flow_emap, packet_flow);
               alloc_flow_and_process_packet = true;
             }
           } else {
@@ -85,7 +85,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               } else {
                 int idx = the_index_allocated;
                 flow_emap = emap_allocate_int(flow_emap, now, idx);
-                flow_map = emap_add(flow_emap, packet_flow, idx);
+                flow_emap = emap_add(flow_emap, packet_flow, idx);
                 fidbid_veca = update(idx, pair(bknd, 1.0), fidbid_veca);
               }
               lb_backendi backend = fst(nth(bknd, backends_veca));
