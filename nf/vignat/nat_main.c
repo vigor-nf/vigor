@@ -62,7 +62,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		NF_DEBUG("Device %" PRIu16 " is external", mbuf->port);
 
     struct FlowId internal_flow;
-		if (flow_manager_get_external(flow_manager, mbuf->port, now, &internal_flow)) {
+		if (flow_manager_get_external(flow_manager, tcpudp_header->dst_port, now, &internal_flow)) {
 			NF_DEBUG("Found internal flow.");
       flow_log_id(&internal_flow);
 
