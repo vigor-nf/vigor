@@ -88,7 +88,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
             assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
             assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
             assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
-            assert sent_on_port == EXTERNAL_PORT;
+            assert sent_on_port == EXT_PORT;
             assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
             if (the_received_packet.ipv4.next_proto_id == 6) {
               assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet, sent_packet);
@@ -112,7 +112,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
               assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
               assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
               assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
-              assert sent_on_port == EXTERNAL_PORT;
+              assert sent_on_port == EXT_PORT;
               assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
               if (the_received_packet.ipv4.next_proto_id == 6) {
                 assert UNRELEVANT_TCP_FIELDS_UNCHANGED(the_received_packet, sent_packet);
