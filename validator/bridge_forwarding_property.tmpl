@@ -36,14 +36,13 @@ assert double_chainp(?final_chain,_);
       pkta.tcp.rx_win           == pktb.tcp.rx_win &&        \
       pkta.tcp.tcp_urp          == pktb.tcp.tcp_urp))
 
-list<pair<ether_addri, int> > dyn_map = initial_dyn_map;
-list<pair<ether_addri, real> > dyn_key_vec = initial_dyn_key_vec;
-dchain dyn_chain = initial_chain;
+emap<ether_addri> dyn_emap = emap(initial_dyn_map, initial_dyn_key_vec, initial_chain);
 list<pair<uint16_t, real> > dyn_val_vec = initial_dyn_val_vec;
-
-list<pair<stat_keyi, int> > stat_map = initial_stat_map;
-list<pair<stat_keyi, real> > stat_vec = initial_stat_key_vec;
 dchain stat_chain;//dummy
+emap<stat_keyi> stat_emap = emap(initial_stat_map, initial_stat_key_vec, stat_chain);
+
+emap<ether_addri> final_dyn_emap = emap(final_dyn_map, final_dyn_key_vec, final_chain);
+emap<stat_keyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_chain);
 
 bit_and_hack();
 if (300 < now) {// consider only normal moments, remote from the start of the epoch
@@ -54,26 +53,23 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
     assert ether_addrp(&(the_received_packet.ether.s_addr), ?src_addr);
     stat_keyi static_key = stkc(received_on_port, dst_addr);
 
-    dyn_map = emap_expire_all_map(dyn_map, dyn_key_vec, dyn_chain, now - 10);
-    dyn_key_vec = emap_expire_all_vec(dyn_map, dyn_key_vec, dyn_chain, now - 10);
-    dyn_chain = emap_expire_all_chain(dyn_map, dyn_key_vec, dyn_chain, now - 10);
+    dyn_emap = emap_expire_all(dyn_emap, now - 10);
 
    // State postcondition
-   if (emap_has(dyn_map, dyn_key_vec, dyn_chain, src_addr)) {
-     dyn_chain = emap_rejuvenate_chain(dyn_map, dyn_key_vec, dyn_chain, src_addr, now);
+   if (emap_has(dyn_emap, src_addr)) {
+     dyn_emap = emap_rejuvenate_idx(dyn_emap, emap_get(dyn_emap, src_addr), now);
    } else {
-      if (!emap_full(dyn_map, dyn_key_vec, dyn_chain)) {
-        int idx = the_index_allocated;//emap_get_next_int(flow_map, flow_vec, flow_chain);
-        dyn_chain = emap_allocate_int(dyn_map, dyn_key_vec, dyn_chain, now, idx);
-        dyn_map = emap_add_map(dyn_map, dyn_key_vec, dyn_chain, src_addr, idx);
-        dyn_key_vec = emap_add_vec(dyn_map, dyn_key_vec, dyn_chain, src_addr, idx);
+      if (!emap_full(dyn_emap)) {
+        int idx = the_index_allocated;
+        dyn_emap = emap_allocate_int(dyn_emap, now, idx);
+        dyn_emap = emap_add(dyn_emap, src_addr, idx);
         dyn_val_vec = update(idx, pair(received_on_port, 1.0), dyn_val_vec);
       }
     }
 
     // Output packet postcondition
-    if (emap_has(stat_map, stat_vec, stat_chain, static_key)) {
-      int output_port = emap_get(stat_map, stat_vec, stat_chain, static_key);
+    if (emap_has(stat_emap, static_key)) {
+      int output_port = emap_get(stat_emap, static_key);
       if (output_port == -2 ||
           output_port == received_on_port) {
         assert false == a_packet_sent;
@@ -85,8 +81,8 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
         assert PACKETS_EQUAL(the_received_packet, sent_packet);
       }
     } else {
-      if (emap_has(dyn_map, dyn_key_vec, dyn_chain, dst_addr)) {
-        int idx = emap_get(dyn_map, dyn_key_vec, dyn_chain, dst_addr);
+      if (emap_has(dyn_emap, dst_addr)) {
+        int idx = emap_get(dyn_emap, dst_addr);
         int output_port = fst(nth(idx, dyn_val_vec));
         if (output_port == received_on_port) {
           assert false == a_packet_sent;
@@ -105,10 +101,7 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
     }
   }
 
-assert final_dyn_map == dyn_map;
-assert final_dyn_key_vec == dyn_key_vec;
-assert final_chain == dyn_chain;
+assert final_dyn_emap == dyn_emap;
 assert final_dyn_val_vec == dyn_val_vec;
-assert final_stat_map == stat_map;
-assert final_stat_key_vec == stat_vec;
+assert final_stat_emap == stat_emap;
 }

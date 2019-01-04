@@ -1,12 +1,3 @@
-//mapi<lb_flowi> flow_map;
-//list<pair<lb_flowi, real> > flow_vec;
-//dchain flow_chain;
-//list<pair<uint32_t, real> > fidbid_veca;
-//list<pair<uint32_t, real> > ip_veca;
-//list<pair<lb_backendi, real> > backends_veca;
-//mapi<uint32_t> backend_ip_map; 
-//dchain active_backends;
-//list<pair<uint32_t, real> > cht;
 
 #define EXP_TIME 10
 #define BACKEND_EXP_TIME 60
@@ -16,16 +7,6 @@ assert map_vec_chain_coherent<uint32_t>(?final_backend_ip_map, ?final_ip_veca, ?
 assert vectorp<uint32_t>(fidbid_veca_ptr, u_integer, ?final_fidbid_veca, _);
 assert vectorp<uint32_t>(cht_ptr, u_integer, ?final_cht, _);
 assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca, _);
-
-//mapi<lb_flowi> final_flow_map;
-//list<pair<lb_flowi, real> > final_flow_vec;
-//dchain final_flow_chain;
-//list<pair<uint32_t, real> > final_fidbid_veca;
-//list<pair<uint32_t, real> > final_ip_veca;
-//list<pair<lb_backendi, real> > final_backends_veca;
-//mapi<uint32_t> final_backend_ip_map; 
-//dchain final_active_backends;
-//list<pair<uint32_t, real> > final_cht;
 
 //TODO: refine the predicate
 #define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
@@ -45,18 +26,19 @@ assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca
       after.tcp.rx_win           == before.tcp.rx_win &&        \
       after.tcp.tcp_urp          == before.tcp.tcp_urp))
 
+emap<lb_flowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
+emap<uint32_t> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
+
+emap<lb_flowi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
+emap<uint32_t> final_backend_ip_emap = emap(final_backend_ip_map, final_ip_veca, final_active_backends);
 
 // Consider only normal moments, remote from the start of the epoch
 if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
 
   if (a_packet_received) {
 
-    flow_map = emap_expire_all_map(flow_map, flow_vec, flow_chain, now - EXP_TIME);
-    flow_vec = emap_expire_all_vec(flow_map, flow_vec, flow_chain, now - EXP_TIME);
-    flow_chain = emap_expire_all_chain(flow_map, flow_vec, flow_chain, now - EXP_TIME);
-    backend_ip_map = emap_expire_all_map(backend_ip_map, ip_veca, active_backends, now - BACKEND_EXP_TIME);
-    ip_veca = emap_expire_all_vec(backend_ip_map, ip_veca, active_backends, now - BACKEND_EXP_TIME);
-    active_backends = emap_expire_all_chain(backend_ip_map, ip_veca, active_backends, now - BACKEND_EXP_TIME);
+    flow_emap = emap_expire_all(flow_emap, now - EXP_TIME);
+    backend_ip_emap = emap_expire_all(backend_ip_emap, now - BACKEND_EXP_TIME);
 
     // 0x10 -> IPv4
     if ((received_packet_type & 0x10) == 0x10) {
@@ -75,11 +57,11 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                                           pkt_recv.ipv4.next_proto_id);
 
           bool alloc_flow_and_process_packet = false;
-          if (emap_has(flow_map, flow_vec, flow_chain, packet_flow)) {
-            int flow_id = emap_get(flow_map, flow_vec, flow_chain, packet_flow);
+          if (emap_has(flow_emap, packet_flow)) {
+            int flow_id = emap_get(flow_emap, packet_flow);
             int backend_id = fst(nth(flow_id, fidbid_veca));
-            if (emap_has_index(backend_ip_map, ip_veca, active_backends, backend_id)) {
-              flow_chain = emap_rejuvenate_chain(flow_map, flow_vec, flow_chain, packet_flow, now);
+            if (emap_has_index(backend_ip_emap, backend_id)) {
+              flow_emap = emap_rejuvenate_idx(flow_emap, emap_get(flow_emap, packet_flow), now);
               lb_backendi backend = fst(nth(backend_id, backends_veca));
               switch(backend) { case lb_backendc(nic, mac, ip):
                 assert sent_on_port == nic;
@@ -88,26 +70,22 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               }
               assert UNRELEVANT_FIELDS_UNCHANGED(pkt_recv,pkt_sent);
             } else {
-              flow_vec = emap_erase_vec(flow_map, flow_vec, flow_chain, packet_flow);
-              flow_chain = emap_erase_chain(flow_map, flow_vec, flow_chain, packet_flow);
-              flow_map = emap_erase_map(flow_map, flow_vec, flow_chain, packet_flow);
+              flow_map = emap_erase(flow_emap, packet_flow);
               alloc_flow_and_process_packet = true;
             }
           } else {
             alloc_flow_and_process_packet = true;
           }
           //flow_map, fwd_flow, out_dev = pp_with_flow_alloc(paket_flow, flow_map, backend_ip_map, now);
-          // pp_with_flow_alloc(p : Packet, f : map<flow>, t : Timestamp) -> (map<flow>, packet, uint32_t)
           if (alloc_flow_and_process_packet) {
-            if (cht_exists(lb_flow_hash_2(packet_flow), cht, active_backends)) {
-              int bknd = cht_choose(lb_flow_hash_2(packet_flow), cht, active_backends);
-              if (emap_full(flow_map, flow_vec, flow_chain)) {
+            if (emap_exists_with_cht(backend_ip_emap, cht, lb_flow_hash_2(packet_flow))) {
+              int bknd = emap_choose_with_cht(backend_ip_emap, cht, lb_flow_hash_2(packet_flow));
+              if (emap_full(flow_emap)) {
                 // do not change the state
               } else {
-                int idx = the_index_allocated;//emap_get_next_int(flow_map, flow_vec, flow_chain);
-                flow_chain = emap_allocate_int(flow_map, flow_vec, flow_chain, now, idx);
-                flow_map = emap_add_map(flow_map, flow_vec, flow_chain, packet_flow, idx);
-                flow_vec = emap_add_vec(flow_map, flow_vec, flow_chain, packet_flow, idx);
+                int idx = the_index_allocated;
+                flow_emap = emap_allocate_int(flow_emap, now, idx);
+                flow_map = emap_add(flow_emap, packet_flow, idx);
                 fidbid_veca = update(idx, pair(bknd, 1.0), fidbid_veca);
               }
               lb_backendi backend = fst(nth(bknd, backends_veca));
@@ -123,18 +101,19 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
             }
           }
         } else { // A heartbeat packet from a backend
-          // process_heartbeat(ip : uint32, mac : uint48, nic : uint8, t : Timestamp) -> (map<uint32_t>, list<backend>, list<pair<uint32_t, real> >)
           {
-            if (emap_has(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr)) {
-              active_backends = emap_rejuvenate_chain(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, now);
+            if (emap_has(backend_ip_emap, pkt_recv.ipv4.src_addr)) {
+              active_backends = emap_rejuvenate_idx(backend_ip_emap,
+                                                    emap_get(backend_ip_emap,
+                                                             pkt_recv.ipv4.src_addr),
+                                                    now);
             } else {
-              if (emap_full(backend_ip_map, ip_veca, active_backends)) {
+              if (emap_full(backend_ip_emap)) {
                 // What you gonna do? (nothing, the question is rhetorical)
               } else {
-                int idx = the_index_allocated;//emap_get_next_int(backend_ip_map, ip_veca, active_backends);
-                active_backends = emap_allocate_int(backend_ip_map, ip_veca, active_backends, now, idx);
-                backend_ip_map = emap_add_map(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, idx);
-                ip_veca = emap_add_vec(backend_ip_map, ip_veca, active_backends, pkt_recv.ipv4.src_addr, idx);
+                int idx = the_index_allocated;
+                backend_ip_emap = emap_allocate_int(backend_ip_emap, now, idx);
+                backend_ip_emap = emap_add(backend_ip_emap, pkt_recv.ipv4.src_addr, idx);
                 assert ether_addrp(&pkt_recv.ether.s_addr, ?source_mac);
                 backends_veca = update(idx, pair(lb_backendc(received_on_port, source_mac, pkt_recv.ipv4.src_addr), 1.0), backends_veca);
               }
@@ -153,13 +132,9 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
 
   }//a packet received
 
-assert final_flow_map == flow_map;
-assert final_flow_vec == flow_vec;
-assert final_flow_chain == flow_chain;
+assert final_flow_emap == flow_emap;
 assert final_fidbid_veca == fidbid_veca;
-assert final_ip_veca == ip_veca;
 assert final_backends_veca == backends_veca;
-assert final_backend_ip_map == backend_ip_map;
-assert final_active_backends == active_backends;
+assert final_backend_ip_emap == backend_ip_emap;
 assert final_cht == cht;//redundant, should be immutable.
 }

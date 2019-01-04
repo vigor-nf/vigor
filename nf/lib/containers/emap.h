@@ -5,6 +5,7 @@
 #include "lib/containers/map.h"
 #include "lib/containers/vector.h"
 #include "lib/containers/double-chain.h"
+#include "lib/containers/cht.h"
 
 /*@
   inductive emap<t> = emap(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch);
@@ -59,7 +60,7 @@
     }
   }
 
-  fixpoint emap<t> emap_add_map<t>(emap<t> em, t k, int i) {
+  fixpoint emap<t> emap_add<t>(emap<t> em, t k, int i) {
     switch(em) { case emap(m, v, ch):
       return emap(map_put_fp(m, k, i), update(i, pair(k, 0.75), v), ch);
     }
@@ -68,6 +69,18 @@
   fixpoint bool emap_full<t>(emap<t> em) {
     switch(em) { case emap(m, v, ch):
       return dchain_out_of_space_fp(ch);
+    }
+  }
+
+  fixpoint bool emap_exists_with_cht<t>(emap<t> em, list<pair<uint32_t, real> > cht, int hash) {
+    switch(em) { case emap(m, v, ch):
+      return cht_exists(hash, cht, ch);
+    }
+  }
+
+  fixpoint int emap_choose_with_cht<t>(emap<t> em, list<pair<uint32_t, real> > cht, int hash) {
+    switch(em) { case emap(m, v, ch):
+      return cht_choose(hash, cht, ch);
     }
   }
   @*/

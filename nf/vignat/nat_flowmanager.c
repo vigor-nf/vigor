@@ -15,7 +15,6 @@ struct FlowManager {
 	uint16_t nat_device;
 	uint32_t expiration_time; /*seconds*/
 	struct DoubleChain* chain;
-	//struct DoubleMap* table;
   struct Map* in_table;
   struct Vector* in_vec;
 };

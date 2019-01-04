@@ -93,7 +93,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
               int idx = the_index_allocated;
 
               flow_emap = emap_allocate_int(flow_emap, now, idx);
-              flow_emap = emap_add_map(flow_emap, internal_flow_id, idx);
+              flow_emap = emap_add(flow_emap, internal_flow_id, idx);
 
               assert true == a_packet_sent;
               assert sent_packet.tcp.src_port == idx + start_port;
