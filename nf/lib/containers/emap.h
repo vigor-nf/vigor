@@ -26,6 +26,7 @@
   fixpoint dchain emap_rejuvenate_idx_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i, time_t t) {
     return dchain_rejuvenate_fp(ch, i, t);
   }
+  //FIXME: delete this, can be expressed through rejuv_idx.
   fixpoint dchain emap_rejuvenate_chain<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, t k, time_t t) {
     return dchain_rejuvenate_fp(ch, map_get_fp(m, k), t);
   }
@@ -42,6 +43,10 @@
 
   fixpoint bool emap_has_index<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i) {
     return dchain_allocated_fp(ch, i);
+  }
+
+  fixpoint t emap_get_key<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, int i) {
+    return fst(nth(i, v));
   }
 
   fixpoint dchain emap_allocate_int<t>(list<pair<t, int> > m, list<pair<t, real> > v, dchain ch, time_t t, int i) {
