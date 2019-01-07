@@ -77,7 +77,6 @@ struct rte_mempool* clone_pool;
 // Buffer count for mempools
 static const unsigned MEMPOOL_BUFFER_COUNT = 256;
 
-
 // --- Initialization ---
 static int
 nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
