@@ -35,7 +35,7 @@ char* packet_borrow_next_chunk(struct Packet* p, size_t length) {
 }
 
 static inline
-void packet_return_chunk(struct Packet* p, char* chunk, size_t length) {
+void packet_return_all_chunks(struct Packet* p) {
   //Do nothing. needed only for verification
 }
 

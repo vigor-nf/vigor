@@ -195,6 +195,7 @@ lcore_main(void)
       p.mbuf = buf;
       packet_init(&p);
       uint16_t dst_device = nf_core_process(&p, VIGOR_NOW);
+      packet_return_all_chunks(&p);
 
       if (dst_device == VIGOR_DEVICE) {
         rte_pktmbuf_free(buf);
