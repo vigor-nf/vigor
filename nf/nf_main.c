@@ -13,6 +13,7 @@
 #include "lib/nf_log.h"
 #include "lib/nf_time.h"
 #include "lib/nf_util.h"
+#include "lib/packet-io.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/time_stub_control.h"
@@ -188,9 +189,11 @@ lcore_main(void)
   VIGOR_LOOP_BEGIN
     struct rte_mbuf* buf = NULL;
     uint16_t actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
+    struct Packet p;
+    p.mbuf = buf;
 
     if (actual_rx_len != 0) {
-      uint16_t dst_device = nf_core_process(buf, VIGOR_NOW);
+      uint16_t dst_device = nf_core_process(&p, VIGOR_NOW);
 
       if (dst_device == VIGOR_DEVICE) {
         rte_pktmbuf_free(buf);

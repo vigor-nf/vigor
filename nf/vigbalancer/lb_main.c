@@ -30,23 +30,25 @@ void nf_core_init()
 	}
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_core_process(struct Packet* p, time_t now)
 {
 	lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
 
-	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
+  uint16_t in_port = packet_get_port(p);
 
-	struct ipv4_hdr* ipv4_header = nf_get_mbuf_ipv4_header(mbuf);
+	struct ether_hdr* ether_header = packet_get_ether_header(p);
+
+	struct ipv4_hdr* ipv4_header = packet_then_get_ipv4_header(p);
 	if (ipv4_header == NULL) {
 		NF_DEBUG("Not IPv4, dropping");
-		return mbuf->port;
+		return in_port;
 	}
 
-	struct tcpudp_hdr* tcpudp_header = nf_get_ipv4_tcpudp_header(ipv4_header);
+	struct tcpudp_hdr* tcpudp_header = packet_then_get_tcpudp_header(p);
 	if (tcpudp_header == NULL) {
 		NF_DEBUG("Not TCP/UDP, dropping");
-		return mbuf->port;
+		return in_port;
 	}
 
 	struct LoadBalancedFlow flow = {
@@ -57,9 +59,9 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		.protocol = ipv4_header->next_proto_id
 	};
 
-	if (mbuf->port != 0) {
-    lb_process_heartbit(balancer, &flow, ether_header->s_addr, mbuf->port, now);
-		return mbuf->port;
+	if (in_port != 0) {
+    lb_process_heartbit(balancer, &flow, ether_header->s_addr, in_port, now);
+		return in_port;
 	}
 
 

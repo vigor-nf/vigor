@@ -82,7 +82,7 @@ char*
 nf_mac_to_str(struct ether_addr* addr)
 {
 	// format is xx:xx:xx:xx:xx:xx\0
-	uint16_t buffer_size = 6 * 2 + 5 + 1;
+	uint16_t buffer_size = 6 * 2 + 5 + 1; //FIXME: why dynamic alloc here?
 	char* buffer = (char*) calloc(buffer_size, sizeof(char));
 	if (buffer == NULL) {
 		rte_exit(EXIT_FAILURE, "Out of memory in nf_mac_to_str!");
@@ -97,7 +97,7 @@ nf_ipv4_to_str(uint32_t addr)
 {
 	// format is xxx.xxx.xxx.xxx\0
 	uint16_t buffer_size = 4 * 3 + 3 + 1;
-	char* buffer = (char*) calloc(buffer_size, sizeof(char));
+	char* buffer = (char*) calloc(buffer_size, sizeof(char)); //FIXME: why dynamic alloc here?
 	if (buffer == NULL) {
 		rte_exit(EXIT_FAILURE, "Out of memory in nf_ipv4_to_str!");
 	}

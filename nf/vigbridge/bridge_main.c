@@ -326,15 +326,16 @@ void nf_core_init(void) {
 #endif//KLEE_VERIFICATION
 }
 
-int nf_core_process(struct rte_mbuf* mbuf,
+int nf_core_process(struct Packet* p,
                     time_t now) {
-  struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
+  const uint16_t in_port = packet_get_port(p);
+  struct ether_hdr* ether_header = packet_get_ether_header(p);
 
   bridge_expire_entries(now);
-  bridge_put_update_entry(&ether_header->s_addr, mbuf->port, now);
+  bridge_put_update_entry(&ether_header->s_addr, in_port, now);
 
   int dst_device = bridge_get_device(&ether_header->d_addr,
-                                     mbuf->port);
+                                     in_port);
 
   if (dst_device == -1) {
     return FLOOD_FRAME;
@@ -342,7 +343,7 @@ int nf_core_process(struct rte_mbuf* mbuf,
 
   if (dst_device == -2) {
     NF_DEBUG("filtered frame");
-    return mbuf->port;
+    return in_port;
   }
 
 #ifdef KLEE_VERIFICATION

@@ -34,32 +34,33 @@ void nf_core_init()
 	}
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_core_process(struct Packet* p, time_t now)
 {
+  const int in_port = packet_get_port(p);
 	NF_DEBUG("It is %" PRId64, now);
 
 	flow_manager_expire(flow_manager, now);
 	NF_DEBUG("Flows have been expired");
 
-	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
+	struct ether_hdr* ether_header = packet_get_ether_header(p);
 
-	struct ipv4_hdr* ipv4_header = nf_get_mbuf_ipv4_header(mbuf);
+	struct ipv4_hdr* ipv4_header = packet_then_get_ipv4_header(p);
 	if (ipv4_header == NULL) {
 		NF_DEBUG("Not IPv4, dropping");
-		return mbuf->port;
+		return in_port;
 	}
 
-	struct tcpudp_hdr* tcpudp_header = nf_get_ipv4_tcpudp_header(ipv4_header);
+	struct tcpudp_hdr* tcpudp_header = packet_then_get_tcpudp_header(p);
 	if (tcpudp_header == NULL) {
 		NF_DEBUG("Not TCP/UDP, dropping");
-		return mbuf->port;
+		return in_port;
 	}
 
-	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, mbuf->port);
+	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
 
 	uint16_t dst_device;
-	if (mbuf->port == config.wan_device) {
-		NF_DEBUG("Device %" PRIu16 " is external", mbuf->port);
+	if (in_port == config.wan_device) {
+		NF_DEBUG("Device %" PRIu16 " is external", in_port);
 
     struct FlowId internal_flow;
 		if (flow_manager_get_external(flow_manager, tcpudp_header->dst_port, now, &internal_flow)) {
@@ -70,7 +71,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
           internal_flow.dst_port != tcpudp_header->src_port ||
           internal_flow.protocol != ipv4_header->next_proto_id) {
         NF_DEBUG("Spoofing attempt, dropping.");
-        return mbuf->port;
+        return in_port;
       }
 
 			ipv4_header->dst_addr = internal_flow.src_ip;
@@ -78,7 +79,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 			dst_device = internal_flow.internal_device;
 		} else {
 			NF_DEBUG("Unknown flow, dropping");
-			return mbuf->port;
+			return in_port;
 		}
 	} else {
     struct FlowId id = {
@@ -87,21 +88,21 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
       .src_ip = ipv4_header->src_addr,
       .dst_ip = ipv4_header->dst_addr,
       .protocol = ipv4_header->next_proto_id,
-      .internal_device = mbuf->port
+      .internal_device = in_port
     };
 
     NF_DEBUG("For id:");
     flow_log_id(&id);
 
-		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", mbuf->port, config.wan_device);
+		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config.wan_device);
 
     uint16_t external_port;
 		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
 			NF_DEBUG("New flow");
 
-			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &external_port)) {
+			if (!flow_manager_allocate_flow(flow_manager, &id, in_port, now, &external_port)) {
 				NF_DEBUG("No space for the flow, dropping");
-				return mbuf->port;
+				return in_port;
 			}
 		}
 
