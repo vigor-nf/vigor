@@ -6,6 +6,8 @@
 
 #include <rte_mbuf.h>
 
+#include "lib/packet-io.h"
+
 
 // TODO DEDUPLICATE THIS
 static struct str_field_descr mbuf_descrs[] = {
@@ -96,10 +98,11 @@ static struct nested_nested_field_descr stub_mbuf_content_n2[] = {
 
 
 // TODO why does this even exist?
-void flood(struct rte_mbuf* frame,
-           uint16_t skip_device,
-           uint16_t nb_devices) {
+void packet_flood(struct Packet* p,
+                  uint16_t skip_device,
+                  uint16_t nb_devices) {
   klee_trace_ret();
+  struct rte_mbuf* frame = p->mbuf;
   KLEE_TRACE_MBUF(frame, "frame", TD_IN);
   KLEE_TRACE_MBUF_CONTENT(frame->buf_addr, TD_IN);
   klee_trace_param_i32(skip_device, "skip_device");

@@ -5,6 +5,7 @@
 #include <rte_byteorder.h>
 #include <rte_common.h>
 #include <rte_ether.h>
+#include <rte_ethdev.h>
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 #include <rte_mbuf_ptype.h>
@@ -38,6 +39,59 @@ static inline
 void packet_return_all_chunks(struct Packet* p) {
   //Do nothing. needed only for verification
 }
+
+static inline
+bool packet_receive(struct Packet* p, uint16_t src_device) {
+  struct rte_mbuf* buf = NULL;
+  uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, &buf, 1);
+
+  if (actual_rx_len != 0) {
+    p->mbuf = buf;
+    packet_init(p);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static inline
+void packet_send(struct Packet* p, uint16_t dst_device) {
+  uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &p->mbuf, 1);
+  if (actual_tx_len == 0) {
+    rte_pktmbuf_free(p->mbuf);
+  }
+}
+
+// Flood method for the bridge
+#ifdef KLEE_VERIFICATION
+void packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices); // defined in stubs
+#else
+extern struct rte_mempool* clone_pool;
+static inline
+void
+packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices) {
+  struct rte_mbuf* frame = p->mbuf;
+  for (uint16_t device = 0; device < nb_devices; device++) {
+    if (device == skip_device) continue;
+    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
+    if (copy == NULL) {
+      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
+    }
+    uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
+
+    if (actual_tx_len == 0) {
+      rte_pktmbuf_free(copy);
+    }
+  }
+  rte_pktmbuf_free(frame);
+}
+#endif//!KLEE_VERIFICATION
+
+static inline
+void packet_free(struct Packet* p) {
+  rte_pktmbuf_free(p->mbuf);
+}
+
 
 static inline
 struct ether_hdr* packet_then_get_ether_header(struct Packet* p) {
