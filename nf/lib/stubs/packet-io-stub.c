@@ -1,3 +1,5 @@
+#include <klee/klee.h>
+#include "lib/stubs/containers/str-descr.h"
 #include "lib/packet-io.h"
 
 struct Packet {
