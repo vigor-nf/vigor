@@ -45,6 +45,12 @@ nf_get_ipv4_tcpudp_header(struct ipv4_hdr* header)
 	return (struct tcpudp_hdr*)((unsigned char*) header + offset);
 }
 
+bool
+nf_has_tcpudp_header(struct ipv4_hdr* header)
+{
+  return header->next_proto_id == IPPROTO_TCP || header->next_proto_id != IPPROTO_UDP;
+}
+
 void
 nf_set_ipv4_checksum(struct ipv4_hdr* header)
 {
@@ -61,6 +67,8 @@ nf_set_ipv4_checksum(struct ipv4_hdr* header)
 		udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(header, udp_header);
 	}
 
+  // FIXME: this is misleading. we don't really compute any checksum here,
+  // see rte_ipv4_udptcp_cksum and rte_ipv4_udptcp_cksum, they return 0!
 	header->hdr_checksum = rte_ipv4_cksum(header);
 }
 

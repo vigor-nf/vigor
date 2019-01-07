@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 // rte_mbuf
@@ -27,6 +28,8 @@ struct ether_hdr* nf_get_mbuf_ether_header(struct rte_mbuf* mbuf);
 struct ipv4_hdr* nf_get_mbuf_ipv4_header(struct rte_mbuf* mbuf);
 
 struct tcpudp_hdr* nf_get_ipv4_tcpudp_header(struct ipv4_hdr* header);
+
+bool nf_has_tcpudp_header(struct ipv4_hdr* header);
 
 void nf_set_ipv4_checksum(struct ipv4_hdr* header);
 

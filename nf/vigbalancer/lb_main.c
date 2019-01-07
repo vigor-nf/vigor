@@ -37,19 +37,22 @@ int nf_core_process(struct Packet* p, time_t now)
 
   uint16_t in_port = packet_get_port(p);
 
-	struct ether_hdr* ether_header = packet_get_ether_header(p);
+	struct ether_hdr* ether_header = packet_then_get_ether_header(p);
 
-	struct ipv4_hdr* ipv4_header = packet_then_get_ipv4_header(p);
-	if (ipv4_header == NULL) {
+  if (!packet_is_ipv4(p)) {
 		NF_DEBUG("Not IPv4, dropping");
 		return in_port;
-	}
+  }
+  char* ip_options;
+	struct ipv4_hdr* ipv4_header = packet_then_get_ipv4_header(p, &ip_options);
+  assert(ipv4_header != NULL);
 
-	struct tcpudp_hdr* tcpudp_header = packet_then_get_tcpudp_header(p);
-	if (tcpudp_header == NULL) {
+  if (!nf_has_tcpudp_header(ipv4_header)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return in_port;
 	}
+	struct tcpudp_hdr* tcpudp_header = packet_then_get_tcpudp_header(p);
+  assert(tcpudp_header != NULL);
 
 	struct LoadBalancedFlow flow = {
 		.src_ip = ipv4_header->src_addr,

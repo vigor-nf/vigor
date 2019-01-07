@@ -189,10 +189,11 @@ lcore_main(void)
   VIGOR_LOOP_BEGIN
     struct rte_mbuf* buf = NULL;
     uint16_t actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
-    struct Packet p;
-    p.mbuf = buf;
 
     if (actual_rx_len != 0) {
+      struct Packet p;
+      p.mbuf = buf;
+      packet_init(&p);
       uint16_t dst_device = nf_core_process(&p, VIGOR_NOW);
 
       if (dst_device == VIGOR_DEVICE) {
