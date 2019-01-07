@@ -1,8 +1,8 @@
-#include "packet-io.h"
+#include "lib/packet-io.h"
 
 struct Packet {
-   struct rte_mbuf* mbuf;
-   char* unread_buf;
+  struct rte_mbuf* mbuf;
+  char* unread_buf;
 };
 
 static struct Packet global_current_packet;

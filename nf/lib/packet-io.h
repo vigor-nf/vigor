@@ -16,15 +16,12 @@
 #define IP_MIN_SIZE_WORDS 5
 #define WORD_SIZE 4
 
-struct Packet {
-  struct rte_mbuf* mbuf;
-  char* unread_buf;
-};
+struct Packet;
 
 // The main IO primitive.
 char* packet_borrow_next_chunk(struct Packet* p, size_t length);
 void packet_return_all_chunks(struct Packet* p);
-bool packet_receive(struct Packet* p, uint16_t src_device);
+bool packet_receive(uint16_t src_device, struct Packet** p);
 void packet_send(struct Packet* p, uint16_t dst_device);
 // Flood method for the bridge
 void packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices);
@@ -36,10 +33,7 @@ struct ether_hdr* packet_then_get_ether_header(struct Packet* p) {
   return (struct ether_hdr*)hdr;
 }
 
-static inline
-bool packet_is_ipv4(struct Packet* p) {
-  return RTE_ETH_IS_IPV4_HDR(p->mbuf->packet_type);
-}
+bool packet_is_ipv4(struct Packet* p);
 
 static inline
 struct ipv4_hdr* packet_then_get_ipv4_header(struct Packet* p, char** ip_options) {
@@ -58,9 +52,6 @@ struct tcpudp_hdr* packet_then_get_tcpudp_header(struct Packet* p) {
   return (struct tcpudp_hdr*)packet_borrow_next_chunk(p, sizeof(struct tcpudp_hdr));
 }
 
-static inline
-uint16_t packet_get_port(struct Packet* p) {
-  return p->mbuf->port;
-}
+uint16_t packet_get_port(struct Packet* p);
 
 #endif// _PACKET_IO_H_INCLUDED_

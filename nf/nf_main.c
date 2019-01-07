@@ -165,17 +165,17 @@ lcore_main(void)
 
   VIGOR_LOOP_BEGIN
 
-    struct Packet p;
-    if (packet_receive(&p, VIGOR_DEVICE)) {
-      uint16_t dst_device = nf_core_process(&p, VIGOR_NOW);
-      packet_return_all_chunks(&p);
+    struct Packet* p;
+    if (packet_receive(VIGOR_DEVICE, &p)) {
+      uint16_t dst_device = nf_core_process(p, VIGOR_NOW);
+      packet_return_all_chunks(p);
 
       if (dst_device == VIGOR_DEVICE) {
-        packet_free(&p);
+        packet_free(p);
       } else if (dst_device == FLOOD_FRAME) {
-        packet_flood(&p, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
+        packet_flood(p, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
       } else {
-        packet_send(&p, dst_device);
+        packet_send(p, dst_device);
       }
     }
   VIGOR_LOOP_END

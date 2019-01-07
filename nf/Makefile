@@ -93,7 +93,7 @@ VERIF_FILES += ../lib/stubs/containers/map-stub.c ../lib/stubs/containers/double
                ../lib/stubs/containers/cht-stub.c \
                ../lib/stubs/containers/expirator-stub.c \
                ../lib/stubs/dpdk/rte_ethdev.c \
-               ../lib/packet-io.c #TODO: replace this with stubs too
+               ../lib/stubs/packet-io-stub.c
 # Specific NF stubs
 VERIF_FILES += $(NF_VERIF_FILES)
 # Environment stubs
