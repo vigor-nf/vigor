@@ -78,3 +78,21 @@ bool packet_is_ipv4(struct Packet* p) {
 uint16_t packet_get_port(struct Packet* p) {
   return p->mbuf->port;
 }
+
+// flooding is necessary for the bridge to function
+// TODO why does this even exist?
+void packet_flood(struct Packet* p,
+                  uint16_t skip_device,
+                  uint16_t nb_devices) {
+  klee_trace_ret();
+  struct rte_mbuf* frame = p->mbuf;
+  KLEE_TRACE_MBUF(frame, "frame", TD_IN);
+  KLEE_TRACE_MBUF_CONTENT(frame->buf_addr, TD_IN);
+  klee_trace_param_i32(skip_device, "skip_device");
+  klee_trace_param_i32(nb_devices, "nb_devices");
+  //  klee_forbid_access(frame->buf_addr, sizeof(struct stub_mbuf_content),
+  //                     "pkt flooded");
+  //  klee_forbid_access(frame,
+  //                     sizeof(struct rte_mbuf),
+  //                     "pkt flooded");
+}
