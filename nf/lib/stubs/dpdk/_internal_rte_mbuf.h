@@ -15,7 +15,7 @@ struct rte_mbuf {
 	void* buf_addr;
 #else
 	// HACK: Else, use the stub_mbuf_content cause the validator assumes it...
-	struct stub_mbuf_content* buf_addr;
+	char* buf_addr;
 #endif
 //	union {
 		rte_iova_t buf_iova;

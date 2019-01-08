@@ -23,7 +23,7 @@ char* packet_borrow_next_chunk(struct Packet* p, size_t length) {
 }
 
 void packet_return_chunk(struct Packet* p, char* chunk) {
-  //Do nothing. needed only for verification
+  p->unread_buf = chunk;
 }
 
 bool packet_receive(uint16_t src_device, struct Packet** p) {
