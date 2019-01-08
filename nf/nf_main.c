@@ -168,7 +168,7 @@ lcore_main(void)
     struct Packet* p;
     if (packet_receive(VIGOR_DEVICE, &p)) {
       uint16_t dst_device = nf_core_process(p, VIGOR_NOW);
-      packet_return_all_chunks(p);
+      nf_return_all_chunks(p);
 
       if (dst_device == VIGOR_DEVICE) {
         packet_free(p);

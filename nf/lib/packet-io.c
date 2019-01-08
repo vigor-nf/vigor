@@ -20,7 +20,7 @@ char* packet_borrow_next_chunk(struct Packet* p, size_t length) {
   return ret;
 }
 
-void packet_return_all_chunks(struct Packet* p) {
+void packet_return_chunk(struct Packet* p, char* chunk) {
   //Do nothing. needed only for verification
 }
 

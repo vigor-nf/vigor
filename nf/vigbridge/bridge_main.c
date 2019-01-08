@@ -329,7 +329,7 @@ void nf_core_init(void) {
 int nf_core_process(struct Packet* p,
                     time_t now) {
   const uint16_t in_port = packet_get_port(p);
-  struct ether_hdr* ether_header = packet_then_get_ether_header(p);
+  struct ether_hdr* ether_header = nf_then_get_ether_header(p);
 
   bridge_expire_entries(now);
   bridge_put_update_entry(&ether_header->s_addr, in_port, now);

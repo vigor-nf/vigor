@@ -15,35 +15,8 @@
 
 #include "nf_util.h"
 
-
-struct ether_hdr*
-nf_get_mbuf_ether_header(struct rte_mbuf* mbuf)
-{
-	return rte_pktmbuf_mtod(mbuf, struct ether_hdr*);
-}
-
-// TODO for consistency it'd be nice if this took an ether_hdr as argument, or if they all took rte_mbuf
-struct ipv4_hdr*
-nf_get_mbuf_ipv4_header(struct rte_mbuf* mbuf)
-{
-	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
-	if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
-		return NULL;
-	}
-
-	return rte_pktmbuf_mtod_offset(mbuf, struct ipv4_hdr*, sizeof(struct ether_hdr));
-}
-
-struct tcpudp_hdr*
-nf_get_ipv4_tcpudp_header(struct ipv4_hdr* header)
-{
-	if (header->next_proto_id != IPPROTO_TCP && header->next_proto_id != IPPROTO_UDP) {
-		return NULL;
-	}
-
-	uint8_t offset = (header->version_ihl & IPV4_HDR_IHL_MASK) * IPV4_IHL_MULTIPLIER;
-	return (struct tcpudp_hdr*)((unsigned char*) header + offset);
-}
+char* chunks_borrowed[MAX_N_CHUNKS];
+size_t chunks_borrowed_num = 0;
 
 bool
 nf_has_tcpudp_header(struct ipv4_hdr* header)

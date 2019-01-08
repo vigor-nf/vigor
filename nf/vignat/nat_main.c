@@ -42,21 +42,21 @@ int nf_core_process(struct Packet* p, time_t now)
 	flow_manager_expire(flow_manager, now);
 	NF_DEBUG("Flows have been expired");
 
-	struct ether_hdr* ether_header = packet_then_get_ether_header(p);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(p);
 
   if (!packet_is_ipv4(p)) {
 		NF_DEBUG("Not IPv4, dropping");
 		return in_port;
   }
   char* ip_options;
-	struct ipv4_hdr* ipv4_header = packet_then_get_ipv4_header(p, &ip_options);
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(p, &ip_options);
   assert(ipv4_header != NULL);
 
   if (!nf_has_tcpudp_header(ipv4_header)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return in_port;
 	}
-	struct tcpudp_hdr* tcpudp_header = packet_then_get_tcpudp_header(p);
+	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(p);
   assert(tcpudp_header != NULL);
 
 	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);

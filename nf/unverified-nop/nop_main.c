@@ -33,7 +33,7 @@ int nf_core_process(struct Packet* p, time_t now)
 	}
 
 	// L2 forwarding
-	struct ether_hdr* ether_header = packet_then_get_ether_header(p);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(p);
 	ether_header->s_addr = config.device_macs[dst_device];
 	ether_header->d_addr = config.endpoint_macs[dst_device];
 
