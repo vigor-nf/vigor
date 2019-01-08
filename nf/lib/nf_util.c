@@ -48,7 +48,7 @@ nf_get_ipv4_tcpudp_header(struct ipv4_hdr* header)
 bool
 nf_has_tcpudp_header(struct ipv4_hdr* header)
 {
-  return header->next_proto_id == IPPROTO_TCP || header->next_proto_id != IPPROTO_UDP;
+  return header->next_proto_id == IPPROTO_TCP || header->next_proto_id == IPPROTO_UDP;
 }
 
 void
