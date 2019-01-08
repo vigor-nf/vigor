@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <assert.h>
 #include <rte_ip.h>
 #include <rte_mbuf.h>
@@ -7,6 +8,8 @@ struct Packet {
    struct rte_mbuf* mbuf;
    char* unread_buf;
 };
+
+static struct Packet global_current_packet;
 
 /*@
     inductive rte_mbufi = rte_mbufc(int, int, int, list<char>);
@@ -34,6 +37,7 @@ struct Packet {
       mbuf->priv_size |-> ?psize &*&
       mbuf->timesync |-> ?ts &*&
       mbuf->seqn |-> ?seqn &*&
+      ba + dlen <= (char*)UINTPTR_MAX &*&
       val == rte_mbuf_metac(port, ptype, doff, dlen, (char*)ba) &*&
       doff == 0;
       //TODO: ^^^ is it really always so?
@@ -42,8 +46,7 @@ struct Packet {
       mbuf_metap(mbuf, ?meta) &*&
       switch(meta) { case rte_mbuf_metac(port, ptype, doff, dlen, ba):
         return chars(ba, dlen, ?content) &*&
-        val == rte_mbufc(port, ptype, doff, content) &*&
-        doff == 0;
+        val == rte_mbufc(port, ptype, doff, content);
       };
 @*/
 
@@ -59,6 +62,7 @@ struct Packet {
   }
 
   predicate packetp(struct Packet* p, int nic, int type, list<char> unread, list<pair<char*, int> > missing_chunks) =
+    p == &global_current_packet &*&
     p->mbuf |-> ?mbuf &*&
     p->unread_buf |-> ?unread_buf &*&
     mbuf_metap(mbuf, ?meta) &*&
@@ -71,13 +75,6 @@ struct Packet {
     } &*&
     chars(unread_buf, length(unread), unread);
   @*/
-
-static struct Packet global_current_packet;
-
-void packet_init(struct Packet* p) {
-  assert(p->mbuf != NULL);
-  p->unread_buf = (char*)p->mbuf->buf_addr + p->mbuf->data_off;
-}
 
 // The main IO primitive.
 char* packet_borrow_next_chunk(struct Packet* p, size_t length)
@@ -109,54 +106,121 @@ void packet_return_chunk(struct Packet* p, char* chunk)
 uint16_t
 rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
                  struct rte_mbuf **rx_pkts, uint16_t nb_pkts);
+/*@ requires *rx_pkts |-> _; @*/
+/*@ ensures result == 0 ? *rx_pkts |-> _ :
+              *rx_pkts |-> ?mb &*& mbufp(mb, ?buf) &*&
+              switch(buf) { case rte_mbufc(port, ptype, doff, content):
+                return port == port_id;
+              }; @*/
 
 uint16_t
 rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
                  struct rte_mbuf **tx_pkts, uint16_t nb_pkts);
+/*@ requires *tx_pkts |-> ?mb &*& mbufp(mb, _) &*&
+             nb_pkts == 1 &*& queue_id == 0; @*/
+/*@ ensures result == 0 ? *tx_pkts |-> mb &*& mbufp(mb, _) : *tx_pkts |-> _ ; @*/
 
-bool packet_receive(uint16_t src_device, struct Packet** p) {
+void
+rte_pktmbuf_free(struct rte_mbuf* m);
+/*@ requires mbufp(m, _); @*/
+/*@ ensures true; @*/
+
+struct rte_mbuf *rte_pktmbuf_clone(struct rte_mbuf *md, struct rte_mempool *mp);
+/*@ requires mbufp(md, ?buf); @*/
+/*@ ensures mbufp(md, buf) &*& (result == NULL) ? true : mbufp(result, buf); @*/
+
+void rte_exit(int code, char* reason);
+/*@ requires true; @*/
+/*@ ensures false; @*/
+
+
+/*@
+  lemma void axiome_produce_glob_packet();
+  requires true;
+  ensures Packet_mbuf(&global_current_packet, _) &*&
+          Packet_unread_buf(&global_current_packet, _);
+
+  lemma void axiome_consume_glob_packet();
+  requires Packet_mbuf(&global_current_packet, _) &*&
+           Packet_unread_buf(&global_current_packet, _);
+  ensures true;
+  @*/
+
+bool packet_receive(uint16_t src_device, struct Packet** p)
+/*@ requires *p |-> _; @*/
+/*@ ensures result ? *p |-> ?pp &*& packetp(pp, src_device, _, _, nil) : *p |-> _; @*/
+{
   struct rte_mbuf* buf = NULL;
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, &buf, 1);
 
   if (actual_rx_len != 0) {
     *p = &global_current_packet;
+    //@ axiome_produce_glob_packet();
+    //@ assert buf |-> ?b;
+    //@ assert mbufp(b, ?mbuffer);
     (*p)->mbuf = buf;
-    packet_init(*p);
+    (*p)->unread_buf = (*p)->mbuf->buf_addr;
+    /*@
+      switch(mbuffer) { case rte_mbufc(port, ptype, doff, content):
+       close packetp(*p, src_device, _, content, nil);
+      }
+      @*/
     return true;
   } else {
     return false;
   }
 }
 
-void packet_send(struct Packet* p, uint16_t dst_device) {
+void packet_send(struct Packet* p, uint16_t dst_device)
+/*@ requires packetp(p, _, _, _, nil); @*/
+/*@ ensures true; @*/
+{
+  //@ open packetp(p, _, _, _, nil);
+  //@ close mbufp(p->mbuf, _);
   uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &p->mbuf, 1);
   if (actual_tx_len == 0) {
     rte_pktmbuf_free(p->mbuf);
   }
+  //@ axiome_consume_glob_packet();
 }
 
 // Flood method for the bridge
 void
 packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices,
-             struct rte_mempool* clone_pool) {
+             struct rte_mempool* clone_pool)
+/*@ requires packetp(p, _, _, _, nil); @*/
+/*@ ensures true; @*/
+{
+  //@ open packetp(p, _, _, _, nil);
   struct rte_mbuf* frame = p->mbuf;
-  for (uint16_t device = 0; device < nb_devices; device++) {
-    if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
-      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
-    }
-    uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
+  for (uint16_t device = 0; device < nb_devices; device++)
+    /*@ invariant 0 <= device &*& device <= nb_devices &*&
+                  mbufp(frame, _); @*/
+  {
+    if (device != skip_device) {
+      struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
+      if (copy == NULL) {
+        //@ assume(false);
+        rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
+      }
+      uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
 
-    if (actual_tx_len == 0) {
-      rte_pktmbuf_free(copy);
+      if (actual_tx_len == 0) {
+        rte_pktmbuf_free(copy);
+      }
     }
   }
   rte_pktmbuf_free(frame);
+  //@ axiome_consume_glob_packet();
 }
 
-void packet_free(struct Packet* p) {
+void packet_free(struct Packet* p)
+/*@ requires packetp(p, _, _, _, nil); @*/
+/*@ ensures true; @*/
+{
+  //@ open packetp(p, _, _, _, nil);
   rte_pktmbuf_free(p->mbuf);
+  //@ axiome_consume_glob_packet();
 }
 
 bool packet_is_ipv4(struct Packet* p)

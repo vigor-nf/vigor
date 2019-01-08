@@ -64,14 +64,8 @@ rte_mbuf_raw_alloc(struct rte_mempool* mp)
 }
 
 // free is called by user code, raw_free by stubs
-static void
-rte_pktmbuf_free(struct rte_mbuf* m)
-{
-	klee_assert(m != NULL);
-
-	stub_core_trace_free(m);
-	stub_core_mbuf_free(m);
-}
+//void
+//rte_pktmbuf_free(struct rte_mbuf* m);
 
 static void
 rte_mbuf_raw_free(struct rte_mbuf* m)

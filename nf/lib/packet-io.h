@@ -25,11 +25,21 @@ void packet_return_chunk(struct Packet* p, char* chunk);
 /*@ ensures packetp(p, nic, type, append(chnk, unread), mc); @*/
 
 bool packet_receive(uint16_t src_device, struct Packet** p);
+/*@ requires *p |-> _; @*/
+/*@ ensures result ? *p |-> ?pp &*& packetp(pp, src_device, _, _, nil) : *p |-> _; @*/
 void packet_send(struct Packet* p, uint16_t dst_device);
+/*@ requires packetp(p, _, _, _, nil); @*/
+/*@ ensures true; @*/
+
 // Flood method for the bridge
 void packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices,
                   struct rte_mempool* clone_pool);
+/*@ requires packetp(p, _, _, _, nil); @*/
+/*@ ensures true; @*/
+
 void packet_free(struct Packet* p);
+/*@ requires packetp(p, _, _, _, nil); @*/
+/*@ ensures true; @*/
 
 bool packet_is_ipv4(struct Packet* p);
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc); @*/
