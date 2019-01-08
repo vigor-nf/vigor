@@ -47,28 +47,6 @@ void packet_send(struct Packet* p, uint16_t dst_device) {
   }
 }
 
-// Flood method for the bridge
-#ifndef KLEE_VERIFICATION
-extern struct rte_mempool* clone_pool;
-void
-packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices) {
-  struct rte_mbuf* frame = p->mbuf;
-  for (uint16_t device = 0; device < nb_devices; device++) {
-    if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
-      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
-    }
-    uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
-
-    if (actual_tx_len == 0) {
-      rte_pktmbuf_free(copy);
-    }
-  }
-  rte_pktmbuf_free(frame);
-}
-#endif//!KLEE_VERIFICATION
-
 void packet_free(struct Packet* p) {
   rte_pktmbuf_free(p->mbuf);
 }
@@ -173,13 +151,15 @@ static struct nested_nested_field_descr stub_mbuf_content_n2[] = {
 // TODO why does this even exist?
 void packet_flood(struct Packet* p,
                   uint16_t skip_device,
-                  uint16_t nb_devices) {
+                  uint16_t nb_devices,
+                  struct rte_mempool* clone_pool) {
   klee_trace_ret();
   struct rte_mbuf* frame = p->mbuf;
   KLEE_TRACE_MBUF(frame, "frame", TD_IN);
   KLEE_TRACE_MBUF_CONTENT(frame->buf_addr, TD_IN);
   klee_trace_param_i32(skip_device, "skip_device");
   klee_trace_param_i32(nb_devices, "nb_devices");
+  klee_trace_param_ptr_just_ptr(clone_pool, sizeof(struct rte_mempool*), "clone_pool");
   //  klee_forbid_access(frame->buf_addr, sizeof(struct stub_mbuf_content),
   //                     "pkt flooded");
   //  klee_forbid_access(frame,

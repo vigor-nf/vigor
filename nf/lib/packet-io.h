@@ -3,16 +3,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-#include <assert.h>
-#include <rte_byteorder.h>
-#include <rte_common.h>
-#include <rte_ether.h>
-#include <rte_ethdev.h>
-#include <rte_ip.h>
-#include <rte_mbuf.h>
-#include <rte_mbuf_ptype.h>
+#include <stddef.h>
 
 struct Packet;
+struct rte_mempool;
 
 // The main IO primitive.
 char* packet_borrow_next_chunk(struct Packet* p, size_t length);
@@ -20,7 +14,8 @@ void packet_return_chunk(struct Packet* p, char* chunk);
 bool packet_receive(uint16_t src_device, struct Packet** p);
 void packet_send(struct Packet* p, uint16_t dst_device);
 // Flood method for the bridge
-void packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices);
+void packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices,
+                  struct rte_mempool* clone_pool);
 void packet_free(struct Packet* p);
 
 bool packet_is_ipv4(struct Packet* p);

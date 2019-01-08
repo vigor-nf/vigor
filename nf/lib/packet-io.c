@@ -1,3 +1,6 @@
+#include <assert.h>
+#include <rte_ip.h>
+#include <rte_mbuf.h>
 #include "packet-io.h"
 
 struct Packet {
@@ -24,6 +27,14 @@ void packet_return_chunk(struct Packet* p, char* chunk) {
   //Do nothing. needed only for verification
 }
 
+uint16_t
+rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
+                 struct rte_mbuf **rx_pkts, uint16_t nb_pkts);
+
+uint16_t
+rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
+                 struct rte_mbuf **tx_pkts, uint16_t nb_pkts);
+
 bool packet_receive(uint16_t src_device, struct Packet** p) {
   struct rte_mbuf* buf = NULL;
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, &buf, 1);
@@ -46,10 +57,9 @@ void packet_send(struct Packet* p, uint16_t dst_device) {
 }
 
 // Flood method for the bridge
-#ifndef KLEE_VERIFICATION
-extern struct rte_mempool* clone_pool;
 void
-packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices) {
+packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices,
+             struct rte_mempool* clone_pool) {
   struct rte_mbuf* frame = p->mbuf;
   for (uint16_t device = 0; device < nb_devices; device++) {
     if (device == skip_device) continue;
@@ -65,7 +75,6 @@ packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices) {
   }
   rte_pktmbuf_free(frame);
 }
-#endif//!KLEE_VERIFICATION
 
 void packet_free(struct Packet* p) {
   rte_pktmbuf_free(p->mbuf);
