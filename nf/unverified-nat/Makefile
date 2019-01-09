@@ -8,8 +8,12 @@ CC = g++
 
 # sources
 # pick one map of: ruby, DPDK, stdlib
-SRCS-y := nat_main.c nat_config.c ../nf_main.c ../lib/nf_time.c ../lib/nf_util.c \
-          ruby/st.c nat_map_ruby.c
+SRCS-y := nat_main.c nat_config.c ruby/st.c nat_map_ruby.c \
+          ../nf_main.c \
+          ../lib/nf_time.c \
+          ../lib/nf_util.c \
+          ../lib/packet-io.c \
+          ../lib/proxy-dpdk.c
 #          nat_map_dpdk.c
 #          nat_map_cppstl.c
 
@@ -27,4 +31,5 @@ CFLAGS += -Wno-narrowing
 
 LDFLAGS += -lstdc++
 
+# Include parent (in a convoluted way cause of DPDK)
 include $(RTE_SDK)/mk/rte.extapp.mk

@@ -2,8 +2,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+#include <assert.h>
 
 #include "lib/packet-io.h"
+#include "rte_ip.h"
 
 // rte_ether
 struct ether_addr;

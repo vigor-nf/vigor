@@ -35,7 +35,8 @@ SRCS-y := $(SELF_DIR)/nf_main.c \
           $(SELF_DIR)/lib/containers/double-map.c \
           $(SELF_DIR)/lib/containers/vector.c \
           $(SELF_DIR)/lib/containers/cht.c \
-          $(SELF_DIR)/lib/packet-io.c
+          $(SELF_DIR)/lib/packet-io.c \
+          $(SELF_DIR)/lib/proxy-dpdk.c
 # NF specific source
 SRCS-y += $(NF_FILES)
 
