@@ -114,6 +114,7 @@ __attribute__((noinline))
 void
 stub_core_trace_rx(struct rte_mbuf** mbuf)
 {
+  klee_assert(false && "Must never be called, see packet_receive stub");
 	klee_trace_ret();
 	klee_trace_param_ptr(mbuf, sizeof(struct rte_mbuf*), "mbuf");
 	KLEE_TRACE_MBUF_EPTR(*mbuf, "incoming_package", TD_OUT);
@@ -124,6 +125,7 @@ __attribute__((noinline))
 uint8_t
 stub_core_trace_tx(struct rte_mbuf* mbuf, uint16_t device)
 {
+  klee_assert(false && "Must never be called, see packet_send stub");
 	klee_trace_ret();
 	KLEE_TRACE_MBUF(mbuf, "mbuf", TD_IN);
 	KLEE_TRACE_MBUF_CONTENT(mbuf->buf_addr, TD_IN);
@@ -140,15 +142,19 @@ __attribute__((noinline))
 void
 stub_core_trace_free(struct rte_mbuf* mbuf)
 {
+  klee_assert(false && "Must never be called, see packet_free stub");
 	klee_trace_ret();
 	KLEE_TRACE_MBUF(mbuf, "mbuf", TD_IN);
 	KLEE_TRACE_MBUF_CONTENT(mbuf->buf_addr, TD_IN);
 }
 
+void
+rte_pktmbuf_free(struct rte_mbuf* m);
 
 bool
 stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf** mbufp)
 {
+  klee_assert(false && "Must never be called, see packet_receive stub");
 	uint16_t priv_size = rte_pktmbuf_priv_size(pool);
 	uint16_t mbuf_size = sizeof(struct rte_mbuf) + priv_size;
 	uint16_t buf_len = rte_pktmbuf_data_room_size(pool);
@@ -230,6 +236,7 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 void
 rte_pktmbuf_free(struct rte_mbuf* m)
 {
+  klee_assert(false && "Must never be called, see packet_free stub");
 	klee_assert(m != NULL);
 
 	stub_core_trace_free(m);
@@ -239,6 +246,7 @@ rte_pktmbuf_free(struct rte_mbuf* m)
 void
 stub_core_mbuf_free(struct rte_mbuf* mbuf)
 {
+  klee_assert(false && "Must never be called, see packet_free stub");
 	// Undo our pseudo-chain trickery (see stub_core_mbuf_create)
 	klee_allow_access(mbuf->next, mbuf->pool->elt_size);
 	free(mbuf->next);

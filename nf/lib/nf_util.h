@@ -51,8 +51,8 @@ char* nf_borrow_next_chunk(struct Packet* p, size_t length) {
 static inline
 void nf_return_all_chunks(struct Packet* p) {
   do {
-    packet_return_chunk(p, chunks_borrowed[chunks_borrowed_num]);
     chunks_borrowed_num--;
+    packet_return_chunk(p, chunks_borrowed[chunks_borrowed_num]);
   } while(chunks_borrowed_num != 0);
 }
 
@@ -63,11 +63,17 @@ struct ether_hdr* nf_then_get_ether_header(struct Packet* p) {
 }
 
 static inline
-struct ipv4_hdr* nf_then_get_ipv4_header(struct Packet* p, char** ip_options) {
+struct ipv4_hdr* nf_then_get_ipv4_header(struct Packet* p, char** ip_options,
+                                         bool* wellformed) {
   assert(packet_is_ipv4(p));
   struct ipv4_hdr* hdr = (struct ipv4_hdr*)nf_borrow_next_chunk(p, sizeof(struct ipv4_hdr));
   uint8_t ihl = hdr->version_ihl & 0x0f;
-  assert(IP_MIN_SIZE_WORDS <= ihl);
+  if (ihl < IP_MIN_SIZE_WORDS) { //Malformed ipv4 packet
+    *ip_options = NULL;
+    *wellformed = false;
+    return hdr;
+  }
+  *wellformed = true;
   uint16_t ip_options_length = (ihl - IP_MIN_SIZE_WORDS) * WORD_SIZE;
   if (ip_options_length != 0)
     *ip_options = nf_borrow_next_chunk(p, ip_options_length);

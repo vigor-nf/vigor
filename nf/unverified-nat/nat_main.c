@@ -4,6 +4,7 @@
 
 #include <inttypes.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <queue>
 #include <vector>
@@ -49,10 +50,8 @@ static time_t current_timestamp;
 
 
 static struct nat_flow_id
-nat_flow_id_from_ipv4(struct ipv4_hdr* header)
+nat_flow_id_from_headers(struct ipv4_hdr* header, struct tcpudp_hdr* tcpudp_header)
 {
-	struct tcpudp_hdr* tcpudp_header = nf_get_ipv4_tcpudp_header(header);
-
 	nat_flow_id id;
 	id.src_addr = header->src_addr;
 	id.src_port = tcpudp_header->src_port;
@@ -138,7 +137,13 @@ int nf_core_process(struct Packet* p, time_t now)
 		return in_port;
   }
   char* ip_options;
-  struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(p, &ip_options);
+  bool wellformed = true;
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(p, &ip_options, &wellformed);
+  assert(ipv4_header != NULL);
+  if (!wellformed) {
+		NF_DEBUG("Malformed IPv4, dropping");
+		return in_port;
+  }
 
   if (!nf_has_tcpudp_header(ipv4_header)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
@@ -150,7 +155,7 @@ int nf_core_process(struct Packet* p, time_t now)
 	if (in_port == config.wan_device) {
 		NF_DEBUG("External packet");
 
-		struct nat_flow_id flow_id = nat_flow_id_from_ipv4(ipv4_header);
+		struct nat_flow_id flow_id = nat_flow_id_from_headers(ipv4_header, tcpudp_header);
 		NF_DEBUG("Flow: %" PRIu16 " -> %" PRIu16, flow_id.src_port, flow_id.dst_port);
 
 		struct nat_flow* flow;
@@ -177,7 +182,7 @@ int nf_core_process(struct Packet* p, time_t now)
 	} else {
 		NF_DEBUG("Internal packet");
 
-		struct nat_flow_id flow_id = nat_flow_id_from_ipv4(ipv4_header);
+		struct nat_flow_id flow_id = nat_flow_id_from_headers(ipv4_header, tcpudp_header);
 		NF_DEBUG("Flow: %" PRIu16 " -> %" PRIu16, flow_id.src_port, flow_id.dst_port);
 
 		struct nat_flow* flow;

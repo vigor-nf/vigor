@@ -173,7 +173,7 @@ lcore_main(void)
       if (dst_device == VIGOR_DEVICE) {
         packet_free(p);
       } else if (dst_device == FLOOD_FRAME) {
-        packet_flood(p, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
+        packet_flood(p, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
       } else {
         packet_send(p, dst_device);
       }

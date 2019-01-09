@@ -1,152 +1,93 @@
+#include <stdlib.h>
 #include <klee/klee.h>
 #include "lib/stubs/containers/str-descr.h"
 #include "lib/packet-io.h"
 
+#define MAX_CHUNK_SIZE 100
+#define PREALLOC_CHUNKS 10
+
 struct Packet {
-  struct rte_mbuf* mbuf;
-  char* unread_buf;
+  int sent;
+  int nic;
+  int is_ipv4;
+  int n_borrowed_chunks;
+  char chunks[MAX_CHUNK_SIZE*PREALLOC_CHUNKS];
 };
 
-static struct Packet global_current_packet;
-
-void packet_init(struct Packet* p) {
-  assert(p->mbuf != NULL);
-  p->unread_buf = (char*)p->mbuf->buf_addr + p->mbuf->data_off;
-}
+/* static struct Packet global_current_packet; */
+/* static bool one_packet_already_received = false; */
+/* static bool one_packet_already_sent = false; */
 
 // The main IO primitive.
 char* packet_borrow_next_chunk(struct Packet* p, size_t length) {
-  //TODO: check for overflowing the current mbuf.
-  char* ret = p->unread_buf;
-  p->unread_buf += length;
+  //TODO: add klee_access stuff
+  klee_trace_ret();
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u32(length, "length");
+  klee_assert(!p->sent);
+  klee_assert(p->n_borrowed_chunks < PREALLOC_CHUNKS);
+  klee_assert(length < MAX_CHUNK_SIZE);
+  char* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
+  p->n_borrowed_chunks++;
   return ret;
 }
 
 void packet_return_chunk(struct Packet* p, char* chunk) {
-  p->unread_buf = chunk;
+  klee_trace_ret();
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_assert(!p->sent);
+  klee_assert(0 < p->n_borrowed_chunks);
+  p->n_borrowed_chunks--;
+  klee_assert(p->chunks + MAX_CHUNK_SIZE*p->n_borrowed_chunks == chunk);
 }
 
 bool packet_receive(uint16_t src_device, struct Packet** p) {
-  struct rte_mbuf* buf = NULL;
-  uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, &buf, 1);
+  klee_trace_ret();
+  klee_trace_param_u16(src_device, "src_devices");
+  klee_trace_param_ptr(p, sizeof(struct Packet*), "p");
 
-  if (actual_rx_len != 0) {
-    *p = &global_current_packet;
-    (*p)->mbuf = buf;
-    packet_init(*p);
-    return true;
-  } else {
+  if (klee_int("received") == 0) {
     return false;
+  } else {
+    *p = malloc(sizeof(struct Packet));
+    klee_make_symbolic(*p, sizeof(struct Packet), "packet");
+    (**p).n_borrowed_chunks = 0;
+    (**p).nic = src_device;
+    (**p).sent = false;
+    return true;
   }
 }
 
 void packet_send(struct Packet* p, uint16_t dst_device) {
-  uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &p->mbuf, 1);
-  if (actual_tx_len == 0) {
-    rte_pktmbuf_free(p->mbuf);
-  }
+  klee_trace_ret();
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u16(dst_device, "dst_device");
+  klee_assert(!p->sent);
+  p->sent = true;
+  free(p);
 }
 
 void packet_free(struct Packet* p) {
-  rte_pktmbuf_free(p->mbuf);
+  klee_trace_ret();
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_assert(!p->sent);
+  free(p);
 }
 
 bool packet_is_ipv4(struct Packet* p) {
-  return RTE_ETH_IS_IPV4_HDR(p->mbuf->packet_type);
+  klee_trace_ret();
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_assert(!p->sent);
+  return p->is_ipv4;
 }
 
 uint16_t packet_get_port(struct Packet* p) {
-  return p->mbuf->port;
+  klee_trace_ret();
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_assert(!p->sent);
+  return p->nic;
 }
 
-//VVV necessary just for tracing the flood function. to be removed
-
-// TODO DEDUPLICATE THIS
-static struct str_field_descr mbuf_descrs[] = {
-  //Do not forget about "buf_addr" -- it is a pointer that is why it is not listed here.
-  {offsetof(struct rte_mbuf, buf_iova), sizeof(rte_iova_t), "buf_iova"},
-  {offsetof(struct rte_mbuf, data_off), sizeof(uint16_t), "data_off"},
-  {offsetof(struct rte_mbuf, refcnt), sizeof(uint16_t), "refcnt"},
-  {offsetof(struct rte_mbuf, nb_segs), sizeof(uint16_t), "nb_segs"},
-  {offsetof(struct rte_mbuf, port), sizeof(uint16_t), "port"},
-  {offsetof(struct rte_mbuf, ol_flags), sizeof(uint64_t), "ol_flags"},
-  {offsetof(struct rte_mbuf, packet_type), sizeof(uint32_t), "packet_type"},
-  {offsetof(struct rte_mbuf, pkt_len), sizeof(uint32_t), "pkt_len"},
-  {offsetof(struct rte_mbuf, data_len), sizeof(uint16_t), "data_len"},
-  {offsetof(struct rte_mbuf, vlan_tci), sizeof(uint16_t), "vlan_tci"},
-  {offsetof(struct rte_mbuf, hash), sizeof(uint32_t), "hash"},
-  {offsetof(struct rte_mbuf, vlan_tci_outer), sizeof(uint16_t), "vlan_tci_outer"},
-  {offsetof(struct rte_mbuf, buf_len), sizeof(uint16_t), "buf_len"},
-  {offsetof(struct rte_mbuf, timestamp), sizeof(uint64_t), "timestamp"},
-  {offsetof(struct rte_mbuf, udata64), sizeof(uint64_t), "udata64"},
-  {offsetof(struct rte_mbuf, pool), sizeof(struct rte_mempool*), "pool"},
-  {offsetof(struct rte_mbuf, next), sizeof(struct rte_mbuf*), "next"},
-  {offsetof(struct rte_mbuf, tx_offload), sizeof(uint64_t), "tx_offload"},
-  {offsetof(struct rte_mbuf, priv_size), sizeof(uint16_t), "priv_size"},
-  {offsetof(struct rte_mbuf, timesync), sizeof(uint16_t), "timesync"},
-  {offsetof(struct rte_mbuf, seqn), sizeof(uint32_t), "seqn"},
-};
-static struct nested_field_descr stub_mbuf_content_nested[] = {
-  {offsetof(struct stub_mbuf_content, ether), offsetof(struct ether_hdr, ether_type), sizeof(uint16_t), "ether_type"},
-  {offsetof(struct stub_mbuf_content, ether), offsetof(struct ether_hdr, d_addr), sizeof(struct ether_addr), "d_addr"},
-  {offsetof(struct stub_mbuf_content, ether), offsetof(struct ether_hdr, s_addr), sizeof(struct ether_addr), "s_addr"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, version_ihl), sizeof(uint8_t), "version_ihl"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, type_of_service), sizeof(uint8_t), "type_of_service"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, total_length), sizeof(uint16_t), "total_length"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, packet_id), sizeof(uint16_t), "packet_id"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, fragment_offset), sizeof(uint16_t), "fragment_offset"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, time_to_live), sizeof(uint8_t), "time_to_live"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, next_proto_id), sizeof(uint8_t), "next_proto_id"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, hdr_checksum), sizeof(uint16_t), "hdr_checksum"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, src_addr), sizeof(uint32_t), "src_addr"},
-  {offsetof(struct stub_mbuf_content, ipv4), offsetof(struct ipv4_hdr, dst_addr), sizeof(uint32_t), "dst_addr"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), "src_port"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), "dst_port"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, sent_seq), sizeof(uint32_t), "sent_seq"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, recv_ack), sizeof(uint32_t), "recv_ack"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, data_off), sizeof(uint8_t), "data_off"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, tcp_flags), sizeof(uint8_t), "tcp_flags"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, rx_win), sizeof(uint16_t), "rx_win"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, cksum), sizeof(uint16_t), "cksum"},
-  {offsetof(struct stub_mbuf_content, tcp), offsetof(struct tcp_hdr, tcp_urp), sizeof(uint16_t), "tcp_urp"},
-};
-static struct nested_nested_field_descr stub_mbuf_content_n2[] = {
-  {offsetof(struct stub_mbuf_content, ether), offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t) * 6, "addr_bytes"},
-  {offsetof(struct stub_mbuf_content, ether), offsetof(struct ether_hdr, s_addr), 0, sizeof(uint8_t) * 6, "addr_bytes"},
-};
-#define KLEE_TRACE_MBUF(m_ptr, mname, dir)                                                                                             \
-  klee_trace_param_ptr_directed(m_ptr, sizeof(*m_ptr), mname, dir);                                                                    \
-  klee_trace_param_ptr_field_directed(m_ptr, offsetof(struct rte_mbuf, buf_addr), sizeof(struct stub_mbuf_content*), "buf_addr", dir); \
-  for (int i = 0; i < sizeof(mbuf_descrs)/sizeof(mbuf_descrs[0]); ++i) {                                                               \
-    klee_trace_param_ptr_field_directed(m_ptr,                                                                                         \
-                                        mbuf_descrs[i].offset,                                                                         \
-                                        mbuf_descrs[i].width,                                                                          \
-                                        mbuf_descrs[i].name,                                                                           \
-                                        dir);                                                                                          \
-  }
-#define KLEE_TRACE_MBUF_CONTENT(u_ptr, dir)                                                                             \
-  klee_trace_extra_ptr(u_ptr, sizeof(struct stub_mbuf_content), "user_buf_addr", "", dir);                              \
-  klee_trace_extra_ptr_field(u_ptr, offsetof(struct stub_mbuf_content, ether), sizeof(struct ether_hdr), "ether", dir); \
-  klee_trace_extra_ptr_field(u_ptr, offsetof(struct stub_mbuf_content, ipv4), sizeof(struct ipv4_hdr), "ipv4", dir);    \
-  klee_trace_extra_ptr_field(u_ptr, offsetof(struct stub_mbuf_content, tcp), sizeof(struct tcp_hdr), "tcp", dir);       \
-  for (int i = 0; i < sizeof(stub_mbuf_content_nested)/sizeof(stub_mbuf_content_nested[0]); ++i) {                      \
-    klee_trace_extra_ptr_nested_field(u_ptr,                                                                            \
-                                      stub_mbuf_content_nested[i].base_offset,                                          \
-                                      stub_mbuf_content_nested[i].offset,                                               \
-                                      stub_mbuf_content_nested[i].width,                                                \
-                                      stub_mbuf_content_nested[i].name,                                                 \
-                                      dir);                                                                             \
-  }                                                                                                                     \
-  for (int i = 0; i < sizeof(stub_mbuf_content_n2)/sizeof(stub_mbuf_content_n2[0]); ++i) {                              \
-    klee_trace_extra_ptr_nested_nested_field                                                                            \
-      (u_ptr,                                                                                                           \
-       stub_mbuf_content_n2[i].base_base_offset,                                                                        \
-       stub_mbuf_content_n2[i].base_offset,                                                                             \
-       stub_mbuf_content_n2[i].offset,                                                                                  \
-       stub_mbuf_content_n2[i].width,                                                                                   \
-       stub_mbuf_content_n2[i].name,                                                                                    \
-       dir);                                                                                                            \
-  }
 // flooding is necessary for the bridge to function
 // TODO why does this even exist?
 void packet_flood(struct Packet* p,
@@ -154,12 +95,13 @@ void packet_flood(struct Packet* p,
                   uint16_t nb_devices,
                   struct rte_mempool* clone_pool) {
   klee_trace_ret();
-  struct rte_mbuf* frame = p->mbuf;
-  KLEE_TRACE_MBUF(frame, "frame", TD_IN);
-  KLEE_TRACE_MBUF_CONTENT(frame->buf_addr, TD_IN);
+  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
   klee_trace_param_i32(skip_device, "skip_device");
   klee_trace_param_i32(nb_devices, "nb_devices");
-  klee_trace_param_ptr_just_ptr(clone_pool, sizeof(struct rte_mempool*), "clone_pool");
+  klee_trace_param_just_ptr(clone_pool, sizeof(struct rte_mempool*), "clone_pool");
+  klee_assert(!p->sent);
+  p->sent = true;
+  free(p);
   //  klee_forbid_access(frame->buf_addr, sizeof(struct stub_mbuf_content),
   //                     "pkt flooded");
   //  klee_forbid_access(frame,

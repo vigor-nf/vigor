@@ -49,8 +49,13 @@ int nf_core_process(struct Packet* p, time_t now)
 		return in_port;
   }
   char* ip_options;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(p, &ip_options);
+  bool wellformed = true;
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(p, &ip_options, &wellformed);
   assert(ipv4_header != NULL);
+  if (!wellformed) {
+		NF_DEBUG("Malformed IPv4, dropping");
+		return in_port;
+  }
 
   if (!nf_has_tcpudp_header(ipv4_header)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
