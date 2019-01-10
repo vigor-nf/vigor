@@ -47,10 +47,12 @@ void packet_free(struct Packet* p);
 /*@ requires packetp(p, _, _, _, nil); @*/
 /*@ ensures true; @*/
 
-bool packet_is_ipv4(struct Packet* p);
+uint32_t packet_is_ipv4(struct Packet* p);
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc); @*/
 /*@ ensures packetp(p, nic, type, unread, mc) &*&
-            result == ((type & 0x10) == 0x10); @*/
+            (result == 0 ?
+              ((type & 0x10) != 0x10) :
+              ((type & 0x10) == 0x10) &*& result == 1); @*/
 
 uint16_t packet_get_port(struct Packet* p);
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc); @*/

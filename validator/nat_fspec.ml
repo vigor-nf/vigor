@@ -22,6 +22,7 @@ let capture_chain ch_name ptr_num {args;tmp_gen;_} =
   "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
   (List.nth_exn args ptr_num) ^ ");\n"
 
+let packet_struct = Ir.Str ("Packet", [])
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
@@ -555,6 +556,49 @@ let fun_types =
                                    extra_ptr_types = [];
                                    lemmas_before = [];
                                    lemmas_after = [];};
+     "packet_receive", {ret_type = Static Boolean;
+                        arg_types = stt [Uint16; Ptr (Ptr packet_struct);];
+                        extra_ptr_types = [];
+                        lemmas_before = [];
+                        lemmas_after = [];};
+     "packet_send", {ret_type = Static Void;
+                     arg_types = stt [Ptr packet_struct; Uint16];
+                     extra_ptr_types = [];
+                     lemmas_before = [];
+                     lemmas_after = [];};
+     "packet_get_port", {ret_type = Static Uint16;
+                         arg_types = stt [Ptr packet_struct];
+                         extra_ptr_types = [];
+                         lemmas_before = [];
+                         lemmas_after = [];};
+     "packet_is_ipv4", {ret_type = Static Uint32;
+                        arg_types = stt [Ptr packet_struct];
+                        extra_ptr_types = [];
+                        lemmas_before = [];
+                        lemmas_after = [];};
+     "packet_borrow_next_chunk", {ret_type = Static (Ptr Uint8);
+                                  arg_types = stt [Ptr packet_struct;
+                                                   Uint32];
+                                  extra_ptr_types = [];
+                                  lemmas_before = [];
+                                  lemmas_after = [];};
+     "packet_return_chunk", {ret_type = Static Void;
+                             arg_types = stt [Ptr packet_struct;
+                                              Ptr Uint8];
+                             extra_ptr_types = [];
+                             lemmas_before = [];
+                             lemmas_after = [];};
+     "packet_get_unread_length", {ret_type = Static Uint32;
+                                  arg_types = stt [Ptr packet_struct];
+                                  extra_ptr_types = [];
+                                  lemmas_before = [];
+                                  lemmas_after = [];};
+     "packet_free", {
+                   ret_type = Static Void;
+                   arg_types = stt [Ptr rte_mbuf_struct;];
+                   extra_ptr_types = [];
+                   lemmas_before = [];
+                   lemmas_after = [];};
      "stub_core_trace_rx", {
                  ret_type = Static Void;
                  arg_types = stt [Ptr (Ptr rte_mbuf_struct);];
@@ -631,6 +675,7 @@ struct
                   //@ dchain flow_chain;\n\
                   //@ list<pair<flow_id, int> > flow_map;\n\
                   //@ list<pair<flow_id, real> > flow_vec;\n\
+                  //@ assume(sizeof(struct ether_hdr) == 14);//TODO: handle all this sizeof's explicitly
                  "
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
@@ -638,7 +683,7 @@ struct
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration =
-    (In_channel.read_all "forwarding_property.tmpl")
+    "" (* TODO: (In_channel.read_all "forwarding_property.tmpl") *)
 end
 
 (* Register the module *)

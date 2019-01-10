@@ -158,14 +158,16 @@ void packet_free(struct Packet* p)
   //@ axiome_consume_glob_packet();
 }
 
-bool packet_is_ipv4(struct Packet* p)
+uint32_t packet_is_ipv4(struct Packet* p)
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc); @*/
 /*@ ensures packetp(p, nic, type, unread, mc) &*&
-            result == ((type & 0x10) == 0x10); @*/
+            (result == 0 ?
+              ((type & 0x10) != 0x10) :
+              ((type & 0x10) == 0x10) &*& result == 1); @*/
 {
   //@ open packetp(p, nic, type, unread, mc);
-  return (p->mbuf->packet_type & 0x10) == 0x10;
-  //return RTE_ETH_IS_IPV4_HDR(p->mbuf->packet_type);
+  return ((p->mbuf->packet_type & 0x10) == 0x10) ? 1u : 0;
+
   //@ close packetp(p, nic, type, unread, mc);
 }
 

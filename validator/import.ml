@@ -464,14 +464,15 @@ let make_cmplx_val exp t =
 
 (*TODO: rewrite this in terms of my IR instead of raw Sexps*)
 let eliminate_false_eq_0 exp t =
-  match (exp,t) with
-  | Sexp.List [Sexp.Atom eq1; Sexp.Atom fls;
-               Sexp.List [Sexp.Atom eq2; Sexp.List [Sexp.Atom width; Sexp.Atom zero]; e]],
-    Boolean
-    when (String.equal eq1 "Eq") && (String.equal fls "false") &&
-         (String.equal eq2 "Eq") && (String.equal width "w32") && (String.equal zero "0") ->
-    e
-  | _ -> exp
+  exp
+  (* match (exp,t) with
+   * | Sexp.List [Sexp.Atom eq1; Sexp.Atom fls;
+   *              Sexp.List [Sexp.Atom eq2; Sexp.List [Sexp.Atom width; Sexp.Atom zero]; e]],
+   *   Boolean
+   *   when (String.equal eq1 "Eq") && (String.equal fls "false") &&
+   *        (String.equal eq2 "Eq") && (String.equal width "w32") && (String.equal zero "0") ->
+   *   e
+   * | _ -> exp *)
 
 let rec is_bool_expr exp =
   match exp with
@@ -587,6 +588,7 @@ let rec get_sexp_value exp ?(at=Beginning) t =
       | _ ->
         if String.equal v "true" then {v=Bool true;t=Boolean}
         else if String.equal v "false" then {v=Bool false;t=Boolean}
+        else if String.equal v "18446744073709551611" then {v=Int (-5);t=Sint64}
         (*FIXME: deduce the true integer type for the value: *)
         else begin match parse_int v with
           | Some n -> let addr = (Int64.of_int n) in
@@ -597,6 +599,8 @@ let rec get_sexp_value exp ?(at=Beginning) t =
                         | _ -> {v=Int n;t} end
           | None -> {v=Id v;t} end
     end
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w8"; Sexp.Atom "0"; src;] ->
+    get_sexp_value src t ~at
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
     when t = Uint16 ->
     let srct = (guess_type src Uunknown) in

@@ -229,6 +229,13 @@ let split_assignments assignments =
           rhs={v=Bop (Sub, assignment.rhs, delta);
                t=assignment.rhs.t}}::
          symbolic)
+      | Bop (Add, {v=Int delta;t=Sint32}, ({v=Id _;t=_} as symb))
+        when delta < 0 ->
+        (concrete,
+         {lhs=symb;
+          rhs={v=Bop (Add, assignment.rhs, {v=Int (-delta);t=Sint32});
+               t=assignment.rhs.t}}::
+         symbolic)
       | Struct (_, []) -> (* printf "skipping empty assignment: %s = %s" *)
         (*  (render_tterm assignment.lhs) *)
         (*  (render_tterm assignment.rhs); *)
@@ -423,10 +430,18 @@ let output_check_and_assignments
 let eq_cond_to_tterm {lhs;rhs} =
   {v=Bop (Eq, lhs, rhs);t=Boolean}
 
+let fix_neg_plus_unsigned =
+  call_recursively_on_term (function
+      | Bop (Add, {v=Int x;t=xt}, rhs) when x < 0 ->
+        Some (Bop (Sub, rhs, {v=Int (-x);t=xt}))
+      | _ -> None)
+
 let render_context_condition conditions =
   match conditions with
   | [] -> "true"
-  | _ -> String.concat ~sep:" && " (List.map conditions ~f:render_tterm)
+  | _ -> String.concat ~sep:" && "
+           (List.map conditions
+              ~f:(fun x -> render_tterm (fix_neg_plus_unsigned x)))
 
 type rendered_result =
   { conditions: tterm list;

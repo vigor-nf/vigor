@@ -39,7 +39,7 @@ uint8_t* packet_borrow_next_chunk(struct Packet* p, size_t length) {
 void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
-  klee_trace_param_ptr(chunk, MAX_CHUNK_SIZE, "chunk");
+  klee_trace_param_ptr_directed(chunk, MAX_CHUNK_SIZE, "chunk", TD_IN);
   klee_assert(!p->sent);
   klee_assert(0 < p->n_borrowed_chunks);
   p->n_borrowed_chunks--;
@@ -81,11 +81,15 @@ void packet_free(struct Packet* p) {
   free(p);
 }
 
-bool packet_is_ipv4(struct Packet* p) {
+uint32_t packet_is_ipv4(struct Packet* p) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
   klee_assert(!p->sent);
-  return p->is_ipv4;
+  if (p->is_ipv4 == 0) {
+    return false;
+  } else {
+    return true;
+  }
 }
 
 uint16_t packet_get_port(struct Packet* p) {
