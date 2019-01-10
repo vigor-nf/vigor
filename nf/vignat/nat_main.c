@@ -48,16 +48,17 @@ int nf_core_process(struct Packet* p, time_t now)
 		NF_DEBUG("Not IPv4, dropping");
 		return in_port;
   }
-  char* ip_options;
+  uint8_t* ip_options;
   bool wellformed = true;
 	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(p, &ip_options, &wellformed);
-  assert(ipv4_header != NULL);
   if (!wellformed) {
 		NF_DEBUG("Malformed IPv4, dropping");
 		return in_port;
   }
+  assert(ipv4_header != NULL);
 
-  if (!nf_has_tcpudp_header(ipv4_header)) {
+  if (!nf_has_tcpudp_header(ipv4_header) ||
+      packet_get_unread_length(p) < sizeof(struct tcpudp_hdr)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return in_port;
 	}

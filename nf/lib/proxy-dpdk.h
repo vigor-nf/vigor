@@ -9,8 +9,8 @@
 // if it does
 
 /*@
-    inductive rte_mbufi = rte_mbufc(int, int, int, list<char>);
-    inductive rte_mbuf_metai = rte_mbuf_metac(int, int, int, int, char*);
+    inductive rte_mbufi = rte_mbufc(int, int, int, list<uint8_t>);
+    inductive rte_mbuf_metai = rte_mbuf_metac(int, int, int, int, uint8_t*);
     predicate mbuf_metap(struct rte_mbuf *mbuf; rte_mbuf_metai val) =
       mbuf->buf_addr |-> ?ba &*&
       mbuf->buf_iova |-> ?bfa &*&
@@ -34,15 +34,15 @@
       mbuf->priv_size |-> ?psize &*&
       mbuf->timesync |-> ?ts &*&
       mbuf->seqn |-> ?seqn &*&
-      ba + dlen <= (char*)UINTPTR_MAX &*&
-      val == rte_mbuf_metac(port, ptype, doff, dlen, (char*)ba) &*&
+      ((uint8_t*)(void*)ba) + dlen <= (uint8_t*)UINTPTR_MAX &*&
+      val == rte_mbuf_metac(port, ptype, doff, dlen, (uint8_t*)(void*)ba) &*&
       doff == 0;
       //TODO: ^^^ is it really always so?
 
     predicate mbufp(struct rte_mbuf *mbuf; rte_mbufi val) =
       mbuf_metap(mbuf, ?meta) &*&
       switch(meta) { case rte_mbuf_metac(port, ptype, doff, dlen, ba):
-        return chars(ba, dlen, ?content) &*&
+        return uchars(ba, dlen, ?content) &*&
         val == rte_mbufc(port, ptype, doff, content);
       };
 @*/
@@ -56,7 +56,8 @@ proxy_rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
 /*@ ensures result == 0 ? *rx_pkts |-> _ :
               *rx_pkts |-> ?mb &*& mbufp(mb, ?buf) &*&
               switch(buf) { case rte_mbufc(port, ptype, doff, content):
-                return port == port_id;
+                return port == port_id &*&
+                       sizeof(struct ether_hdr) <= length(content);
               }; @*/
 
 uint16_t

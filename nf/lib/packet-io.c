@@ -8,13 +8,13 @@
 
 struct Packet {
    struct rte_mbuf* mbuf;
-   char* unread_buf;
+   uint8_t* unread_buf;
 };
 
 static struct Packet global_current_packet;
 
 /*@
-  fixpoint bool missing_chunks(list<pair<char*, int> > missing_chunks, char* start, char* end) {
+  fixpoint bool missing_chunks(list<pair<uint8_t*, int> > missing_chunks, uint8_t* start, uint8_t* end) {
     switch(missing_chunks) {
       case nil: return start == end;
       case cons(h,t): return switch(h) { case pair(beginning, span):
@@ -24,7 +24,7 @@ static struct Packet global_current_packet;
     }
   }
 
-  predicate packetp(struct Packet* p, int nic, int type, list<char> unread, list<pair<char*, int> > missing_chunks) =
+  predicate packetp(struct Packet* p, int nic, int type, list<uint8_t> unread, list<pair<uint8_t*, int> > missing_chunks) =
     p == &global_current_packet &*&
     p->mbuf |-> ?mbuf &*&
     p->unread_buf |-> ?unread_buf &*&
@@ -32,33 +32,33 @@ static struct Packet global_current_packet;
     switch(meta) { case rte_mbuf_metac(port, ptype, doff, dlen, ba):
       return nic == port &*& type == ptype &*&
              ba <= unread_buf &*& unread_buf <= ba + dlen &*&
-             ba + dlen <= (char*)UINTPTR_MAX &*&
-             length(unread) == ba + dlen - unread_buf &*&
+             (uint8_t*)ba + dlen <= (uint8_t*)UINTPTR_MAX &*&
+             length(unread) == (char*)(void*)ba + dlen - (char*)(void*)unread_buf &*&
              true == missing_chunks(missing_chunks, ba, unread_buf);
     } &*&
-    chars(unread_buf, length(unread), unread);
+    uchars(unread_buf, length(unread), unread);
   @*/
 
 // The main IO primitive.
-char* packet_borrow_next_chunk(struct Packet* p, size_t length)
+uint8_t* packet_borrow_next_chunk(struct Packet* p, size_t length)
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc) &*&
              length <= length(unread); @*/
 /*@ ensures packetp(p, nic, type, drop(length, unread), cons(pair(result, length), mc)) &*&
-            chars(result, length, take(length, unread)); @*/
+            uchars(result, length, take(length, unread)); @*/
 {
   //TODO: support mbuf chains.
   //@ open packetp(p, nic, type, unread, mc);
-  char* ret = p->unread_buf;
+  uint8_t* ret = p->unread_buf;
   p->unread_buf += length;
   //@ assert length <= length(unread);
   return ret;
-  //@ chars_split(ret, length);
+  //@ uchars_split(ret, length);
   //@ close packetp(p, nic, type, drop(length, unread), cons(pair(ret, length), mc));
 }
 
-void packet_return_chunk(struct Packet* p, char* chunk)
+void packet_return_chunk(struct Packet* p, uint8_t* chunk)
 /*@ requires packetp(p, ?nic, ?type, ?unread, cons(pair(chunk, ?len), ?mc)) &*&
-             chars(chunk, len, ?chnk); @*/
+             uchars(chunk, len, ?chnk); @*/
 /*@ ensures packetp(p, nic, type, append(chnk, unread), mc); @*/
 {
   //@ open packetp(p, nic, type, unread, cons(pair(chunk, len), mc));
@@ -80,7 +80,10 @@ void packet_return_chunk(struct Packet* p, char* chunk)
 
 bool packet_receive(uint16_t src_device, struct Packet** p)
 /*@ requires *p |-> _; @*/
-/*@ ensures result ? *p |-> ?pp &*& packetp(pp, src_device, _, _, nil) : *p |-> _; @*/
+/*@ ensures result ? *p |-> ?pp &*&
+                     packetp(pp, src_device, _, ?unread, nil) &*&
+                     sizeof(struct ether_hdr) <= length(unread)
+                   : *p |-> _; @*/
 {
   struct rte_mbuf* buf = NULL;
   uint16_t actual_rx_len = proxy_rte_eth_rx_burst(src_device, 0, &buf, 1);
@@ -91,7 +94,7 @@ bool packet_receive(uint16_t src_device, struct Packet** p)
     //@ assert buf |-> ?b;
     //@ assert mbufp(b, ?mbuffer);
     (*p)->mbuf = buf;
-    (*p)->unread_buf = (char*)(*p)->mbuf->buf_addr;
+    (*p)->unread_buf = (uint8_t*)(void*)(*p)->mbuf->buf_addr;
     /*@
       switch(mbuffer) { case rte_mbufc(port, ptype, doff, content):
        close packetp(*p, src_device, _, content, nil);
@@ -173,5 +176,15 @@ uint16_t packet_get_port(struct Packet* p)
 {
   //@ open packetp(p, nic, type, unread, mc);
   return p->mbuf->port;
+  //@ close packetp(p, nic, type, unread, mc);
+}
+
+uint32_t packet_get_unread_length(struct Packet* p)
+/*@ requires packetp(p, ?nic, ?type, ?unread, ?mc); @*/
+/*@ ensures packetp(p, nic, type, unread, mc) &*&
+            result == length(unread); @*/
+{
+  //@ open packetp(p, nic, type, unread, mc);
+  return (uint32_t)(((char*)p->mbuf->buf_addr + p->mbuf->data_len) - ((char*)(void*)p->unread_buf));
   //@ close packetp(p, nic, type, unread, mc);
 }

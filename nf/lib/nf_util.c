@@ -15,7 +15,7 @@
 
 #include "nf_util.h"
 
-char* chunks_borrowed[MAX_N_CHUNKS];
+uint8_t* chunks_borrowed[MAX_N_CHUNKS];
 size_t chunks_borrowed_num = 0;
 
 bool

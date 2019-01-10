@@ -11,7 +11,9 @@ struct Packet {
   int nic;
   int is_ipv4;
   int n_borrowed_chunks;
-  char chunks[MAX_CHUNK_SIZE*PREALLOC_CHUNKS];
+  uint32_t packet_len;
+  uint32_t tot_len_borrowed;
+  uint8_t chunks[MAX_CHUNK_SIZE*PREALLOC_CHUNKS];
 };
 
 /* static struct Packet global_current_packet; */
@@ -19,22 +21,25 @@ struct Packet {
 /* static bool one_packet_already_sent = false; */
 
 // The main IO primitive.
-char* packet_borrow_next_chunk(struct Packet* p, size_t length) {
+uint8_t* packet_borrow_next_chunk(struct Packet* p, size_t length) {
   //TODO: add klee_access stuff
-  klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_ret_ptr(MAX_CHUNK_SIZE);
+  klee_trace_param_u64((uint64_t)p, "p");
   klee_trace_param_u32(length, "length");
   klee_assert(!p->sent);
   klee_assert(p->n_borrowed_chunks < PREALLOC_CHUNKS);
   klee_assert(length < MAX_CHUNK_SIZE);
-  char* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
+  klee_assert(p->tot_len_borrowed + length <= p->packet_len);
+  uint8_t* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
   p->n_borrowed_chunks++;
+  p->tot_len_borrowed += length;
   return ret;
 }
 
-void packet_return_chunk(struct Packet* p, char* chunk) {
+void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
   klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u64((uint64_t)p, "p");
+  klee_trace_param_ptr(chunk, MAX_CHUNK_SIZE, "chunk");
   klee_assert(!p->sent);
   klee_assert(0 < p->n_borrowed_chunks);
   p->n_borrowed_chunks--;
@@ -52,15 +57,17 @@ bool packet_receive(uint16_t src_device, struct Packet** p) {
     *p = malloc(sizeof(struct Packet));
     klee_make_symbolic(*p, sizeof(struct Packet), "packet");
     (**p).n_borrowed_chunks = 0;
+    (**p).tot_len_borrowed = 0;
     (**p).nic = src_device;
     (**p).sent = false;
+    klee_assume(sizeof(struct ether_hdr) <= (**p).packet_len);
     return true;
   }
 }
 
 void packet_send(struct Packet* p, uint16_t dst_device) {
   klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u64((uint64_t)p, "p");
   klee_trace_param_u16(dst_device, "dst_device");
   klee_assert(!p->sent);
   p->sent = true;
@@ -69,21 +76,21 @@ void packet_send(struct Packet* p, uint16_t dst_device) {
 
 void packet_free(struct Packet* p) {
   klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u64((uint64_t)p, "p");
   klee_assert(!p->sent);
   free(p);
 }
 
 bool packet_is_ipv4(struct Packet* p) {
   klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u64((uint64_t)p, "p");
   klee_assert(!p->sent);
   return p->is_ipv4;
 }
 
 uint16_t packet_get_port(struct Packet* p) {
   klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u64((uint64_t)p, "p");
   klee_assert(!p->sent);
   return p->nic;
 }
@@ -95,7 +102,7 @@ void packet_flood(struct Packet* p,
                   uint16_t nb_devices,
                   struct rte_mempool* clone_pool) {
   klee_trace_ret();
-  klee_trace_param_just_ptr(p, sizeof(struct Packet), "p");
+  klee_trace_param_u64((uint64_t)p, "p");
   klee_trace_param_i32(skip_device, "skip_device");
   klee_trace_param_i32(nb_devices, "nb_devices");
   klee_trace_param_just_ptr(clone_pool, sizeof(struct rte_mempool*), "clone_pool");
@@ -107,4 +114,13 @@ void packet_flood(struct Packet* p,
   //  klee_forbid_access(frame,
   //                     sizeof(struct rte_mbuf),
   //                     "pkt flooded");
+}
+
+uint32_t packet_get_unread_length(struct Packet* p)
+{
+  klee_trace_ret();
+  klee_trace_param_u64((uint64_t)p, "p");
+  klee_assert(!p->sent);
+  klee_assert(p->tot_len_borrowed <= p->packet_len);
+  return (uint32_t)(p->packet_len - p->tot_len_borrowed);
 }
