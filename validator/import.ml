@@ -568,7 +568,7 @@ let make_cast_if_needed tt srct dstt =
   else if srct = Uint32 && dstt = Uint16 then {v=Cast(dstt, {v=Bop(Bit_and, tt, {v=Int 0xFFFF;t=Uint32});t=Uint32});t=dstt}
   else {v=Cast(dstt, tt);t=dstt}
 
-let rec get_sexp_value exp ?(at=Beginning) t =
+let rec get_sexp_value_raw exp ?(at=Beginning) t =
   lprintf "SEXP %s : %s\n" (Sexp.to_string exp) (ttype_to_str t);
   let exp = canonicalize_sexp exp in
   let exp = eliminate_false_eq_0 exp t in
@@ -600,40 +600,64 @@ let rec get_sexp_value exp ?(at=Beginning) t =
           | None -> {v=Id v;t} end
     end
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w8"; Sexp.Atom "0"; src;] ->
-    get_sexp_value src t ~at
+    get_sexp_value_raw src t ~at
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
     when t = Uint16 ->
     let srct = (guess_type src Uunknown) in
-    make_cast_if_needed (get_sexp_value src srct ~at) srct t
+    make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
     when t = Sint16 ->
     let srct = (guess_type src Sunknown) in
-    make_cast_if_needed (get_sexp_value src srct ~at) srct t
+    make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
+    when t = Uint64 ->
+    let srct = (guess_type src Uunknown) in
+    {v=Cast(t,{v=Cast(Uint16, (get_sexp_value_raw src srct ~at));t=Uint16});t}
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
+    when t = Sint64 ->
+    let srct = (guess_type src Sunknown) in
+    {v=Cast(t,{v=Cast(Sint16, (get_sexp_value_raw src srct ~at));t=Sint16});t}
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
+    when t = Uint32 ->
+    let srct = (guess_type src Uunknown) in
+    {v=Cast(t,{v=Cast(Uint16, (get_sexp_value_raw src srct ~at));t=Uint16});t}
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
+    when t = Sint32 ->
+    let srct = (guess_type src Sunknown) in
+    {v=Cast(t,{v=Cast(Sint16, (get_sexp_value_raw src srct ~at));t=Sint16});t}
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w32"; Sexp.Atom "0"; src;]
     when t = Uint32 ->
     let srct = (guess_type src Uunknown) in
-    make_cast_if_needed (get_sexp_value src srct ~at) srct t
+    make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w32"; Sexp.Atom "0"; src;]
     when t = Sint32 ->
     let srct = (guess_type src Sunknown) in
-    make_cast_if_needed (get_sexp_value src srct ~at) srct t
+    make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w32"; Sexp.Atom "0"; src;]
+    when t = Uint64 ->
+    let srct = (guess_type src Uunknown) in
+    {v=Cast(t,{v=Cast(Uint32, (get_sexp_value_raw src srct ~at));t=Uint32});t}
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w32"; Sexp.Atom "0"; src;]
+    when t = Sint64 ->
+    let srct = (guess_type src Sunknown) in
+    {v=Cast(t,{v=Cast(Sint32, (get_sexp_value_raw src srct ~at));t=Sint32});t}
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w64"; Sexp.Atom "0"; src;]
     when t = Uint64 ->
     let srct = (guess_type src Uunknown) in
-    make_cast_if_needed (get_sexp_value src srct ~at) srct t
+    make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w64"; Sexp.Atom "0"; src;]
     when t = Sint64 ->
     let srct = (guess_type src Sunknown) in
-    make_cast_if_needed (get_sexp_value src srct ~at) srct t
+    make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
   | Sexp.List [Sexp.Atom f; Sexp.Atom offset; src;]
     when (String.equal f "Extract") && (String.equal offset "0") ->
-    get_sexp_value src Boolean ~at
+    get_sexp_value_raw src Boolean ~at
   | Sexp.List [Sexp.Atom f; Sexp.Atom w; arg]
     when (String.equal f "SExt") && (String.equal w "w64") ->
-    {v=Cast(Uint64,get_sexp_value arg Uint32 ~at);t=Uint64}
+    {v=Cast(Uint64,get_sexp_value_raw arg Uint32 ~at);t=Uint64}
   | Sexp.List [Sexp.Atom "Mul"; Sexp.Atom width; lhs; rhs] ->
     let mt = guess_type_l [lhs;rhs] Unknown in
-    {v=Bop(Mul, get_sexp_value lhs mt ~at, get_sexp_value rhs mt ~at);t=mt}
+    {v=Bop(Mul, get_sexp_value_raw lhs mt ~at, get_sexp_value_raw rhs mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "Add"; Sexp.Atom _; lhs; rhs] ->
     let res_type = guess_type_l [lhs;rhs] Unknown in
     let res_type = if is_unknown res_type then t else res_type in
@@ -643,9 +667,9 @@ let rec get_sexp_value exp ?(at=Beginning) t =
         match lhs with
         | Sexp.Atom str ->
           begin match parse_int str with
-            | Some n -> {v=Bop (Sub,(get_sexp_value rhs res_type ~at),{v=(Int n);t=res_type});t=res_type}
-            | _ -> {v=Bop (Add,(get_sexp_value lhs res_type ~at),(get_sexp_value rhs res_type ~at));t=res_type} end
-        | _ -> {v=Bop (Add,(get_sexp_value lhs res_type ~at),(get_sexp_value rhs res_type ~at));t=res_type}
+            | Some n -> {v=Bop (Sub,(get_sexp_value_raw rhs res_type ~at),{v=(Int n);t=res_type});t=res_type}
+            | _ -> {v=Bop (Add,(get_sexp_value_raw lhs res_type ~at),(get_sexp_value_raw rhs res_type ~at));t=res_type} end
+        | _ -> {v=Bop (Add,(get_sexp_value_raw lhs res_type ~at),(get_sexp_value_raw rhs res_type ~at));t=res_type}
       end
     in
     make_cast_if_needed expression expression.t t
@@ -653,78 +677,81 @@ let rec get_sexp_value exp ?(at=Beginning) t =
     when (String.equal f "Slt") ->
     (*FIXME: get the actual type*)
     let ty = guess_type_l [lhs;rhs] Sunknown in
-    {v=Bop (Lt,(get_sexp_value lhs ty ~at),(get_sexp_value rhs ty ~at));t}
+    {v=Bop (Lt,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Sle") ->
     (*FIXME: get the actual type*)
-    {v=Bop (Le,(get_sexp_value lhs Sunknown ~at),(get_sexp_value rhs Sunknown ~at));t}
+    {v=Bop (Le,(get_sexp_value_raw lhs Sunknown ~at),(get_sexp_value_raw rhs Sunknown ~at));t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Ule") ->
     (*FIXME: get the actual type*)
-    {v=Bop (Le,(get_sexp_value lhs Uunknown ~at),(get_sexp_value rhs Uunknown ~at));t}
+    {v=Bop (Le,(get_sexp_value_raw lhs Uunknown ~at),(get_sexp_value_raw rhs Uunknown ~at));t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Ult") ->
-    {v=Bop (Lt,(get_sexp_value lhs Uunknown ~at),(get_sexp_value rhs Uunknown ~at));t}
+    {v=Bop (Lt,(get_sexp_value_raw lhs Uunknown ~at),(get_sexp_value_raw rhs Uunknown ~at));t}
   | Sexp.List [Sexp.Atom "Eq"; Sexp.List [Sexp.Atom "w32"; Sexp.Atom "0"]; Sexp.List ((Sexp.Atom "ReadLSB" :: tl))] ->
-    {v=Bop (Eq, {v=Int 0;t=Uint32}, (get_sexp_value (Sexp.List (Sexp.Atom "ReadLSB" :: tl)) Uint32 ~at));t=Boolean}
+    {v=Bop (Eq, {v=Int 0;t=Uint32}, (get_sexp_value_raw (Sexp.List (Sexp.Atom "ReadLSB" :: tl)) Uint32 ~at));t=Boolean}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Eq") ->
     let ty = guess_type_l [lhs;rhs] Unknown in
-    {v=Bop (Eq,(get_sexp_value lhs ty ~at),(get_sexp_value rhs ty ~at));t}
+    {v=Bop (Eq,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t}
   | Sexp.List [Sexp.Atom f; _; e]
     when String.equal f "ZExt" ->
     (*TODO: something smarter here.*)
-    get_sexp_value e t ~at
+    get_sexp_value_raw e t ~at
   | Sexp.List [Sexp.Atom f; Sexp.Atom _; lhs; rhs]
     when (String.equal f "And") &&
          ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
-    {v=Bop (And,(get_sexp_value lhs Boolean ~at),(get_sexp_value rhs Boolean ~at));t}
+    {v=Bop (And,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Or") &&
          ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
-    {v=Bop (Or,(get_sexp_value lhs Boolean ~at),(get_sexp_value rhs Boolean ~at));t}
+    {v=Bop (Or,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
   | Sexp.List [Sexp.Atom f; Sexp.Atom _; lhs; rhs]
     when (String.equal f "And") ->
     begin 
       match rhs with
       | Sexp.List [Sexp.Atom "w32"; Sexp.Atom n] when is_int n ->
         if t = Boolean then
-          {v=Bop (Eq, (get_sexp_value rhs Uint32 ~at), {v=Bop (Bit_and,(get_sexp_value lhs Uint32 ~at),(get_sexp_value rhs Uint32 ~at));t=Uint32});t=Boolean}
+          {v=Bop (Eq, (get_sexp_value_raw rhs Uint32 ~at), {v=Bop (Bit_and,(get_sexp_value_raw lhs Uint32 ~at),(get_sexp_value_raw rhs Uint32 ~at));t=Uint32});t=Boolean}
         else
-          {v=Bop (Bit_and,(get_sexp_value lhs Uint32 ~at),(get_sexp_value rhs Uint32 ~at));t=Uint32}
+          {v=Bop (Bit_and,(get_sexp_value_raw lhs Uint32 ~at),(get_sexp_value_raw rhs Uint32 ~at));t=Uint32}
       | _ ->
         let ty = guess_type_l [lhs;rhs] t in
         lprintf "interesting And case{%s}: %s "
           (ttype_to_str ty) (Sexp.to_string exp);
         if ty = Boolean then
-          {v=Bop (And,(get_sexp_value lhs ty ~at),(get_sexp_value rhs ty ~at));t=ty}
+          {v=Bop (And,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t=ty}
         else
-          {v=Bop (Bit_and,(get_sexp_value lhs ty ~at),(get_sexp_value rhs ty ~at));t=ty}
+          {v=Bop (Bit_and,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t=ty}
     end
   | Sexp.List [Sexp.Atom f; Sexp.Atom _; Sexp.Atom lhs; rhs;]
     when (String.equal f "Concat") && (String.equal lhs "0") ->
-    get_sexp_value rhs t ~at
+    get_sexp_value_raw rhs t ~at
   | Sexp.List [Sexp.Atom "Select"; Sexp.Atom _; nested; Sexp.List [Sexp.Atom _; Sexp.Atom "1"]; Sexp.List [Sexp.Atom _; Sexp.Atom "0"]] ->
     (* This is equivalent to x ? 1 : 0 ==> we just pretend x is a boolean *)
-    get_sexp_value nested Boolean ~at
+    get_sexp_value_raw nested Boolean ~at
   | Sexp.List [Sexp.Atom "SRem"; Sexp.Atom width; value; divisor] ->
     let guess = {precise=Unknown;s=Sure Sgn;w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
-    {v=Bop(Modulo, get_sexp_value value mt ~at, get_sexp_value divisor mt ~at);t=mt}
+    {v=Bop(Modulo, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "URem"; Sexp.Atom width; value; divisor] ->
     let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
-    {v=Bop(Modulo, get_sexp_value value mt ~at, get_sexp_value divisor mt ~at);t=mt}
+    {v=Bop(Modulo, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
   | _ ->
     begin match get_var_name_of_sexp exp with
       | Some name -> {v=Id name;t}
       | None ->
         make_cmplx_val exp t
     end
+
+let get_sexp_value exp ?(at=Beginning) t =
+  simplify_tterm (get_sexp_value_raw exp ~at t)
 
 let rec get_struct_val_value valu t =
   match t, valu.full with

@@ -240,9 +240,14 @@ let call_recursively_on_term (f:term -> term option) tterm =
       | Some v -> Some {v;t}
       | None -> None) tterm
 
-let simplify_tterm tterm =
+let rec simplify_tterm tterm =
+  (* printf "simplify_tterm %s\n" (render_tterm tterm); *)
   call_recursively_on_term (function
+      | Bop (Add, {v=Int x;t=xt}, rhs) when x < 0 ->
+        Some (Bop (Sub, rhs, {v=Int (-x);t=xt}))
       | Deref {t=_;v=Addr x} -> Some x.v
+      | Cast (t1, ({v=Cast(t2, x);t=_} as sub)) when t1 = t2 ->
+        Some (simplify_tterm sub).v
       | Str_idx ({v=Struct (_,fields);
                   t=_},
                  fname) ->
