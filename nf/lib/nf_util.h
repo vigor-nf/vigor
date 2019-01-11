@@ -44,7 +44,8 @@ extern size_t chunks_borrowed_num;
 static inline
 uint8_t* nf_borrow_next_chunk(struct Packet* p, size_t length) {
   assert(chunks_borrowed_num < MAX_N_CHUNKS);
-  uint8_t* chunk = packet_borrow_next_chunk(p, length);
+  uint8_t* chunk;
+  packet_borrow_next_chunk(p, length, &chunk);
   chunks_borrowed[chunks_borrowed_num] = chunk;
   chunks_borrowed_num++;
   return chunk;

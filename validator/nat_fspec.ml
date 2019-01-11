@@ -576,10 +576,11 @@ let fun_types =
                         extra_ptr_types = [];
                         lemmas_before = [];
                         lemmas_after = [];};
-     "packet_borrow_next_chunk", {ret_type = Static (Ptr Uint8);
+     "packet_borrow_next_chunk", {ret_type = Static Void;
                                   arg_types = stt [Ptr packet_struct;
-                                                   Uint32];
-                                  extra_ptr_types = [];
+                                                   Uint32;
+                                                   Ptr (Ptr Uint8)];
+                                  extra_ptr_types = estt ["the_chunk", Ptr Uint8];
                                   lemmas_before = [];
                                   lemmas_after = [];};
      "packet_return_chunk", {ret_type = Static Void;
@@ -595,7 +596,7 @@ let fun_types =
                                   lemmas_after = [];};
      "packet_free", {
                    ret_type = Static Void;
-                   arg_types = stt [Ptr rte_mbuf_struct;];
+                   arg_types = stt [Ptr packet_struct;];
                    extra_ptr_types = [];
                    lemmas_before = [];
                    lemmas_after = [];};

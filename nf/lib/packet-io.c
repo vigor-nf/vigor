@@ -40,20 +40,21 @@ static struct Packet global_current_packet;
   @*/
 
 // The main IO primitive.
-uint8_t* packet_borrow_next_chunk(struct Packet* p, size_t length)
+void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk)
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc) &*&
-             length <= length(unread); @*/
-/*@ ensures packetp(p, nic, type, drop(length, unread), cons(pair(result, length), mc)) &*&
-            uchars(result, length, take(length, unread)); @*/
+             length <= length(unread) &*&
+             *chunk |-> _; @*/
+/*@ ensures *chunk |-> ?ptr &*&
+            packetp(p, nic, type, drop(length, unread), cons(pair(ptr, length), mc)) &*&
+            uchars(ptr, length, take(length, unread)); @*/
 {
   //TODO: support mbuf chains.
   //@ open packetp(p, nic, type, unread, mc);
-  uint8_t* ret = p->unread_buf;
+  *chunk = p->unread_buf;
   p->unread_buf += length;
   //@ assert length <= length(unread);
-  return ret;
-  //@ uchars_split(ret, length);
-  //@ close packetp(p, nic, type, drop(length, unread), cons(pair(ret, length), mc));
+  //@ uchars_split(*chunk, length);
+  //@ close packetp(p, nic, type, drop(length, unread), cons(pair(*chunk, length), mc));
 }
 
 void packet_return_chunk(struct Packet* p, uint8_t* chunk)

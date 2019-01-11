@@ -15,11 +15,13 @@ struct rte_mempool;
   @*/
 
 // The main IO primitive.
-uint8_t* packet_borrow_next_chunk(struct Packet* p, size_t length);
+void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk);
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc) &*&
-             length <= length(unread); @*/
-/*@ ensures packetp(p, nic, type, drop(length, unread), cons(pair(result, length), mc)) &*&
-            uchars(result, length, take(length, unread)); @*/
+             length <= length(unread) &*&
+             *chunk |-> _; @*/
+/*@ ensures *chunk |-> ?ptr &*&
+            packetp(p, nic, type, drop(length, unread), cons(pair(ptr, length), mc)) &*&
+            uchars(ptr, length, take(length, unread)); @*/
 
 void packet_return_chunk(struct Packet* p, uint8_t* chunk);
 /*@ requires packetp(p, ?nic, ?type, ?unread, cons(pair(chunk, ?len), ?mc)) &*&
