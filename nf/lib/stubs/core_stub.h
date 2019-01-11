@@ -48,9 +48,9 @@ struct rte_mbuf;
       mbuf->timesync |-> ?ts &*&
       mbuf->seqn |-> ?seqn &*&
       user_bufferp(ba, ?ub) &*&
-      val == rte_mbufc(ub, port, ptype, doff) &*&
-      doff == 0;
-      //TODO: ^^^ is it really always so?
+      val == rte_mbufc(ub, port, ptype, doff);
+      //FIXME: figure out what is the value range for `doff`,
+      // and how to handle it.
 @*/
 
 
