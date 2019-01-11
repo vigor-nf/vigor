@@ -210,7 +210,7 @@ lcore_main(void)
 // --- Main ---
 
 int
-main(int argc, char* argv[])
+nf_main(int argc, char* argv[])
 {
   // Initialize the Environment Abstraction Layer (EAL)
   int ret = rte_eal_init(argc, argv);

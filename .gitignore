@@ -16,6 +16,9 @@ fullpage.sty
 *.bc
 *.os
 *.o
+*.a
+*.iso
+*.bin
 *.d
 *.cmd
 bench/bench
@@ -40,3 +43,4 @@ nat/testbed/hard/util/plot/*.txt
 /nat/testbed/hard/util/plot/.RData
 nat/testbed/hard/util/plot/*.png
 /nat/testbed/hard/util/plot/.Rhistory
+.DS_Store

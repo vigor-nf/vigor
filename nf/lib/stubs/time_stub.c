@@ -1,9 +1,20 @@
+#include <assert.h>
+#include <time.h>
+
 #include <klee/klee.h>
-#include "lib/nf_time.h"
-#include "time_stub_control.h"
+#include "nf_time.h"
+#include "stubs/time_stub_control.h"
+#include "kernel/dsos_tsc.h"
+
+time_t time(time_t *timer)
+{
+  assert(0);
+}
 
 time_t starting_time = 0;
 time_t last_time = 0;
+
+#ifdef KLEE_VERIFICATION
 
 __attribute__((noinline))
 time_t start_time(void) {
@@ -31,6 +42,37 @@ time_t current_time(void) {
     last_time = next_time;
     return next_time;
 }
+
+int
+clock_gettime(clockid_t clk_id, struct timespec* tp)
+{
+  // Not supported!
+  return -1;
+}
+
+#else // KLEE_VERIFICATION
+
+int clock_gettime(clockid_t clk_id, struct timespec *tp)
+{
+  // Others not implemented
+  if(clk_id != CLOCK_MONOTONIC) {
+    return -1;
+  }
+
+  uint64_t nsecs = dsos_rdtsc() / dsos_tsc_get_freq();
+
+  tp->tv_nsec = nsecs % 1000000000;
+  tp->tv_sec = nsecs / 1000000000;
+
+  return 0;
+  return -1;
+}
+
+time_t restart_time(void) {
+  assert(0);
+}
+
+#endif
 
 time_t get_start_time_internal(void) {
     return starting_time;
