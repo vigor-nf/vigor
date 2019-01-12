@@ -32,8 +32,8 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) 
   klee_assert(length < MAX_CHUNK_SIZE);
   klee_assert(p->tot_len_borrowed + length <= p->packet_len);
   uint8_t* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
-  klee_trace_extra_ptr(ret, MAX_CHUNK_SIZE,
-                       "the_chunk", "uint8_t", TD_OUT);
+  klee_trace_extra_ptr_arr(ret, sizeof(uint8_t), MAX_CHUNK_SIZE,
+                           "the_chunk", "uint8_t", TD_OUT);
   p->n_borrowed_chunks++;
   p->tot_len_borrowed += length;
   *chunk = ret;
@@ -42,7 +42,7 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) 
 void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
-  klee_trace_param_ptr_directed(chunk, MAX_CHUNK_SIZE, "chunk", TD_IN);
+  klee_trace_param_arr_directed(chunk, sizeof(uint8_t), MAX_CHUNK_SIZE, "chunk", TD_IN);
   klee_assert(!p->sent);
   klee_assert(0 < p->n_borrowed_chunks);
   p->n_borrowed_chunks--;

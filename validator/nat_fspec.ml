@@ -33,7 +33,7 @@ let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
                                          "internal_device", Uint16;
                                          "protocol", Uint8;] )
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array Uint8;])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
                                              "s_addr", ether_addr_struct;
                                              "ether_type", Uint16;])
@@ -586,12 +586,12 @@ let fun_types =
                                   arg_types = stt [Ptr packet_struct;
                                                    Uint32;
                                                    Ptr (Ptr Uint8)];
-                                  extra_ptr_types = estt ["the_chunk", Array (Uint8, 100)];
+                                  extra_ptr_types = estt ["the_chunk", Array Uint8];
                                   lemmas_before = [];
                                   lemmas_after = [];};
      "packet_return_chunk", {ret_type = Static Void;
                              arg_types = stt [Ptr packet_struct;
-                                              Array (Uint8, 100)];
+                                              Array Uint8];
                              extra_ptr_types = [];
                              lemmas_before = [];
                              lemmas_after = [];};

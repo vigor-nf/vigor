@@ -13,15 +13,15 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
   match out_val.v, out_val.t with
   (* HACKY HACK - can't do an assume over the arrays themselves because they're pointers and VeriFast will assume that the pointers, not the contents, are equal *)
-  | _, Array (Uint8, size) when head = "assume" -> begin match out_arg.t with
-                          | Array (Uint8, size2) when size2 = size ->
+  | _, Array Uint8 when head = "assume" -> begin match out_arg.t with
+                          | Array Uint8 ->
                             let tmp_gen = gen_tmp_name() in
                             let (bindings, expr) = Fspec_api.generate_2step_dereference out_arg tmp_gen in
                             (String.concat ~sep:"\n" bindings) ^ "\n" ^
-                            "//@ assert [_]uchars(" ^ (render_tterm expr) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "oa") ^ ");\n" ^
-                            "//@ assert [_]uchars(" ^ (render_tterm out_val) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "ov") ^ ");\n" ^
+                            "//@ assert [_]uchars(" ^ (render_tterm expr) ^ ", _, ?" ^ (tmp_gen "oa") ^ ");\n" ^
+                            "//@ assert [_]uchars(" ^ (render_tterm out_val) ^ ", _, ?" ^ (tmp_gen "ov") ^ ");\n" ^
                             "//@ assume(" ^ (tmp_gen "oa") ^ " == " ^ (tmp_gen "ov") ^ ");\n"
-                          | _ -> failwith "Arrays must be of type Uint8 (sorry!) and same size (not sorry!)" end
+                          | _ -> failwith "Arrays must be of type Uint8 (sorry!)" end
   (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->
     begin match out_arg.v, out_arg.t with
@@ -104,27 +104,26 @@ let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
 let render_assignment {lhs;rhs;} =
   match rhs.v with
   | Undef -> "";
-  | _ -> begin match rhs.t with
-         | Array (_, size) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");"
-         | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
+  | _ -> begin match rhs.t,rhs.v with
+      | Array Uint8, Array cells ->
+        "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^
+        (Int.to_string (List.length cells)) ^ ");"
+      | Array _, _ -> failwith ((render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^
+                               " is not handled")
+      | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
 
 let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
   else match rhs.t, rhs.v with
   | _, Undef -> []
-  | Array (_, s), Array cells -> begin match lhs.t with
-      | Array (_, s2) -> if s <> s2 then
-          failwith ("arrays must be compared to arrays of the same size (" ^
-                    (string_of_int s) ^ " <> " ^
-                    (string_of_int s2) ^ ")")
-        else
-          [{lhs;rhs}]
+  | Array _, Array cells -> begin match lhs.t with
+      | Array _ -> [{lhs;rhs}]
       | Ptr ptee_t ->
         List.mapi cells ~f:(fun idx value ->
             {lhs={v=Deref {v=Bop (Add, lhs, {v=Int idx;t=Uint32});t=lhs.t};
                   t=ptee_t};
              rhs=value})
-      | _ -> failwith ("arrays must be compared to arrays: " ^
+      | _ -> failwith ("arrays must be compared to arrays or ptrs: " ^
                        (ttype_to_str rhs.t) ^ " <> " ^
                        (ttype_to_str lhs.t)) end
   | Ptr ptee_t, Addr pointee ->
@@ -566,7 +565,7 @@ let render_vars_declarations ( vars : var_spec list ) =
   String.concat ~sep:"\n"
     (List.map vars ~f:(fun v ->
          match v.value.t with
-         | Array (at, size) -> (ttype_to_str at) ^ " " ^ v.name ^ "[" ^ (Int.to_string size) ^ "];"
+         | Array at -> (ttype_to_str at) ^ " " ^ v.name ^ "[];"
          | Unknown | Sunknown | Uunknown -> failwith ("Cannot render var decl '" ^ v.name ^ "' for type " ^ (ttype_to_str v.value.t))
          | _ -> ttype_to_str v.value.t ^ " " ^ v.name ^ ";")) ^ "\n"
 
@@ -576,7 +575,7 @@ let render_hist_calls hist_funs =
 let render_cmplexes cmplxes =
   String.concat ~sep:"\n" (List.map (String.Map.data cmplxes) ~f:(fun var ->
       match var.value.t with
-      | Array (at, size) -> (ttype_to_str at) ^ " " ^ var.name ^ "[" ^ (Int.to_string size) ^ "]; //" ^ (render_tterm var.value)
+      | Array at -> (ttype_to_str at) ^ " " ^ var.name ^ "[]; //" ^ (render_tterm var.value)
       | _ -> (ttype_to_str var.value.t) ^ " " ^ var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
 
 let render_context_assumptions assumptions  =

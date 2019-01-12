@@ -9,7 +9,7 @@ type bop = Eq | Le | Lt | Ge | Gt
 
 
 type ttype = | Ptr of ttype
-             | Array of ttype * int
+             | Array of ttype
              | Sint64
              | Sint32
              | Sint16
@@ -52,7 +52,7 @@ type eq_condition = {lhs: tterm; rhs: tterm} [@@deriving sexp]
 
 let rec ttype_to_str = function
   | Ptr c_type -> ttype_to_str c_type ^ "*"
-  | Array (a_type, _) -> ttype_to_str a_type  ^ "[]" (* Verifast does not like this: "[]" *)
+  | Array a_type -> ttype_to_str a_type  ^ "[]" (* Verifast does not like this: "[]" *)
   | Sint64 -> "int64_t" | Sint32 -> "int32_t" | Sint16 -> "int16_t" | Sint8 -> "int8_t"
   | Uint64 -> "uint64_t"| Uint32 -> "uint32_t"
   | Uint16 -> "uint16_t" | Uint8 -> "uint8_t"
@@ -253,7 +253,7 @@ let rec simplify_tterm tterm =
       | Bop (Add, {v=Int x;t=xt}, rhs) when x < 0 ->
         Some (Bop (Sub, rhs, {v=Int (-x);t=xt}))
       | Deref {t=_;v=Addr x} -> Some x.v
-      | Cast (t1, ({v=Cast(t2, x);t=_} as sub)) when t1 = t2 ->
+      | Cast (t1, ({v=Cast(t2, _);t=_} as sub)) when t1 = t2 ->
         Some (simplify_tterm sub).v
       | Str_idx ({v=Struct (_,fields);
                   t=_},

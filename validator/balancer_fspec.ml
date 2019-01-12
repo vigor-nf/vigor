@@ -22,7 +22,7 @@ let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array Uint8;])
 let lb_flow_struct = Ir.Str ( "LoadBalancedFlow", ["src_ip", Uint32;
                                                    "dst_ip", Uint32;
                                                    "src_port", Uint16;

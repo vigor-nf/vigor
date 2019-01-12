@@ -52,7 +52,7 @@ let reveal_the_other_mapp : lemma = fun {arg_types;tmp_gen;_} ->
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
-let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array (Uint8, 6);])
+let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array Uint8;])
 let static_key_struct = Ir.Str ( "StaticKey", ["addr", ether_addr_struct;
                                                "device", Uint16] )
 let dynamic_value_struct = Ir.Str ( "DynamicValue", ["device", Uint16] )
