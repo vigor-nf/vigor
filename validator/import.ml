@@ -1358,26 +1358,42 @@ let compose_args_post_conditions (call:Trace_prefix.call_node) ftype_of fun_args
 
 let compose_extra_ptrs_post_conditions (call:Trace_prefix.call_node)
   ftype_of =
-  let gen_post_condition_of_struct_val (val_before : Ir.tterm) val_now =
+  let gen_post_condition_of_struct_val (val_before : Ir.tterm) val_now exptr_t =
     lprintf "postconditions for %s: %s\n" call.fun_name (ttype_to_str val_before.t);
-    match get_struct_val_value
-            val_now (get_pointee val_before.t) with
-    | {v=Int _;t=_} -> lprintf "CEPPC ignoring int for some reason, val_before=%s\n" (render_tterm val_before); None
-    (* Skip the two layer pointer.
-       TODO: maybe be allow special case of Zeroptr here.*)
-    | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n" (render_tterm (deref_tterm val_before)) (ttype_to_str (deref_tterm val_before).t) (render_tterm value) (ttype_to_str value.t);
-      Some {lhs=deref_tterm val_before;
-            rhs=value}
+    match exptr_t with
+    | Ptr ptee_t ->
+      begin match (get_struct_val_value val_now ptee_t) with
+        | {v=Int _;t=_} -> lprintf "CEPPC ignoring int for some reason, val_before=%s\n" (render_tterm val_before); None
+        (* Skip the two layer pointer.
+           TODO: maybe be allow special case of Zeroptr here.*)
+        | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n" (render_tterm (deref_tterm val_before)) (ttype_to_str (deref_tterm val_before).t) (render_tterm value) (ttype_to_str value.t);
+          Some {lhs=deref_tterm val_before;
+                rhs=value}
+        end
+    | Array (ptee_t,_) ->
+      begin match (get_struct_val_value val_now exptr_t) with
+        | {v=Int _;t=_} -> lprintf "CEPPC ignoring int for some reason, val_before=%s\n" (render_tterm val_before); None
+        (* Skip the two layer pointer.
+           TODO: maybe be allow special case of Zeroptr here.*)
+        | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n" (render_tterm (deref_tterm val_before)) (ttype_to_str (deref_tterm val_before).t) (render_tterm value) (ttype_to_str value.t);
+          (* Retype the val_before as a pointer to pan out the equality in render:
+             if we keep both sides as arrays, render will draw them as array equality with the
+             verifast predicates staff etc.; if the lhs is a pointer, it will render an equality
+             for each cell on a new line.*)
+          Some {lhs={v=val_before.v;t=Ptr ptee_t};
+                rhs=value}
+      end
+    | _ -> failwith ("Not a pointer type: " ^ (ttype_to_str exptr_t))
   in
   List.filter_map call.extra_ptrs ~f:(fun {pname;value;ptee} ->
       let key = value in
-      match find_first_symbol_by_address key
-              (get_fun_extra_ptr_type ftype_of call pname) (After call.id) with
+      let exptr_t = (get_fun_extra_ptr_type ftype_of call pname) in
+      match find_first_symbol_by_address key exptr_t (After call.id) with
       | Some extra_ptee ->
         begin match ptee with
-          | Opening x -> gen_post_condition_of_struct_val extra_ptee x
+          | Opening x -> gen_post_condition_of_struct_val extra_ptee x exptr_t
           | Closing _ -> None
-          | Changing (_,x) -> gen_post_condition_of_struct_val extra_ptee x
+          | Changing (_,x) -> gen_post_condition_of_struct_val extra_ptee x exptr_t
         end
       | None -> None (* The variable is not allocated,
                         because it is a 2-layer pointer.*))

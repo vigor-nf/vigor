@@ -209,7 +209,8 @@ let render_hist_fun_call {context;result} =
               "/* Do not render the return ptee assumption for hist calls */\n"
    | _ -> render_ret_equ_sttmt ~is_assert:false context.ret_name context.ret_type result.ret_val) ^
   "// POSTCONDITIONS\n" ^
-  (render_args_post_conditions ~is_assert:false result.args_post_conditions) ^ (* ret can influence whether args are accessible *)
+  (render_args_post_conditions ~is_assert:false
+     (List.join (List.map result.args_post_conditions ~f:gen_plain_equalities) )) ^ (* ret can influence whether args are accessible *)
   (render_post_assumptions result.post_statements) ^
   "// POSTLEMMAS\n" ^
   (render_postlemmas context) (* postlemmas can depend on the return value *)
