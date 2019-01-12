@@ -401,6 +401,38 @@ let type_guess_of_ttype t = match t with
   | Uunknown -> {s=Sure Unsgn;w=Noidea;precise=Unknown}
   | Unknown | _ -> {s=Noidea;w=Noidea;precise=t}
 
+let get_vars_from_array_val v ptee_type count known_vars =
+  match v.full with
+  | Some v -> begin match v with
+      | Sexp.List [Sexp.Atom "ReadLSB"; Sexp.Atom width; Sexp.List [Sexp.Atom "w32"; Sexp.Atom offset]; Sexp.Atom name] ->
+        let offset = int_of_string offset in
+        let total_width = int_of_string (String.drop_prefix width 1) in
+        assert(total_width % count = 0);
+        let size = total_width / count in
+        assert(size % 8 = 0);
+        let size = size / 8 in (* Translate the bits into bytes,
+                                  as klee writes width in bits and
+                                  offsets in bytes. *)
+        let rec gen_array_vars offset count =
+          let name = name ^ "_" ^ (string_of_int offset) in
+          if count = 0 then [] else
+            begin match String.Map.find known_vars name with
+              | Some spec ->  (name,(update_var_spec spec (type_guess_of_ttype ptee_type)))::
+                              (gen_array_vars (offset + size) (count - 1))
+              | None -> (name,{vname = name; t=type_guess_of_ttype ptee_type})::
+                        (gen_array_vars (offset + size) (count - 1))
+            end
+        in
+        map_set_n_update_alist known_vars (gen_array_vars offset count)
+      | Sexp.List [Sexp.Atom width; Sexp.Atom "0"] ->
+        let total_width = int_of_string (String.drop_prefix width 1) in
+        assert(total_width % count = 0);
+        assert((total_width / count) % 8 = 0);
+        known_vars
+      | _ -> failwith ("Can not get vars from array: " ^ (Sexp.to_string v))
+    end
+  | None -> known_vars
+
 let rec get_vars_from_struct_val v (ty:ttype) (known_vars:typed_var String.Map.t) =
   match ty with
   | Str (name, fields) ->
@@ -418,6 +450,8 @@ let rec get_vars_from_struct_val v (ty:ttype) (known_vars:typed_var String.Map.t
       List.fold (List.zip_exn v.break_down ftypes) ~init:known_vars
         ~f:(fun acc (v,t)->
           get_vars_from_struct_val v.value t acc)
+  | Array (ptee_type, size) ->
+    get_vars_from_array_val v ptee_type size known_vars
   | ty -> match v.full with
     | Some v ->
       get_vars_from_plain_val v (type_guess_of_ttype ty) known_vars
@@ -509,6 +543,11 @@ let find_first_known_address_comply addr tt at property =
                          that are not concretized yet. *)
           failwith ("Searching for a void instantiation of addr" ^
                   (Int64.to_string addr) ^ " x.tt:" ^ (ttype_to_str x.tt) ^ " tt:" ^ (ttype_to_str tt))
+         | Ptr ptee1, Array (ptee2, _) ->
+           if (ptee1 <> ptee2) then
+             lprintf "discarding: %s * != %s []\n"
+               (ttype_to_str ptee1) (ttype_to_str ptee2);
+           ptee1 = ptee2
          | t1, t2 ->
            if (t1 <> t2) then
              lprintf "discarding: %s != %s\n"
@@ -779,6 +818,38 @@ let rec get_struct_val_value valu t =
       {v=Struct (strname, fields);t}
     end
   (*| Ptr ptee, None -> failwith ("GSVV given a pointer! " ^ (ttype_to_str ptee))*)
+  | Array _, None -> failwith ("Uninitialized array of type " ^ (ttype_to_str t))
+  | Array (ptee_t, len), Some v -> lprintf "Reading array of type %s" (ttype_to_str t);
+    begin
+      match v with
+      | Sexp.List [Sexp.Atom "ReadLSB"; Sexp.Atom width; Sexp.List [Sexp.Atom "w32"; Sexp.Atom offset]; Sexp.Atom name] ->
+        let offset = int_of_string offset in
+        let total_width = int_of_string (String.drop_prefix width 1) in
+        assert(total_width % len = 0);
+        let size = total_width / len in
+        assert(size % 8 = 0);
+        let size = size / 8 in (* Translate the bits into bytes,
+                                  as klee writes width in bits and
+                                  offsets in bytes. *)
+        let rec gen_array_ids offset count =
+          let name = name ^ "_" ^ (string_of_int offset) in
+          if count = 0 then [] else
+            {v=Id name;t=ptee_t}::(gen_array_ids (offset + size) (count - 1))
+        in
+        {v=Array (gen_array_ids offset len); t=Array(ptee_t, len)}
+      | Sexp.List [Sexp.Atom width; Sexp.Atom "0"] ->
+        let total_width = int_of_string (String.drop_prefix width 1) in
+        assert(total_width % len = 0);
+        assert((total_width / len) % 8 = 0);
+        let rec gen_zeroes count =
+          if count = 0 then
+            []
+          else
+            {v=Int 0;t=ptee_t}::(gen_zeroes (count - 1))
+        in
+        {v=Array (gen_zeroes len);t=Array(ptee_t, len)}
+      | _ -> failwith ("Can not parse the array sexp: " ^ (Sexp.to_string v))
+    end
   | _, Some v -> lprintf "GSVV using sexp for type %s\n" (ttype_to_str t); get_sexp_value v t
   | _, None -> lprintf "GSVV undef for type %s\n" (ttype_to_str t); {t;v=Undef}
 
@@ -919,11 +990,14 @@ let get_basic_vars ftype_of tpref =
       | Apathptr ->
         acc
       | Curioptr ptee ->
-        let ptee_type = get_pointee t in
-        if is_ret then begin
-          get_ret_pointee_vars ptee ptee_type acc
+        begin match t with
+          | Ptr t -> if is_ret then get_ret_pointee_vars ptee t acc
+            else get_arg_pointee_vars ptee t acc
+          | Array (_,_) -> get_arg_pointee_vars ptee t acc
+          | _ -> failwith ((ttype_to_str t) ^
+                           " is not a pointer type, \
+                            while the trace dumps a pointer here")
         end
-        else get_arg_pointee_vars ptee ptee_type acc
     in
     lprintf "getting_vars from %s\n" call.fun_name;
     if (List.length call.args <> get_num_args ftype_of call) then
@@ -936,9 +1010,11 @@ let get_basic_vars ftype_of tpref =
     in
     let extra_ptr_vars = List.fold call.extra_ptrs ~init:arg_vars
         ~f:(fun acc {pname;value=_;ptee} ->
-            let ptee_type =
-              (get_pointee (get_fun_extra_ptr_type ftype_of call pname)) in
-          get_extra_ptr_pointee_vars ptee ptee_type acc)
+            match get_fun_extra_ptr_type ftype_of call pname with
+            | Ptr ptee_type -> get_extra_ptr_pointee_vars ptee ptee_type acc
+            | Array _ as eptr_type -> get_extra_ptr_pointee_vars ptee eptr_type acc
+            | t -> failwith ((ttype_to_str t) ^
+                             " is not supported as an extra ptr type."))
     in
     let ret_vars = match call.ret with
       | Some ret ->
@@ -1012,7 +1088,11 @@ let allocate_extra_ptrs ftype_of tpref =
   let alloc_call_extra_ptrs call =
     List.filter_map call.extra_ptrs ~f:(fun {pname;value;ptee} ->
         let addr = value in
-        let ptee_type = get_pointee (get_fun_extra_ptr_type ftype_of call pname) in
+        let ptee_type = match (get_fun_extra_ptr_type ftype_of call pname) with
+          | Ptr t -> t
+          | Array (t,_) -> t
+          | t -> failwith ((ttype_to_str t) ^ " is not a pointer type")
+        in
         let mk_ptr value = {t=Ptr value.t;v=Addr value} in
         lprintf "allocating extra ptr in %s (%d): %s addr %Ld : %s\n"
           call.fun_name call.id pname addr (ttype_to_str ptee_type);
@@ -1099,27 +1179,32 @@ let allocate_args ftype_of tpref arg_name_gen =
           let addr = int64_of_sexp value in
           let t = get_fun_arg_type ftype_of call i in
           lprintf "%s fun argument %d type is %s\n" call.fun_name i (ttype_to_str t);
-          let ptee_type = get_pointee t in
-          let ptee_ptr_val = Option.map ptee.before.full
-              ~f:(fun expr -> get_sexp_value expr ptee_type)
-          in
-          let ptee_ptr_val_after = Option.map ptee.after.full
-              ~f:(fun expr -> get_sexp_value expr ptee_type)
-          in
-          match ptee_type, ptee_ptr_val with
-            | Ptr ptee_ptee_t, Some {v=(Int x);t=_} when x <> 0 ->
-              alloc_dummy_nested_ptr addr (Int64.of_int x) ptee_ptee_t
-            | Ptr ptee_ptee_t, Some {v=Utility (Ptr_placeholder x);t=_}
-              when x <> 0L ->
-              alloc_dummy_nested_ptr addr x ptee_ptee_t
-            | _ -> match ptee_type, ptee_ptr_val_after with
+          match t with
+          | Ptr ptee_type -> begin
+              let ptee_ptr_val = Option.map ptee.before.full
+                  ~f:(fun expr -> get_sexp_value expr ptee_type)
+              in
+              let ptee_ptr_val_after = Option.map ptee.after.full
+                  ~f:(fun expr -> get_sexp_value expr ptee_type)
+              in
+              match ptee_type, ptee_ptr_val with
               | Ptr ptee_ptee_t, Some {v=(Int x);t=_} when x <> 0 ->
                 alloc_dummy_nested_ptr addr (Int64.of_int x) ptee_ptee_t
               | Ptr ptee_ptee_t, Some {v=Utility (Ptr_placeholder x);t=_}
                 when x <> 0L ->
                 alloc_dummy_nested_ptr addr x ptee_ptee_t
-              | _ -> alloc_arg addr ptee.before (get_struct_val_value
-                                                   ptee.before ptee_type) aname)
+              | _ -> match ptee_type, ptee_ptr_val_after with
+                | Ptr ptee_ptee_t, Some {v=(Int x);t=_} when x <> 0 ->
+                  alloc_dummy_nested_ptr addr (Int64.of_int x) ptee_ptee_t
+                | Ptr ptee_ptee_t, Some {v=Utility (Ptr_placeholder x);t=_}
+                  when x <> 0L ->
+                  alloc_dummy_nested_ptr addr x ptee_ptee_t
+                | _ -> alloc_arg addr ptee.before (get_struct_val_value
+                                                     ptee.before ptee_type) aname
+            end
+          | Array _ -> None
+          | _ -> failwith ((ttype_to_str t) ^ "is not a pointer type")
+      )
   in
   List.join (List.map (tpref.history@tpref.tip_calls) ~f:alloc_call_args)
 
@@ -1142,7 +1227,11 @@ let compose_pre_lemmas ftype_of fun_name call_id args arg_types tmp_gen ~is_tip 
 
 let extract_fun_args ftype_of (call:Trace_prefix.call_node) =
   let get_allocated_arg (arg: Trace_prefix.arg) arg_type =
-    let ptee_t = get_pointee arg_type in
+    let ptee_t = match arg_type with
+      | Ptr t -> t
+      | Array(t, _) -> t
+      | _ -> failwith ((ttype_to_str arg_type) ^ " is not a pointer type")
+    in
     let addr = int64_of_sexp arg.value in
     let arg_var = find_first_symbol_by_address
         addr
@@ -1343,23 +1432,34 @@ let take_arg_ptrs_into_pre_cond (args : Trace_prefix.arg list) call ftype_of =
       | Apathptr -> None
       | Curioptr ptee -> begin
           let addr = int64_of_sexp arg.value in
+          let arg_t = (get_fun_arg_type ftype_of call i) in
           match find_first_symbol_by_address
                   addr
-                  (get_fun_arg_type ftype_of call i)
+                  arg_t
                   moment_before
           with
           | None -> lprintf "TAPIPC not found: %s %s. ignoring\n" call.fun_name arg.aname;
             None
           | Some x ->
             lprintf "TAPIPC arg. settled on %s %s => %s : %s\n" call.fun_name arg.aname (render_tterm x) (ttype_to_str x.t);
-            match get_struct_val_value ptee.before (get_pointee x.t) with
-            | {v=Undef;t=_} -> lprintf "TAPIPC scratch that...\n"; None
-            | y -> Some {lhs={v=Deref x;t=y.t};rhs=y}
+            match arg_t with
+            | Ptr ptee_t -> begin
+                match get_struct_val_value ptee.before (get_pointee x.t) with
+                | {v=Undef;t=_} -> lprintf "TAPIPC scratch that...\n"; None
+                | y -> Some {lhs={v=Deref x;t=y.t};rhs=y}
+              end
+            | Array (ptee_t, size) -> begin match get_struct_val_value ptee.before arg_t with
+                | {v=Array cells;t=Array (_, len)} as y -> assert(len = (List.length cells));
+                  Some {lhs=x;rhs=y}
+                | _ -> failwith "A non array returned for an array request from get_struct_val_value"
+              end
+            | _ -> failwith ((ttype_to_str x.t) ^ " is not a pointer type, while a pointer is expected")
         end)
 
 let fixup_placeholder_ptrs_in_tterm moment tterm ~need_symbol =
   let replace_placeholder = function
-    | {v=Utility (Ptr_placeholder addr); t=Ptr ptee_t} ->
+    | {v=Utility (Ptr_placeholder addr); t=Ptr ptee_t}
+    | {v=Utility (Ptr_placeholder addr); t=Array(ptee_t,_)} ->
       lprintf "fixing placeholder for %Ld (%s)\n" addr (if need_symbol then "symbol" else "addr");
       let search_function =
         if need_symbol then

@@ -112,9 +112,21 @@ let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
   else match rhs.t, rhs.v with
   | _, Undef -> []
-  | Array (_, s), _ -> begin match lhs.t with
-                  | Array (_, s2) when s = s2 -> [{lhs;rhs}]
-                  | _ -> failwith "arrays must be compared to arrays of the same size" end
+  | Array (_, s), Array cells -> begin match lhs.t with
+      | Array (_, s2) -> if s <> s2 then
+          failwith ("arrays must be compared to arrays of the same size (" ^
+                    (string_of_int s) ^ " <> " ^
+                    (string_of_int s2) ^ ")")
+        else
+          [{lhs;rhs}]
+      | Ptr ptee_t ->
+        List.mapi cells ~f:(fun idx value ->
+            {lhs={v=Deref {v=Bop (Add, lhs, {v=Int idx;t=Uint32});t=lhs.t};
+                  t=ptee_t};
+             rhs=value})
+      | _ -> failwith ("arrays must be compared to arrays: " ^
+                       (ttype_to_str rhs.t) ^ " <> " ^
+                       (ttype_to_str lhs.t)) end
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
                           rhs=pointee}

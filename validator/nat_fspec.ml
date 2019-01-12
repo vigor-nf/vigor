@@ -560,7 +560,13 @@ let fun_types =
                         arg_types = stt [Uint16; Ptr (Ptr packet_struct);];
                         extra_ptr_types = [];
                         lemmas_before = [];
-                        lemmas_after = [];};
+                        lemmas_after = [
+                          (fun {args;_} ->
+                             "a_packet_received = true;\n" ^
+                             "the_received_packet = *" ^ (List.nth_exn args 1) ^
+                             ";\n"
+                          )
+                        ];};
      "packet_send", {ret_type = Static Void;
                      arg_types = stt [Ptr packet_struct; Uint16];
                      extra_ptr_types = [];
@@ -580,12 +586,12 @@ let fun_types =
                                   arg_types = stt [Ptr packet_struct;
                                                    Uint32;
                                                    Ptr (Ptr Uint8)];
-                                  extra_ptr_types = estt ["the_chunk", Ptr Uint8];
+                                  extra_ptr_types = estt ["the_chunk", Array (Uint8, 100)];
                                   lemmas_before = [];
                                   lemmas_after = [];};
      "packet_return_chunk", {ret_type = Static Void;
                              arg_types = stt [Ptr packet_struct;
-                                              Ptr Uint8];
+                                              Array (Uint8, 100)];
                              extra_ptr_types = [];
                              lemmas_before = [];
                              lemmas_after = [];};
@@ -667,7 +673,8 @@ struct
                   int the_index_allocated = -1;\n\
                   int the_index_rejuvenated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
-                  struct stub_mbuf_content the_received_packet;\n\
+                  struct Packet* the_received_packet;\n\
+                  //struct stub_mbuf_content the_received_packet;\n\
                   bool a_packet_received = false;\n\
                   struct stub_mbuf_content sent_packet;\n\
                   uint16_t sent_on_port;\n\
@@ -684,7 +691,7 @@ struct
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration =
-    "" (* TODO: (In_channel.read_all "forwarding_property.tmpl") *)
+    (In_channel.read_all "forwarding_property.tmpl")
 end
 
 (* Register the module *)
