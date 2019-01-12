@@ -14,6 +14,7 @@ struct Packet {
   uint32_t packet_len;
   uint32_t tot_len_borrowed;
   uint8_t chunks[MAX_CHUNK_SIZE*PREALLOC_CHUNKS];
+  uint32_t chunk_lengths[PREALLOC_CHUNKS];
 };
 
 /* static struct Packet global_current_packet; */
@@ -32,19 +33,36 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) 
   klee_assert(length < MAX_CHUNK_SIZE);
   klee_assert(p->tot_len_borrowed + length <= p->packet_len);
   uint8_t* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
-  klee_trace_extra_ptr_arr(ret, sizeof(uint8_t), MAX_CHUNK_SIZE,
-                           "the_chunk", "uint8_t", TD_OUT);
+  if (klee_is_symbolic(length)) {
+    //Validator will expect an extraptr "the_chunk", so we trace one
+    klee_trace_extra_ptr(ret, sizeof(uint8_t), "the_chunk", "uint8_t", TD_OUT);
+  } else {
+    //Truly trace only fixed-length chunks.
+    //TODO: support some tracing for variable-length chunks
+    klee_trace_extra_ptr_arr(ret, sizeof(uint8_t), length,
+                             "the_chunk", "uint8_t", TD_OUT);
+  }
+  p->chunk_lengths[p->n_borrowed_chunks] = length;
   p->n_borrowed_chunks++;
   p->tot_len_borrowed += length;
   *chunk = ret;
 }
 
 void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
+  klee_assert(0 < p->n_borrowed_chunks);
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
-  klee_trace_param_arr_directed(chunk, sizeof(uint8_t), MAX_CHUNK_SIZE, "chunk", TD_IN);
+  uint32_t length = p->chunk_lengths[p->n_borrowed_chunks - 1];
+  if (klee_is_symbolic(length)) {
+    //Validator will need this function argument, so we trace just a tittle
+    klee_trace_param_ptr_directed(chunk, sizeof(uint8_t), "chunk", TD_IN);
+  } else {
+    //Truly trace only fixed-length chunks.
+    //TODO: support some tracing for variable-length chunks
+    klee_trace_param_arr_directed(chunk, sizeof(uint8_t),
+                                  length, "chunk", TD_IN);
+  }
   klee_assert(!p->sent);
-  klee_assert(0 < p->n_borrowed_chunks);
   p->n_borrowed_chunks--;
   klee_assert(p->chunks + MAX_CHUNK_SIZE*p->n_borrowed_chunks == chunk);
 }
