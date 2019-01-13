@@ -63,13 +63,6 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
                        cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
                                              ittl, inpid, _, dip, sip)),
                        cons(tcpudp_hdr(tcpudp_hdrc(dp, sp)), nil)));
-                //assert sent_packet.tcp.dst_port == sp;
-                //assert sent_packet.tcp.src_port == dp;
-                //assert sent_packet.ipv4.dst_addr == sip;
-                //assert sent_packet.ipv4.src_addr == dip;
-                //assert sent_on_port == idev;
-                //assert sent_packet.ipv4.next_proto_id == prot;
-                //assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
               }
             }
           } else {
@@ -78,24 +71,21 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           }
         } else {
           // packet from the internal network
-          flow_id internal_flow_id = flid(the_received_packet.tcp.src_port,
-                                          the_received_packet.tcp.dst_port,
-                                          the_received_packet.ipv4.src_addr,
-                                          the_received_packet.ipv4.dst_addr,
+          flow_id internal_flow_id = flid(isrc_port, idst_port,
+                                          isaddr, idaddr,
                                           received_on_port,
-                                          the_received_packet.ipv4.next_proto_id);
+                                          inpid);
           if (emap_has(flow_emap, internal_flow_id)) {
             // flow present in the table
             int idx = emap_get(flow_emap, internal_flow_id);
             flow_emap = emap_refresh_idx(flow_emap, idx, now);
             assert true == a_packet_sent;
-            assert sent_packet.tcp.src_port == idx + start_port;
-            assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
-            assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
-            assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
-            assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
+            assert sent_headers ==
+                   cons(ether_hdr(ether_hdrc(_, _, ietype)),
+                   cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                         ittl, inpid, _, EXT_IP_ADDR, idaddr)),
+                   cons(tcpudp_hdr(tcpudp_hdrc(idx + start_port, idst_port)), nil)));
             assert sent_on_port == EXT_PORT;
-            assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
           } else {
             // No flow in the table
             if (emap_full(flow_emap)) {
@@ -108,13 +98,13 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
               flow_emap = emap_add(flow_emap, internal_flow_id, idx, now);
 
               assert true == a_packet_sent;
-              assert sent_packet.tcp.src_port == idx + start_port;
-              assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
-              assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
-              assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
-              assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
+
+              assert sent_headers ==
+                     cons(ether_hdr(ether_hdrc(_, _, ietype)),
+                     cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                           ittl, inpid, _, EXT_IP_ADDR, idaddr)),
+                     cons(tcpudp_hdr(tcpudp_hdrc(idx + start_port, idst_port)), nil)));
               assert sent_on_port == EXT_PORT;
-              assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
             }
           }
         }

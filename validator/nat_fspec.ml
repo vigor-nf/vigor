@@ -765,7 +765,6 @@ struct
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
                   bool is_ipv4 = false;\n\
-                  struct stub_mbuf_content sent_packet;\n\
                   uint16_t sent_on_port;\n\
                   bool a_packet_sent = false;\n\
                   //@ dchain flow_chain;\n\
