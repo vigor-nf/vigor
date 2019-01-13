@@ -8,8 +8,9 @@
 // For verification this is fine but for running on hardware
 // the compiler complains so we actually need to include time.h
 
-#define time_t int64_t
-//#include <time.h>
+typedef int64_t time_t;
+// #include <time.h>
+
 
 
 //@ predicate last_time(time_t t);

@@ -39,6 +39,9 @@ validate-bridge: clean
 validate-balancer: clean
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cmo
 
+validate-nat-dsos: clean
+	./test_all.sh ../nf/klee-last out ../nf nat_fspec.cmo
+
 # Regression test suite
 test-results/%.done: regression-tests/%
 	./run-test.sh $* test-results
