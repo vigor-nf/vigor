@@ -563,8 +563,8 @@ let fun_types =
                         extra_ptr_types = [];
                         lemmas_before = [];
                         lemmas_after = [
-                          (fun {args;_} ->
-                             "a_packet_received = true;\n" ^
+                          (fun {args;ret_name;_} ->
+                             "a_packet_received = " ^ ret_name ^ " ;\n" ^
                              "received_on_port = " ^ (List.nth_exn args 0) ^ ";\n"
                           )
                         ];};
