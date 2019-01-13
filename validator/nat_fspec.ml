@@ -611,7 +611,23 @@ let fun_types =
                                   lemmas_after = [
                                     (fun {args;_} ->
                                        "//@ close_struct(*" ^ (List.nth_exn args 2) ^ ");\n"
-                                    )];};
+                                    );
+                                    (fun {args;arg_types;_} ->
+                                       match List.nth_exn arg_types 2 with
+                                       | Ptr (Ptr (Str ("ether_hdr", _))) ->
+                                         "//@ recv_headers = add_ether_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n" ^
+                                         "//@ open ether_hdrp(*" ^ (List.nth_exn args 2) ^
+                                         ", _);\n\
+                                          //@ open ether_addrp((" ^ (List.nth_exn args 2) ^
+                                         "->s_addr), _);\n\
+                                          //@ open ether_addrp((" ^ (List.nth_exn args 2) ^
+                                         "->d_addr), _);\n"
+                                       | Ptr (Ptr (Str ("ipv4_hdr", _))) ->
+                                         "//@ recv_headers = add_ipv4_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
+                                         "//@ recv_headers = add_tcpudp_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
+                                      )];};
      "packet_return_chunk", {ret_type = Static Void;
                              arg_types = [Static (Ptr packet_struct);
                                           Dynamic ["ether_hdr",
@@ -624,7 +640,25 @@ let fun_types =
                                                    Ptr Uint8
                                                   ]];
                              extra_ptr_types = [];
-                             lemmas_before = [(fun {arg_exps;_} ->
+                             lemmas_before = [
+                               (fun {arg_exps;arg_types;_} ->
+                                  match List.nth_exn arg_types 1 with
+                                  | Ptr (Str ("ether_hdr", _)) ->
+                                    "//@ sent_headers = add_ether_header(sent_headers, " ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^ ");\n" ^
+                                    "//@ open ether_hdrp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ", _);\n\
+                                     //@ open ether_addrp(&(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    "->s_addr), _);\n
+                                     //@ open ether_addrp(&(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    "->d_addr), _);\n"
+                                  | Ptr (Str ("ipv4_hdr", _)) ->
+                                    "//@ sent_headers = add_ipv4_header(sent_headers, " ^ (render_tterm (List.nth_exn arg_exps 1)) ^ ");\n"
+                                  | Ptr (Str ("tcpudp_hdr", _)) ->
+                                    "//@ sent_headers = add_tcpudp_header(sent_headers, " ^ (render_tterm (List.nth_exn arg_exps 1)) ^ ");\n"
+                                  | _ -> failwith "unsupported chunk type in packet_return_chunk"
+                               );
+                                (fun {arg_exps;_} ->
                                  "//@ open_struct(" ^
                                  (render_tterm (List.nth_exn arg_exps 1))
                                  ^ ");\n"
@@ -718,6 +752,8 @@ struct
                   //@ dchain flow_chain;\n\
                   //@ list<pair<flow_id, int> > flow_map;\n\
                   //@ list<pair<flow_id, real> > flow_vec;\n\
+                  //@ list<phdr> recv_headers = nil; \n\
+                  //@ list<phdr> sent_headers = nil; \n\
                   //@ assume(sizeof(struct ether_hdr) == 14);
                   //@ assume(sizeof(struct tcpudp_hdr) == 4);
                   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly
@@ -728,7 +764,7 @@ struct
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration =
-    ""(* (In_channel.read_all "forwarding_property.tmpl") *)
+    (In_channel.read_all "forwarding_property.tmpl")
 end
 
 (* Register the module *)

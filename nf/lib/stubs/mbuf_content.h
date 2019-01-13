@@ -50,9 +50,7 @@ struct stub_mbuf_content {
       hdr->hdr_checksum |-> ?cksum &*&
       hdr->src_addr |-> ?saddr &*&
       hdr->dst_addr |-> ?daddr &*&
-      val == ipv4_hdrc(vihl, tos, len, pid, foff, ttl, npid, cksum, saddr, daddr) &*&
-      len == 10240;
-      //FIXME: ^^ generalize for all values
+      val == ipv4_hdrc(vihl, tos, len, pid, foff, ttl, npid, cksum, saddr, daddr);
 
     inductive tcp_hdri = tcp_hdrc(int, int, int, int, int, int, int, int, int);
     predicate tcp_hdrp(struct tcp_hdr* hdr; tcp_hdri val) =
