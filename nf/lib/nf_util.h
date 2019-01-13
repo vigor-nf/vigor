@@ -23,14 +23,6 @@ struct ipv4_hdr;
 #define WORD_SIZE 4
 
 
-// A header for TCP or UDP packets, containing common data.
-// (This is used to point into DPDK data structures!)
-struct tcpudp_hdr {
-	uint16_t src_port;
-	uint16_t dst_port;
-} __attribute__((__packed__));
-
-
 #ifdef KLEE_VERIFICATION
 static struct str_field_descr ether_fields[] = {
   {offsetof(struct ether_hdr, ether_type), sizeof(uint16_t), "ether_type"},
