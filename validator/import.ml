@@ -834,6 +834,7 @@ let rec add_to_known_addresses
           b_value value.break_down
           addr callid (depth+1);)
   | Array _
+  | Ptr (Array Uint8)
   | Ptr Uint8 -> (* Disguised array :) *)
     (* TODO: here processing should be fairly similar and
        even simpler than for a structure (above)*)

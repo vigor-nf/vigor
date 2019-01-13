@@ -41,19 +41,20 @@ void packet_set_next_chunk_layout(struct Packet* p, uint32_t length,
 }
 
 // The main IO primitive.
-void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) {
+void packet_borrow_next_chunk(struct Packet* p, size_t length, void** chunk) {
   //TODO: add klee_access stuff
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
   klee_trace_param_u32(length, "length");
-  klee_trace_param_ptr_directed(chunk, sizeof(uint8_t*), "chunk", TD_OUT);
   klee_assert(!p->sent);
   klee_assert(p->n_borrowed_chunks < PREALLOC_CHUNKS);
   klee_assert(length < MAX_CHUNK_SIZE);
   klee_assert(p->tot_len_borrowed + length <= p->packet_len);
   struct ChunkLayout* layout = &p->chunk_layouts[p->n_borrowed_chunks];
   klee_assert(layout->set);
-  uint8_t* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
+  void* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
+  klee_trace_param_tagged_ptr(chunk, sizeof(void*),
+                              "chunk", layout->tname, TD_OUT);
   klee_trace_extra_ptr(ret, layout->length, "the_chunk", layout->tname, TD_OUT);
   for (size_t i = 0; i < layout->n_fields; ++i) {
     klee_trace_extra_ptr_field(ret,
@@ -63,12 +64,22 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) 
                                TD_OUT);
   }
   for (size_t i = 0; i < layout->n_nests; ++i) {
-    klee_trace_extra_ptr_nested_field(ret,
-                                      layout->nests[i].base_offset,
-                                      layout->nests[i].offset,
-                                      layout->nests[i].width,
-                                      layout->nests[i].name,
-                                      TD_OUT);
+    if (layout->nests[i].count != 1) {
+      klee_trace_extra_ptr_nested_field_arr(ret,
+                                            layout->nests[i].base_offset,
+                                            layout->nests[i].offset,
+                                            layout->nests[i].width,
+                                            layout->nests[i].count,
+                                            layout->nests[i].name,
+                                            TD_OUT);
+    } else {
+      klee_trace_extra_ptr_nested_field(ret,
+                                        layout->nests[i].base_offset,
+                                        layout->nests[i].offset,
+                                        layout->nests[i].width,
+                                        layout->nests[i].name,
+                                        TD_OUT);
+    }
   }
   p->chunk_lengths[p->n_borrowed_chunks] = length;
   p->n_borrowed_chunks++;
@@ -76,7 +87,7 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) 
   *chunk = ret;
 }
 
-void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
+void packet_return_chunk(struct Packet* p, void* chunk) {
   klee_assert(0 < p->n_borrowed_chunks);
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
@@ -93,12 +104,22 @@ void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
                                         TD_IN);
   }
   for (size_t i = 0; i < layout->n_nests; ++i) {
-    klee_trace_param_ptr_nested_field_directed(chunk,
-                                               layout->nests[i].base_offset,
-                                               layout->nests[i].offset,
-                                               layout->nests[i].width,
-                                               layout->nests[i].name,
-                                               TD_IN);
+    if (layout->nests[i].count != 1) {
+      klee_trace_param_ptr_nested_field_arr_directed(chunk,
+                                                     layout->nests[i].base_offset,
+                                                     layout->nests[i].offset,
+                                                     layout->nests[i].width,
+                                                     layout->nests[i].count,
+                                                     layout->nests[i].name,
+                                                     TD_IN);
+    } else {
+      klee_trace_param_ptr_nested_field_directed(chunk,
+                                                 layout->nests[i].base_offset,
+                                                 layout->nests[i].offset,
+                                                 layout->nests[i].width,
+                                                 layout->nests[i].name,
+                                                 TD_IN);
+    }
   }
   klee_assert(!p->sent);
   p->n_borrowed_chunks--;

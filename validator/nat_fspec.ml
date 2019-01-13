@@ -47,6 +47,8 @@ let ipv4_hdr_struct = Ir.Str ("ipv4_hdr", ["version_ihl", Uint8;
                                             "hdr_checksum", Uint16;
                                            "src_addr", Uint32;
                                            "dst_addr", Uint32;])
+let tcpudp_hdr_struct = Ir.Str ("tcpudp_hdr", ["src_port", Uint16;
+                                               "dst_port", Uint16])
 let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
                                          "dst_port", Uint16;
                                          "sent_seq", Uint32;
@@ -583,17 +585,50 @@ let fun_types =
                         lemmas_before = [];
                         lemmas_after = [];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
-                                  arg_types = stt [Ptr packet_struct;
-                                                   Uint32;
-                                                   Ptr (Ptr Uint8)];
-                                  extra_ptr_types = estt ["the_chunk", Array Uint8];
+                                  arg_types = [Static (Ptr packet_struct);
+                                               Static Uint32;
+                                               Dynamic ["ether_hdr",
+                                                        Ptr (Ptr ether_hdr_struct);
+                                                        "ipv4_hdr",
+                                                        Ptr (Ptr ipv4_hdr_struct);
+                                                        "tcpudp_hdr",
+                                                        Ptr (Ptr tcpudp_hdr_struct);
+                                                        "ipv4_options",
+                                                        Ptr (Ptr Uint8)
+                                                       ]];
+                                  extra_ptr_types =
+                                    ["the_chunk",
+                                     Dynamic ["ether_hdr",
+                                              Ptr ether_hdr_struct;
+                                              "ipv4_hdr",
+                                              Ptr ipv4_hdr_struct;
+                                              "tcpudp_hdr",
+                                              Ptr tcpudp_hdr_struct;
+                                              "ipv4_options",
+                                              Ptr Uint8
+                                             ]];
                                   lemmas_before = [];
-                                  lemmas_after = [];};
+                                  lemmas_after = [
+                                    (fun {args;_} ->
+                                       "//@ close_struct(*" ^ (List.nth_exn args 2) ^ ");\n"
+                                    )];};
      "packet_return_chunk", {ret_type = Static Void;
-                             arg_types = stt [Ptr packet_struct;
-                                              Array Uint8];
+                             arg_types = [Static (Ptr packet_struct);
+                                          Dynamic ["ether_hdr",
+                                                   Ptr ether_hdr_struct;
+                                                   "ipv4_hdr",
+                                                   Ptr ipv4_hdr_struct;
+                                                   "tcpudp_hdr",
+                                                   Ptr tcpudp_hdr_struct;
+                                                   "ipv4_options",
+                                                   Ptr Uint8
+                                                  ]];
                              extra_ptr_types = [];
-                             lemmas_before = [];
+                             lemmas_before = [(fun {arg_exps;_} ->
+                                 "//@ open_struct(" ^
+                                 (render_tterm (List.nth_exn arg_exps 1))
+                                 ^ ");\n"
+                                    )];
                              lemmas_after = [];};
      "packet_get_unread_length", {ret_type = Static Uint32;
                                   arg_types = stt [Ptr packet_struct];
@@ -683,7 +718,9 @@ struct
                   //@ dchain flow_chain;\n\
                   //@ list<pair<flow_id, int> > flow_map;\n\
                   //@ list<pair<flow_id, real> > flow_vec;\n\
-                  //@ assume(sizeof(struct ether_hdr) == 14);//TODO: handle all this sizeof's explicitly
+                  //@ assume(sizeof(struct ether_hdr) == 14);
+                  //@ assume(sizeof(struct tcpudp_hdr) == 4);
+                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly
                  "
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

@@ -65,8 +65,8 @@ static struct str_field_descr tcp_fields[] = {
   {offsetof(struct tcp_hdr, tcp_urp), sizeof(uint16_t), "tcp_urp"}
 };
 static struct nested_field_descr ether_nested_fields[] = {
-  {offsetof(struct ether_hdr, d_addr), 0, 6 * sizeof(uint8_t), "addr_bytes"},
-  {offsetof(struct ether_hdr, s_addr), 0, 6 * sizeof(uint8_t), "addr_bytes"}
+  {offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
+  {offsetof(struct ether_hdr, s_addr), 0, sizeof(uint8_t), 6, "addr_bytes"}
 };
 #endif//KLEE_VERIFICATION
 

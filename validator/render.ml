@@ -13,14 +13,14 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
   match out_val.v, out_val.t with
   (* HACKY HACK - can't do an assume over the arrays themselves because they're pointers and VeriFast will assume that the pointers, not the contents, are equal *)
-  | _, Array Uint8 when head = "assume" -> begin match out_arg.t with
+  | Array cells, Array Uint8 when head = "assume" -> begin match out_arg.t with
                           | Array Uint8 ->
                             let tmp_gen = gen_tmp_name() in
                             let (bindings, expr) = Fspec_api.generate_2step_dereference out_arg tmp_gen in
                             (String.concat ~sep:"\n" bindings) ^ "\n" ^
-                            "//@ assert [_]uchars(" ^ (render_tterm expr) ^ ", _, ?" ^ (tmp_gen "oa") ^ ");\n" ^
-                            "//@ assert [_]uchars(" ^ (render_tterm out_val) ^ ", _, ?" ^ (tmp_gen "ov") ^ ");\n" ^
-                            "//@ assume(" ^ (tmp_gen "oa") ^ " == " ^ (tmp_gen "ov") ^ ");\n"
+                            (String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
+                                "//@ " ^ head ^ "(" ^ (render_tterm expr) ^ "[" ^ (string_of_int idx) ^ "] == " ^ (render_tterm cell) ^ ");"
+                              )))
                           | _ -> failwith "Arrays must be of type Uint8 (sorry!)" end
   (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->
@@ -106,8 +106,9 @@ let render_assignment {lhs;rhs;} =
   | Undef -> "";
   | _ -> begin match rhs.t,rhs.v with
       | Array Uint8, Array cells ->
-        "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^
-        (Int.to_string (List.length cells)) ^ ");"
+        String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
+            (render_tterm lhs) ^ "[" ^ (string_of_int idx) ^ "] = " ^
+            (render_tterm cell) ^ ";"))
       | Array _, _ -> failwith ((render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^
                                " is not handled")
       | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
@@ -207,12 +208,13 @@ let render_hist_fun_call {context;result} =
                  " != " ^ "0);\n") ^
               "/* Do not render the return ptee assumption for hist calls */\n"
    | _ -> render_ret_equ_sttmt ~is_assert:false context.ret_name context.ret_type result.ret_val) ^
-  "// POSTCONDITIONS\n" ^
+  "// POSTLEMMAS\n" ^
+  (render_postlemmas context) ^ (* postlemmas can depend on the return value *)
+  "// POSTCONDITIONS\n" ^ (* Postconditions can depend on post lemmas, e.g.
+                             if the the post lemma "close_struct"*)
   (render_args_post_conditions ~is_assert:false
      (List.join (List.map result.args_post_conditions ~f:gen_plain_equalities) )) ^ (* ret can influence whether args are accessible *)
-  (render_post_assumptions result.post_statements) ^
-  "// POSTLEMMAS\n" ^
-  (render_postlemmas context) (* postlemmas can depend on the return value *)
+  (render_post_assumptions result.post_statements)
 
 let gen_ret_equalities ret_val ret_name ret_type =
   match ret_name with

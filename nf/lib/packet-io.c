@@ -40,7 +40,7 @@ static struct Packet global_current_packet;
   @*/
 
 // The main IO primitive.
-void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk)
+void packet_borrow_next_chunk(struct Packet* p, size_t length, void** chunk)
 /*@ requires packetp(p, ?nic, ?type, ?unread, ?mc) &*&
              length <= length(unread) &*&
              *chunk |-> _; @*/
@@ -57,7 +57,7 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk)
   //@ close packetp(p, nic, type, drop(length, unread), cons(pair(*chunk, length), mc));
 }
 
-void packet_return_chunk(struct Packet* p, uint8_t* chunk)
+void packet_return_chunk(struct Packet* p, void* chunk)
 /*@ requires packetp(p, ?nic, ?type, ?unread, cons(pair(chunk, ?len), ?mc)) &*&
              uchars(chunk, len, ?chnk); @*/
 /*@ ensures packetp(p, nic, type, append(chnk, unread), mc); @*/

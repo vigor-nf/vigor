@@ -11,6 +11,7 @@ struct nested_field_descr {
   int base_offset;
   int offset;
   int width;
+  int count;
   char *name;
 };
 
