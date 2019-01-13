@@ -31,33 +31,45 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
 
     flow_emap = emap_expire_all(flow_emap, now - EXP_TIME);
 
-    // 0x10 -> IPv4
-    if ((received_packet_type & 0x10) == 0x10) {
+    if (is_ipv4) {
+
+    switch(recv_headers) { case cons(h1,t1): switch(h1) { case tcpudp_hdr(hdr1):
+      switch(hdr1) { case tcpudp_hdrc(isrc_port, idst_port):
+        switch(t1) { case cons(h2,t2): switch(h2) { case ip_hdr(hdr2):
+          switch(hdr2) { case ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                        ittl, inpid, icksum, isaddr, idaddr):
+            switch(t2) { case cons(h3,t3): switch(h3) { case ether_hdr(hdr3):
+              switch(hdr3) { case ether_hdrc(iesaddr, iedaddr, ietype):
 
       // 6/17 -> TCP/UDP
-      if (the_received_packet.ipv4.next_proto_id == 6 ||
-          the_received_packet.ipv4.next_proto_id == 17) {
+      if (inpid == 6 ||
+          inpid == 17) {
         if (received_on_port == EXT_PORT) {
           // packet from the external network
-          int flow_indx = the_received_packet.tcp.dst_port - start_port;
+          int flow_indx = idst_port - start_port;
           if (emap_has_idx(flow_emap, flow_indx)) { 
             // flow is present in the table
             flow_id internal_flow = emap_get_key(flow_emap, flow_indx);
             flow_emap = emap_refresh_idx(flow_emap, flow_indx, now);
             switch(internal_flow) { case flid(sp, dp, sip, dip, idev, prot):
-              if (dip  != the_received_packet.ipv4.src_addr ||
-                  dp   != the_received_packet.tcp.src_port  ||
-                  prot != the_received_packet.ipv4.next_proto_id) {
+              if (dip  != isaddr ||
+                  dp   != isrc_port  ||
+                  prot != inpid) {
                 assert false == a_packet_sent;
               } else {
                 assert true == a_packet_sent;
-                assert sent_packet.tcp.dst_port == sp;
-                assert sent_packet.tcp.src_port == dp;
-                assert sent_packet.ipv4.dst_addr == sip;
-                assert sent_packet.ipv4.src_addr == dip;
-                assert sent_on_port == idev;
-                assert sent_packet.ipv4.next_proto_id == prot;
-                assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
+                assert sent_headers ==
+                       cons(ether_hdr(ether_hdrc(_, _, ietype)),
+                       cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                             ittl, inpid, _, dip, sip)),
+                       cons(tcpudp_hdr(tcpudp_hdrc(dp, sp)), nil)));
+                //assert sent_packet.tcp.dst_port == sp;
+                //assert sent_packet.tcp.src_port == dp;
+                //assert sent_packet.ipv4.dst_addr == sip;
+                //assert sent_packet.ipv4.src_addr == dip;
+                //assert sent_on_port == idev;
+                //assert sent_packet.ipv4.next_proto_id == prot;
+                //assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
               }
             }
           } else {
@@ -110,6 +122,26 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
         // Non TCP or UDP packet
         assert false == a_packet_sent;
       }
+
+              }
+
+            case tcp_hdr(x): assert false == a_packet_sent;
+            case ip_hdr(x):  assert false == a_packet_sent;
+            case tcpudp_hdr(x):  assert false == a_packet_sent;
+            } case nil: assert false == a_packet_sent;}
+
+          }
+
+        case tcp_hdr(x): assert false == a_packet_sent;
+        case ether_hdr(x):  assert false == a_packet_sent;
+        case tcpudp_hdr(x):  assert false == a_packet_sent;
+        } case nil: assert false == a_packet_sent;}
+      }
+    case tcp_hdr(x): assert false == a_packet_sent;
+    case ip_hdr(x):  assert false == a_packet_sent;
+    case ether_hdr(x):  assert false == a_packet_sent;
+    } case nil: assert false == a_packet_sent; }
+
     } else {
       // Non IPv4 packet
       assert false == a_packet_sent;

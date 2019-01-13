@@ -565,15 +565,17 @@ let fun_types =
                         lemmas_after = [
                           (fun {args;_} ->
                              "a_packet_received = true;\n" ^
-                             "the_received_packet = *" ^ (List.nth_exn args 1) ^
-                             ";\n"
+                             "received_on_port = " ^ (List.nth_exn args 0) ^ ";\n"
                           )
                         ];};
      "packet_send", {ret_type = Static Void;
                      arg_types = stt [Ptr packet_struct; Uint16];
                      extra_ptr_types = [];
                      lemmas_before = [];
-                     lemmas_after = [];};
+                     lemmas_after = [(fun {args;_} ->
+                         "a_packet_sent = true;\n" ^
+                         "sent_on_port = " ^ (List.nth_exn args 1) ^ ";\n" 
+                       )];};
      "packet_get_port", {ret_type = Static Uint16;
                          arg_types = stt [Ptr packet_struct];
                          extra_ptr_types = [];
@@ -583,7 +585,9 @@ let fun_types =
                         arg_types = stt [Ptr packet_struct];
                         extra_ptr_types = [];
                         lemmas_before = [];
-                        lemmas_after = [];};
+                        lemmas_after = [(fun {ret_name;_} ->
+                            "is_ipv4 = " ^ ret_name ^ " != 0;\n"
+                          )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
                                   arg_types = [Static (Ptr packet_struct);
                                                Static Uint32;
@@ -645,17 +649,25 @@ let fun_types =
                                   match List.nth_exn arg_types 1 with
                                   | Ptr (Str ("ether_hdr", _)) ->
                                     "//@ sent_headers = add_ether_header(sent_headers, " ^
-                                    (render_tterm (List.nth_exn arg_exps 1)) ^ ");\n" ^
-                                    "//@ open ether_hdrp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ");\n\
+                                     //@ open ether_hdrp(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
                                     ", _);\n\
-                                     //@ open ether_addrp(&(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                                     //@ open ether_addrp(&(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
                                     "->s_addr), _);\n
-                                     //@ open ether_addrp(&(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                                     //@ open ether_addrp(&(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
                                     "->d_addr), _);\n"
                                   | Ptr (Str ("ipv4_hdr", _)) ->
-                                    "//@ sent_headers = add_ipv4_header(sent_headers, " ^ (render_tterm (List.nth_exn arg_exps 1)) ^ ");\n"
+                                    "//@ sent_headers = add_ipv4_header(sent_headers, " ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ");\n"
                                   | Ptr (Str ("tcpudp_hdr", _)) ->
-                                    "//@ sent_headers = add_tcpudp_header(sent_headers, " ^ (render_tterm (List.nth_exn arg_exps 1)) ^ ");\n"
+                                    "//@ sent_headers = add_tcpudp_header(sent_headers, " ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ");\n"
                                   | _ -> failwith "unsupported chunk type in packet_return_chunk"
                                );
                                 (fun {arg_exps;_} ->
@@ -738,16 +750,13 @@ struct
                   int external_addr;\n\
                   uint32_t external_ip = 0;\n\
                   uint16_t received_on_port;\n\
-                  uint32_t received_packet_type;\n\
                   int the_index_allocated = -1;\n\
                   int the_index_rejuvenated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
-                  struct Packet* the_received_packet;\n\
-                  //struct stub_mbuf_content the_received_packet;\n\
                   bool a_packet_received = false;\n\
+                  bool is_ipv4 = false;\n\
                   struct stub_mbuf_content sent_packet;\n\
                   uint16_t sent_on_port;\n\
-                  uint32_t sent_packet_type;\n\
                   bool a_packet_sent = false;\n\
                   //@ dchain flow_chain;\n\
                   //@ list<pair<flow_id, int> > flow_map;\n\

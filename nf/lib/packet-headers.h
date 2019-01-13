@@ -6,7 +6,8 @@
 /*@
   inductive phdr = ether_hdr(ether_hdri)
                  | ip_hdr(ipv4_hdri)
-                 | tcp_hdr(tcp_hdri);
+                 | tcp_hdr(tcp_hdri)
+                 | tcpudp_hdr(tcpudp_hdri);
 
   lemma list<phdr> add_ether_header(list<phdr> prev, void* chunk);
   requires ether_hdrp(chunk, ?eh);
@@ -19,6 +20,10 @@
   lemma list<phdr> add_tcp_header(list<phdr> prev, void* chunk);
   requires tcp_hdrp(chunk, ?th);
   ensures tcp_hdrp(chunk, th) &*& result == cons(tcp_hdr(th), prev);
+
+  lemma list<phdr> add_tcpudp_header(list<phdr> prev, void* chunk);
+  requires tcpudp_hdrp(chunk, ?th);
+  ensures tcpudp_hdrp(chunk, th) &*& result == cons(tcpudp_hdr(th), prev);
   @*/
 
 #endif//_PACKET_HEADERS_H_INCLUDED_
