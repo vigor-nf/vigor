@@ -15,11 +15,30 @@ struct Packet {
   uint32_t tot_len_borrowed;
   uint8_t chunks[MAX_CHUNK_SIZE*PREALLOC_CHUNKS];
   uint32_t chunk_lengths[PREALLOC_CHUNKS];
+  struct ChunkLayout {
+    bool set;
+    uint32_t length;
+    struct str_field_descr* fields;
+    uint32_t n_fields;
+    struct nested_field_descr* nests;
+    uint32_t n_nests;
+    const char* tname;
+  } chunk_layouts[PREALLOC_CHUNKS];
 };
 
-/* static struct Packet global_current_packet; */
-/* static bool one_packet_already_received = false; */
-/* static bool one_packet_already_sent = false; */
+void packet_set_next_chunk_layout(struct Packet* p, uint32_t length,
+                                  struct str_field_descr* fields, int n_fields,
+                                  struct nested_field_descr* nests, int n_nests,
+                                  const char* tname) {
+  klee_assert(p->n_borrowed_chunks < PREALLOC_CHUNKS);
+  p->chunk_layouts[p->n_borrowed_chunks].length = length;
+  p->chunk_layouts[p->n_borrowed_chunks].fields = fields;
+  p->chunk_layouts[p->n_borrowed_chunks].n_fields = n_fields;
+  p->chunk_layouts[p->n_borrowed_chunks].nests = nests;
+  p->chunk_layouts[p->n_borrowed_chunks].n_nests = n_nests;
+  p->chunk_layouts[p->n_borrowed_chunks].tname = tname;
+  p->chunk_layouts[p->n_borrowed_chunks].set = true;
+}
 
 // The main IO primitive.
 void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) {
@@ -32,15 +51,24 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, uint8_t** chunk) 
   klee_assert(p->n_borrowed_chunks < PREALLOC_CHUNKS);
   klee_assert(length < MAX_CHUNK_SIZE);
   klee_assert(p->tot_len_borrowed + length <= p->packet_len);
+  struct ChunkLayout* layout = &p->chunk_layouts[p->n_borrowed_chunks];
+  klee_assert(layout->set);
   uint8_t* ret = &p->chunks[p->n_borrowed_chunks*MAX_CHUNK_SIZE];
-  if (klee_is_symbolic(length)) {
-    //Validator will expect an extraptr "the_chunk", so we trace one
-    klee_trace_extra_ptr(ret, sizeof(uint8_t), "the_chunk", "uint8_t", TD_OUT);
-  } else {
-    //Truly trace only fixed-length chunks.
-    //TODO: support some tracing for variable-length chunks
-    klee_trace_extra_ptr_arr(ret, sizeof(uint8_t), length,
-                             "the_chunk", "uint8_t", TD_OUT);
+  klee_trace_extra_ptr(ret, layout->length, "the_chunk", layout->tname, TD_OUT);
+  for (size_t i = 0; i < layout->n_fields; ++i) {
+    klee_trace_extra_ptr_field(ret,
+                               layout->fields[i].offset,
+                               layout->fields[i].width,
+                               layout->fields[i].name,
+                               TD_OUT);
+  }
+  for (size_t i = 0; i < layout->n_nests; ++i) {
+    klee_trace_extra_ptr_nested_field(ret,
+                                      layout->nests[i].base_offset,
+                                      layout->nests[i].offset,
+                                      layout->nests[i].width,
+                                      layout->nests[i].name,
+                                      TD_OUT);
   }
   p->chunk_lengths[p->n_borrowed_chunks] = length;
   p->n_borrowed_chunks++;
@@ -53,14 +81,24 @@ void packet_return_chunk(struct Packet* p, uint8_t* chunk) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
   uint32_t length = p->chunk_lengths[p->n_borrowed_chunks - 1];
-  if (klee_is_symbolic(length)) {
-    //Validator will need this function argument, so we trace just a tittle
-    klee_trace_param_ptr_directed(chunk, sizeof(uint8_t), "chunk", TD_IN);
-  } else {
-    //Truly trace only fixed-length chunks.
-    //TODO: support some tracing for variable-length chunks
-    klee_trace_param_arr_directed(chunk, sizeof(uint8_t),
-                                  length, "chunk", TD_IN);
+  struct ChunkLayout* layout = &p->chunk_layouts[p->n_borrowed_chunks - 1];
+  klee_assert(layout->set);
+  klee_trace_param_tagged_ptr(chunk, layout->length,
+                              "the_chunk", layout->tname, TD_IN);
+  for (size_t i = 0; i < layout->n_fields; ++i) {
+    klee_trace_param_ptr_field_directed(chunk,
+                                        layout->fields[i].offset,
+                                        layout->fields[i].width,
+                                        layout->fields[i].name,
+                                        TD_IN);
+  }
+  for (size_t i = 0; i < layout->n_nests; ++i) {
+    klee_trace_param_ptr_nested_field_directed(chunk,
+                                               layout->nests[i].base_offset,
+                                               layout->nests[i].offset,
+                                               layout->nests[i].width,
+                                               layout->nests[i].name,
+                                               TD_IN);
   }
   klee_assert(!p->sent);
   p->n_borrowed_chunks--;
@@ -82,6 +120,9 @@ bool packet_receive(uint16_t src_device, struct Packet** p) {
     (**p).nic = src_device;
     (**p).sent = false;
     klee_assume(sizeof(struct ether_hdr) <= (**p).packet_len);
+    for (uint32_t i = 0; i < PREALLOC_CHUNKS; ++i) {
+      (**p).chunk_layouts[i].set = false;
+    }
     return true;
   }
 }
