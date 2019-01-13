@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#include "dsos_vga.h"
+#include "lib/kernel/dsos_vga.h"
 
 // ntoa conversion buffer size, this must be big enough to hold
 // one converted numeric number including padded zeros (dynamically created on stack)
@@ -730,13 +730,6 @@ int vprintf(const char *fmt, va_list va)
     return _vsnprintf(_out_char, buffer, (unsigned int)-1, fmt, va);
     return 0;
 }
-
-/*
-int rte_vlog(uint32_t level, uint32_t logtype, const char *format, va_list ap)
-{
-  return vprintf(format, ap);
-}
-*/
 
 #else
 

@@ -1,3 +1,4 @@
+/* KLEE provides its own implementation of assert() */
 #ifndef KLEE_VERIFICATION
 
 #include "dsos_halt.h"

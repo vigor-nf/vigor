@@ -1,11 +1,16 @@
+#include <assert.h>
 #include <stddef.h>
 
 #include "dsos_pci.h"
 #include "dsos_vga.h"
 
+/* Kernel main */
 extern int main(void);
+/* NF main */
 extern int nf_main(int argc, char *argv[]);
+/* Initialize filesystem */
 extern void stub_stdio_files_init(struct dsos_pci_nic *devs, int n);
+/* Start and end of constructor list */
 extern int __CTORS_START, __CTORS_END;
 
 #ifdef VIGOR_STUB_HARDWARE
@@ -14,7 +19,6 @@ extern struct dsos_pci_nic *stub_hardware_get_nics(int *n);
 
 int main(void)
 {
-
 	static char *argv[] = {
 		"vignat", "--no-shconf",
 		"--",

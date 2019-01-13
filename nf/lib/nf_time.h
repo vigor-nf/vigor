@@ -2,16 +2,15 @@
 #define NF_TIME_H_INCLUDED
 #include <stdint.h>
 
-#ifdef KLEE_VERIFICATION
 // TODO use time_t from time.h - but this is used by VeriFast
 // so even #ifdef-ing the time.h inclusion out doesn't work
+
+// For verification this is fine but for running on hardware
+// the compiler complains so we actually need to include time.h
+
 #define time_t int64_t
+//#include <time.h>
 
-#else
-
-#include <time.h>
-
-#endif
 
 //@ predicate last_time(time_t t);
 

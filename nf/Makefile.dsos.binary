@@ -5,7 +5,7 @@ SHELL := /bin/bash -O extglob -c
 LLD ?=ld.lld-6.0
 CLANG ?=clang
 NASM ?=nasm
-QEMU ?=../../qemu/i386-softmmu/qemu-system-i386
+QEMU ?= qemu-system-i386
 
 export RTE_TARGET := i686-native-linuxapp-gcc
 
@@ -93,8 +93,12 @@ kernel_source_files := $(wildcard $(KERNEL_DIR)/*.c)
 
 kernel_includes := -I $(KERNEL_DIR)
 
+# For DSOS debug output on the VGA buffer
+# kernel_defs := -DDSOS_DEBUG
+
 # other_misc_includes := -I include --include include/misc_defs.h
 other_misc_includes := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
+
 
 all_c_source_files = $(nat_source_files) $(nf_source_files) \
 	$(dpdk_source_files) $(stubs_source_files) $(kernel_source_files)
@@ -113,8 +117,8 @@ NAT_MAC2 := 52:54:00:12:34:60
 
 QEMUFLAGS := -enable-kvm -cdrom $(iso)
 
-QEMU_RUNFLAGS := $(QEMUFLAGS) -nic user,model=virtio-net-pci \
-	-nic user,model=virtio-net-pci
+QEMU_RUNFLAGS := $(QEMUFLAGS) -netdev user,id=n1 -device virtio-net-pci,netdev=n1 \
+	-netdev user,id=n2 -device virtio-net-pci,netdev=n2
 QEMU_DEMOFLAGS := $(QEMUFLAGS) \
 	-nic tap,model=virtio-net-pci,mac=$(NAT_MAC1),ifname=$(NAT_NIC1),script=no,downscript=no \
 	-nic tap,model=virtio-net-pci,mac=$(NAT_MAC2),ifname=$(NAT_NIC2),script=no,downscript=no
@@ -128,7 +132,7 @@ clean:
 
 # Launch QEMU
 run: $(iso)
-	@$(QEMU) $(QEMU_RUNFLAGS) -curses
+	@$(QEMU) $(QEMU_RUNFLAGS)
 
 # Launch QEMU for NAT demo
 demo: $(iso)
@@ -168,6 +172,6 @@ $(kernel): $(OBJ_LIST) libc.a
 
 # C files
 %.o: %.c
-	@$(CLANG) $(nf_defs) $(dpdk_defs) \
+	@$(CLANG) $(nf_defs) $(dpdk_defs) $(kernel_defs) \
 		$(nf_includes) $(dpdk_includes) $(other_misc_includes) $(kernel_includes) \
 		$(CFLAGS) $< -o $@

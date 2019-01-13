@@ -55,7 +55,7 @@ extern "C" {
    * \arg name - A name used for identifying the object in messages, output
    * files, etc. If NULL, object is called "unnamed".
    */
-  static inline void klee_make_symbolic(void *addr, size_t nbytes, const char *name) {}
+  static inline void klee_make_symbolic(void *addr, size_t nbytes, const char *name) { assert(0); }
   /* klee_range - Construct a symbolic value in the signed interval
    * [begin,end).
    *
@@ -68,12 +68,12 @@ extern "C" {
    * \arg name - An optional name, used for identifying the object in messages,
    * output files, etc.
    */
-  static inline int klee_int(const char *name) { return 0; }
+  static inline int klee_int(const char *name) { assert(0); }
   /* klee_silent_exit - Terminate the current KLEE process without generating a
    * test file.
    */
   __attribute__((noreturn))
-  static inline void klee_silent_exit(int status) { assert(0); }
+  static inline void klee_silent_exit(int status) { exit(status); }
   /* klee_abort - Abort the current KLEE process. */
   __attribute__((noreturn))
   static inline void klee_abort(void) {
@@ -105,10 +105,7 @@ extern "C" {
    * across platforms is desired (e.g., in tests).
    * NB: __assert_fail is a klee "special" function
    */
-# define klee_assert(expr)                                              \
-  ((expr)                                                               \
-   ? (void) (0)                                                         \
-   : __assert_fail (#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__))    \
+# define klee_assert assert
 
   /* Return true if the given value is symbolic (represented by an
    * expression) in the current state. This is primarily for debugging

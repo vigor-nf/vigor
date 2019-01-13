@@ -494,6 +494,12 @@ munmap(void* addr, size_t length)
 	klee_abort();
 }
 
+int
+__libc_open(const char *pathname, int flags, mode_t mode)
+{
+	return open(pathname, flags, mode);
+}
+
 void
 stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 {
@@ -511,9 +517,6 @@ stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 
 	PCI_DEVICES = devs;
 	NUM_PCI_DEVICES = n;
-
-	// KLEE does this usually, but we don't go through it for uclibc
-	klee_alias_function("__libc_open", "open");
 
 	// Files initialization
 	int f = 0;

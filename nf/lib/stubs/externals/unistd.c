@@ -50,3 +50,9 @@ __syscall_rt_sigaction(int signum, const struct sigaction *act,
 	// -- http://man7.org/linux/man-pages/man2/sigaction.2.html
 	return 0;
 }
+
+int
+sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+	// Same as above
+	return 0;
+}

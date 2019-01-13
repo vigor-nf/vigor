@@ -18,10 +18,19 @@
 extern struct dsos_pci_nic *PCI_DEVICES;
 extern int NUM_PCI_DEVICES;
 
+FILE* fopencookie_ret = NULL;
+
+int
+fflush(FILE* stream)
+{
+	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
+	return 0;
+}
+
 int
 vfprintf(FILE* stream, const char* format, _G_va_list __arg)
 {
-	// klee_assert(stream == stderr);
+	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
 	vprintf(format, __arg);
 
 	return 0; // OK, whatever
@@ -30,9 +39,9 @@ vfprintf(FILE* stream, const char* format, _G_va_list __arg)
 FILE*
 fopencookie(void* cookie, const char* mode, cookie_io_functions_t io_funcs)
 {
-	FILE* f = (FILE*) malloc(sizeof(FILE));;
-	klee_forbid_access(f, sizeof(FILE), "fopencookie");
-	return f;
+	fopencookie_ret = (FILE*) malloc(sizeof(FILE));;
+	klee_forbid_access(fopencookie_ret, sizeof(FILE), "fopencookie");
+	return fopencookie_ret;
 }
 
 // We implement this here since it's common to multiple kinds of I/O: files and pipes

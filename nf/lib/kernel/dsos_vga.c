@@ -1,5 +1,3 @@
-#ifndef KLEE_VERIFICATION
-
 #include <stdint.h>
 #include "dsos_vga.h"
 
@@ -66,6 +64,10 @@ static void dsos_vga_write_byte(uint8_t c)
 	}
 }
 
+#ifdef DSOS_DEBUG
+
+#ifndef KLEE_VERIFICATION
+
 void dsos_vga_write_char(char c)
 {
 	dsos_vga_write_byte((uint8_t)c);
@@ -84,7 +86,7 @@ void dsos_vga_write_str(const char *s)
 	}
 }
 
-#else
+#else // KLEE_VERIFICATION defined
 
 #include <stdlib.h>
 #include <klee/klee.h>
@@ -117,7 +119,7 @@ void dsos_vga_write_str(const char *s)
 	klee_print_expr(s, NULL);
 }
 
-#endif
+#endif // KLEE_VERIFICATION
 
 /* https://groups.google.com/forum/#!topic/comp.lang.c++.moderated/ihafayWmWU8 */
 void dsos_vga_write_int(int x)
@@ -137,3 +139,12 @@ void dsos_vga_write_int(int x)
 
 	dsos_vga_write_str(&buf[i + 1]);
 }
+
+#else // DSOS_DEBUG not defined, don't print anything
+
+void dsos_vga_write_char(char c) {}
+void dsos_vga_write_str(const char *s) {}
+void dsos_vga_write_int(int x) {}
+
+#endif // DSOS_DEBUG
+

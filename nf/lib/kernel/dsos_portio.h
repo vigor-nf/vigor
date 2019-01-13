@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+/* Used for PCI */
+
 static inline uint8_t dsos_inb(uint16_t port)
 {
 	uint8_t ret;
