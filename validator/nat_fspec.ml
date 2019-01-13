@@ -598,7 +598,7 @@ let fun_types =
                                                         "tcpudp_hdr",
                                                         Ptr (Ptr tcpudp_hdr_struct);
                                                         "ipv4_options",
-                                                        Ptr (Ptr Uint8)
+                                                        Ptr (Ptr Sint8)
                                                        ]];
                                   extra_ptr_types =
                                     ["the_chunk",
@@ -609,7 +609,7 @@ let fun_types =
                                               "tcpudp_hdr",
                                               Ptr tcpudp_hdr_struct;
                                               "ipv4_options",
-                                              Ptr Uint8
+                                              Ptr Sint8
                                              ]];
                                   lemmas_before = [];
                                   lemmas_after = [
@@ -633,7 +633,7 @@ let fun_types =
                                          "//@ recv_headers = add_ipv4_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
                                        | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
                                          "//@ recv_headers = add_tcpudp_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
-                                       | Ptr (Ptr Uint8) ->
+                                       | Ptr (Ptr Sint8) ->
                                          ""
                                        | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
                                       )];};
@@ -646,7 +646,7 @@ let fun_types =
                                                    "tcpudp_hdr",
                                                    Ptr tcpudp_hdr_struct;
                                                    "ipv4_options",
-                                                   Ptr Uint8
+                                                   Ptr Sint8
                                                   ]];
                              extra_ptr_types = [];
                              lemmas_before = [
@@ -673,7 +673,7 @@ let fun_types =
                                     "//@ sent_headers = add_tcpudp_header(sent_headers, " ^
                                     (render_tterm (List.nth_exn arg_exps 1)) ^
                                     ");\n"
-                                  | Ptr Uint8 ->
+                                  | Ptr Sint8 ->
                                     ""
                                   | _ -> failwith "unsupported chunk type in packet_return_chunk"
                                );
