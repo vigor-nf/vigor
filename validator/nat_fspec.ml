@@ -613,8 +613,11 @@ let fun_types =
                                              ]];
                                   lemmas_before = [];
                                   lemmas_after = [
-                                    (fun {args;_} ->
-                                       "//@ close_struct(*" ^ (List.nth_exn args 2) ^ ");\n"
+                                    (fun {args;arg_types;_} ->
+                                       match (List.nth_exn arg_types 2) with
+                                       | Ptr (Ptr (Str (_,_))) ->
+                                         "//@ close_struct(*" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | _ -> ""
                                     );
                                     (fun {args;arg_types;_} ->
                                        match List.nth_exn arg_types 2 with
@@ -630,6 +633,8 @@ let fun_types =
                                          "//@ recv_headers = add_ipv4_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
                                        | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
                                          "//@ recv_headers = add_tcpudp_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | Ptr (Ptr Uint8) ->
+                                         ""
                                        | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
                                       )];};
      "packet_return_chunk", {ret_type = Static Void;
@@ -668,12 +673,17 @@ let fun_types =
                                     "//@ sent_headers = add_tcpudp_header(sent_headers, " ^
                                     (render_tterm (List.nth_exn arg_exps 1)) ^
                                     ");\n"
+                                  | Ptr Uint8 ->
+                                    ""
                                   | _ -> failwith "unsupported chunk type in packet_return_chunk"
                                );
-                                (fun {arg_exps;_} ->
-                                 "//@ open_struct(" ^
-                                 (render_tterm (List.nth_exn arg_exps 1))
-                                 ^ ");\n"
+                                (fun {arg_exps;arg_types;_} ->
+                                  match (List.nth_exn arg_types 1) with
+                                  | Ptr (Str (_, _)) ->
+                                    "//@ open_struct(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1))
+                                    ^ ");\n"
+                                  | _ -> ""
                                     )];
                              lemmas_after = [];};
      "packet_get_unread_length", {ret_type = Static Uint32;
