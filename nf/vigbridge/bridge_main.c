@@ -125,24 +125,24 @@ void allocate_static_ft(unsigned capacity) {
 #ifdef KLEE_VERIFICATION
 
 struct str_field_descr static_map_key_fields[] = {
-  {offsetof(struct StaticKey, addr), sizeof(struct ether_addr), "addr"},
-  {offsetof(struct StaticKey, device), sizeof(uint16_t), "device"},
+  {offsetof(struct StaticKey, addr), sizeof(struct ether_addr), 0, "addr"},
+  {offsetof(struct StaticKey, device), sizeof(uint16_t), 0, "device"},
 };
 
 struct nested_field_descr static_map_key_nested_fields[] = {
-  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t) * 6, "addr_bytes"},
+  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint8_t) * 6, "addr_bytes"},
+  {0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint8_t) * 6, "addr_bytes"},
+  {0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_value_fields[] = {
-  {0, sizeof(uint16_t), "device"},
+  {0, sizeof(uint16_t), 0, "device"},
 };
 
 bool stat_map_condition(void* key, int index) {

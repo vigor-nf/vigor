@@ -4,6 +4,7 @@
 struct str_field_descr {
   int offset;
   int width;
+  int count;
   char* name;
 };
 

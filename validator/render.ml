@@ -126,7 +126,18 @@ let rec gen_plain_equalities {lhs;rhs} =
              rhs=value})
       | _ -> failwith ("arrays must be compared to arrays or ptrs: " ^
                        (ttype_to_str rhs.t) ^ " <> " ^
-                       (ttype_to_str lhs.t)) end
+                       (ttype_to_str lhs.t))
+    end
+  | Array _, _ -> begin match lhs.t, lhs.v with
+      | Array ptee_t, Array cells ->
+        List.mapi cells ~f:(fun idx value ->
+            {lhs=value;
+             rhs={v=Deref {v=Bop (Add, rhs, {v=Int idx;t=Uint32});t=rhs.t};
+                  t=ptee_t}})
+      | _ -> failwith ("arrays must be compared to arrays (ptrs not implemented yet): " ^
+                       (ttype_to_str rhs.t) ^ " <> " ^
+                       (ttype_to_str lhs.t))
+    end
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
                           rhs=pointee}
@@ -402,7 +413,7 @@ let output_check_and_assignments
   let ret_equalities = gen_ret_equalities ret_val ret_name ret_type
   in
   let args_equalities =
-    List.join (List.map args_post_conditions ~f:gen_plain_equalities)
+    gen_plain_equalities_for_all args_post_conditions
   in
   let assignments = make_assignments_for_eqs (ret_equalities@args_equalities)
   in
@@ -421,7 +432,9 @@ let output_check_and_assignments
   let support_assignments =
     guess_support_assignments output_constraints unalloc_symbs
   in
-  let assignments = assignments@support_assignments in
+  let assignments =
+    gen_plain_equalities_for_all (assignments@support_assignments)
+  in
   let (concrete_assignments,
        symbolic_var_assignments) = split_assignments assignments
   in

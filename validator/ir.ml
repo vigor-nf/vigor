@@ -138,6 +138,7 @@ let int_type_postfix = function
   | _ -> ""
 
 let rec render_tterm (t:tterm) =
+  let term_type = t.t in
   match t.v with
   | Bop (op, lhs, rhs) -> "(" ^ (render_tterm lhs) ^
                           " " ^ (render_bop op) ^ " " ^
@@ -170,6 +171,8 @@ let rec render_tterm (t:tterm) =
   | Str_idx ({v=Deref {v=Id x;t=_};t=_},field_name) -> x ^ "->" ^ field_name
   | Str_idx ({v=Deref x;_},field_name) -> "(" ^ (render_tterm x) ^ ")->" ^ field_name
   | Str_idx (t,field_name) -> "(" ^ (render_tterm t) ^ ")." ^ field_name
+  | Deref {v=Bop (Add, t, {v=Int idx;t=Uint32});t=Array term_type} ->
+    "(" ^ (render_tterm t) ^ ")[" ^ (string_of_int idx) ^"]"
   | Deref t -> "*(" ^ (render_tterm t) ^ ")"
   | Fptr f -> f
   | Addr t -> "&(" ^ (render_tterm t) ^ ")"

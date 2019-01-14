@@ -548,9 +548,6 @@ let fun_types =
                                        rejuvenate_preserves_index_range(cur_ch," ^
                                       (List.nth_exn params.args 1) ^ ", " ^
                                       (List.nth_exn params.args 2) ^ ");\n }@*/");
-                                   (fun params ->
-                                      "the_index_rejuvenated = " ^
-                                      (List.nth_exn params.args 1) ^ ";\n");
                                  ];};
      "dchain_is_index_allocated", {ret_type = Static Sint32;
                                    arg_types = stt [Ptr dchain_struct;
@@ -697,49 +694,6 @@ let fun_types =
                    extra_ptr_types = [];
                    lemmas_before = [];
                    lemmas_after = [];};
-     "stub_core_trace_rx", {
-                 ret_type = Static Void;
-                 arg_types = stt [Ptr (Ptr rte_mbuf_struct);];
-                 extra_ptr_types = estt ["incoming_package",
-                                         Ptr rte_mbuf_struct;
-                                         "user_buf_addr",
-                                         Ptr stub_mbuf_content_struct];
-                 lemmas_before = [];
-                 lemmas_after = [(fun params -> let arg0 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 0) in
-                                       "a_packet_received = true;\n" ^
-                                       simplify_c_string (
-                                         "received_on_port = " ^
-                                         "(*" ^ arg0 ^ ")->port;\n" ^
-                                         "received_packet_type = " ^
-                                         "(*" ^ arg0 ^ ")->packet_type;\n") ^
-                                         (copy_stub_mbuf_content "the_received_packet"
-                                          ("*" ^ arg0)));
-                                 ];};
-     "stub_core_trace_tx", {
-                 ret_type = Static Uint8;
-                 arg_types = stt [Ptr rte_mbuf_struct; Uint16];
-                 extra_ptr_types = estt ["user_buf_addr",
-                                         Ptr stub_mbuf_content_struct];
-                 lemmas_before = [
-                     (fun params ->
-                          let sent_pkt =
-                            Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 0)
-                          in
-                            (copy_stub_mbuf_content "sent_packet"
-                             (sent_pkt)) ^ "\n" ^
-                            simplify_c_string (
-                              "sent_on_port = " ^ (List.nth_exn params.args 1) ^ ";\n" ^
-                              "sent_packet_type = (" ^
-                              sent_pkt ^ ")->packet_type;"));];
-                 lemmas_after = [(fun _ -> "a_packet_sent = true;\n");];
-                 };
-     "stub_core_trace_free", {
-                   ret_type = Static Void;
-                   arg_types = stt [Ptr rte_mbuf_struct;];
-                   extra_ptr_types = estt ["user_buf_addr",
-                                           Ptr stub_mbuf_content_struct];
-                   lemmas_before = [];
-                   lemmas_after = [];}
     ]
 
 (* TODO: make external_ip symbolic *)
@@ -761,7 +715,6 @@ struct
                   uint32_t external_ip = 0;\n\
                   uint16_t received_on_port;\n\
                   int the_index_allocated = -1;\n\
-                  int the_index_rejuvenated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
                   bool is_ipv4 = false;\n\
@@ -772,9 +725,9 @@ struct
                   //@ list<pair<flow_id, real> > flow_vec;\n\
                   //@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
-                  //@ assume(sizeof(struct ether_hdr) == 14);
-                  //@ assume(sizeof(struct tcpudp_hdr) == 4);
-                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly
+                  //@ assume(sizeof(struct ether_hdr) == 14);\n\
+                  //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
+                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n
                  "
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

@@ -13,6 +13,8 @@
 #include <klee/klee.h>
 
 
+#if 0
+
 static struct str_field_descr mbuf_descrs[] = {
   //Do not forget about "buf_addr" -- it is a pointer that is why it is not listed here.
   {offsetof(struct rte_mbuf, buf_iova), sizeof(rte_iova_t), "buf_iova"},
@@ -108,7 +110,11 @@ static struct nested_nested_field_descr stub_mbuf_content_n2[] = {
        stub_mbuf_content_n2[i].name,                                                                                    \
        dir);                                                                                                            \
   }
+#endif//0
 
+#define KLEE_TRACE_MBUF(m_ptr, mname, dir) /* do nothing */
+#define KLEE_TRACE_MBUF_EPTR(m_ptr, pname, dir) /* do nothing */
+#define KLEE_TRACE_MBUF_CONTENT(u_ptr, dir)  /* do nothing */
 
 __attribute__((noinline))
 void

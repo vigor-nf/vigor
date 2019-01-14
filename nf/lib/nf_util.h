@@ -25,36 +25,36 @@ struct ipv4_hdr;
 
 #ifdef KLEE_VERIFICATION
 static struct str_field_descr ether_fields[] = {
-  {offsetof(struct ether_hdr, ether_type), sizeof(uint16_t), "ether_type"},
-  {offsetof(struct ether_hdr, d_addr), sizeof(struct ether_addr), "d_addr"},
-  {offsetof(struct ether_hdr, s_addr), sizeof(struct ether_addr), "s_addr"}
+  {offsetof(struct ether_hdr, ether_type), sizeof(uint16_t), 0, "ether_type"},
+  {offsetof(struct ether_hdr, d_addr), sizeof(struct ether_addr), 0, "d_addr"},
+  {offsetof(struct ether_hdr, s_addr), sizeof(struct ether_addr), 0, "s_addr"}
 };
 static struct str_field_descr ipv4_fields[] = {
-  {offsetof(struct ipv4_hdr, version_ihl), sizeof(uint8_t), "version_ihl"},
-  {offsetof(struct ipv4_hdr, type_of_service), sizeof(uint8_t), "type_of_service"},
-  {offsetof(struct ipv4_hdr, total_length), sizeof(uint16_t), "total_length"},
-  {offsetof(struct ipv4_hdr, packet_id), sizeof(uint16_t), "packet_id"},
-  {offsetof(struct ipv4_hdr, fragment_offset), sizeof(uint16_t), "fragment_offset"},
-  {offsetof(struct ipv4_hdr, time_to_live), sizeof(uint8_t), "time_to_live"},
-  {offsetof(struct ipv4_hdr, next_proto_id), sizeof(uint8_t), "next_proto_id"},
-  {offsetof(struct ipv4_hdr, hdr_checksum), sizeof(uint16_t), "hdr_checksum"},
-  {offsetof(struct ipv4_hdr, src_addr), sizeof(uint32_t), "src_addr"},
-  {offsetof(struct ipv4_hdr, dst_addr), sizeof(uint32_t), "dst_addr"}
+  {offsetof(struct ipv4_hdr, version_ihl), sizeof(uint8_t), 0, "version_ihl"},
+  {offsetof(struct ipv4_hdr, type_of_service), sizeof(uint8_t), 0, "type_of_service"},
+  {offsetof(struct ipv4_hdr, total_length), sizeof(uint16_t), 0, "total_length"},
+  {offsetof(struct ipv4_hdr, packet_id), sizeof(uint16_t), 0, "packet_id"},
+  {offsetof(struct ipv4_hdr, fragment_offset), sizeof(uint16_t), 0, "fragment_offset"},
+  {offsetof(struct ipv4_hdr, time_to_live), sizeof(uint8_t), 0, "time_to_live"},
+  {offsetof(struct ipv4_hdr, next_proto_id), sizeof(uint8_t), 0, "next_proto_id"},
+  {offsetof(struct ipv4_hdr, hdr_checksum), sizeof(uint16_t), 0, "hdr_checksum"},
+  {offsetof(struct ipv4_hdr, src_addr), sizeof(uint32_t), 0, "src_addr"},
+  {offsetof(struct ipv4_hdr, dst_addr), sizeof(uint32_t), 0, "dst_addr"}
 };
 static struct str_field_descr tcpudp_fields[] = {
-  {offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), "src_port"},
-  {offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), "dst_port"}
+  {offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), 0, "src_port"},
+  {offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), 0, "dst_port"}
 };
 static struct str_field_descr tcp_fields[] = {
-  {offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), "src_port"},
-  {offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), "dst_port"},
-  {offsetof(struct tcp_hdr, sent_seq), sizeof(uint32_t), "sent_seq"},
-  {offsetof(struct tcp_hdr, recv_ack), sizeof(uint32_t), "recv_ack"},
-  {offsetof(struct tcp_hdr, data_off), sizeof(uint8_t), "data_off"},
-  {offsetof(struct tcp_hdr, tcp_flags), sizeof(uint8_t), "tcp_flags"},
-  {offsetof(struct tcp_hdr, rx_win), sizeof(uint16_t), "rx_win"},
-  {offsetof(struct tcp_hdr, cksum), sizeof(uint16_t), "cksum"},
-  {offsetof(struct tcp_hdr, tcp_urp), sizeof(uint16_t), "tcp_urp"}
+  {offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), 0, "src_port"},
+  {offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), 0, "dst_port"},
+  {offsetof(struct tcp_hdr, sent_seq), sizeof(uint32_t), 0, "sent_seq"},
+  {offsetof(struct tcp_hdr, recv_ack), sizeof(uint32_t), 0, "recv_ack"},
+  {offsetof(struct tcp_hdr, data_off), sizeof(uint8_t), 0, "data_off"},
+  {offsetof(struct tcp_hdr, tcp_flags), sizeof(uint8_t), 0, "tcp_flags"},
+  {offsetof(struct tcp_hdr, rx_win), sizeof(uint16_t), 0, "rx_win"},
+  {offsetof(struct tcp_hdr, cksum), sizeof(uint16_t), 0, "cksum"},
+  {offsetof(struct tcp_hdr, tcp_urp), sizeof(uint16_t), 0, "tcp_urp"}
 };
 static struct nested_field_descr ether_nested_fields[] = {
   {offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
