@@ -7,22 +7,11 @@ emap<flow_id> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_
 #define EXT_IP_ADDR external_addr
 #define EXT_PORT 1
 
-#define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
-    after.ether.ether_type     == before.ether.ether_type &&      \
-    after.ipv4.version_ihl     == before.ipv4.version_ihl &&      \
-    after.ipv4.type_of_service == before.ipv4.type_of_service &&  \
-    after.ipv4.total_length    == before.ipv4.total_length &&     \
-    after.ipv4.packet_id       == before.ipv4.packet_id &&        \
-    after.ipv4.fragment_offset == before.ipv4.fragment_offset &&  \
-    after.ipv4.time_to_live    == before.ipv4.time_to_live &&     \
-    after.ipv4.next_proto_id   == before.ipv4.next_proto_id &&    \
-    (before.ipv4.next_proto_id != 6 ||                             \
-     (after.tcp.sent_seq         == before.tcp.sent_seq &&        \
-      after.tcp.recv_ack         == before.tcp.recv_ack &&      \
-      after.tcp.data_off         == before.tcp.data_off &&      \
-      after.tcp.tcp_flags        == before.tcp.tcp_flags &&     \
-      after.tcp.rx_win           == before.tcp.rx_win &&        \
-      after.tcp.tcp_urp          == before.tcp.tcp_urp))
+#define DEFAULT_DROP(hd1, hd2, hd3) \
+     case hd1(x): assert false == a_packet_sent; \
+     case hd2(x): assert false == a_packet_sent; \
+     case hd3(x): assert false == a_packet_sent
+#define NIL_DROP case nil: assert false == a_packet_sent;
 
 bit_and_hack();
 if (EXP_TIME < now) {// consider only normal moments, remote from the start of the epoch
@@ -42,8 +31,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
               switch(hdr3) { case ether_hdrc(iesaddr, iedaddr, ietype):
 
       // 6/17 -> TCP/UDP
-      if (inpid == 6 ||
-          inpid == 17) {
+      if (inpid == 6 || inpid == 17) {
         if (received_on_port == EXT_PORT) {
           // packet from the external network
           int flow_indx = idst_port - start_port;
@@ -94,11 +82,9 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
             } else {
               // The flow must have been inserted
               int idx = the_index_allocated;
-
               flow_emap = emap_add(flow_emap, internal_flow_id, idx, now);
 
               assert true == a_packet_sent;
-
               assert sent_headers ==
                      cons(ether_hdr(ether_hdrc(_, _, ietype)),
                      cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
@@ -114,24 +100,11 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
       }
 
               }
-
-            case tcp_hdr(x): assert false == a_packet_sent;
-            case ip_hdr(x):  assert false == a_packet_sent;
-            case tcpudp_hdr(x):  assert false == a_packet_sent;
-            } case nil: assert false == a_packet_sent;}
-
+              DEFAULT_DROP(tcp_hdr, ip_hdr, tcpudp_hdr); } NIL_DROP; }
           }
-
-        case tcp_hdr(x): assert false == a_packet_sent;
-        case ether_hdr(x):  assert false == a_packet_sent;
-        case tcpudp_hdr(x):  assert false == a_packet_sent;
-        } case nil: assert false == a_packet_sent;}
+          DEFAULT_DROP(tcp_hdr, ether_hdr, tcpudp_hdr); } NIL_DROP; }
       }
-    case tcp_hdr(x): assert false == a_packet_sent;
-    case ip_hdr(x):  assert false == a_packet_sent;
-    case ether_hdr(x):  assert false == a_packet_sent;
-    } case nil: assert false == a_packet_sent; }
-
+      DEFAULT_DROP(tcp_hdr, ip_hdr, ether_hdr); } NIL_DROP; }
     } else {
       // Non IPv4 packet
       assert false == a_packet_sent;
@@ -139,3 +112,4 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
   }
 assert final_flow_emap == flow_emap;
 }
+
