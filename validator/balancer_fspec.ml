@@ -1132,6 +1132,11 @@ let fun_types =
                                    ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
                                    ");\n} @*/ "
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
+                                   let (binding,expr) =
+                                     self_dereference (List.nth_exn params.arg_exps 2) params.tmp_gen
+                                   in
+                                   binding ^ "\n" ^
+                                   "//@ open [_]ether_addrp(" ^ (render_tterm expr) ^ "->mac, _);\n" ^
                                    "/*@ if (!vector_flow_borrowed) { open hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = true; \n" ^
                                    "//@ open hide_vector<uint32_t>(_, _, _, _);\n\

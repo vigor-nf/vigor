@@ -100,10 +100,9 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
           }
         } else { // A heartbeat packet from a backend
           {
-            if (emap_has(backend_ip_emap, pkt_recv.ipv4.src_addr)) {
+            if (emap_has(backend_ip_emap, isaddr)) {
               backend_ip_emap = emap_refresh_idx(backend_ip_emap,
-                                                 emap_get(backend_ip_emap,
-                                                          pkt_recv.ipv4.src_addr),
+                                                 emap_get(backend_ip_emap, isaddr),
                                                  now);
             } else {
               if (emap_full(backend_ip_emap)) {
