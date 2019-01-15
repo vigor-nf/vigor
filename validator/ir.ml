@@ -212,6 +212,9 @@ let rec term_eq a b =
   | Cast (ctypea,terma), Cast (ctypeb,termb) -> (ctypea = ctypeb) && (term_eq terma.v termb.v)
   | Undef, Undef -> true
   | Utility ua, Utility ub -> term_utility_eq ua ub
+  | Array cells_a, Array cells_b ->
+    ((List.length cells_a) = (List.length cells_b)) &&
+    (List.for_all2_exn cells_a cells_b ~f:(fun a b -> term_eq a.v b.v))
   | _, _ -> false
 
 let rec call_recursively_on_tterm (f:tterm -> tterm option) tterm =
