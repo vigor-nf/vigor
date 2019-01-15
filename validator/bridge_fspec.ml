@@ -480,7 +480,10 @@ let fun_types =
                          capture_a_map "ether_addri" "dm" params ^
                          capture_a_vector "ether_addri" "dv" params);
                       | Ptr (Str ("StaticKey", _)) ->
-                        (capture_a_map "stat_keyi" "stm" params)
+                        (capture_a_map "stat_keyi" "stm" params) ^
+                        "//@ assert uchars((" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                        ")->addr.addr_bytes, 6, ?" ^ (tmp_gen "sk") ^ ");\n" ^
+                        "//@ list_of_six(" ^ (tmp_gen "sk") ^ ");\n"
                       | _ -> "#error unexpected key type")];
                  lemmas_after = [
                    reveal_the_other_mapp;
@@ -516,7 +519,9 @@ let fun_types =
                          forall_mem(pair(stkey, *" ^ (List.nth_exn args 2) ^
                         "), " ^ (tmp_gen "stm") ^
                         ", (st_entry_bound)(2));\n\
-                         } @*/"
+                         } @*/\n" ^
+                        "//@ open static_keyp(" ^ (List.nth_exn args 1) ^ ", _);\n" ^
+                        "//@ open ether_addrp(" ^ (List.nth_exn args 1) ^ ".addr, _);\n"
                       | _ -> "");];};
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);

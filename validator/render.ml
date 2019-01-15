@@ -20,7 +20,7 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
                             (String.concat ~sep:"\n" bindings) ^ "\n" ^
                             (String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
                                 "//@ " ^ head ^ "(" ^ (render_tterm expr) ^ "[" ^ (string_of_int idx) ^ "] == " ^ (render_tterm cell) ^ ");"
-                              )))
+                              ))) ^ "\n"
                           | _ -> failwith "Arrays must be of type Uint8 (sorry!)" end
   (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->

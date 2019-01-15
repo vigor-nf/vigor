@@ -40,4 +40,17 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 void umemcpy(void *array, void *array0, size_t count);
     //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
     //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);
-
+ 
+/*@
+lemma void list_of_six<t>(list<t> l)
+requires length(l) == 6;
+ensures length(l) == 6 &*& l == cons(_, cons(_, cons(_, cons(_, cons(_, cons(_, nil))))));
+{
+  assume(false);//TODO
+  switch(l) { case cons(h0,t0): switch(t0) { case cons(h1,t1):
+  switch(t1) { case cons(h2,t2): switch(t2) { case cons(h3,t3):
+  switch(t3) { case cons(h4,t4): switch(t4) { case cons(h5,t5):
+  case nil:} case nil:} case nil:}
+  case nil:} case nil:} case nil:}
+}
+@*/
