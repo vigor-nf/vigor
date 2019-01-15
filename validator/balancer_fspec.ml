@@ -18,6 +18,8 @@ let capture_a_map t name {tmp_gen;_} =
 let capture_a_vector t name {tmp_gen;_} =
   "//@ assert vectorp<" ^ t ^ ">(_, _, ?" ^ (tmp_gen name) ^ ", _);\n"
 
+let packet_struct = Ir.Str ("Packet", [])
+let mempool_struct = Ir.Str ("rte_mempool", [])
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
@@ -55,6 +57,8 @@ let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
                                          "rx_win", Uint16;
                                           "cksum", Uint16;
                                          "tcp_urp", Uint16;])
+let tcpudp_hdr_struct = Ir.Str ("tcpudp_hdr", ["src_port", Uint16;
+                                               "dst_port", Uint16])
 (* FIXME: for lb only ether_hdr is needed, the other two are here,
    just because rte_stubs.c dumps them for the other NF (NAT), and validator
    ensures we read everything dumped.*)
@@ -790,6 +794,157 @@ let fun_types =
        extra_ptr_types = [];
        lemmas_before = [];
        lemmas_after = [];};
+     "packet_flood", {ret_type = Static Void;
+                      arg_types = stt [Ptr packet_struct; Ir.Uint16; Ir.Uint16;
+                                       Ptr mempool_struct];
+                      extra_ptr_types = estt ["user_buf_addr",
+                                              Ptr stub_mbuf_content_struct];
+                      lemmas_before = [
+                        (fun params ->
+                           "flooded_except_port = " ^
+                           (List.nth_exn params.args 1) ^
+                           ";\n" ^
+                           "a_packet_flooded = true;\n")];
+                      lemmas_after = [(fun _ -> "a_packet_sent = true;\n");];};
+     "packet_receive", {ret_type = Static Boolean;
+                        arg_types = stt [Uint16; Ptr (Ptr packet_struct);];
+                        extra_ptr_types = [];
+                        lemmas_before = [];
+                        lemmas_after = [
+                          (fun {args;ret_name;_} ->
+                             "a_packet_received = " ^ ret_name ^ " ;\n" ^
+                             "received_on_port = " ^ (List.nth_exn args 0) ^ ";\n"
+                          )
+                        ];};
+     "packet_send", {ret_type = Static Void;
+                     arg_types = stt [Ptr packet_struct; Uint16];
+                     extra_ptr_types = [];
+                     lemmas_before = [];
+                     lemmas_after = [(fun {args;_} ->
+                         "a_packet_sent = true;\n" ^
+                         "sent_on_port = " ^ (List.nth_exn args 1) ^ ";\n" 
+                       )];};
+     "packet_get_port", {ret_type = Static Uint16;
+                         arg_types = stt [Ptr packet_struct];
+                         extra_ptr_types = [];
+                         lemmas_before = [];
+                         lemmas_after = [];};
+     "packet_is_ipv4", {ret_type = Static Uint32;
+                        arg_types = stt [Ptr packet_struct];
+                        extra_ptr_types = [];
+                        lemmas_before = [];
+                        lemmas_after = [(fun {ret_name;_} ->
+                            "is_ipv4 = " ^ ret_name ^ " != 0;\n"
+                          )];};
+     "packet_borrow_next_chunk", {ret_type = Static Void;
+                                  arg_types = [Static (Ptr packet_struct);
+                                               Static Uint32;
+                                               Dynamic ["ether_hdr",
+                                                        Ptr (Ptr ether_hdr_struct);
+                                                        "ipv4_hdr",
+                                                        Ptr (Ptr ipv4_hdr_struct);
+                                                        "tcpudp_hdr",
+                                                        Ptr (Ptr tcpudp_hdr_struct);
+                                                        "ipv4_options",
+                                                        Ptr (Ptr Sint8)
+                                                       ]];
+                                  extra_ptr_types =
+                                    ["the_chunk",
+                                     Dynamic ["ether_hdr",
+                                              Ptr ether_hdr_struct;
+                                              "ipv4_hdr",
+                                              Ptr ipv4_hdr_struct;
+                                              "tcpudp_hdr",
+                                              Ptr tcpudp_hdr_struct;
+                                              "ipv4_options",
+                                              Ptr Sint8
+                                             ]];
+                                  lemmas_before = [];
+                                  lemmas_after = [
+                                    (fun {args;arg_types;_} ->
+                                       match (List.nth_exn arg_types 2) with
+                                       | Ptr (Ptr (Str (_,_))) ->
+                                         "//@ close_struct(*" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | _ -> ""
+                                    );
+                                    (fun {args;arg_types;_} ->
+                                       match List.nth_exn arg_types 2 with
+                                       | Ptr (Ptr (Str ("ether_hdr", _))) ->
+                                         "//@ recv_headers = add_ether_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n" ^
+                                         "//@ open ether_hdrp(*" ^ (List.nth_exn args 2) ^
+                                         ", _);\n\
+                                          //@ open ether_addrp((" ^ (List.nth_exn args 2) ^
+                                         "->s_addr), _);\n\
+                                          //@ open ether_addrp((" ^ (List.nth_exn args 2) ^
+                                         "->d_addr), _);\n"
+                                       | Ptr (Ptr (Str ("ipv4_hdr", _))) ->
+                                         "//@ recv_headers = add_ipv4_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
+                                         "//@ recv_headers = add_tcpudp_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       | Ptr (Ptr Sint8) ->
+                                         ""
+                                       | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
+                                      )];};
+     "packet_return_chunk", {ret_type = Static Void;
+                             arg_types = [Static (Ptr packet_struct);
+                                          Dynamic ["ether_hdr",
+                                                   Ptr ether_hdr_struct;
+                                                   "ipv4_hdr",
+                                                   Ptr ipv4_hdr_struct;
+                                                   "tcpudp_hdr",
+                                                   Ptr tcpudp_hdr_struct;
+                                                   "ipv4_options",
+                                                   Ptr Sint8
+                                                  ]];
+                             extra_ptr_types = [];
+                             lemmas_before = [
+                               (fun {arg_exps;arg_types;_} ->
+                                  match List.nth_exn arg_types 1 with
+                                  | Ptr (Str ("ether_hdr", _)) ->
+                                    "//@ sent_headers = add_ether_header(sent_headers, " ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ");\n\
+                                     //@ open ether_hdrp(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ", _);\n\
+                                     //@ open ether_addrp(&(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    "->s_addr), _);\n\
+                                     //@ open ether_addrp(&(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    "->d_addr), _);\n"
+                                  | Ptr (Str ("ipv4_hdr", _)) ->
+                                    "//@ sent_headers = add_ipv4_header(sent_headers, " ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ");\n"
+                                  | Ptr (Str ("tcpudp_hdr", _)) ->
+                                    "//@ sent_headers = add_tcpudp_header(sent_headers, " ^
+                                    (render_tterm (List.nth_exn arg_exps 1)) ^
+                                    ");\n"
+                                  | Ptr Sint8 ->
+                                    ""
+                                  | _ -> failwith "unsupported chunk type in packet_return_chunk"
+                               );
+                                (fun {arg_exps;arg_types;_} ->
+                                  match (List.nth_exn arg_types 1) with
+                                  | Ptr (Str (_, _)) ->
+                                    "//@ open_struct(" ^
+                                    (render_tterm (List.nth_exn arg_exps 1))
+                                    ^ ");\n"
+                                  | _ -> ""
+                                    )];
+                             lemmas_after = [];};
+     "packet_get_unread_length", {ret_type = Static Uint32;
+                                  arg_types = stt [Ptr packet_struct];
+                                  extra_ptr_types = [];
+                                  lemmas_before = [];
+                                  lemmas_after = [];};
+     "packet_free", {
+                   ret_type = Static Void;
+                   arg_types = stt [Ptr packet_struct;];
+                   extra_ptr_types = [];
+                   lemmas_before = [];
+                   lemmas_after = [];};
      "stub_core_trace_rx", {
                  ret_type = Static Void;
                  arg_types = stt [Ptr (Ptr rte_mbuf_struct);];
@@ -1075,12 +1230,10 @@ struct
                   /*@ ensures true; @*/\n{\n\
                   //@ modulo_hack();\n\
                   uint16_t received_on_port;\n\
-                  uint32_t received_packet_type;\n\
-                  struct stub_mbuf_content pkt_recv;\n\
+                  bool is_ipv4 = false;\n\
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
-                  struct stub_mbuf_content pkt_sent;\n\
                   uint16_t sent_on_port;\n\
                   uint32_t pkt_sent_type;\n\
                   bool a_packet_sent = false;\n\
@@ -1116,7 +1269,13 @@ struct
                     bool last_map_accessed_lb_flowi = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n\
-                   //@ lb_flowi last_flow_searched_in_the_map;\n"
+                    //@ lb_flowi last_flow_searched_in_the_map;\n\
+                    //@ list<phdr> recv_headers = nil; \n\
+                    //@ list<phdr> sent_headers = nil; \n\
+                    //@ assume(sizeof(struct ether_hdr) == 14);\n\
+                    //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
+                    //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
+                 "
   let fun_types = fun_types
   let boundary_fun = "lb_loop_invariant_produce"
   let finishing_fun = "lb_loop_invariant_consume"

@@ -9,7 +9,7 @@
 
 #ifdef KLEE_VERIFICATION
 
-#define FIELD(struct_name, name, size) { offsetof(struct struct_name, name), sizeof(size), #name }
+#define FIELD(struct_name, name, size) { offsetof(struct struct_name, name), sizeof(size), 0, #name }
 #define FFIELD(name, size) FIELD(LoadBalancedFlow, name, size)
 #define BFIELD(name, size) FIELD(LoadBalancedBackend, name, size)
 
@@ -21,12 +21,12 @@ struct str_field_descr lb_flow_fields[] = {
 
 struct str_field_descr lb_backend_fields[] = {
 	BFIELD(nic, uint16_t),
-  {offsetof(struct LoadBalancedBackend, mac), sizeof(struct ether_addr), "mac"},
+  {offsetof(struct LoadBalancedBackend, mac), sizeof(struct ether_addr), 0, "mac"},
 	BFIELD(ip, uint32_t)
 };
 
 struct nested_field_descr lb_backend_nested_fields[] = {
-  {offsetof(struct LoadBalancedBackend, mac), 0, 6 * sizeof(uint8_t), "addr_bytes"},
+  {offsetof(struct LoadBalancedBackend, mac), 0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 #undef BFIELD
