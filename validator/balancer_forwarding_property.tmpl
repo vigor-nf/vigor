@@ -9,23 +9,11 @@ assert vectorp<uint32_t>(fidbid_veca_ptr, u_integer, ?final_fidbid_veca, _);
 assert vectorp<uint32_t>(cht_ptr, u_integer, ?final_cht, _);
 assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca, _);
 
-//TODO: refine the predicate
-#define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
-    after.ether.ether_type     == before.ether.ether_type &&      \
-    after.ipv4.version_ihl     == before.ipv4.version_ihl &&      \
-    after.ipv4.type_of_service == before.ipv4.type_of_service &&  \
-    after.ipv4.total_length    == before.ipv4.total_length &&     \
-    after.ipv4.packet_id       == before.ipv4.packet_id &&        \
-    after.ipv4.fragment_offset == before.ipv4.fragment_offset &&  \
-    after.ipv4.time_to_live    == before.ipv4.time_to_live &&     \
-    after.ipv4.next_proto_id   == before.ipv4.next_proto_id &&    \
-    (before.ipv4.next_proto_id != 6 ||                             \
-     (after.tcp.sent_seq         == before.tcp.sent_seq &&        \
-      after.tcp.recv_ack         == before.tcp.recv_ack &&      \
-      after.tcp.data_off         == before.tcp.data_off &&      \
-      after.tcp.tcp_flags        == before.tcp.tcp_flags &&     \
-      after.tcp.rx_win           == before.tcp.rx_win &&        \
-      after.tcp.tcp_urp          == before.tcp.tcp_urp))
+#define DEFAULT_DROP(hd1, hd2, hd3) \
+     case hd1(x): assert false == a_packet_sent; \
+     case hd2(x): assert false == a_packet_sent; \
+     case hd3(x): assert false == a_packet_sent
+#define NIL_DROP case nil: assert false == a_packet_sent;
 
 emap<lb_flowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
 emap<uint32_t> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
@@ -45,21 +33,23 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
     flow_emap = emap_expire_all(flow_emap, now - EXP_TIME);
     backend_ip_emap = emap_expire_all(backend_ip_emap, now - BACKEND_EXP_TIME);
 
-    // 0x10 -> IPv4
-    if ((received_packet_type & 0x10) == 0x10) {
+    if (is_ipv4) {
+
+    switch(recv_headers) { case cons(h1,t1): switch(h1) { case tcpudp_hdr(hdr1):
+      switch(hdr1) { case tcpudp_hdrc(isrc_port, idst_port):
+        switch(t1) { case cons(h2,t2): switch(h2) { case ip_hdr(hdr2):
+          switch(hdr2) { case ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                        ittl, inpid, icksum, isaddr, idaddr):
+            switch(t2) { case cons(h3,t3): switch(h3) { case ether_hdr(hdr3):
+              switch(hdr3) { case ether_hdrc(iesaddr, iedaddr, ietype):
 
       // 6/17 -> TCP/UDP
-      if (pkt_recv.ipv4.next_proto_id == 6 ||
-          pkt_recv.ipv4.next_proto_id == 17) {
+      if (inpid == 6 || inpid == 17) {
 
         // 0 -> Packet received from the external network
         if (received_on_port == 0) {
 
-          lb_flowi packet_flow = lb_flowc(pkt_recv.ipv4.src_addr,
-                                          pkt_recv.ipv4.dst_addr,
-                                          pkt_recv.tcp.src_port,
-                                          pkt_recv.tcp.dst_port,
-                                          pkt_recv.ipv4.next_proto_id);
+          lb_flowi packet_flow = lb_flowc(isaddr, idaddr, isrc_port, idst_port, inpid);
 
           bool alloc_flow_and_process_packet = false;
           if (emap_has(flow_emap, packet_flow)) {
@@ -70,10 +60,12 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               lb_backendi backend = vector_get(backends_vec, backend_id);
               switch(backend) { case lb_backendc(nic, mac, ip):
                 assert sent_on_port == nic;
-                assert ether_addrp(&pkt_sent.ether.d_addr, mac);
-                assert pkt_sent.ipv4.dst_addr == ip;
+                assert sent_headers ==
+                       cons(ether_hdr(ether_hdrc(_, mac, ietype)),
+                       cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                   ittl, inpid, _, isaddr, ip)),
+                       cons(tcpudp_hdr(tcpudp_hdrc(isrc_port, idst_port)), nil)));
               }
-              assert UNRELEVANT_FIELDS_UNCHANGED(pkt_recv,pkt_sent);
             } else {
               flow_emap = emap_erase(flow_emap, packet_flow);
               alloc_flow_and_process_packet = true;
@@ -96,10 +88,12 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               assert true == a_packet_sent;
               switch(backend) { case lb_backendc(nic, mac, ip):
                 assert sent_on_port == nic;
-                assert ether_addrp(&pkt_sent.ether.d_addr, mac);
-                assert pkt_sent.ipv4.dst_addr == ip;
+                assert sent_headers ==
+                       cons(ether_hdr(ether_hdrc(_, mac, ietype)),
+                       cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                   ittl, inpid, _, isaddr, ip)),
+                       cons(tcpudp_hdr(tcpudp_hdrc(isrc_port, idst_port)), nil)));
               }
-              assert UNRELEVANT_FIELDS_UNCHANGED(pkt_recv,pkt_sent);
             } else {
               assert false == a_packet_sent;
             }
@@ -116,10 +110,9 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                 // What you gonna do? (nothing, the question is rhetorical)
               } else {
                 int idx = the_index_allocated;
-                backend_ip_emap = emap_add(backend_ip_emap, pkt_recv.ipv4.src_addr, idx, now);
-                assert ether_addrp(&pkt_recv.ether.s_addr, ?source_mac);
+                backend_ip_emap = emap_add(backend_ip_emap, isaddr, idx, now);
                 backends_vec = vector_set(backends_vec, idx,
-                                          lb_backendc(received_on_port, source_mac, pkt_recv.ipv4.src_addr));
+                                          lb_backendc(received_on_port, iesaddr, isaddr));
               }
             }
           }
@@ -129,6 +122,12 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
         // Non-TCP/UDP packet
         assert false == a_packet_sent;
       }
+              }
+              DEFAULT_DROP(tcp_hdr, ip_hdr, tcpudp_hdr); } NIL_DROP; }
+          }
+          DEFAULT_DROP(tcp_hdr, ether_hdr, tcpudp_hdr); } NIL_DROP; }
+      }
+      DEFAULT_DROP(tcp_hdr, ip_hdr, ether_hdr); } NIL_DROP; }
     } else {
       // Non-IPv4 packet
       assert false == a_packet_sent;
