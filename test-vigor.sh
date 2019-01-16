@@ -7,12 +7,18 @@ set -euxo pipefail
 
 # TODO: make verify-* (use travis jobs to parellelize)
 pushd nf/vignat
+  make clean
+  make
   make verify-dpdk
 popd
 pushd nf/vigbridge
+  make clean
+  make
   make verify-dpdk
 popd
-pushd nf/vigbridge
+pushd nf/vigbalancer
+  make clean
+  make
   make verify-dpdk
 popd
 
