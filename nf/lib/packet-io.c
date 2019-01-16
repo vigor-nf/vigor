@@ -63,7 +63,7 @@ void packet_return_chunk(struct Packet* p, void* chunk)
 /*@ ensures packetp(p, nic, type, append(chnk, unread), mc); @*/
 {
   //@ open packetp(p, nic, type, unread, cons(pair(chunk, len), mc));
-  p->unread_buf = chunk;
+  p->unread_buf = (uint8_t*)chunk;
   //@ close packetp(p, nic, type, append(chnk, unread), mc);
 }
 

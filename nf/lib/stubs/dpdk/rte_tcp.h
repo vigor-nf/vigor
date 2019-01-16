@@ -16,14 +16,5 @@ struct tcp_hdr {
 	uint16_t cksum;
 	uint16_t tcp_urp;
 };
-struct tcpudp_hdr {
-	uint16_t src_port;
-	uint16_t dst_port;
-}
-#ifdef _NO_VERIFAST_
-  __attribute__((__packed__)) //VeriFast does not understand attributes
-#endif //_NO_VERIFAST
-  ;
-
 
 #endif

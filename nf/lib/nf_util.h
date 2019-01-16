@@ -4,8 +4,12 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <rte_ether.h>
+#include <rte_ip.h>
+#include <rte_tcp.h>
+#include <rte_udp.h>
 #include "lib/packet-io.h"
-#include "rte_ip.h"
+#include "lib/tcpudp.h"
 
 #ifdef KLEE_VERIFICATION
 #include "lib/stubs/containers/str-descr.h"
@@ -75,13 +79,13 @@ char* nf_mac_to_str(struct ether_addr* addr);
 char* nf_ipv4_to_str(uint32_t addr);
 
 #define MAX_N_CHUNKS 100
-extern uint8_t* chunks_borrowed[];
+extern void* chunks_borrowed[];
 extern size_t chunks_borrowed_num;
 
 static inline
-uint8_t* nf_borrow_next_chunk(struct Packet* p, size_t length) {
+void* nf_borrow_next_chunk(struct Packet* p, size_t length) {
   assert(chunks_borrowed_num < MAX_N_CHUNKS);
-  uint8_t* chunk;
+  void* chunk;
   packet_borrow_next_chunk(p, length, &chunk);
   chunks_borrowed[chunks_borrowed_num] = chunk;
   chunks_borrowed_num++;
@@ -154,7 +158,7 @@ struct ipv4_hdr* nf_then_get_ipv4_header(struct Packet* p, uint8_t** ip_options,
       // Do not really trace the ip options chunk, as it's length
       // is unknown statically
       CHUNK_LAYOUT_IMPL(p, 1, NULL, 0, NULL, 0, "ipv4_options");
-      *ip_options = nf_borrow_next_chunk(p, ip_options_length);
+      *ip_options = (uint8_t*)nf_borrow_next_chunk(p, ip_options_length);
     }
   }
   return hdr;
