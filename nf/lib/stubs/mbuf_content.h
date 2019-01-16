@@ -5,6 +5,7 @@
 #include <rte_ether.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
+#include "lib/tcpudp.h"
 
 // TODO more complete stub content?
 // do change the total_len in rx if this is changed!
