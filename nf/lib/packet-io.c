@@ -8,13 +8,13 @@
 
 struct Packet {
    struct rte_mbuf* mbuf;
-   uint8_t* unread_buf;
+   int8_t* unread_buf;
 };
 
 static struct Packet global_current_packet;
 
 /*@
-  fixpoint bool missing_chunks(list<pair<uint8_t*, int> > missing_chunks, uint8_t* start, uint8_t* end) {
+  fixpoint bool missing_chunks(list<pair<int8_t*, int> > missing_chunks, int8_t* start, int8_t* end) {
     switch(missing_chunks) {
       case nil: return start == end;
       case cons(h,t): return switch(h) { case pair(beginning, span):
@@ -24,7 +24,7 @@ static struct Packet global_current_packet;
     }
   }
 
-  predicate packetp(struct Packet* p, int nic, int type, list<uint8_t> unread, list<pair<uint8_t*, int> > missing_chunks) =
+  predicate packetp(struct Packet* p, int nic, int type, list<int8_t> unread, list<pair<int8_t*, int> > missing_chunks) =
     p == &global_current_packet &*&
     p->mbuf |-> ?mbuf &*&
     p->unread_buf |-> ?unread_buf &*&
@@ -32,11 +32,11 @@ static struct Packet global_current_packet;
     switch(meta) { case rte_mbuf_metac(port, ptype, doff, dlen, ba):
       return nic == port &*& type == ptype &*&
              ba <= unread_buf &*& unread_buf <= ba + dlen &*&
-             (uint8_t*)ba + dlen <= (uint8_t*)UINTPTR_MAX &*&
+             (int8_t*)ba + dlen <= (int8_t*)UINTPTR_MAX &*&
              length(unread) == (char*)(void*)ba + dlen - (char*)(void*)unread_buf &*&
              true == missing_chunks(missing_chunks, ba, unread_buf);
     } &*&
-    uchars(unread_buf, length(unread), unread);
+    chars(unread_buf, length(unread), unread);
   @*/
 
 // The main IO primitive.
@@ -46,37 +46,43 @@ void packet_borrow_next_chunk(struct Packet* p, size_t length, void** chunk)
              *chunk |-> _; @*/
 /*@ ensures *chunk |-> ?ptr &*&
             packetp(p, nic, type, drop(length, unread), cons(pair(ptr, length), mc)) &*&
-            uchars(ptr, length, take(length, unread)); @*/
+            chars(ptr, length, take(length, unread)); @*/
 {
   //TODO: support mbuf chains.
   //@ open packetp(p, nic, type, unread, mc);
   *chunk = p->unread_buf;
   p->unread_buf += length;
   //@ assert length <= length(unread);
-  //@ uchars_split(*chunk, length);
+  //@ chars_split(*chunk, length);
   //@ close packetp(p, nic, type, drop(length, unread), cons(pair(*chunk, length), mc));
 }
 
 void packet_return_chunk(struct Packet* p, void* chunk)
 /*@ requires packetp(p, ?nic, ?type, ?unread, cons(pair(chunk, ?len), ?mc)) &*&
-             uchars(chunk, len, ?chnk); @*/
+             chars(chunk, len, ?chnk); @*/
 /*@ ensures packetp(p, nic, type, append(chnk, unread), mc); @*/
 {
   //@ open packetp(p, nic, type, unread, cons(pair(chunk, len), mc));
-  p->unread_buf = (uint8_t*)chunk;
+  p->unread_buf = (int8_t*)chunk;
   //@ close packetp(p, nic, type, append(chnk, unread), mc);
 }
 
 /*@
-  lemma void axiome_produce_glob_packet();
+  lemma void axiom_produce_glob_packet()
   requires true;
   ensures Packet_mbuf(&global_current_packet, _) &*&
           Packet_unread_buf(&global_current_packet, _);
+  {
+    assume(false);
+  }
 
-  lemma void axiome_consume_glob_packet();
+  lemma void axiom_consume_glob_packet()
   requires Packet_mbuf(&global_current_packet, _) &*&
            Packet_unread_buf(&global_current_packet, _);
   ensures true;
+  {
+    assume(false);
+  }
   @*/
 
 bool packet_receive(uint16_t src_device, struct Packet** p)
@@ -91,11 +97,11 @@ bool packet_receive(uint16_t src_device, struct Packet** p)
 
   if (actual_rx_len != 0) {
     *p = &global_current_packet;
-    //@ axiome_produce_glob_packet();
+    //@ axiom_produce_glob_packet();
     //@ assert buf |-> ?b;
     //@ assert mbufp(b, ?mbuffer);
     (*p)->mbuf = buf;
-    (*p)->unread_buf = (uint8_t*)(void*)(*p)->mbuf->buf_addr;
+    (*p)->unread_buf = (int8_t*)(void*)(*p)->mbuf->buf_addr;
     /*@
       switch(mbuffer) { case rte_mbufc(port, ptype, doff, content):
        close packetp(*p, src_device, _, content, nil);
@@ -117,7 +123,7 @@ void packet_send(struct Packet* p, uint16_t dst_device)
   if (actual_tx_len == 0) {
     proxy_rte_pktmbuf_free(p->mbuf);
   }
-  //@ axiome_consume_glob_packet();
+  //@ axiom_consume_glob_packet();
 }
 
 // Flood method for the bridge
@@ -147,7 +153,7 @@ packet_flood(struct Packet* p, uint16_t skip_device, uint16_t nb_devices,
     }
   }
   proxy_rte_pktmbuf_free(frame);
-  //@ axiome_consume_glob_packet();
+  //@ axiom_consume_glob_packet();
 }
 
 void packet_free(struct Packet* p)
@@ -156,7 +162,7 @@ void packet_free(struct Packet* p)
 {
   //@ open packetp(p, _, _, _, nil);
   proxy_rte_pktmbuf_free(p->mbuf);
-  //@ axiome_consume_glob_packet();
+  //@ axiom_consume_glob_packet();
 }
 
 uint32_t packet_is_ipv4(struct Packet* p)

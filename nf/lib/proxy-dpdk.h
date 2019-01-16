@@ -9,8 +9,8 @@
 // if it does
 
 /*@
-    inductive rte_mbufi = rte_mbufc(int, int, int, list<uint8_t>);
-    inductive rte_mbuf_metai = rte_mbuf_metac(int, int, int, int, uint8_t*);
+    inductive rte_mbufi = rte_mbufc(int, int, int, list<int8_t>);
+    inductive rte_mbuf_metai = rte_mbuf_metac(int, int, int, int, int8_t*);
     predicate mbuf_metap(struct rte_mbuf *mbuf; rte_mbuf_metai val) =
       mbuf->buf_addr |-> ?ba &*&
       mbuf->buf_iova |-> ?bfa &*&
@@ -34,15 +34,15 @@
       mbuf->priv_size |-> ?psize &*&
       mbuf->timesync |-> ?ts &*&
       mbuf->seqn |-> ?seqn &*&
-      ((uint8_t*)(void*)ba) + dlen <= (uint8_t*)UINTPTR_MAX &*&
-      val == rte_mbuf_metac(port, ptype, doff, dlen, (uint8_t*)(void*)ba) &*&
+      ((int8_t*)(void*)ba) + dlen <= (int8_t*)UINTPTR_MAX &*&
+      val == rte_mbuf_metac(port, ptype, doff, dlen, (int8_t*)(void*)ba) &*&
       doff == 0;
       //TODO: ^^^ is it really always so?
 
     predicate mbufp(struct rte_mbuf *mbuf; rte_mbufi val) =
       mbuf_metap(mbuf, ?meta) &*&
       switch(meta) { case rte_mbuf_metac(port, ptype, doff, dlen, ba):
-        return uchars(ba, dlen, ?content) &*&
+        return chars(ba, dlen, ?content) &*&
         val == rte_mbufc(port, ptype, doff, content);
       };
 @*/

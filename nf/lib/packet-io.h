@@ -11,7 +11,7 @@ struct rte_mempool;
 
 /*@
   predicate packetp(struct Packet* p, int nic, int type,
-                    list<uint8_t> unread, list<pair<uint8_t*, int> > missing_chunks);
+                    list<int8_t> unread, list<pair<int8_t*, int> > missing_chunks);
   @*/
 
 // The main IO primitive.
