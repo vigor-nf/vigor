@@ -228,20 +228,14 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 		// TODO can we make version_ihl symbolic?
 		buf_content->ipv4.version_ihl = (4 << 4) | 5; // IPv4, 5x4 bytes - concrete to avoid symbolic indexing
 		buf_content->ipv4.total_length = rte_cpu_to_be_16(sizeof(struct ipv4_hdr) + sizeof(struct tcp_hdr));
-	}
+    klee_assume((buf_content->ether.ether_type & 0x10) == 0x10);
+  } else {
+    klee_assume((buf_content->ether.ether_type & 0x10) != 0x10);
+  }
 
 	rte_mbuf_sanity_check(*mbufp, 1 /* is head mbuf */);
 
 	return true;
-}
-
-void
-rte_pktmbuf_free(struct rte_mbuf* m)
-{
-	klee_assert(m != NULL);
-
-	//stub_core_trace_free(m);
-	stub_core_mbuf_free(m);
 }
 
 void

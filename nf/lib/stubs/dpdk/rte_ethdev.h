@@ -135,7 +135,7 @@ rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
 	struct rte_mempool* pool = devices_rx_mempool[port_id];
 	stub_core_mbuf_create(port_id, pool, rx_pkts);
 
-  bool received = packet_receive(port_id, (**rx_pkts).buf_addr, &(**rx_pkts).data_len);
+  bool received = packet_receive(port_id, &(**rx_pkts).buf_addr, &(**rx_pkts).data_len);
   return received;
 }
 

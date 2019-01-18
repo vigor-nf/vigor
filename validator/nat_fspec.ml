@@ -22,7 +22,6 @@ let capture_chain ch_name ptr_num {args;tmp_gen;_} =
   "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
   (List.nth_exn args ptr_num) ^ ");\n"
 
-let packet_struct = Ir.Str ("Packet", [])
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
@@ -556,7 +555,7 @@ let fun_types =
                                    lemmas_before = [];
                                    lemmas_after = [];};
      "packet_receive", {ret_type = Static Boolean;
-                        arg_types = stt [Uint16; Ptr (Ptr packet_struct);];
+                        arg_types = stt [Uint16; Ptr (Ptr Sint8); Ptr Uint16];
                         extra_ptr_types = [];
                         lemmas_before = [];
                         lemmas_after = [
@@ -566,27 +565,15 @@ let fun_types =
                           )
                         ];};
      "packet_send", {ret_type = Static Void;
-                     arg_types = stt [Ptr packet_struct; Uint16];
+                     arg_types = stt [Ptr Sint8; Uint16];
                      extra_ptr_types = [];
                      lemmas_before = [];
                      lemmas_after = [(fun {args;_} ->
                          "a_packet_sent = true;\n" ^
                          "sent_on_port = " ^ (List.nth_exn args 1) ^ ";\n" 
                        )];};
-     "packet_get_port", {ret_type = Static Uint16;
-                         arg_types = stt [Ptr packet_struct];
-                         extra_ptr_types = [];
-                         lemmas_before = [];
-                         lemmas_after = [];};
-     "packet_is_ipv4", {ret_type = Static Uint32;
-                        arg_types = stt [Ptr packet_struct];
-                        extra_ptr_types = [];
-                        lemmas_before = [];
-                        lemmas_after = [(fun {ret_name;_} ->
-                            "is_ipv4 = " ^ ret_name ^ " != 0;\n"
-                          )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
-                                  arg_types = [Static (Ptr packet_struct);
+                                  arg_types = [Static (Ptr Sint8);
                                                Static Uint32;
                                                Dynamic ["ether_hdr",
                                                         Ptr (Ptr ether_hdr_struct);
@@ -635,7 +622,7 @@ let fun_types =
                                        | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
                                       )];};
      "packet_return_chunk", {ret_type = Static Void;
-                             arg_types = [Static (Ptr packet_struct);
+                             arg_types = [Static (Ptr Sint8);
                                           Dynamic ["ether_hdr",
                                                    Ptr ether_hdr_struct;
                                                    "ipv4_hdr",
@@ -684,13 +671,13 @@ let fun_types =
                                     )];
                              lemmas_after = [];};
      "packet_get_unread_length", {ret_type = Static Uint32;
-                                  arg_types = stt [Ptr packet_struct];
+                                  arg_types = stt [Ptr Sint8];
                                   extra_ptr_types = [];
                                   lemmas_before = [];
                                   lemmas_after = [];};
      "packet_free", {
                    ret_type = Static Void;
-                   arg_types = stt [Ptr packet_struct;];
+                   arg_types = stt [Ptr Sint8;];
                    extra_ptr_types = [];
                    lemmas_before = [];
                    lemmas_after = [];};
@@ -717,7 +704,6 @@ struct
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
-                  bool is_ipv4 = false;\n\
                   uint16_t sent_on_port;\n\
                   bool a_packet_sent = false;\n\
                   //@ dchain flow_chain;\n\

@@ -131,14 +131,14 @@ void packet_return_chunk(void* p, void* chunk) {
 bool packet_receive(uint16_t src_device, void** p, uint16_t* len) {
   klee_trace_ret();
   klee_trace_param_u16(src_device, "src_devices");
-  klee_trace_param_ptr(p, sizeof(void*), "p");
-  klee_trace_param_ptr(len, sizeof(int), "len");
+  klee_trace_param_ptr_directed(p, sizeof(void*), "p", TD_OUT);
+  klee_trace_param_ptr_directed(len, sizeof(int), "len", TD_OUT);
 
   if (klee_int("received") == 0) {
     return false;
   } else {
-    *p = global_packet_buffer;
-    //klee_make_symbolic(*p, sizeof(struct Packet), "packet");
+    //TODO: klee_forbid access to the buffer
+    *p = &global_packet_buffer;
     klee_make_symbolic(global_chunks, sizeof(global_chunks), "packet_chunks");
     global_n_borrowed_chunks = 0;
     global_tot_len_borrowed = 0;

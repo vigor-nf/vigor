@@ -20,8 +20,6 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
 
     flow_emap = emap_expire_all(flow_emap, now - EXP_TIME);
 
-    if (is_ipv4) {
-
     switch(recv_headers) { case cons(h1,t1): switch(h1) { case tcpudp_hdr(hdr1):
       switch(hdr1) { case tcpudp_hdrc(isrc_port, idst_port):
         switch(t1) { case cons(h2,t2): switch(h2) { case ip_hdr(hdr2):
@@ -30,6 +28,8 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
             switch(t2) { case cons(h3,t3): switch(h3) { case ether_hdr(hdr3):
               switch(hdr3) { case ether_hdrc(iesaddr, iedaddr, ietype):
 
+    //0x10 - IPv4
+    if ((ietype & 0x10) == 0x10) {
       // 6/17 -> TCP/UDP
       if (inpid == 6 || inpid == 17) {
         if (received_on_port == EXT_PORT) {
@@ -98,6 +98,10 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
         // Non TCP or UDP packet
         assert false == a_packet_sent;
       }
+    } else {
+      // Non IPv4 packet
+      assert false == a_packet_sent;
+    }
 
               }
               DEFAULT_DROP(tcp_hdr, ip_hdr, tcpudp_hdr); } NIL_DROP; }
@@ -105,10 +109,6 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           DEFAULT_DROP(tcp_hdr, ether_hdr, tcpudp_hdr); } NIL_DROP; }
       }
       DEFAULT_DROP(tcp_hdr, ip_hdr, ether_hdr); } NIL_DROP; }
-    } else {
-      // Non IPv4 packet
-      assert false == a_packet_sent;
-    }
   }
 assert final_flow_emap == flow_emap;
 }
