@@ -4,12 +4,16 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <rte_mbuf.h>
+#include <rte_mbuf_ptype.h>
 #include <rte_ether.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
 #include <rte_udp.h>
 #include "lib/packet-io.h"
 #include "lib/tcpudp.h"
+#include "rte_ethdev.h"
+#include "lib/stubs/core_stub.h"
 
 #ifdef KLEE_VERIFICATION
 #include "lib/stubs/containers/str-descr.h"
@@ -83,7 +87,7 @@ extern void* chunks_borrowed[];
 extern size_t chunks_borrowed_num;
 
 static inline
-void* nf_borrow_next_chunk(struct Packet* p, size_t length) {
+void* nf_borrow_next_chunk(void* p, size_t length) {
   assert(chunks_borrowed_num < MAX_N_CHUNKS);
   void* chunk;
   packet_borrow_next_chunk(p, length, &chunk);
@@ -117,7 +121,7 @@ void* nf_borrow_next_chunk(struct Packet* p, size_t length) {
                     #str_name);
 
 static inline
-void nf_return_all_chunks(struct Packet* p) {
+void nf_return_all_chunks(void* p) {
   do {
     chunks_borrowed_num--;
     packet_return_chunk(p, chunks_borrowed[chunks_borrowed_num]);
@@ -125,16 +129,15 @@ void nf_return_all_chunks(struct Packet* p) {
 }
 
 static inline
-struct ether_hdr* nf_then_get_ether_header(struct Packet* p) {
+struct ether_hdr* nf_then_get_ether_header(void* p) {
   CHUNK_LAYOUT_N(p, ether_hdr, ether_fields, ether_nested_fields);
   void* hdr = nf_borrow_next_chunk(p, sizeof(struct ether_hdr));
   return (struct ether_hdr*)hdr;
 }
 
 static inline
-struct ipv4_hdr* nf_then_get_ipv4_header(struct Packet* p, uint8_t** ip_options,
+struct ipv4_hdr* nf_then_get_ipv4_header(void* p, uint8_t** ip_options,
                                          bool* wellformed) {
-  assert(packet_is_ipv4(p));
   if (packet_get_unread_length(p) < sizeof(struct ipv4_hdr)) {
     *ip_options = NULL;
     *wellformed = false;
@@ -165,9 +168,39 @@ struct ipv4_hdr* nf_then_get_ipv4_header(struct Packet* p, uint8_t** ip_options,
 }
 
 static inline
-struct tcpudp_hdr* nf_then_get_tcpudp_header(struct Packet* p) {
+struct tcpudp_hdr* nf_then_get_tcpudp_header(void* p) {
   CHUNK_LAYOUT(p, tcpudp_hdr, tcpudp_fields);
   return (struct tcpudp_hdr*)nf_borrow_next_chunk(p, sizeof(struct tcpudp_hdr));
 }
 
+static inline
+bool nf_receive_packet(uint16_t src_device, struct rte_mbuf** mbuf) {
+  uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
+  if (actual_rx_len != 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static inline
+void nf_free_packet(struct rte_mbuf* mbuf) {
+  rte_pktmbuf_free(mbuf);
+}
+
+static inline
+void nf_flood_packet(struct rte_mbuf* mbuf, uint16_t skip_device,
+                     uint16_t nb_devices,
+                     struct rte_mempool* clone_pool) {
+  assert(false && "TODO: implement this somewhere");
+  //proxy_rte_eth_flood(mbuf, skip_device, nb_devices, clone_pool);
+}
+
+static inline
+void nf_send_packet(struct rte_mbuf* mbuf, int dst_device) {
+  uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
+  if (actual_tx_len == 0) {
+    rte_pktmbuf_free(mbuf);
+  }
+}
 
