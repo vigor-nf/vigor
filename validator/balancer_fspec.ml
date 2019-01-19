@@ -1168,7 +1168,6 @@ struct
                   /*@ ensures true; @*/\n{\n\
                   //@ modulo_hack();\n\
                   uint16_t received_on_port;\n\
-                  bool is_ipv4 = false;\n\
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
