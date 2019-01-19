@@ -661,26 +661,25 @@ let fun_types =
                                     ""
                                   | _ -> failwith "unsupported chunk type in packet_return_chunk"
                                );
-                                (fun {arg_exps;arg_types;_} ->
+                               (fun {arg_exps;arg_types;_} ->
                                   match (List.nth_exn arg_types 1) with
                                   | Ptr (Str (_, _)) ->
                                     "//@ open_struct(" ^
                                     (render_tterm (List.nth_exn arg_exps 1))
                                     ^ ");\n"
                                   | _ -> ""
-                                    )];
+                               )];
                              lemmas_after = [];};
      "packet_get_unread_length", {ret_type = Static Uint32;
                                   arg_types = stt [Ptr Sint8];
                                   extra_ptr_types = [];
                                   lemmas_before = [];
                                   lemmas_after = [];};
-     "packet_free", {
-                   ret_type = Static Void;
-                   arg_types = stt [Ptr Sint8;];
-                   extra_ptr_types = [];
-                   lemmas_before = [];
-                   lemmas_after = [];};
+     "packet_free", {ret_type = Static Void;
+                     arg_types = stt [Ptr Sint8;];
+                     extra_ptr_types = [];
+                     lemmas_before = [];
+                     lemmas_after = [];};
     ]
 
 (* TODO: make external_ip symbolic *)

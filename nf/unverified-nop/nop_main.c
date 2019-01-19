@@ -16,7 +16,7 @@ void nf_core_init(void)
 {
 }
 
-int nf_core_process(struct Packet* p, time_t now)
+int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 {
 	// Mark now as unused, we don't care about time
 	(void) now;
@@ -26,14 +26,15 @@ int nf_core_process(struct Packet* p, time_t now)
 	// and all packets from WAN to the main LAN port, and let the recipient ignore the useless ones.
 
 	uint16_t dst_device;
-	if (packet_get_port(p) == config.wan_device) {
+  const int in_port = mbuf->port;
+	if (in_port == config.wan_device) {
 		dst_device = config.lan_main_device;
 	} else {
 		dst_device = config.wan_device;
 	}
 
 	// L2 forwarding
-	struct ether_hdr* ether_header = nf_then_get_ether_header(p);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 	ether_header->s_addr = config.device_macs[dst_device];
 	ether_header->d_addr = config.endpoint_macs[dst_device];
 

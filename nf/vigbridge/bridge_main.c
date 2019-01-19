@@ -326,10 +326,9 @@ void nf_core_init(void) {
 #endif//KLEE_VERIFICATION
 }
 
-int nf_core_process(struct Packet* p,
-                    time_t now) {
-  const uint16_t in_port = packet_get_port(p);
-  struct ether_hdr* ether_header = nf_then_get_ether_header(p);
+int nf_core_process(struct rte_mbuf* mbuf, time_t now) {
+  const uint16_t in_port = mbuf->port;
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
   bridge_expire_entries(now);
   bridge_put_update_entry(&ether_header->s_addr, in_port, now);
