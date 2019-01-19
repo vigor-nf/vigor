@@ -2,6 +2,7 @@
 #include <klee/klee.h>
 #include "lib/stubs/containers/str-descr.h"
 #include "lib/packet-io.h"
+#include "packet-io-stub-control.h"
 
 #define MAX_CHUNK_SIZE 100
 #define PREALLOC_CHUNKS 10
@@ -24,8 +25,9 @@ uint32_t global_chunk_lengths[PREALLOC_CHUNKS];
     uint32_t n_nests;
     const char* tname;
   } global_chunk_layouts[PREALLOC_CHUNKS];
+chunk_constraint global_chunk_constraints[PREALLOC_CHUNKS];
 
-void* global_packet_buffer;
+//void* global_packet_buffer;
 //};
 
 void packet_set_next_chunk_layout(void* p, uint32_t length,
@@ -40,6 +42,10 @@ void packet_set_next_chunk_layout(void* p, uint32_t length,
   global_chunk_layouts[global_n_borrowed_chunks].n_nests = n_nests;
   global_chunk_layouts[global_n_borrowed_chunks].tname = tname;
   global_chunk_layouts[global_n_borrowed_chunks].set = true;
+}
+
+void packet_set_next_chunk_constraints(void* p, chunk_constraint constraint) {
+  global_chunk_constraints[global_n_borrowed_chunks] = constraint;
 }
 
 // The main IO primitive.
@@ -82,6 +88,9 @@ void packet_borrow_next_chunk(void* p, size_t length, void** chunk) {
                                         layout->nests[i].name,
                                         TD_OUT);
     }
+  }
+  if (global_chunk_constraints[global_n_borrowed_chunks]) {
+    klee_assume(global_chunk_constraints[global_n_borrowed_chunks](ret));
   }
   global_chunk_lengths[global_n_borrowed_chunks] = length;
   global_n_borrowed_chunks++;
@@ -138,7 +147,7 @@ bool packet_receive(uint16_t src_device, void** p, uint16_t* len) {
     return false;
   } else {
     //TODO: klee_forbid access to the buffer
-    *p = &global_packet_buffer;
+    //*p = &global_packet_buffer;
     klee_make_symbolic(global_chunks, sizeof(global_chunks), "packet_chunks");
     global_n_borrowed_chunks = 0;
     global_tot_len_borrowed = 0;
@@ -147,6 +156,7 @@ bool packet_receive(uint16_t src_device, void** p, uint16_t* len) {
     klee_assume(sizeof(struct ether_hdr) <= global_packet_len);
     for (uint32_t i = 0; i < PREALLOC_CHUNKS; ++i) {
       global_chunk_layouts[i].set = false;
+      global_chunk_constraints[i] = NULL;
     }
     return true;
   }

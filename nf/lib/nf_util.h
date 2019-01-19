@@ -68,6 +68,13 @@ static struct nested_field_descr ether_nested_fields[] = {
   {offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
   {offsetof(struct ether_hdr, s_addr), 0, sizeof(uint8_t), 6, "addr_bytes"}
 };
+
+//TODO: Make conditional on mbuf->packet_type
+static
+bool ether_to_ipv4_constraint(void* arg) {
+  struct ether_hdr* header = arg;
+  return (header->ether_type & 0x10) == 0x10;
+}
 #endif//KLEE_VERIFICATION
 
 
@@ -99,8 +106,12 @@ void* nf_borrow_next_chunk(void* p, size_t length) {
 #ifdef KLEE_VERIFICATION
 #  define CHUNK_LAYOUT_IMPL(pkt, len, fields, n_fields, nests, n_nests, tag) \
   packet_set_next_chunk_layout(pkt, len, fields, n_fields, nests, n_nests, tag)
+#  define CHUNK_CONSTRAINT(pkt, constraint) \
+  packet_set_next_chunk_constraints(pkt, constraint)
 #else//KLEE_VERIFICATION
 #  define CHUNK_LAYOUT_IMPL(pkt, len, fields, n_fields, nests, n_nests, tag) \
+  /*nothing*/
+#  define CHUNK_CONSTRAINT(pkt, constraint)     \
   /*nothing*/
 #endif//KLEE_VERIFICATION
 
@@ -131,6 +142,7 @@ void nf_return_all_chunks(void* p) {
 static inline
 struct ether_hdr* nf_then_get_ether_header(void* p) {
   CHUNK_LAYOUT_N(p, ether_hdr, ether_fields, ether_nested_fields);
+  CHUNK_CONSTRAINT(p, ether_to_ipv4_constraint);
   void* hdr = nf_borrow_next_chunk(p, sizeof(struct ether_hdr));
   return (struct ether_hdr*)hdr;
 }
