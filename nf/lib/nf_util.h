@@ -30,6 +30,7 @@ struct ipv4_hdr;
 #define IP_MIN_SIZE_WORDS 5
 #define WORD_SIZE 4
 
+extern uint32_t global_packet_type;
 
 #ifdef KLEE_VERIFICATION
 static struct str_field_descr ether_fields[] = {
@@ -69,11 +70,10 @@ static struct nested_field_descr ether_nested_fields[] = {
   {offsetof(struct ether_hdr, s_addr), 0, sizeof(uint8_t), 6, "addr_bytes"}
 };
 
-//TODO: Make conditional on mbuf->packet_type
 static
 bool ether_to_ipv4_constraint(void* arg) {
   struct ether_hdr* header = arg;
-  return (header->ether_type & 0x10) == 0x10;
+  return ((global_packet_type & 0x10) == 0x10)? (header->ether_type & 0x10) == 0x10 : true;
 }
 #endif//KLEE_VERIFICATION
 
@@ -189,6 +189,7 @@ static inline
 bool nf_receive_packet(uint16_t src_device, struct rte_mbuf** mbuf) {
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
   if (actual_rx_len != 0) {
+    global_packet_type = (**mbuf).packet_type;
     return true;
   } else {
     return false;
