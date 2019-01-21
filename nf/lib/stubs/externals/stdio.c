@@ -68,7 +68,6 @@ write(int fd, const void* buf, size_t count)
 
 	klee_assert(count == 4);
 
-#ifdef VIGOR_STUB_HARDWARE
 	for (int n = 0; n < NUM_PCI_DEVICES; n++) {
 		if (fd == PCI_DEVICES[n].interrupts_fd) {
 			if (*((uint32_t*) buf) == 0) {
@@ -81,7 +80,6 @@ write(int fd, const void* buf, size_t count)
 				return count;
 		}
 	}
-#endif
 
 	klee_abort();
 }

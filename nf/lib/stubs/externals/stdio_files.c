@@ -85,6 +85,8 @@ static char* FILE_CONTENT_HUGEPAGE = (char*) -300;
 struct dsos_pci_nic *PCI_DEVICES;
 int NUM_PCI_DEVICES;
 
+const int MSR_FD = 1337;
+
 int
 access(const char* pathname, int mode)
 {
@@ -126,6 +128,10 @@ open(const char* file, int oflag, ...)
 	// NUMA map, unsupported for now
 	if (!strcmp(file, "/proc/self/numa_maps") && oflag == O_RDONLY) {
 		return -1; // TODO
+	}
+
+	if (!strcmp(file, "/dev/cpu/0/msr") && oflag == O_RDONLY) {
+		return MSR_FD;
 	}
 
 	// Generic
@@ -286,6 +292,16 @@ pread(int fd, void *buf, size_t count, off_t offset)
 {
 	klee_assert(FILES[fd].pos != POS_UNOPENED);
 	klee_assert(FILES[fd].kind == KIND_FILE);
+
+	if (fd == MSR_FD) {
+		// MSR_PLATFORM_INFO
+		klee_assert(offset == 0xCE);
+		klee_assert(count == 8);
+
+		*((uint64_t *) buf) = (33ULL << 8);
+		return 8;
+	}
+
 	klee_assert(count == 1);
 
 	if (offset < strlen(FILES[fd].content)) {

@@ -37,7 +37,7 @@ nf_includes += -I $(RTE_SDK)/lib/librte_cmdline
 nf_defs := -D_GNU_SOURCE
 
 # For NAT debug output
-# nf_defs += -DENABLE_LOG
+nf_defs += -DENABLE_LOG
 
 nf_source_files := $(NF_DIR)/nf_main.c \
 	$(NF_DIR)/lib/nf_util.c \
@@ -69,18 +69,20 @@ dpdk_source_files += $(RTE_SDK)/lib/librte_eal/common/arch/x86/rte_cycles.c
 dpdk_source_files += $(RTE_SDK)/lib/librte_eal/common/arch/x86/rte_cpuflags.c
 dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_ether/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_hash/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_mempool/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_mbuf/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_pci/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_ring/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/bus/vdev/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/bus/pci/*.c)
 dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/bus/pci/linux/*.c)
-dpdk_source_files += $(RTE_SDK)/drivers/net/virtio/virtio_ethdev.c
-dpdk_source_files += $(RTE_SDK)/drivers/net/virtio/virtio_pci.c
-dpdk_source_files += $(RTE_SDK)/drivers/net/virtio/virtio_rxtx_simple_sse.c
-dpdk_source_files += $(RTE_SDK)/drivers/net/virtio/virtio_rxtx_simple.c
-dpdk_source_files += $(RTE_SDK)/drivers/net/virtio/virtio_rxtx.c
-dpdk_source_files += $(RTE_SDK)/drivers/net/virtio/virtqueue.c
+dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/base/*.c)
+dpdk_source_files := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_82599_bypass.c, $(dpdk_source_files))
+dpdk_source_files := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c, $(dpdk_source_files))
+dpdk_source_files := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_bypass.c, $(dpdk_source_files))
+dpdk_source_files := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_neon.c, $(dpdk_source_files))
 
 # Stubs
 stubs_source_files := $(wildcard $(STUBS_DIR)/*.c)
@@ -94,7 +96,7 @@ kernel_source_files := $(wildcard $(KERNEL_DIR)/*.c)
 kernel_includes := -I $(KERNEL_DIR)
 
 # For DSOS debug output on the VGA buffer
-# kernel_defs := -DDSOS_DEBUG
+kernel_defs := -DDSOS_DEBUG
 
 # other_misc_includes := -I include --include include/misc_defs.h
 other_misc_includes := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
@@ -115,10 +117,13 @@ OBJ_LIST := $(assembly_object_files) $(all_c_object_files)
 NAT_MAC1 := 52:54:00:12:35:60
 NAT_MAC2 := 52:54:00:12:34:60
 
-QEMUFLAGS := -enable-kvm -cdrom $(iso)
+QEMUFLAGS := -enable-kvm -cdrom $(iso) -cpu host
 
 QEMU_RUNFLAGS := $(QEMUFLAGS) -netdev user,id=n1 -device virtio-net-pci,netdev=n1 \
-	-netdev user,id=n2 -device virtio-net-pci,netdev=n2
+	-curses \
+	-device vfio-pci,host=81:00.0 \
+	-device vfio-pci,host=81:00.1
+
 QEMU_DEMOFLAGS := $(QEMUFLAGS) \
 	-nic tap,model=virtio-net-pci,mac=$(NAT_MAC1),ifname=$(NAT_NIC1),script=no,downscript=no \
 	-nic tap,model=virtio-net-pci,mac=$(NAT_MAC2),ifname=$(NAT_NIC2),script=no,downscript=no
@@ -143,7 +148,7 @@ debug: $(iso)
 	@$(QEMU) -s -S $(QEMU_RUNFLAGS) -nographic > /dev/null 2>&1 &
 	@gdb $(kernel) -ex "target remote localhost:1234" \
 		-ex "hb main" \
-		-ex "layout src" -ex "c" -ex "d 1" \
+		-ex "c" -ex "d 1" \
 		-ex "b exit" \
 		-ex "b abort" \
 		-ex "b __assert_fail"
@@ -164,7 +169,7 @@ $(iso): $(kernel) $(grub_cfg)
 $(kernel): $(OBJ_LIST) libc.a
 	@$(LLD) -m elf_i386 -T $(linker_script) -error-limit=0 -o $(kernel) \
 		 $(OBJ_LIST) libc.a \
-		-L/usr/lib/clang/6.0.0/lib/linux -lclang_rt.builtins-i386
+		-L/usr/lib/llvm-6.0/lib/clang/6.0.1/lib/linux -lclang_rt.builtins-i386
 
 # Assembly files
 %.o: %.asm

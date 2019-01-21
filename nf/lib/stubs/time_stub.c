@@ -72,7 +72,7 @@ time_t time(time_t *timer)
 int clock_gettime(clockid_t clk_id, struct timespec *tp)
 {
     // Others not implemented
-    if(clk_id != CLOCK_MONOTONIC) {
+    if(clk_id != CLOCK_MONOTONIC && clk_id != CLOCK_MONOTONIC_RAW) {
       return -1;
     }
 

@@ -94,13 +94,13 @@ void flow_log_ip(uint32_t addr) {
 }
 
 void flow_log_id(struct FlowId* id) {
-  NF_DEBUG( "{src_port: %d(%d); dst_port: %d(%d);\n"
+  NF_DEBUG( "{src_port: %d; dst_port: %d;\n"
             " src_ip: ",
-            id->src_port, rte_be_to_cpu_16(key->src_port),
-            id->dst_port, rte_be_to_cpu_16(key->dst_port));
-  log_ip(id->src_ip);
+            id->src_port, //rte_be_to_cpu_16(key->src_port),
+            id->dst_port);//rte_be_to_cpu_16(key->dst_port));
+  flow_log_ip(id->src_ip);
   NF_DEBUG( "; dst_ip: ");
-  log_ip(id->dst_ip);
+  flow_log_ip(id->dst_ip);
   NF_DEBUG(" protocol: %d;",
            id->protocol);
   NF_DEBUG(" internal_device: %d}",
