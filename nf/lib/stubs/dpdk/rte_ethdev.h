@@ -153,3 +153,26 @@ rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
 	stub_core_mbuf_free(*tx_pkts);
 	return 1;
 }
+
+//TODO: this belongs to rte_mbuf.h
+// but is here to present a single dpdk-stub API.
+static inline
+struct rte_mbuf*
+rte_pktmbuf_clone(struct rte_mbuf* frame, struct rte_mempool* clone_pool) {
+  struct rte_mbuf* copy;
+  bool success = stub_core_mbuf_create(frame->port, clone_pool, &copy);
+  if (!success) return NULL;
+  //struct rte_mbuf* copy =malloc(clone_pool->elt_size);// rte_mbuf_raw_alloc(clone_pool);
+
+  /* memcpy(copy, frame, sizeof(struct rte_mbuf)); */
+	/* struct rte_mbuf* buf_next = (struct rte_mbuf*) malloc(clone_pool->elt_size); */
+	/* if (buf_next == NULL) { */
+	/* 	rte_pktmbuf_free(copy); */
+	/* 	return false; */
+	/* } */
+  /* copy->next = buf_next; */
+	/* klee_forbid_access(copy->next, clone_pool->elt_size, "clone_buf_next"); */
+
+  packet_clone(frame->buf_addr, &copy->buf_addr);
+  return copy;
+}

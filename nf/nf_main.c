@@ -70,9 +70,21 @@ static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
 
 // Clone pool for flood()
-// FIXME: is global now, because the flood() is implemented in packet-io.h
-// will need to move there and make static again.
-struct rte_mempool* clone_pool;
+static struct rte_mempool* clone_pool;
+
+void
+flood(struct rte_mbuf* frame, uint16_t skip_device,
+      uint16_t nb_devices, struct rte_mempool* clone_pool) {
+  for (uint16_t device = 0; device < nb_devices; device++) {
+    if (device == skip_device) continue;
+    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
+    if (copy == NULL) {
+      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
+    }
+    nf_send_packet(copy, device);
+  }
+  rte_pktmbuf_free(frame);
+}
 
 // Buffer count for mempools
 static const unsigned MEMPOOL_BUFFER_COUNT = 256;
@@ -173,7 +185,7 @@ lcore_main(void)
       if (dst_device == VIGOR_DEVICE) {
         nf_free_packet(mbuf);
       } else if (dst_device == FLOOD_FRAME) {
-        nf_flood_packet(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
+        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
       } else {
         nf_send_packet(mbuf, dst_device);
       }

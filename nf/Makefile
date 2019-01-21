@@ -35,8 +35,7 @@ SRCS-y := $(SELF_DIR)/nf_main.c \
           $(SELF_DIR)/lib/containers/double-map.c \
           $(SELF_DIR)/lib/containers/vector.c \
           $(SELF_DIR)/lib/containers/cht.c \
-          $(SELF_DIR)/lib/packet-io.c \
-          $(SELF_DIR)/lib/proxy-dpdk.c
+          $(SELF_DIR)/lib/packet-io.c
 # NF specific source
 SRCS-y += $(NF_FILES)
 
@@ -64,7 +63,6 @@ verifast:
 		$(SELF_DIR)/lib/expirator.c \
 		$(SELF_DIR)/vignat/nat_flow.c \
 		$(SELF_DIR)/vigbridge/bridge_data.c \
-		$(SELF_DIR)/lib/axioms.c \
 		$(SELF_DIR)/lib/packet-io.c
 
 

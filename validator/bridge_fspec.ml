@@ -49,7 +49,6 @@ let reveal_the_other_mapp : lemma = fun {arg_types;tmp_gen;_} ->
     (tmp_gen "dym") ^ ");"
   | _ -> "#error unexpected key type"
 
-let packet_struct = Ir.Str ("Packet", [])
 let mempool_struct = Ir.Str ("rte_mempool", [])
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
@@ -573,20 +572,8 @@ let fun_types =
                        } @*/"
                    );
                    reveal_the_other_mapp];};
-     "packet_flood", {ret_type = Static Void;
-                      arg_types = stt [Ptr packet_struct; Ir.Uint16; Ir.Uint16;
-                                       Ptr mempool_struct];
-                      extra_ptr_types = estt ["user_buf_addr",
-                                              Ptr stub_mbuf_content_struct];
-                      lemmas_before = [
-                        (fun params ->
-                           "flooded_except_port = " ^
-                           (List.nth_exn params.args 1) ^
-                           ";\n" ^
-                           "a_packet_flooded = true;\n")];
-                      lemmas_after = [(fun _ -> "a_packet_sent = true;\n");];};
      "packet_receive", {ret_type = Static Boolean;
-                        arg_types = stt [Uint16; Ptr (Ptr packet_struct);];
+                        arg_types = stt [Uint16; Ptr (Ptr Sint8); Ptr Uint16];
                         extra_ptr_types = [];
                         lemmas_before = [];
                         lemmas_after = [
@@ -596,27 +583,15 @@ let fun_types =
                           )
                         ];};
      "packet_send", {ret_type = Static Void;
-                     arg_types = stt [Ptr packet_struct; Uint16];
+                     arg_types = stt [Ptr Sint8; Uint16];
                      extra_ptr_types = [];
                      lemmas_before = [];
                      lemmas_after = [(fun {args;_} ->
                          "a_packet_sent = true;\n" ^
                          "sent_on_port = " ^ (List.nth_exn args 1) ^ ";\n" 
                        )];};
-     "packet_get_port", {ret_type = Static Uint16;
-                         arg_types = stt [Ptr packet_struct];
-                         extra_ptr_types = [];
-                         lemmas_before = [];
-                         lemmas_after = [];};
-     "packet_is_ipv4", {ret_type = Static Uint32;
-                        arg_types = stt [Ptr packet_struct];
-                        extra_ptr_types = [];
-                        lemmas_before = [];
-                        lemmas_after = [(fun {ret_name;_} ->
-                            "is_ipv4 = " ^ ret_name ^ " != 0;\n"
-                          )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
-                                  arg_types = [Static (Ptr packet_struct);
+                                  arg_types = [Static (Ptr Sint8);
                                                Static Uint32;
                                                Dynamic ["ether_hdr",
                                                         Ptr (Ptr ether_hdr_struct);
@@ -665,7 +640,7 @@ let fun_types =
                                        | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
                                       )];};
      "packet_return_chunk", {ret_type = Static Void;
-                             arg_types = [Static (Ptr packet_struct);
+                             arg_types = [Static (Ptr Sint8);
                                           Dynamic ["ether_hdr",
                                                    Ptr ether_hdr_struct;
                                                    "ipv4_hdr",
@@ -704,26 +679,31 @@ let fun_types =
                                     ""
                                   | _ -> failwith "unsupported chunk type in packet_return_chunk"
                                );
-                                (fun {arg_exps;arg_types;_} ->
+                               (fun {arg_exps;arg_types;_} ->
                                   match (List.nth_exn arg_types 1) with
                                   | Ptr (Str (_, _)) ->
                                     "//@ open_struct(" ^
                                     (render_tterm (List.nth_exn arg_exps 1))
                                     ^ ");\n"
                                   | _ -> ""
-                                    )];
+                               )];
                              lemmas_after = [];};
      "packet_get_unread_length", {ret_type = Static Uint32;
-                                  arg_types = stt [Ptr packet_struct];
+                                  arg_types = stt [Ptr Sint8];
                                   extra_ptr_types = [];
                                   lemmas_before = [];
                                   lemmas_after = [];};
-     "packet_free", {
-                   ret_type = Static Void;
-                   arg_types = stt [Ptr packet_struct;];
-                   extra_ptr_types = [];
-                   lemmas_before = [];
-                   lemmas_after = [];};
+     "packet_free", {ret_type = Static Void;
+                     arg_types = stt [Ptr Sint8;];
+                     extra_ptr_types = [];
+                     lemmas_before = [];
+                     lemmas_after = [];};
+     "packet_clone", {ret_type = Static Void;
+                      arg_types = stt [Ptr Sint8;
+                                       Ptr (Ptr Sint8)];
+                      extra_ptr_types = [];
+                      lemmas_before = [];
+                      lemmas_after = [];};
      "start_time", {ret_type = Static Sint64;
                     arg_types = [];
                     extra_ptr_types = [];

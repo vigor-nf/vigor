@@ -7,7 +7,6 @@ bool devices_started[STUB_DEVICES_COUNT];
 bool devices_promiscuous[STUB_DEVICES_COUNT];
 struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
 
-
 void
 rte_pktmbuf_free(struct rte_mbuf* m)
 {

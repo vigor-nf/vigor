@@ -53,4 +53,9 @@ uint32_t packet_get_unread_length(void* p);
 /*@ ensures packetp(p, unread, mc) &*&
             result == length(unread); @*/
 
+void packet_clone(void* src, void** clone);
+/*@ requires packetp(src, ?unread, ?mc) &*& *clone |-> _; @*/
+/*@ ensures packetp(src, unread, mc) &*&
+            *clone |-> ?p &*& packetp(p, unread, mc); @*/
+
 #endif// _PACKET_IO_H_INCLUDED_

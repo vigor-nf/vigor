@@ -202,14 +202,6 @@ void nf_free_packet(struct rte_mbuf* mbuf) {
 }
 
 static inline
-void nf_flood_packet(struct rte_mbuf* mbuf, uint16_t skip_device,
-                     uint16_t nb_devices,
-                     struct rte_mempool* clone_pool) {
-  assert(false && "TODO: implement this somewhere");
-  //proxy_rte_eth_flood(mbuf, skip_device, nb_devices, clone_pool);
-}
-
-static inline
 void nf_send_packet(struct rte_mbuf* mbuf, int dst_device) {
   uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
   if (actual_tx_len == 0) {

@@ -82,3 +82,8 @@ uint32_t packet_get_unread_length(void* p)
 {
   return global_total_length - global_read_length;
 }
+
+void packet_clone(void* src, void** clone)
+{
+  /* do nothing */
+}
