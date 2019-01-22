@@ -17,10 +17,10 @@ emap<stat_keyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_
 vector<uint16_t> final_dyn_val_vector = vector(final_dyn_val_vec);
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
-     case hd1(x): assert nil == sent_on_ports; assert false == a_packet_flooded; \
-     case hd2(x): assert nil == sent_on_ports; assert false == a_packet_flooded;\
-     case hd3(x): assert nil == sent_on_ports; assert false == a_packet_flooded
-#define NIL_DROP case nil: assert nil == sent_on_ports; assert false == a_packet_flooded
+     case hd1(x): assert nil == sent_on_ports; \
+     case hd2(x): assert nil == sent_on_ports; \
+     case hd3(x): assert nil == sent_on_ports
+#define NIL_DROP case nil: assert nil == sent_on_ports
 
 bit_and_hack();
 if (300 < now) {// consider only normal moments, remote from the start of the epoch

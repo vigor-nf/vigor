@@ -8,10 +8,10 @@ emap<flow_id> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_
 #define EXT_PORT 1
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
-     case hd1(x): assert false == a_packet_sent; \
-     case hd2(x): assert false == a_packet_sent; \
-     case hd3(x): assert false == a_packet_sent
-#define NIL_DROP case nil: assert false == a_packet_sent;
+     case hd1(x): assert nil == sent_on_ports; \
+     case hd2(x): assert nil == sent_on_ports; \
+     case hd3(x): assert nil == sent_on_ports
+#define NIL_DROP case nil: assert nil == sent_on_ports;
 
 bit_and_hack();
 if (EXP_TIME < now) {// consider only normal moments, remote from the start of the epoch
@@ -43,9 +43,9 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
               if (dip  != isaddr ||
                   dp   != isrc_port  ||
                   prot != inpid) {
-                assert false == a_packet_sent;
+                assert nil == sent_on_ports;
               } else {
-                assert true == a_packet_sent;
+                assert cons(idev, nil) == sent_on_ports;
                 assert sent_headers ==
                        cons(ether_hdr(ether_hdrc(_, _, ietype)),
                        cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
@@ -55,7 +55,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
             }
           } else {
             // no flow in the table
-            assert false == a_packet_sent;
+            assert nil == sent_on_ports;
           }
         } else {
           // packet from the internal network
@@ -67,40 +67,38 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
             // flow present in the table
             int idx = emap_get(flow_emap, internal_flow_id);
             flow_emap = emap_refresh_idx(flow_emap, idx, now);
-            assert true == a_packet_sent;
+            assert cons(EXT_PORT, nil) == sent_on_ports;
             assert sent_headers ==
                    cons(ether_hdr(ether_hdrc(_, _, ietype)),
                    cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
                                          ittl, inpid, _, EXT_IP_ADDR, idaddr)),
                    cons(tcpudp_hdr(tcpudp_hdrc(idx + start_port, idst_port)), nil)));
-            assert sent_on_port == EXT_PORT;
           } else {
             // No flow in the table
             if (emap_full(flow_emap)) {
               // Flowtable overflow
-              assert false == a_packet_sent;
+              assert nil == sent_on_ports;
             } else {
               // The flow must have been inserted
               int idx = the_index_allocated;
               flow_emap = emap_add(flow_emap, internal_flow_id, idx, now);
 
-              assert true == a_packet_sent;
+              assert cons(EXT_PORT, nil) == sent_on_ports;
               assert sent_headers ==
                      cons(ether_hdr(ether_hdrc(_, _, ietype)),
                      cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
                                            ittl, inpid, _, EXT_IP_ADDR, idaddr)),
                      cons(tcpudp_hdr(tcpudp_hdrc(idx + start_port, idst_port)), nil)));
-              assert sent_on_port == EXT_PORT;
             }
           }
         }
       } else {
         // Non TCP or UDP packet
-        assert false == a_packet_sent;
+        assert nil == sent_on_ports;
       }
     } else {
       // Non IPv4 packet
-      assert false == a_packet_sent;
+      assert nil == sent_on_ports;
     }
 
               }
