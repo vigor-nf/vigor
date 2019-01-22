@@ -62,8 +62,9 @@ verifast:
 		$(SELF_DIR)/lib/coherence.c \
 		$(SELF_DIR)/lib/expirator.c \
 		$(SELF_DIR)/vignat/nat_flow.c \
-		$(SELF_DIR)/vigbridge/bridge_data.c \
-		$(SELF_DIR)/lib/packet-io.c
+		$(SELF_DIR)/vigbridge/bridge_data.c
+
+# TODO: verify also buffer management in packet-io.c
 
 
 ### KLEE verification ###
