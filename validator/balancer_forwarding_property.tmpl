@@ -59,7 +59,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               flow_emap = emap_refresh_idx(flow_emap, emap_get(flow_emap, packet_flow), now);
               lb_backendi backend = vector_get(backends_vec, backend_id);
               switch(backend) { case lb_backendc(nic, mac, ip):
-                assert sent_on_port == nic;
+                assert sent_on_ports = cons(nic, nil);
                 assert sent_headers ==
                        cons(ether_hdr(ether_hdrc(_, mac, ietype)),
                        cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
