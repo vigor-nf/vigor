@@ -17,10 +17,10 @@ emap<stat_keyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_
 vector<uint16_t> final_dyn_val_vector = vector(final_dyn_val_vec);
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
-     case hd1(x): assert false == a_packet_sent; assert false == a_packet_flooded; \
-     case hd2(x): assert false == a_packet_sent; assert false == a_packet_flooded;\
-     case hd3(x): assert false == a_packet_sent; assert false == a_packet_flooded
-#define NIL_DROP case nil: assert false == a_packet_sent; assert false == a_packet_flooded
+     case hd1(x): assert nil == sent_on_ports; assert false == a_packet_flooded; \
+     case hd2(x): assert nil == sent_on_ports; assert false == a_packet_flooded;\
+     case hd3(x): assert nil == sent_on_ports; assert false == a_packet_flooded
+#define NIL_DROP case nil: assert nil == sent_on_ports; assert false == a_packet_flooded
 
 bit_and_hack();
 if (300 < now) {// consider only normal moments, remote from the start of the epoch
@@ -51,12 +51,9 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
       int output_port = emap_get(stat_emap, static_key);
       if (output_port == -2 ||
           output_port == received_on_port) {
-        assert false == a_packet_sent;
-        assert false == a_packet_flooded;
+        assert nil == sent_on_ports;
       } else {
-        assert true == a_packet_sent;
-        assert false == a_packet_flooded;
-        assert sent_on_port == output_port;
+        assert sent_on_ports == cons(output_port, nil);
         assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
       }
     } else {
@@ -64,17 +61,13 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
         int idx = emap_get(dyn_emap, iedaddr);
         int output_port = vector_get(dyn_val_vector, idx);
         if (output_port == received_on_port) {
-          assert false == a_packet_sent;
-          assert false == a_packet_flooded;
+          assert sent_on_ports == nil;
         } else {
-          assert true == a_packet_sent;
-          assert false == a_packet_flooded;
-          assert sent_on_port == output_port;
+          assert sent_on_ports == cons(output_port, nil);
           assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
         }
       } else {
-        assert true == a_packet_flooded;
-        assert flooded_except_port == received_on_port;
+        assert sent_on_ports == cons(1-received_on_port, nil);
         assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
       }
     }
