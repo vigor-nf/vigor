@@ -13,15 +13,15 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
   match out_val.v, out_val.t with
   (* HACKY HACK - can't do an assume over the arrays themselves because they're pointers and VeriFast will assume that the pointers, not the contents, are equal *)
-  | _, Array (Uint8, size) when head = "assume" -> begin match out_arg.t with
-                          | Array (Uint8, size2) when size2 = size ->
+  | Array cells, Array Uint8 when head = "assume" -> begin match out_arg.t with
+                          | Array Uint8 ->
                             let tmp_gen = gen_tmp_name() in
                             let (bindings, expr) = Fspec_api.generate_2step_dereference out_arg tmp_gen in
                             (String.concat ~sep:"\n" bindings) ^ "\n" ^
-                            "//@ assert [_]uchars(" ^ (render_tterm expr) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "oa") ^ ");\n" ^
-                            "//@ assert [_]uchars(" ^ (render_tterm out_val) ^ ", " ^ (Int.to_string size) ^ ", ?" ^ (tmp_gen "ov") ^ ");\n" ^
-                            "//@ assume(" ^ (tmp_gen "oa") ^ " == " ^ (tmp_gen "ov") ^ ");\n"
-                          | _ -> failwith "Arrays must be of type Uint8 (sorry!) and same size (not sorry!)" end
+                            (String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
+                                "//@ " ^ head ^ "(" ^ (render_tterm expr) ^ "[" ^ (string_of_int idx) ^ "] == " ^ (render_tterm cell) ^ ");"
+                              ))) ^ "\n"
+                          | _ -> failwith "Arrays must be of type Uint8 (sorry!)" end
   (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->
     begin match out_arg.v, out_arg.t with
@@ -104,17 +104,40 @@ let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
 let render_assignment {lhs;rhs;} =
   match rhs.v with
   | Undef -> "";
-  | _ -> begin match rhs.t with
-         | Array (_, size) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string size) ^ ");"
-         | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
+  | _ -> begin match rhs.t,rhs.v with
+      | Array Uint8, Array cells ->
+        String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
+            (render_tterm lhs) ^ "[" ^ (string_of_int idx) ^ "] = " ^
+            (render_tterm cell) ^ ";"))
+      | Array _, _ -> failwith ((render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^
+                               " is not handled")
+      | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
 
 let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
   else match rhs.t, rhs.v with
   | _, Undef -> []
-  | Array (_, s), _ -> begin match lhs.t with
-                  | Array (_, s2) when s = s2 -> [{lhs;rhs}]
-                  | _ -> failwith "arrays must be compared to arrays of the same size" end
+  | Array _, Array cells -> begin match lhs.t with
+      | Array _ -> [{lhs;rhs}]
+      | Ptr ptee_t ->
+        List.mapi cells ~f:(fun idx value ->
+            {lhs={v=Deref {v=Bop (Add, lhs, {v=Int idx;t=Uint32});t=lhs.t};
+                  t=ptee_t};
+             rhs=value})
+      | _ -> failwith ("arrays must be compared to arrays or ptrs: " ^
+                       (ttype_to_str rhs.t) ^ " <> " ^
+                       (ttype_to_str lhs.t))
+    end
+  | Array _, _ -> begin match lhs.t, lhs.v with
+      | Array ptee_t, Array cells ->
+        List.mapi cells ~f:(fun idx value ->
+            {lhs=value;
+             rhs={v=Deref {v=Bop (Add, rhs, {v=Int idx;t=Uint32});t=rhs.t};
+                  t=ptee_t}})
+      | _ -> failwith ("arrays must be compared to arrays (ptrs not implemented yet): " ^
+                       (ttype_to_str rhs.t) ^ " <> " ^
+                       (ttype_to_str lhs.t))
+    end
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
                           rhs=pointee}
@@ -196,11 +219,13 @@ let render_hist_fun_call {context;result} =
                  " != " ^ "0);\n") ^
               "/* Do not render the return ptee assumption for hist calls */\n"
    | _ -> render_ret_equ_sttmt ~is_assert:false context.ret_name context.ret_type result.ret_val) ^
-  "// POSTCONDITIONS\n" ^
-  (render_args_post_conditions ~is_assert:false result.args_post_conditions) ^ (* ret can influence whether args are accessible *)
-  (render_post_assumptions result.post_statements) ^
   "// POSTLEMMAS\n" ^
-  (render_postlemmas context) (* postlemmas can depend on the return value *)
+  (render_postlemmas context) ^ (* postlemmas can depend on the return value *)
+  "// POSTCONDITIONS\n" ^ (* Postconditions can depend on post lemmas, e.g.
+                             if the the post lemma "close_struct"*)
+  (render_args_post_conditions ~is_assert:false
+     (List.join (List.map result.args_post_conditions ~f:gen_plain_equalities) )) ^ (* ret can influence whether args are accessible *)
+  (render_post_assumptions result.post_statements)
 
 let gen_ret_equalities ret_val ret_name ret_type =
   match ret_name with
@@ -227,6 +252,20 @@ let split_assignments assignments =
         (concrete,
          {lhs=symb;
           rhs={v=Bop (Sub, assignment.rhs, delta);
+               t=assignment.rhs.t}}::
+         symbolic)
+      | Bop (Add, {v=Int delta;t=Sint32}, ({v=Id _;t=_} as symb))
+        when delta < 0 ->
+        (concrete,
+         {lhs=symb;
+          rhs={v=Bop (Add, assignment.rhs, {v=Int (-delta);t=Sint32});
+               t=assignment.rhs.t}}::
+         symbolic)
+      | Bop (Sub, ({v=Id _;t=_} as symb), {v=Int delta;t=Sint32})
+        when 0 <= delta ->
+        (concrete,
+         {lhs=symb;
+          rhs={v=Bop (Add, assignment.rhs, {v=Int delta;t=Sint32});
                t=assignment.rhs.t}}::
          symbolic)
       | Struct (_, []) -> (* printf "skipping empty assignment: %s = %s" *)
@@ -374,7 +413,7 @@ let output_check_and_assignments
   let ret_equalities = gen_ret_equalities ret_val ret_name ret_type
   in
   let args_equalities =
-    List.join (List.map args_post_conditions ~f:gen_plain_equalities)
+    gen_plain_equalities_for_all args_post_conditions
   in
   let assignments = make_assignments_for_eqs (ret_equalities@args_equalities)
   in
@@ -393,7 +432,9 @@ let output_check_and_assignments
   let support_assignments =
     guess_support_assignments output_constraints unalloc_symbs
   in
-  let assignments = assignments@support_assignments in
+  let assignments =
+    gen_plain_equalities_for_all (assignments@support_assignments)
+  in
   let (concrete_assignments,
        symbolic_var_assignments) = split_assignments assignments
   in
@@ -426,7 +467,9 @@ let eq_cond_to_tterm {lhs;rhs} =
 let render_context_condition conditions =
   match conditions with
   | [] -> "true"
-  | _ -> String.concat ~sep:" && " (List.map conditions ~f:render_tterm)
+  | _ -> String.concat ~sep:" && "
+           (List.map conditions
+              ~f:(fun x -> render_tterm x))
 
 type rendered_result =
   { conditions: tterm list;
@@ -537,7 +580,7 @@ let render_vars_declarations ( vars : var_spec list ) =
   String.concat ~sep:"\n"
     (List.map vars ~f:(fun v ->
          match v.value.t with
-         | Array (at, size) -> (ttype_to_str at) ^ " " ^ v.name ^ "[" ^ (Int.to_string size) ^ "];"
+         | Array at -> (ttype_to_str at) ^ " " ^ v.name ^ "[];"
          | Unknown | Sunknown | Uunknown -> failwith ("Cannot render var decl '" ^ v.name ^ "' for type " ^ (ttype_to_str v.value.t))
          | _ -> ttype_to_str v.value.t ^ " " ^ v.name ^ ";")) ^ "\n"
 
@@ -547,7 +590,7 @@ let render_hist_calls hist_funs =
 let render_cmplexes cmplxes =
   String.concat ~sep:"\n" (List.map (String.Map.data cmplxes) ~f:(fun var ->
       match var.value.t with
-      | Array (at, size) -> (ttype_to_str at) ^ " " ^ var.name ^ "[" ^ (Int.to_string size) ^ "]; //" ^ (render_tterm var.value)
+      | Array at -> (ttype_to_str at) ^ " " ^ var.name ^ "[]; //" ^ (render_tterm var.value)
       | _ -> (ttype_to_str var.value.t) ^ " " ^ var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
 
 let render_context_assumptions assumptions  =

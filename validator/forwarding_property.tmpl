@@ -7,22 +7,11 @@ emap<flow_id> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_
 #define EXT_IP_ADDR external_addr
 #define EXT_PORT 1
 
-#define UNRELEVANT_FIELDS_UNCHANGED(before,after)               \
-    after.ether.ether_type     == before.ether.ether_type &&      \
-    after.ipv4.version_ihl     == before.ipv4.version_ihl &&      \
-    after.ipv4.type_of_service == before.ipv4.type_of_service &&  \
-    after.ipv4.total_length    == before.ipv4.total_length &&     \
-    after.ipv4.packet_id       == before.ipv4.packet_id &&        \
-    after.ipv4.fragment_offset == before.ipv4.fragment_offset &&  \
-    after.ipv4.time_to_live    == before.ipv4.time_to_live &&     \
-    after.ipv4.next_proto_id   == before.ipv4.next_proto_id &&    \
-    (before.ipv4.next_proto_id != 6 ||                             \
-     (after.tcp.sent_seq         == before.tcp.sent_seq &&        \
-      after.tcp.recv_ack         == before.tcp.recv_ack &&      \
-      after.tcp.data_off         == before.tcp.data_off &&      \
-      after.tcp.tcp_flags        == before.tcp.tcp_flags &&     \
-      after.tcp.rx_win           == before.tcp.rx_win &&        \
-      after.tcp.tcp_urp          == before.tcp.tcp_urp))
+#define DEFAULT_DROP(hd1, hd2, hd3) \
+     case hd1(x): assert nil == sent_on_ports; \
+     case hd2(x): assert nil == sent_on_ports; \
+     case hd3(x): assert nil == sent_on_ports
+#define NIL_DROP case nil: assert nil == sent_on_ports;
 
 bit_and_hack();
 if (EXP_TIME < now) {// consider only normal moments, remote from the start of the epoch
@@ -31,89 +20,94 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
 
     flow_emap = emap_expire_all(flow_emap, now - EXP_TIME);
 
-    // 0x10 -> IPv4
-    if ((received_packet_type & 0x10) == 0x10) {
+    switch(recv_headers) { case cons(h1,t1): switch(h1) { case tcpudp_hdr(hdr1):
+      switch(hdr1) { case tcpudp_hdrc(isrc_port, idst_port):
+        switch(t1) { case cons(h2,t2): switch(h2) { case ip_hdr(hdr2):
+          switch(hdr2) { case ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                        ittl, inpid, icksum, isaddr, idaddr):
+            switch(t2) { case cons(h3,t3): switch(h3) { case ether_hdr(hdr3):
+              switch(hdr3) { case ether_hdrc(iesaddr, iedaddr, ietype):
 
+    //0x10 - IPv4
+    if ((ietype & 0x10) == 0x10) {
       // 6/17 -> TCP/UDP
-      if (the_received_packet.ipv4.next_proto_id == 6 ||
-          the_received_packet.ipv4.next_proto_id == 17) {
+      if (inpid == 6 || inpid == 17) {
         if (received_on_port == EXT_PORT) {
           // packet from the external network
-          int flow_indx = the_received_packet.tcp.dst_port - start_port;
+          int flow_indx = idst_port - start_port;
           if (emap_has_idx(flow_emap, flow_indx)) { 
             // flow is present in the table
             flow_id internal_flow = emap_get_key(flow_emap, flow_indx);
             flow_emap = emap_refresh_idx(flow_emap, flow_indx, now);
             switch(internal_flow) { case flid(sp, dp, sip, dip, idev, prot):
-              if (dip  != the_received_packet.ipv4.src_addr ||
-                  dp   != the_received_packet.tcp.src_port  ||
-                  prot != the_received_packet.ipv4.next_proto_id) {
-                assert false == a_packet_sent;
+              if (dip  != isaddr ||
+                  dp   != isrc_port  ||
+                  prot != inpid) {
+                assert nil == sent_on_ports;
               } else {
-                assert true == a_packet_sent;
-                assert sent_packet.tcp.dst_port == sp;
-                assert sent_packet.tcp.src_port == dp;
-                assert sent_packet.ipv4.dst_addr == sip;
-                assert sent_packet.ipv4.src_addr == dip;
-                assert sent_on_port == idev;
-                assert sent_packet.ipv4.next_proto_id == prot;
-                assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
+                assert cons(idev, nil) == sent_on_ports;
+                assert sent_headers ==
+                       cons(ether_hdr(ether_hdrc(_, _, ietype)),
+                       cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                             ittl, inpid, _, dip, sip)),
+                       cons(tcpudp_hdr(tcpudp_hdrc(dp, sp)), nil)));
               }
             }
           } else {
             // no flow in the table
-            assert false == a_packet_sent;
+            assert nil == sent_on_ports;
           }
         } else {
           // packet from the internal network
-          flow_id internal_flow_id = flid(the_received_packet.tcp.src_port,
-                                          the_received_packet.tcp.dst_port,
-                                          the_received_packet.ipv4.src_addr,
-                                          the_received_packet.ipv4.dst_addr,
+          flow_id internal_flow_id = flid(isrc_port, idst_port,
+                                          isaddr, idaddr,
                                           received_on_port,
-                                          the_received_packet.ipv4.next_proto_id);
+                                          inpid);
           if (emap_has(flow_emap, internal_flow_id)) {
             // flow present in the table
             int idx = emap_get(flow_emap, internal_flow_id);
             flow_emap = emap_refresh_idx(flow_emap, idx, now);
-            assert true == a_packet_sent;
-            assert sent_packet.tcp.src_port == idx + start_port;
-            assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
-            assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
-            assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
-            assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
-            assert sent_on_port == EXT_PORT;
-            assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
+            assert cons(EXT_PORT, nil) == sent_on_ports;
+            assert sent_headers ==
+                   cons(ether_hdr(ether_hdrc(_, _, ietype)),
+                   cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                         ittl, inpid, _, EXT_IP_ADDR, idaddr)),
+                   cons(tcpudp_hdr(tcpudp_hdrc(idx + start_port, idst_port)), nil)));
           } else {
             // No flow in the table
             if (emap_full(flow_emap)) {
               // Flowtable overflow
-              assert false == a_packet_sent;
+              assert nil == sent_on_ports;
             } else {
               // The flow must have been inserted
               int idx = the_index_allocated;
-
               flow_emap = emap_add(flow_emap, internal_flow_id, idx, now);
 
-              assert true == a_packet_sent;
-              assert sent_packet.tcp.src_port == idx + start_port;
-              assert sent_packet.tcp.dst_port == the_received_packet.tcp.dst_port;
-              assert sent_packet.ipv4.src_addr == EXT_IP_ADDR;
-              assert sent_packet.ipv4.dst_addr == the_received_packet.ipv4.dst_addr;
-              assert sent_packet.ipv4.next_proto_id == the_received_packet.ipv4.next_proto_id;
-              assert sent_on_port == EXT_PORT;
-              assert UNRELEVANT_FIELDS_UNCHANGED(the_received_packet, sent_packet);
+              assert cons(EXT_PORT, nil) == sent_on_ports;
+              assert sent_headers ==
+                     cons(ether_hdr(ether_hdrc(_, _, ietype)),
+                     cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
+                                           ittl, inpid, _, EXT_IP_ADDR, idaddr)),
+                     cons(tcpudp_hdr(tcpudp_hdrc(idx + start_port, idst_port)), nil)));
             }
           }
         }
       } else {
         // Non TCP or UDP packet
-        assert false == a_packet_sent;
+        assert nil == sent_on_ports;
       }
     } else {
       // Non IPv4 packet
-      assert false == a_packet_sent;
+      assert nil == sent_on_ports;
     }
+
+              }
+              DEFAULT_DROP(tcp_hdr, ip_hdr, tcpudp_hdr); } NIL_DROP; }
+          }
+          DEFAULT_DROP(tcp_hdr, ether_hdr, tcpudp_hdr); } NIL_DROP; }
+      }
+      DEFAULT_DROP(tcp_hdr, ip_hdr, ether_hdr); } NIL_DROP; }
   }
 assert final_flow_emap == flow_emap;
 }
+

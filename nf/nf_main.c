@@ -13,6 +13,7 @@
 #include "lib/nf_log.h"
 #include "lib/nf_time.h"
 #include "lib/nf_util.h"
+#include "lib/packet-io.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/time_stub_control.h"
@@ -71,9 +72,22 @@ static const uint16_t TX_QUEUE_SIZE = 96;
 // Clone pool for flood()
 static struct rte_mempool* clone_pool;
 
+void
+flood(struct rte_mbuf* frame, uint16_t skip_device,
+      uint16_t nb_devices, struct rte_mempool* clone_pool) {
+  for (uint16_t device = 0; device < nb_devices; device++) {
+    if (device == skip_device) continue;
+    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
+    if (copy == NULL) {
+      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
+    }
+    nf_send_packet(copy, device);
+  }
+  rte_pktmbuf_free(frame);
+}
+
 // Buffer count for mempools
 static const unsigned MEMPOOL_BUFFER_COUNT = 256;
-
 
 // --- Initialization ---
 static int
@@ -145,30 +159,6 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   return 0;
 }
 
-
-// Flood method for the bridge
-#ifdef KLEE_VERIFICATION
-void flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices); // defined in stubs
-#else
-void
-flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices) {
-  for (uint16_t device = 0; device < nb_devices; device++) {
-    if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
-      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
-    }
-    uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
-
-    if (actual_tx_len == 0) {
-      rte_pktmbuf_free(copy);
-    }
-  }
-  rte_pktmbuf_free(frame);
-}
-#endif//!KLEE_VERIFICATION
-
-
 // --- Per-core work ---
 
 static void
@@ -186,21 +176,18 @@ lcore_main(void)
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
   VIGOR_LOOP_BEGIN
-    struct rte_mbuf* buf = NULL;
-    uint16_t actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
 
-    if (actual_rx_len != 0) {
-      uint16_t dst_device = nf_core_process(buf, VIGOR_NOW);
+    struct rte_mbuf* mbuf;
+    if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
+      uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
+      nf_return_all_chunks(mbuf->buf_addr);
 
       if (dst_device == VIGOR_DEVICE) {
-        rte_pktmbuf_free(buf);
+        nf_free_packet(mbuf);
       } else if (dst_device == FLOOD_FRAME) {
-        flood(buf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
+        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
       } else {
-        uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &buf, 1);
-        if (actual_tx_len == 0) {
-          rte_pktmbuf_free(buf);
-        }
+        nf_send_packet(mbuf, dst_device);
       }
     }
   VIGOR_LOOP_END

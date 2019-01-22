@@ -38,7 +38,12 @@ let rec render_deep_assignment {lhs;rhs} =
              render_deep_assignment {lhs={v=Str_idx (lhs, name);t};
                                      rhs={v=Str_idx (rhs, name);t}}))
   | Unknown -> "";
-  | Array (_, s) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string s) ^ ");"
+  | Array _ -> begin match rhs.v with
+      | Array cells -> "umemcpy(" ^ (render_tterm lhs) ^ ", "
+                       ^ (render_tterm rhs) ^ ", " ^
+                       (Int.to_string (List.length cells)) ^ ");"
+      | _ -> failwith ("Trying to assign a nonarray: " ^ (render_tterm rhs))
+    end
   | _ -> (render_tterm lhs) ^ " = " ^
          (render_tterm rhs) ^ ";"
 

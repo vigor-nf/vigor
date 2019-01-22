@@ -93,17 +93,21 @@ void map_set_entry_condition(struct Map* map, map_entry_condition* cond) {
 #define TRACE_KEY_FIELDS(key, map)                                      \
   {                                                                     \
     for (int i = 0; i < map->key_field_count; ++i) {                    \
-      klee_trace_param_ptr_field(key,                                   \
-                                 map->key_fields[i].offset,             \
-                                 map->key_fields[i].width,              \
-                                 map->key_fields[i].name);              \
+      klee_trace_param_ptr_field_arr_directed(key,                      \
+                                              map->key_fields[i].offset, \
+                                              map->key_fields[i].width, \
+                                              map->key_fields[i].count, \
+                                              map->key_fields[i].name,  \
+                                              TD_BOTH);                 \
     }                                                                   \
     for (int i = 0; i < map->nested_key_field_count; ++i) {            \
-      klee_trace_param_ptr_nested_field(key,                            \
-                                        map->key_nests[i].base_offset,  \
-                                        map->key_nests[i].offset,       \
-                                        map->key_nests[i].width,        \
-                                        map->key_nests[i].name);        \
+      klee_trace_param_ptr_nested_field_arr_directed(key,               \
+                                                     map->key_nests[i].base_offset, \
+                                                     map->key_nests[i].offset, \
+                                                     map->key_nests[i].width, \
+                                                     map->key_nests[i].count, \
+                                                     map->key_nests[i].name, \
+                                                     TD_BOTH);          \
     }                                                                   \
   }
 

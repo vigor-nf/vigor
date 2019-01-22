@@ -125,24 +125,24 @@ void allocate_static_ft(unsigned capacity) {
 #ifdef KLEE_VERIFICATION
 
 struct str_field_descr static_map_key_fields[] = {
-  {offsetof(struct StaticKey, addr), sizeof(struct ether_addr), "addr"},
-  {offsetof(struct StaticKey, device), sizeof(uint16_t), "device"},
+  {offsetof(struct StaticKey, addr), sizeof(struct ether_addr), 0, "addr"},
+  {offsetof(struct StaticKey, device), sizeof(uint16_t), 0, "device"},
 };
 
 struct nested_field_descr static_map_key_nested_fields[] = {
-  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t) * 6, "addr_bytes"},
+  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint8_t) * 6, "addr_bytes"},
+  {0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint8_t) * 6, "addr_bytes"},
+  {0, sizeof(uint8_t), 6, "addr_bytes"},
 };
 
 struct str_field_descr dynamic_vector_value_fields[] = {
-  {0, sizeof(uint16_t), "device"},
+  {0, sizeof(uint16_t), 0, "device"},
 };
 
 bool stat_map_condition(void* key, int index) {
@@ -326,15 +326,15 @@ void nf_core_init(void) {
 #endif//KLEE_VERIFICATION
 }
 
-int nf_core_process(struct rte_mbuf* mbuf,
-                    time_t now) {
-  struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
+int nf_core_process(struct rte_mbuf* mbuf, time_t now) {
+  const uint16_t in_port = mbuf->port;
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
   bridge_expire_entries(now);
-  bridge_put_update_entry(&ether_header->s_addr, mbuf->port, now);
+  bridge_put_update_entry(&ether_header->s_addr, in_port, now);
 
   int dst_device = bridge_get_device(&ether_header->d_addr,
-                                     mbuf->port);
+                                     in_port);
 
   if (dst_device == -1) {
     return FLOOD_FRAME;
@@ -342,7 +342,7 @@ int nf_core_process(struct rte_mbuf* mbuf,
 
   if (dst_device == -2) {
     NF_DEBUG("filtered frame");
-    return mbuf->port;
+    return in_port;
   }
 
 #ifdef KLEE_VERIFICATION

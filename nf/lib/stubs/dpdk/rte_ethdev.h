@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "lib/stubs/core_stub.h"
+#include "lib/packet-io.h"
 
 #include <klee/klee.h>
 
@@ -24,14 +25,14 @@ struct rte_eth_txconf { /* Nothing */ };
 
 // Sanity checks
 // Documentation of rte_ethdev indicates the configure/tx/rx/started order
-static bool devices_configured[STUB_DEVICES_COUNT];
-static bool devices_tx_setup[STUB_DEVICES_COUNT];
-static bool devices_rx_setup[STUB_DEVICES_COUNT];
-static bool devices_started[STUB_DEVICES_COUNT];
-static bool devices_promiscuous[STUB_DEVICES_COUNT];
+extern bool devices_configured[STUB_DEVICES_COUNT];
+extern bool devices_tx_setup[STUB_DEVICES_COUNT];
+extern bool devices_rx_setup[STUB_DEVICES_COUNT];
+extern bool devices_started[STUB_DEVICES_COUNT];
+extern bool devices_promiscuous[STUB_DEVICES_COUNT];
 
 // To allocate mbufs
-static struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
+extern struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
 
 
 static inline uint16_t
@@ -122,38 +123,56 @@ rte_eth_macaddr_get(uint16_t port_id, struct ether_addr *mac_addr)
 	// TODO?
 }
 
-static inline uint16_t
+static inline
+uint16_t
 rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
-		 struct rte_mbuf **rx_pkts, uint16_t nb_pkts)
+                 struct rte_mbuf **rx_pkts, uint16_t nb_pkts)
 {
 	klee_assert(devices_started[port_id]);
 	klee_assert(queue_id == 0); // we only support that
 	klee_assert(nb_pkts == 1); // same
-
-	if (klee_int("received") == 0) {
-		return 0;
-	}
 
 	struct rte_mempool* pool = devices_rx_mempool[port_id];
 	stub_core_mbuf_create(port_id, pool, rx_pkts);
-	stub_core_trace_rx(rx_pkts);
 
-	return 1;
+  bool received = packet_receive(port_id, &(**rx_pkts).buf_addr, &(**rx_pkts).data_len);
+  return received;
 }
 
-static inline uint16_t
+static inline
+uint16_t
 rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
-		 struct rte_mbuf **tx_pkts, uint16_t nb_pkts)
+                 struct rte_mbuf **tx_pkts, uint16_t nb_pkts)
 {
 	klee_assert(devices_started[port_id]);
 	klee_assert(queue_id == 0); // we only support that
 	klee_assert(nb_pkts == 1); // same
 
-	uint8_t ret = stub_core_trace_tx(*tx_pkts, port_id);
-	if (ret == 0) {
-		return 0;
-	}
+  packet_send((**tx_pkts).buf_addr, port_id);
 
 	stub_core_mbuf_free(*tx_pkts);
 	return 1;
+}
+
+//TODO: this belongs to rte_mbuf.h
+// but is here to present a single dpdk-stub API.
+static inline
+struct rte_mbuf*
+rte_pktmbuf_clone(struct rte_mbuf* frame, struct rte_mempool* clone_pool) {
+  struct rte_mbuf* copy;
+  bool success = stub_core_mbuf_create(frame->port, clone_pool, &copy);
+  if (!success) return NULL;
+  //struct rte_mbuf* copy =malloc(clone_pool->elt_size);// rte_mbuf_raw_alloc(clone_pool);
+
+  /* memcpy(copy, frame, sizeof(struct rte_mbuf)); */
+	/* struct rte_mbuf* buf_next = (struct rte_mbuf*) malloc(clone_pool->elt_size); */
+	/* if (buf_next == NULL) { */
+	/* 	rte_pktmbuf_free(copy); */
+	/* 	return false; */
+	/* } */
+  /* copy->next = buf_next; */
+	/* klee_forbid_access(copy->next, clone_pool->elt_size, "clone_buf_next"); */
+
+  packet_clone(frame->buf_addr, &copy->buf_addr);
+  return copy;
 }

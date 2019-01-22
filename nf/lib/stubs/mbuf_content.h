@@ -5,6 +5,7 @@
 #include <rte_ether.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
+#include "lib/tcpudp.h"
 
 // TODO more complete stub content?
 // do change the total_len in rx if this is changed!
@@ -64,6 +65,12 @@ struct stub_mbuf_content {
       hdr->cksum |-> ?cksum &*&
       hdr->tcp_urp |-> ?urp &*&
       val == tcp_hdrc(srcp, dstp, seq, ack, doff, flags, win, cksum, urp);
+
+    inductive tcpudp_hdri = tcpudp_hdrc(int, int);
+    predicate tcpudp_hdrp(struct tcpudp_hdr* hdr; tcpudp_hdri val) =
+      hdr->src_port |-> ?srcp &*&
+      hdr->dst_port |-> ?dstp &*&
+      val == tcpudp_hdrc(srcp, dstp);
 
     inductive user_bufi = user_bufc(ether_hdri, ipv4_hdri, tcp_hdri);
     predicate user_bufferp(struct stub_mbuf_content *buf; user_bufi ub) =

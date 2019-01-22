@@ -6,37 +6,6 @@ assert vectorp<stat_keyi>(_, static_keyp, ?final_stat_key_vec, _);
 assert vectorp<uint16_t>(_, dyn_valp, ?final_dyn_val_vec, _);
 assert double_chainp(?final_chain,_);
 
-#define PACKETS_EQUAL(pkta, pktb)                                 \
-    pkta.ether.ether_type     == pktb.ether.ether_type &&      \
-    pkta.ether.s_addr.addr_bytes[0]     == pktb.ether.s_addr.addr_bytes[0] &&      \
-    pkta.ether.s_addr.addr_bytes[1]     == pktb.ether.s_addr.addr_bytes[1] &&      \
-    pkta.ether.s_addr.addr_bytes[2]     == pktb.ether.s_addr.addr_bytes[2] &&      \
-    pkta.ether.s_addr.addr_bytes[3]     == pktb.ether.s_addr.addr_bytes[3] &&      \
-    pkta.ether.s_addr.addr_bytes[4]     == pktb.ether.s_addr.addr_bytes[4] &&      \
-    pkta.ether.s_addr.addr_bytes[5]     == pktb.ether.s_addr.addr_bytes[5] &&      \
-    pkta.ether.d_addr.addr_bytes[0]     == pktb.ether.d_addr.addr_bytes[0] &&      \
-    pkta.ether.d_addr.addr_bytes[1]     == pktb.ether.d_addr.addr_bytes[1] &&      \
-    pkta.ether.d_addr.addr_bytes[2]     == pktb.ether.d_addr.addr_bytes[2] &&      \
-    pkta.ether.d_addr.addr_bytes[3]     == pktb.ether.d_addr.addr_bytes[3] &&      \
-    pkta.ether.d_addr.addr_bytes[4]     == pktb.ether.d_addr.addr_bytes[4] &&      \
-    pkta.ether.d_addr.addr_bytes[5]     == pktb.ether.d_addr.addr_bytes[5] &&      \
-    pkta.ipv4.version_ihl     == pktb.ipv4.version_ihl &&      \
-    pkta.ipv4.type_of_service == pktb.ipv4.type_of_service &&  \
-    pkta.ipv4.total_length    == pktb.ipv4.total_length &&     \
-    pkta.ipv4.packet_id       == pktb.ipv4.packet_id &&        \
-    pkta.ipv4.fragment_offset == pktb.ipv4.fragment_offset &&  \
-    pkta.ipv4.time_to_live    == pktb.ipv4.time_to_live &&     \
-    pkta.ipv4.next_proto_id   == pktb.ipv4.next_proto_id &&    \
-    pkta.ipv4.src_addr   == pktb.ipv4.src_addr &&    \
-    pkta.ipv4.dst_addr   == pktb.ipv4.dst_addr &&    \
-    (pktb.ipv4.next_proto_id != 6 ||                             \
-     (pkta.tcp.sent_seq         == pktb.tcp.sent_seq &&        \
-      pkta.tcp.recv_ack         == pktb.tcp.recv_ack &&      \
-      pkta.tcp.data_off         == pktb.tcp.data_off &&      \
-      pkta.tcp.tcp_flags        == pktb.tcp.tcp_flags &&     \
-      pkta.tcp.rx_win           == pktb.tcp.rx_win &&        \
-      pkta.tcp.tcp_urp          == pktb.tcp.tcp_urp))
-
 emap<ether_addri> dyn_emap = emap(initial_dyn_map, initial_dyn_key_vec, initial_chain);
 list<pair<uint16_t, real> > dyn_val_vec = initial_dyn_val_vec;
 dchain stat_chain;//dummy
@@ -47,24 +16,32 @@ emap<ether_addri> final_dyn_emap = emap(final_dyn_map, final_dyn_key_vec, final_
 emap<stat_keyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_chain);
 vector<uint16_t> final_dyn_val_vector = vector(final_dyn_val_vec);
 
+#define DEFAULT_DROP(hd1, hd2, hd3) \
+     case hd1(x): assert nil == sent_on_ports; \
+     case hd2(x): assert nil == sent_on_ports; \
+     case hd3(x): assert nil == sent_on_ports
+#define NIL_DROP case nil: assert nil == sent_on_ports
+
 bit_and_hack();
 if (300 < now) {// consider only normal moments, remote from the start of the epoch
 
   if (a_packet_received) {
 
-    assert ether_addrp(&(the_received_packet.ether.d_addr), ?dst_addr);
-    assert ether_addrp(&(the_received_packet.ether.s_addr), ?src_addr);
-    stat_keyi static_key = stkc(received_on_port, dst_addr);
+
+  switch(recv_headers) { case cons(h1,t1): switch(h1) { case ether_hdr(hdr1):
+    switch(hdr1) { case ether_hdrc(iesaddr, iedaddr, ietype):
+
+    stat_keyi static_key = stkc(received_on_port, iedaddr);
 
     dyn_emap = emap_expire_all(dyn_emap, now - 10);
 
    // State postcondition
-   if (emap_has(dyn_emap, src_addr)) {
-     dyn_emap = emap_refresh_idx(dyn_emap, emap_get(dyn_emap, src_addr), now);
+   if (emap_has(dyn_emap, iesaddr)) {
+     dyn_emap = emap_refresh_idx(dyn_emap, emap_get(dyn_emap, iesaddr), now);
    } else {
       if (!emap_full(dyn_emap)) {
         int idx = the_index_allocated;
-        dyn_emap = emap_add(dyn_emap, src_addr, idx, now);
+        dyn_emap = emap_add(dyn_emap, iesaddr, idx, now);
         dyn_val_vector = vector_set(dyn_val_vector, idx, received_on_port);
       }
     }
@@ -74,33 +51,28 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
       int output_port = emap_get(stat_emap, static_key);
       if (output_port == -2 ||
           output_port == received_on_port) {
-        assert false == a_packet_sent;
-        assert false == a_packet_flooded;
+        assert nil == sent_on_ports;
       } else {
-        assert true == a_packet_sent;
-        assert false == a_packet_flooded;
-        assert sent_on_port == output_port;
-        assert PACKETS_EQUAL(the_received_packet, sent_packet);
+        assert sent_on_ports == cons(output_port, nil);
+        assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
       }
     } else {
-      if (emap_has(dyn_emap, dst_addr)) {
-        int idx = emap_get(dyn_emap, dst_addr);
+      if (emap_has(dyn_emap, iedaddr)) {
+        int idx = emap_get(dyn_emap, iedaddr);
         int output_port = vector_get(dyn_val_vector, idx);
         if (output_port == received_on_port) {
-          assert false == a_packet_sent;
-          assert false == a_packet_flooded;
+          assert sent_on_ports == nil;
         } else {
-          assert true == a_packet_sent;
-          assert false == a_packet_flooded;
-          assert sent_on_port == output_port;
-          assert PACKETS_EQUAL(the_received_packet, sent_packet);
+          assert sent_on_ports == cons(output_port, nil);
+          assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
         }
       } else {
-        assert true == a_packet_flooded;
-        assert flooded_except_port == received_on_port;
-        assert PACKETS_EQUAL(the_received_packet, sent_packet);
+        assert sent_on_ports == cons(1-received_on_port, nil);
+        assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
       }
     }
+
+    } DEFAULT_DROP(tcp_hdr, ip_hdr, tcpudp_hdr); } NIL_DROP; }
   }
 
 assert final_dyn_emap == dyn_emap;

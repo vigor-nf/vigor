@@ -76,7 +76,7 @@ lb_flow_id2backend_id_cond(void* key, int index, void* state) {
   return *(uint32_t*)key < balancer->backend_capacity;
 }
 
-struct str_field_descr uint32_field = {0, sizeof(uint32_t), "value"};
+struct str_field_descr uint32_field = {0, sizeof(uint32_t), 0, "value"};
 #endif//KLEE_VERIFICATION
 
 void null_init(void* obj) {

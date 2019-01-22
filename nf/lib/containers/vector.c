@@ -140,7 +140,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
   if (vector_alloc == 0) return 0;
   *vector_out = (struct Vector*) vector_alloc;
   //@ mul_bounds(elem_size, 4096, capacity, VECTOR_CAPACITY_UPPER_LIMIT);
-  char* data_alloc = malloc(elem_size*(int)capacity);
+  char* data_alloc = malloc((uint32_t)elem_size*capacity);
   if (data_alloc == 0) {
     free(vector_alloc);
     *vector_out = old_vector_val;

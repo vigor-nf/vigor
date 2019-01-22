@@ -34,7 +34,8 @@ SRCS-y := $(SELF_DIR)/nf_main.c \
           $(SELF_DIR)/lib/containers/map.c $(SELF_DIR)/lib/containers/map-impl.c \
           $(SELF_DIR)/lib/containers/double-map.c \
           $(SELF_DIR)/lib/containers/vector.c \
-          $(SELF_DIR)/lib/containers/cht.c
+          $(SELF_DIR)/lib/containers/cht.c \
+          $(SELF_DIR)/lib/packet-io.c
 # NF specific source
 SRCS-y += $(NF_FILES)
 
@@ -61,7 +62,8 @@ verifast:
 		$(SELF_DIR)/lib/coherence.c \
 		$(SELF_DIR)/lib/expirator.c \
 		$(SELF_DIR)/vignat/nat_flow.c \
-		$(SELF_DIR)/vigbridge/bridge_data.c
+		$(SELF_DIR)/vigbridge/bridge_data.c \
+		$(SELF_DIR)/lib/packet-io.c
 
 
 ### KLEE verification ###
@@ -90,7 +92,9 @@ VERIF_FILES += ../lib/stubs/containers/map-stub.c ../lib/stubs/containers/double
                ../lib/stubs/containers/double-chain-stub.c \
                ../lib/stubs/containers/vector-stub.c \
                ../lib/stubs/containers/cht-stub.c \
-               ../lib/stubs/containers/expirator-stub.c
+               ../lib/stubs/containers/expirator-stub.c \
+               ../lib/stubs/dpdk/rte_ethdev.c \
+               ../lib/stubs/packet-io-stub.c
 # Specific NF stubs
 VERIF_FILES += $(NF_VERIF_FILES)
 # Environment stubs

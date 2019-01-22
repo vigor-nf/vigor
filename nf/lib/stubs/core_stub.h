@@ -22,7 +22,7 @@ struct rte_mbuf;
 #endif
 
 // VeriFast definitions used in the tracing contracts
-/*@
+/* @
     inductive rte_mbufi = rte_mbufc(user_bufi, int, int, int);
     predicate mbufp(struct rte_mbuf *mbuf; rte_mbufi val) =
       mbuf->buf_addr |-> ?ba &*&
@@ -64,20 +64,24 @@ struct rte_mbuf;
 // - Third, we use an int instead of a bool because the Validator doesn't support bools
 
 void stub_core_trace_rx(struct rte_mbuf** mbuf);
-//@ requires *mbuf |-> _;
-//@ ensures *mbuf |-> ?mb &*& mbufp(mb, _);
+// @ requires *mbuf |-> _;
+// @ ensures *mbuf |-> ?mb &*& mbufp(mb, _);
 
 uint8_t stub_core_trace_tx(struct rte_mbuf* mbuf, uint16_t device);
-//@ requires mbufp(mbuf, ?mb);
-//@ ensures result <= 1 &*& (result == 0 ? mbufp(mbuf, mb) : true);
+// @ requires mbufp(mbuf, ?mb);
+// @ ensures result <= 1 &*& (result == 0 ? mbufp(mbuf, mb) : true);
 
 void stub_core_trace_free(struct rte_mbuf* mbuf);
-//@ requires mbufp(mbuf,_);
-//@ ensures true;
+// @ requires mbufp(mbuf,_);
+// @ ensures true;
 
 
 // mbuf create/free
 bool stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf** mbufp);
 void stub_core_mbuf_free(struct rte_mbuf* mbuf);
+
+void
+rte_pktmbuf_free(struct rte_mbuf* m);
+
 
 #endif

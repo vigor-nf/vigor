@@ -25,15 +25,16 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	// but for a plain forwarding app without any logic, we just send all packets from LAN to the WAN port,
 	// and all packets from WAN to the main LAN port, and let the recipient ignore the useless ones.
 
-	uint8_t dst_device;
-	if(mbuf->port == config.wan_device) {
+	uint16_t dst_device;
+  const int in_port = mbuf->port;
+	if (in_port == config.wan_device) {
 		dst_device = config.lan_main_device;
 	} else {
 		dst_device = config.wan_device;
 	}
 
 	// L2 forwarding
-	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 	ether_header->s_addr = config.device_macs[dst_device];
 	ether_header->d_addr = config.endpoint_macs[dst_device];
 

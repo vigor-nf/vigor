@@ -282,7 +282,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
   *map_out = (struct DoubleMap*) map_alloc;
 
   //@ mul_bounds(value_size, 4096, capacity, CAPACITY_UPPER_LIMIT);
-  uint8_t* vals_alloc = malloc(value_size*(int)capacity);
+  uint8_t* vals_alloc = malloc((uint32_t)value_size*capacity);
   if (vals_alloc == NULL) {
     free(map_alloc);
     *map_out = old_map_val;
