@@ -10,10 +10,10 @@ assert vectorp<uint32_t>(cht_ptr, u_integer, ?final_cht, _);
 assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca, _);
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
-     case hd1(x): assert false == a_packet_sent; \
-     case hd2(x): assert false == a_packet_sent; \
-     case hd3(x): assert false == a_packet_sent
-#define NIL_DROP case nil: assert false == a_packet_sent;
+     case hd1(x): assert nil == sent_on_ports; \
+     case hd2(x): assert nil == sent_on_ports; \
+     case hd3(x): assert nil == sent_on_ports
+#define NIL_DROP case nil: assert nil == sent_on_ports
 
 emap<lb_flowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
 emap<uint32_t> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
@@ -85,9 +85,8 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                 fidbid_vec = vector_set(fidbid_vec, idx, bknd);
               }
               lb_backendi backend = vector_get(backends_vec, bknd);
-              assert true == a_packet_sent;
               switch(backend) { case lb_backendc(nic, mac, ip):
-                assert sent_on_port == nic;
+                assert sent_on_ports == cons(nic, nil);
                 assert sent_headers ==
                        cons(ether_hdr(ether_hdrc(_, mac, ietype)),
                        cons(ip_hdr(ipv4_hdrc(ivihl, itos, ilen, ipid, ifoff,
@@ -95,7 +94,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                        cons(tcpudp_hdr(tcpudp_hdrc(isrc_port, idst_port)), nil)));
               }
             } else {
-              assert false == a_packet_sent;
+              assert nil == sent_on_ports;
             }
           }
         } else { // A heartbeat packet from a backend
@@ -115,15 +114,15 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
               }
             }
           }
-          assert false == a_packet_sent;
+          assert nil == sent_on_ports;
         }
       } else {
         // Non-TCP/UDP packet
-        assert false == a_packet_sent;
+        assert nil == sent_on_ports;
       }
     } else {
       // Non-IPv4 packet
-      assert false == a_packet_sent;
+      assert nil == sent_on_ports;
     }
               }
               DEFAULT_DROP(tcp_hdr, ip_hdr, tcpudp_hdr); } NIL_DROP; }

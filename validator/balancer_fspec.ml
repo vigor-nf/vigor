@@ -806,10 +806,24 @@ let fun_types =
      "packet_send", {ret_type = Static Void;
                      arg_types = stt [Ptr Sint8; Uint16];
                      extra_ptr_types = [];
-                     lemmas_before = [];
+                     lemmas_before = [(fun {arg_exps;tmp_gen;_} ->
+                         let packet_ptr = (render_tterm (List.nth_exn arg_exps 0)) in
+                         "char* " ^ (tmp_gen "synonym") ^ " = " ^ packet_ptr ^
+                         ";\n/*@ {\n\ assert packetp(" ^ (tmp_gen "synonym") ^
+                         ", ?cur_sent_packet, nil);\n\
+                          if (last_sent_packet == nil) { \n\
+                          assert packet_is_complete;\n\
+                          switch(last_composed_packet) {\n\
+                          case none: assert false;\n\
+                          case some(cp): assert packetp(cp, cur_sent_packet, nil);\n\
+                          }\n\
+                          last_sent_packet = cur_sent_packet;\n\
+                          } else {\n\
+                          assert last_sent_packet == cur_sent_packet;\n\
+                          }\n }\n @*/"
+                       )];
                      lemmas_after = [(fun {args;_} ->
-                         "a_packet_sent = true;\n" ^
-                         "sent_on_port = " ^ (List.nth_exn args 1) ^ ";\n" 
+                         "sent_on_ports = cons(" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n"
                        )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
                                   arg_types = [Static (Ptr Sint8);
@@ -834,7 +848,7 @@ let fun_types =
                                               "ipv4_options",
                                               Ptr Sint8
                                              ]];
-                                  lemmas_before = [];
+                                  lemmas_before = [(fun _ -> "//@ packet_is_complete = false;")];
                                   lemmas_after = [
                                     (fun {args;arg_types;_} ->
                                        match (List.nth_exn arg_types 2) with
@@ -908,7 +922,21 @@ let fun_types =
                                     ^ ");\n"
                                   | _ -> ""
                                )];
-                             lemmas_after = [];};
+                             lemmas_after = [(fun {arg_exps;tmp_gen;_} ->
+                                 let packet_ptr = (render_tterm (List.nth_exn arg_exps 0)) in
+                                 "char* " ^ (tmp_gen "synonym") ^ " = " ^ packet_ptr ^
+                                 ";\n/*@ {\n assert packetp(" ^ (tmp_gen "synonym") ^
+                                 ", _, ?unreturned_chunks);\n\
+                                  switch(last_composed_packet) {\n\
+                                  case none:\n\
+                                  last_composed_packet = some(" ^ packet_ptr ^
+                                 ");\n\
+                                  case some(cp):\n\
+                                  assert cp == " ^ packet_ptr ^
+                                 ";\n};\n\
+                                  packet_is_complete = (unreturned_chunks == nil);\n \
+                                  }\n@*/"
+                               )];};
      "packet_get_unread_length", {ret_type = Static Uint32;
                                   arg_types = stt [Ptr Sint8];
                                   extra_ptr_types = [];
@@ -1171,9 +1199,10 @@ struct
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
                   bool a_packet_received = false;\n\
-                  uint16_t sent_on_port;\n\
+                  //@ bool packet_is_complete = false;\n\
+                  //@ option<void*> last_composed_packet = none;\n\
+                  //@ list<uint8_t> last_sent_packet = nil;\n\
                   uint32_t pkt_sent_type;\n\
-                  bool a_packet_sent = false;\n\
                   bool backend_known = false;\n\
                   struct Vector* the_ip_vector;\n\
                   int32_t backend_index = -1;\n"
