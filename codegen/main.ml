@@ -8,6 +8,9 @@ let predicate_name compinfo = compinfo.cname ^ "p"
 let constructor_name compinfo = compinfo.cname ^ "c"
 let lhash_name compinfo = "_" ^ compinfo.cname ^ "_hash"
 let strdescrs_name compinfo = compinfo.cname ^ "_descrs"
+let alloc_fun_name compinfo = compinfo.cname ^ "_allocate"
+let eq_fun_name compinfo = compinfo.cname ^ "_eq"
+let hash_fun_name compinfo = compinfo.cname ^ "_hash"
 
 let gen_inductive_type compinfo =
   "/*@\ninductive " ^ (inductive_name compinfo) ^
@@ -30,20 +33,29 @@ let gen_predicate compinfo =
      ) compinfo.cfields)) ^
   "); @*/"
 
-let gen_eq_function compinfo =
-  "bool " ^ compinfo.cname ^
-  "_eq(void* a, void* b)\n\
-   //@ requires [?f1]" ^ (predicate_name compinfo) ^ "(a, ?aid) &*& " ^
+
+let eq_fun_contract compinfo =
+  "//@ requires [?f1]" ^ (predicate_name compinfo) ^ "(a, ?aid) &*& " ^
   "[?f2]" ^ (predicate_name compinfo) ^ "(b, ?bid);\n" ^
   "/*@ ensures [f1]" ^ (predicate_name compinfo) ^ "(a, aid) &*& " ^
   "[f2]" ^ (predicate_name compinfo) ^ "(b, bid) &*&\n" ^
-  "            (result ? aid == bid : aid != bid); @*/\n\
-   {\n  struct " ^ compinfo.cname ^
+  "            (result ? aid == bid : aid != bid); @*/"
+
+let gen_eq_function compinfo =
+  "bool " ^ (eq_fun_name compinfo) ^
+  "(void* a, void* b)\n" ^
+  (eq_fun_contract compinfo) ^ "\n" ^
+  "{\n  struct " ^ compinfo.cname ^
   "* id1 = a;\n  struct " ^ compinfo.cname ^
   "* id2 = b;\n  return " ^
   (String.concat "\n     AND " (List.map (fun {fname;_} ->
        "id1->" ^ fname ^ " == id2->" ^ fname) compinfo.cfields)) ^
   ";\n}\n"
+
+let gen_eq_function_decl compinfo =
+  "bool " ^ (eq_fun_name compinfo) ^ "(void* a, void* b);\n" ^
+  (eq_fun_contract compinfo)
+
 
 let gen_logical_hash compinfo =
   let rec gen_exp_r fields acc =
@@ -65,11 +77,14 @@ let gen_logical_hash compinfo =
   "return _wrap" ^ (gen_exp compinfo.cfields) ^
   ";\n  }\n} @*/"
 
-let gen_hash compinfo =
-  "unsigned " ^ compinfo.cname ^ "_hash(void* obj)\n" ^
+let hash_contract compinfo =
   "//@ requires [?f]" ^ (predicate_name compinfo) ^ "(obj, ?v);\n" ^
   "//@ ensures [f]" ^ (predicate_name compinfo) ^
-  "(obj, v) &*& result == " ^ (lhash_name compinfo) ^ "(v);\n" ^
+  "(obj, v) &*& result == " ^ (lhash_name compinfo) ^ "(v);"
+
+let gen_hash compinfo =
+  "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj)\n" ^
+  (hash_contract compinfo) ^ "\n" ^
   "{\n" ^
   "  struct " ^ compinfo.cname ^ "* id = obj;\n" ^
   "  unsigned long long hash = 0;\n" ^
@@ -80,16 +95,27 @@ let gen_hash compinfo =
   "  return (unsigned) hash;\n" ^
   "}"
 
-let gen_alloc_function compinfo =
-  "void " ^ compinfo.cname ^ "_allocate(void* obj)\n" ^
+let gen_hash_decl compinfo =
+  "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj);\n" ^
+  (hash_contract compinfo)
+
+let alloc_fun_contract compinfo =
   "//@ requires chars(obj, sizeof(struct " ^ compinfo.cname ^
   "), _);\n" ^
-  "//@ ensures " ^ (predicate_name compinfo) ^ "(obj, _);\n" ^
+  "//@ ensures " ^ (predicate_name compinfo) ^ "(obj, _);"
+
+let gen_alloc_function compinfo =
+  "void " ^ (alloc_fun_name compinfo) ^ "(void* obj)\n" ^
+  (alloc_fun_contract compinfo) ^ "\n" ^
   "{\n" ^
   "  IGNORE(obj);\n" ^
   "  //@ close_struct((struct " ^ compinfo.cname ^ "*) obj);\n" ^
   "  //@ close " ^ (predicate_name compinfo) ^ "(obj, _);\n" ^
   "}"
+
+let gen_alloc_function_decl compinfo =
+  "void " ^ (alloc_fun_name compinfo) ^ "(void* obj);\n" ^
+  (alloc_fun_contract compinfo)
 
 let gen_str_field_descrs compinfo =
   "struct str_field_descr " ^ (strdescrs_name compinfo) ^ "[] = {\n" ^
@@ -101,6 +127,10 @@ let gen_str_field_descrs compinfo =
      ) compinfo.cfields)) ^
   "\n};"
 
+let gen_str_field_descrs_decl compinfo =
+  "extern struct str_field_descr " ^ (strdescrs_name compinfo) ^
+  "[" ^ (string_of_int (List.length compinfo.cfields)) ^ "];"
+
 let traverse_globals (f : file) : unit =
   List.iter (fun g ->
     match g with
@@ -108,9 +138,13 @@ let traverse_globals (f : file) : unit =
       E.log "%s\n" (gen_inductive_type ifo);
       E.log "%s\n" (gen_predicate ifo);
       E.log "%s\n" (gen_logical_hash ifo);
+      E.log "%s\n" (gen_hash_decl ifo);
       E.log "%s\n" (gen_hash ifo);
+      E.log "%s\n" (gen_eq_function_decl ifo);
       E.log "%s\n" (gen_eq_function ifo);
+      E.log "%s\n" (gen_alloc_function_decl ifo);
       E.log "%s\n" (gen_alloc_function ifo);
+      E.log "%s\n" (gen_str_field_descrs_decl ifo);
       E.log "%s\n" (gen_str_field_descrs ifo);
       ()
     | _ -> ())
@@ -118,7 +152,6 @@ let traverse_globals (f : file) : unit =
 
 
 let parseOneFile (fname: string) : file =
-  E.log "parsing %s\n" fname;
   let cabs, cil = F.parse_with_cabs fname () in
   (* Rmtmps.removeUnusedTemps cil; *)
   cil
