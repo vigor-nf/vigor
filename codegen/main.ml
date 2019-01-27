@@ -131,21 +131,40 @@ let gen_str_field_descrs_decl compinfo =
   "extern struct str_field_descr " ^ (strdescrs_name compinfo) ^
   "[" ^ (string_of_int (List.length compinfo.cfields)) ^ "];"
 
+let fill_impl_file compinfo impl_fname header_fname =
+  let cout = open_out impl_fname in
+  P.fprintf cout "#include \"%s\"\n\n" header_fname;
+  P.fprintf cout "%s\n\n" (gen_hash compinfo);
+  P.fprintf cout "%s\n\n" (gen_eq_function compinfo);
+  P.fprintf cout "%s\n\n" (gen_alloc_function compinfo);
+  P.fprintf cout "%s\n" (gen_str_field_descrs compinfo);
+  close_out cout;
+  ()
+
+let fill_header_file compinfo header_fname orig_fname =
+  let cout = open_out header_fname in
+  P.fprintf cout "#ifndef _%s_BOILERPLATE_HEADER_INCLUDED_\n" compinfo.cname;
+  P.fprintf cout "#define _%s_BOILERPLATE_HEADER_INCLUDED_\n\n" compinfo.cname;
+  P.fprintf cout "#include \"%s\"\n\n" orig_fname;
+  P.fprintf cout "%s\n\n" (gen_inductive_type compinfo);
+  P.fprintf cout "%s\n\n" (gen_predicate compinfo);
+  P.fprintf cout "%s\n\n" (gen_logical_hash compinfo);
+  P.fprintf cout "%s\n\n" (gen_hash_decl compinfo);
+  P.fprintf cout "%s\n\n" (gen_eq_function_decl compinfo);
+  P.fprintf cout "%s\n\n" (gen_alloc_function_decl compinfo);
+  P.fprintf cout "%s\n\n" (gen_str_field_descrs_decl compinfo);
+  P.fprintf cout "#endif//_%s_BOILERPLATE_HEADER_INCLUDED_\n" compinfo.cname;
+  close_out cout;
+  ()
+
 let traverse_globals (f : file) : unit =
   List.iter (fun g ->
     match g with
     | GCompTag (ifo, _) ->
-      E.log "%s\n" (gen_inductive_type ifo);
-      E.log "%s\n" (gen_predicate ifo);
-      E.log "%s\n" (gen_logical_hash ifo);
-      E.log "%s\n" (gen_hash_decl ifo);
-      E.log "%s\n" (gen_hash ifo);
-      E.log "%s\n" (gen_eq_function_decl ifo);
-      E.log "%s\n" (gen_eq_function ifo);
-      E.log "%s\n" (gen_alloc_function_decl ifo);
-      E.log "%s\n" (gen_alloc_function ifo);
-      E.log "%s\n" (gen_str_field_descrs_decl ifo);
-      E.log "%s\n" (gen_str_field_descrs ifo);
+      let header_fname = f.fileName ^ ".gen.h" in
+      let impl_fname = f.fileName ^ ".gen.c" in
+      fill_header_file ifo header_fname f.fileName;
+      fill_impl_file ifo impl_fname header_fname;
       ()
     | _ -> ())
   f.globals
