@@ -1,64 +1,46 @@
 open Cil
 module F = Frontc
 module E = Errormsg
+module P = Pretty
 
+let gen_inductive_type compinfo =
+  "/*@ inductive " ^ compinfo.cname ^ "i = " ^ compinfo.cname ^ "c(" ^
+  (String.concat ", " (List.map (fun {ftype;_} ->
+       P.sprint ~width:100 (d_type () ftype)
+     ) compinfo.cfields)) ^
+  "); @*/"
 
+let gen_predicate compinfo =
+  "/*@ predicate " ^ compinfo.cname ^ "p(struct " ^
+  compinfo.cname ^ "* ptr; " ^ compinfo.cname ^ " v) = \n" ^
+  "  struct_" ^ compinfo.cname ^ "_padding(ptr) &*&\n" ^
+  (String.concat " &*&\n" (List.map (fun {fname;_} ->
+       "  ptr->" ^ fname ^ "|-> ?" ^ fname ^ "_field"
+     ) compinfo.cfields)) ^
+   " &*&\n  v == " ^ compinfo.cname ^ "i(" ^
+  (String.concat ", " (List.map (fun {fname;_} ->
+       fname ^ "_field"
+     ) compinfo.cfields)) ^
+  "); @*/"
 
-let tut1FixInstr (i : instr) : bool =
-  match i with
-  | Set((Var vi, NoOffset), _, loc)
-      when vi.vname = "deleted" && vi.vglob ->
-    E.log "%a: Deleted assignment: %a\n" d_loc loc d_instr i;
-    false
-  | _ -> true
-
-
-let rec tut1FixStmt (s : stmt) : unit =
-  match s.skind with
-  | Instr il ->
-    s.skind <- Instr(List.filter tut1FixInstr il)
-  | If(_,tb,fb,_) ->
-    tut1FixBlock tb;
-    tut1FixBlock fb
-  
-
-  | Switch(_,b,_,_) ->
-    tut1FixBlock b
-  | Loop(b,_,_,_) ->
-    tut1FixBlock b
-  | Block b ->
-    tut1FixBlock b
-  | TryFinally(b1, b2, _) ->
-    tut1FixBlock b1;
-    tut1FixBlock b2
-  | TryExcept(b1,_,b2,_) ->
-    tut1FixBlock b1;
-    tut1FixBlock b2
-
-  | _ -> ()
-
-and tut1FixBlock (b : block) : unit = List.iter tut1FixStmt b.bstmts
-
-let tut1FixFunction (fd : fundec) : unit = tut1FixBlock fd.sbody
+let gen_eq_function compinfo =
+  "bool " ^ compinfo.cname ^
+  "_eq(void* a, void*b)\n\
+   {\n  struct " ^ compinfo.cname ^
+  "* id1 = a;\n  struct " ^ compinfo.cname ^
+  "* id2 = b;\n  return " ^
+  (String.concat "\n     AND " (List.map (fun {fname;_} ->
+       "     id1->" ^ fname ^ " == id2->" ^ fname) compinfo.cfields)) ^
+  ";\n}\n"
 
 
 let tut1 (f : file) : unit =
   List.iter (fun g ->
     match g with
-    | GFun (fd, loc) when fd.svar.vname = "target" ->
-      E.log "Processing our fun\n";
-      tut1FixFunction fd
     | GCompTag (ifo, _) ->
-      E.log "Found struct: %s\n" ifo.cname;
-      E.log "bool %s_eq(void* a, void*b)\n\
-              {\n  struct %s* id1 = a;\n  struct %s* id2 = b;\n  return " ifo.cname ifo.cname ifo.cname ;
-      E.log "%s"
-        (String.concat "\n     AND " (List.map (fun {fname;_} ->
-             "id1->" ^ fname ^ " == id2->" ^ fname) ifo.cfields));
-      E.log ";\n}\n";
-      ()
-    | GCompTagDecl (ifo, _) ->
-      E.log "Found struct decl: %s\n" ifo.cname;
+      E.log "%s\n" (gen_inductive_type ifo);
+      E.log "%s\n" (gen_predicate ifo);
+      E.log "%s\n" (gen_eq_function ifo);
       ()
     | _ -> ())
   f.globals
@@ -75,27 +57,14 @@ let processOneFile (cil: file) : unit =
 ;;
 
 let main () =
-  
   print_CIL_Input := true;
-
-  
   insertImplicitCasts := false;
-
-  
   lineLength := 100000;
-
-  
   warnTruncate := false;
-
-  
   E.colorFlag := true;
-
-  
   Cabs2cil.doCollapseCallCast := true;
-
   let usageMsg = "Usage: ciltutcc [options] source-files" in
   Arg.parse [] Ciloptions.recordFile usageMsg;
-
   Ciloptions.fileNames := List.rev !Ciloptions.fileNames;
   let files = List.map parseOneFile !Ciloptions.fileNames in
   let one =
@@ -106,13 +75,12 @@ let main () =
   in
 
   processOneFile one
-;;  
+;;
 
 
-begin 
-  try 
-    E.log "starting\n";
-    main () 
+begin
+  try
+    main ()
   with
   | F.CabsOnly -> ()
   | E.Error -> ()
