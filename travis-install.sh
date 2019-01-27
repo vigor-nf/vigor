@@ -139,6 +139,9 @@ opam install ocamlfind camlp4 -y
 ### Validator dependencies
 opam install ocamlfind core sexplib menhir -y
 
+# Codegenerator dependencies
+opam install goblint-cil
+
 
 ### Z3 v4.5
 
