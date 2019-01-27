@@ -1,7 +1,7 @@
 //Capture the final state.
-assert map_vec_chain_coherent<flow_id>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
-emap<flow_id> flow_emap = emap(flow_map, flow_vec, flow_chain);
-emap<flow_id> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
+assert map_vec_chain_coherent<FlowIdi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
+emap<FlowIdi> flow_emap = emap(flow_map, flow_vec, flow_chain);
+emap<FlowIdi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
 
 #define EXP_TIME (10)
 #define EXT_IP_ADDR external_addr
@@ -37,7 +37,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           int flow_indx = idst_port - start_port;
           if (emap_has_idx(flow_emap, flow_indx)) { 
             // flow is present in the table
-            flow_id internal_flow = emap_get_key(flow_emap, flow_indx);
+            FlowIdi internal_flow = emap_get_key(flow_emap, flow_indx);
             flow_emap = emap_refresh_idx(flow_emap, flow_indx, now);
             switch(internal_flow) { case flid(sp, dp, sip, dip, idev, prot):
               if (dip  != isaddr ||
@@ -59,7 +59,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           }
         } else {
           // packet from the internal network
-          flow_id internal_flow_id = flid(isrc_port, idst_port,
+          FlowIdi internal_flow_id = flid(isrc_port, idst_port,
                                           isaddr, idaddr,
                                           received_on_port,
                                           inpid);
