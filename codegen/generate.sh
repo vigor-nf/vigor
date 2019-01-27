@@ -3,14 +3,22 @@
 FILE=$1
 
 set -euo pipefail
+
+function swap()
+{
+    local TMPFILE=tmp.$$
+    mv "$1" $TMPFILE && mv "$2" "$1" && mv $TMPFILE $2
+}
 PREPROC_FILE=$FILE.preproc.c
 ocamlbuild -pkg cil main.byte
 gcc -E $FILE > $PREPROC_FILE
-./_build/main.byte $PREPROC_FILE
-rm -f $PREPROC_FILE
+swap $FILE $PREPROC_FILE
+./_build/main.byte $FILE
+swap $FILE $PREPROC_FILE
+rm $PREPROC_FILE
 
 echo "Header: "
-cat $PREPROC_FILE.gen.h
+cat $FILE.gen.h
 echo ""
 echo "Implementation: "
-cat $PREPROC_FILE.gen.c
+cat $FILE.gen.c

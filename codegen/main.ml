@@ -22,12 +22,12 @@ let gen_inductive_type compinfo =
 
 let gen_predicate compinfo =
   "/*@\npredicate " ^ (predicate_name compinfo) ^ "(struct " ^
-  compinfo.cname ^ "* ptr; " ^ compinfo.cname ^ " v) = \n" ^
+  compinfo.cname ^ "* ptr; " ^ (inductive_name compinfo) ^ " v) = \n" ^
   "  struct_" ^ compinfo.cname ^ "_padding(ptr) &*&\n" ^
   (String.concat " &*&\n" (List.map (fun {fname;_} ->
        "  ptr->" ^ fname ^ " |-> ?" ^ fname ^ "_f"
      ) compinfo.cfields)) ^
-   " &*&\n  v == " ^ (inductive_name compinfo) ^ "(" ^
+   " &*&\n  v == " ^ (constructor_name compinfo) ^ "(" ^
   (String.concat ", " (List.map (fun {fname;_} ->
        fname ^ "_f"
      ) compinfo.cfields)) ^
@@ -60,17 +60,17 @@ let gen_eq_function_decl compinfo =
 let gen_logical_hash compinfo =
   let rec gen_exp_r fields acc =
     match fields with
-    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ hd.fname ^ ")")
+    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ hd.fname ^ "_f)")
     | [] -> acc
   in
   let gen_exp fields =
     match fields with
-    | hd::tl -> gen_exp_r tl hd.fname
+    | hd::tl -> gen_exp_r tl (hd.fname ^ "_f")
     | [] -> "(0)"
   in
   "/*@\nfixpoint unsigned " ^ (lhash_name compinfo) ^ "(" ^
-  (inductive_name compinfo) ^ ") {\n  switch(" ^
-  ") { case " ^ (constructor_name compinfo) ^ "(" ^
+  (inductive_name compinfo) ^ " x) {\n  switch(x)" ^
+  " { case " ^ (constructor_name compinfo) ^ "(" ^
   (String.concat ", " (List.map (fun {fname;_} ->
        fname ^ "_f"
      ) compinfo.cfields)) ^ "):\n" ^
@@ -137,14 +137,18 @@ let fill_impl_file compinfo impl_fname header_fname =
   P.fprintf cout "%s\n\n" (gen_hash compinfo);
   P.fprintf cout "%s\n\n" (gen_eq_function compinfo);
   P.fprintf cout "%s\n\n" (gen_alloc_function compinfo);
+  P.fprintf cout "#ifdef KLEE_VERIFICATION\n";
   P.fprintf cout "%s\n" (gen_str_field_descrs compinfo);
+  P.fprintf cout "#endif//KLEE_VERIFICATION\n\n";
   close_out cout;
   ()
 
 let fill_header_file compinfo header_fname orig_fname =
   let cout = open_out header_fname in
-  P.fprintf cout "#ifndef _%s_BOILERPLATE_HEADER_INCLUDED_\n" compinfo.cname;
-  P.fprintf cout "#define _%s_BOILERPLATE_HEADER_INCLUDED_\n\n" compinfo.cname;
+  P.fprintf cout "#ifndef _%s_GEN_H_INCLUDED_\n" compinfo.cname;
+  P.fprintf cout "#define _%s_GEN_H_INCLUDED_\n\n" compinfo.cname;
+  P.fprintf cout "#include <stdbool.h>\n";
+  P.fprintf cout "#include \"boilerplate_util.h\"\n\n";
   P.fprintf cout "#include \"%s\"\n\n" orig_fname;
   P.fprintf cout "%s\n\n" (gen_inductive_type compinfo);
   P.fprintf cout "%s\n\n" (gen_predicate compinfo);
@@ -152,8 +156,12 @@ let fill_header_file compinfo header_fname orig_fname =
   P.fprintf cout "%s\n\n" (gen_hash_decl compinfo);
   P.fprintf cout "%s\n\n" (gen_eq_function_decl compinfo);
   P.fprintf cout "%s\n\n" (gen_alloc_function_decl compinfo);
-  P.fprintf cout "%s\n\n" (gen_str_field_descrs_decl compinfo);
-  P.fprintf cout "#endif//_%s_BOILERPLATE_HEADER_INCLUDED_\n" compinfo.cname;
+  P.fprintf cout "#ifdef KLEE_VERIFICATION\n";
+  P.fprintf cout "#  include <klee/klee.h>\n";
+  P.fprintf cout "#  include \"lib/stubs/containers/str-descr.h\"\n\n";
+  P.fprintf cout "%s\n" (gen_str_field_descrs_decl compinfo);
+  P.fprintf cout "#endif//KLEE_VERIFICATION\n\n";
+  P.fprintf cout "#endif//_%s_GEN_H_INCLUDED_\n" compinfo.cname;
   close_out cout;
   ()
 
