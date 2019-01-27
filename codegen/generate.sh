@@ -1,5 +1,8 @@
 #!/bin/bash
+
 FILE=$1
+
+set -euo pipefail
 PREPROC_FILE=$FILE.preproc.c
 ocamlbuild -pkg cil main.byte
 gcc -E $FILE > $PREPROC_FILE
