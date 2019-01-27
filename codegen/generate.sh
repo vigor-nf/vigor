@@ -22,3 +22,5 @@ cat $FILE.gen.h
 echo ""
 echo "Implementation: "
 cat $FILE.gen.c
+
+verifast -c $FILE.gen.c

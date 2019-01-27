@@ -11,6 +11,7 @@ let strdescrs_name compinfo = compinfo.cname ^ "_descrs"
 let alloc_fun_name compinfo = compinfo.cname ^ "_allocate"
 let eq_fun_name compinfo = compinfo.cname ^ "_eq"
 let hash_fun_name compinfo = compinfo.cname ^ "_hash"
+let log_fun_name compinfo = "log_" ^ compinfo.cname
 
 let gen_inductive_type compinfo =
   "/*@\ninductive " ^ (inductive_name compinfo) ^
@@ -131,6 +132,25 @@ let gen_str_field_descrs_decl compinfo =
   "extern struct str_field_descr " ^ (strdescrs_name compinfo) ^
   "[" ^ (string_of_int (List.length compinfo.cfields)) ^ "];"
 
+let gen_log_fun_decl compinfo =
+  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj);"
+
+let gen_log_fun compinfo =
+  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
+  "{\n" ^
+  "  NF_DEBUG(\"{\");\n" ^
+  (String.concat "\n" (List.map (fun {fname;_} ->
+       "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
+     ) compinfo.cfields)) ^ "\n" ^
+  "  NF_DEBUG(\"}\");\n" ^
+  "}"
+
+let gen_log_fun_dummy compinfo =
+  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
+  "{\n  IGNORE(obj);\n}"
+
+
+
 let fill_impl_file compinfo impl_fname header_fname =
   let cout = open_out impl_fname in
   P.fprintf cout "#include \"%s\"\n\n" header_fname;
@@ -139,6 +159,9 @@ let fill_impl_file compinfo impl_fname header_fname =
   P.fprintf cout "%s\n\n" (gen_alloc_function compinfo);
   P.fprintf cout "#ifdef KLEE_VERIFICATION\n";
   P.fprintf cout "%s\n" (gen_str_field_descrs compinfo);
+  P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo);
+  P.fprintf cout "#else//KLEE_VERIFICATION\n";
+  P.fprintf cout "%s\n\n" (gen_log_fun compinfo);
   P.fprintf cout "#endif//KLEE_VERIFICATION\n\n";
   close_out cout;
   ()
@@ -156,6 +179,7 @@ let fill_header_file compinfo header_fname orig_fname =
   P.fprintf cout "%s\n\n" (gen_hash_decl compinfo);
   P.fprintf cout "%s\n\n" (gen_eq_function_decl compinfo);
   P.fprintf cout "%s\n\n" (gen_alloc_function_decl compinfo);
+  P.fprintf cout "%s\n\n" (gen_log_fun_decl compinfo);
   P.fprintf cout "#ifdef KLEE_VERIFICATION\n";
   P.fprintf cout "#  include <klee/klee.h>\n";
   P.fprintf cout "#  include \"lib/stubs/containers/str-descr.h\"\n\n";
