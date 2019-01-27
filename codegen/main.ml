@@ -159,10 +159,13 @@ let fill_impl_file compinfo impl_fname header_fname =
   P.fprintf cout "%s\n\n" (gen_alloc_function compinfo);
   P.fprintf cout "#ifdef KLEE_VERIFICATION\n";
   P.fprintf cout "%s\n" (gen_str_field_descrs compinfo);
-  P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo);
-  P.fprintf cout "#else//KLEE_VERIFICATION\n";
-  P.fprintf cout "%s\n\n" (gen_log_fun compinfo);
   P.fprintf cout "#endif//KLEE_VERIFICATION\n\n";
+  P.fprintf cout "#ifdef ENABLE_LOG\n";
+  P.fprintf cout "#include \"lib/nf_log.h\"\n";
+  P.fprintf cout "%s\n\n" (gen_log_fun compinfo);
+  P.fprintf cout "#else//ENABLE_LOG\n";
+  P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo);
+  P.fprintf cout "#endif//ENABLE_LOG\n\n";
   close_out cout;
   ()
 
@@ -171,7 +174,7 @@ let fill_header_file compinfo header_fname orig_fname =
   P.fprintf cout "#ifndef _%s_GEN_H_INCLUDED_\n" compinfo.cname;
   P.fprintf cout "#define _%s_GEN_H_INCLUDED_\n\n" compinfo.cname;
   P.fprintf cout "#include <stdbool.h>\n";
-  P.fprintf cout "#include \"boilerplate_util.h\"\n\n";
+  P.fprintf cout "#include \"lib/boilerplate_util.h\"\n\n";
   P.fprintf cout "#include \"%s\"\n\n" orig_fname;
   P.fprintf cout "%s\n\n" (gen_inductive_type compinfo);
   P.fprintf cout "%s\n\n" (gen_predicate compinfo);

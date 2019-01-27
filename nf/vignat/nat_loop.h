@@ -3,7 +3,7 @@
 
 #include "lib/containers/double-chain.h"
 #include "lib/containers/double-map.h"
-#include "nat_flow.h"
+#include "flow.h.gen.h"
 #include "lib/coherence.h"
 #include "lib/nf_time.h"
 
@@ -15,10 +15,10 @@ predicate evproc_loop_invariant(struct Map* mp,
                                 time_t time, int max_flows,
                                 int start_port,
                                 uint32_t ext_ip) =
-          mapp<flow_id>(mp, flow_idp, _flow_id_hash, nop_true, mapc(max_flows, ?m, ?maddr)) &*&
-          vectorp<flow_id>(in_vec, flow_idp, ?ifs, ?ifaddrs) &*&
+          mapp<FlowIdi>(mp, FlowIdp, _FlowId_hash, nop_true, mapc(max_flows, ?m, ?maddr)) &*&
+          vectorp<FlowIdi>(in_vec, FlowIdp, ?ifs, ?ifaddrs) &*&
           double_chainp(?ch, chp) &*&
-          map_vec_chain_coherent<flow_id>(m, ifs, ch) &*&
+          map_vec_chain_coherent<FlowIdi>(m, ifs, ch) &*&
           true == forall2(ifs, ifaddrs, (kkeeper)(maddr)) &*&
           lcore_id == 0 &*& //<-- We are verifying for a single core.
           last_time(time) &*&

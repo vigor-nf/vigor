@@ -129,14 +129,14 @@ let fun_types =
                       lemmas_before = [
                         (fun _ ->
                            "/*@ {\nproduce_function_pointer_chunk \
-                            map_keys_equality<flow_id>(flow_id_eq)\
-                            (flow_idp)(a, b) \
+                            map_keys_equality<FlowIdi>(FlowId_eq)\
+                            (FlowIdp)(a, b) \
                             {\
                             call();\
                             }\n\
                             produce_function_pointer_chunk \
-                            map_key_hash<flow_id>(flow_id_hash)\
-                            (flow_idp, _flow_id_hash)(a) \
+                            map_key_hash<FlowIdi>(FlowId_hash)\
+                            (FlowIdp, _FlowId_hash)(a) \
                             {\
                             call();\
                             }\n} @*/ \n");
@@ -152,8 +152,8 @@ let fun_types =
                          lemmas_before = [
                            tx_bl
                               "{\n\
-                                produce_function_pointer_chunk vector_init_elem<flow_id>(flow_id_allocate)\
-                                (flow_idp, sizeof(struct FlowId))(a) \
+                                produce_function_pointer_chunk vector_init_elem<FlowIdi>(FlowId_allocate)\
+                                (FlowIdp, sizeof(struct FlowId))(a) \
                                 {\
                                 call();\
                                 }\n\
@@ -168,11 +168,11 @@ let fun_types =
                            (fun {tmp_gen;ret_name;_} ->
                               "/*@ if (" ^ ret_name ^
                               ") {\n\
-                               assert mapp<flow_id>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                               assert mapp<FlowIdi>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
                               ", ?" ^ (tmp_gen "map") ^
                               ", ?" ^ (tmp_gen "addr_map") ^
                               "));\n\
-                               assert vectorp<flow_id>(_, _, ?" ^ (tmp_gen "dks") ^
+                               assert vectorp<FlowIdi>(_, _, ?" ^ (tmp_gen "dks") ^
                               ", ?" ^ (tmp_gen "dkaddrs") ^
                               ");\n\
                                empty_kkeeper(" ^
@@ -190,8 +190,8 @@ let fun_types =
                             extra_ptr_types = estt ["borrowed_cell", Ptr flow_id_struct;];
                             lemmas_before = [
                               (fun params ->
-                                   "//@ assert vectorp<flow_id>(" ^ (List.nth_exn params.args 0) ^
-                                   ", flow_idp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
+                                   "//@ assert vectorp<FlowIdi>(" ^ (List.nth_exn params.args 0) ^
+                                   ", FlowIdp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
                                    ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n")
                             ];
                             lemmas_after = [
@@ -199,10 +199,10 @@ let fun_types =
                                    "struct FlowId * " ^ (params.tmp_gen "elem") ^
                                    " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
                                    "//@ assert [?" ^ (params.tmp_gen "fr") ^
-                                   "]flow_idp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
+                                   "]FlowIdp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
                                    "/*@ if (" ^ (params.tmp_gen "fr") ^
                                    " != 1.0) {\n\
-                                    assert mapp<flow_id>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
+                                    assert mapp<FlowIdi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
                                    ", ?" ^ (params.tmp_gen "fma") ^
                                    "));\n\
                                     forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
@@ -216,7 +216,7 @@ let fun_types =
                             extra_ptr_types = [];
                             lemmas_before = [
                               (fun params ->
-                                 "/*@ { assert vector_accp<flow_id>(_, _, ?" ^ (params.tmp_gen "vec") ^
+                                 "/*@ { assert vector_accp<FlowIdi>(_, _, ?" ^ (params.tmp_gen "vec") ^
                                  ", _, _, _); \n update_id(" ^
                                  (List.nth_exn params.args 1) ^ ", " ^
                                  (params.tmp_gen "vec") ^ "); } @*/");
@@ -229,9 +229,9 @@ let fun_types =
                          lemmas_after = [
                            on_rez_nonzero
                              "{\n\
-                              assert vectorp<flow_id>(_, _, ?allocated_vector, _);\n\
+                              assert vectorp<FlowIdi>(_, _, ?allocated_vector, _);\n\
                               empty_map_vec_dchain_coherent\
-                              <flow_id>(allocated_vector);\n}";
+                              <FlowIdi>(allocated_vector);\n}";
                            tx_l "index_range_of_empty(65536, 0);";];};
      "loop_invariant_consume", {ret_type = Static Void;
                                 arg_types = stt [Ptr (Ptr map_struct);
@@ -288,24 +288,24 @@ let fun_types =
                                      "external_addr = " ^ List.nth_exn args 7 ^ ";");
                                   (fun {tmp_gen;args;_} ->
                                      "\n/*@ {\n\
-                                      assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
+                                      assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
                                      ", _));\n\
-                                      assert vectorp<flow_id>(_, _, ?" ^ (tmp_gen "fvk") ^
+                                      assert vectorp<FlowIdi>(_, _, ?" ^ (tmp_gen "fvk") ^
                                      ", _);\n\
-                                      assert map_vec_chain_coherent<flow_id>(" ^
+                                      assert map_vec_chain_coherent<FlowIdi>(" ^
                                      (tmp_gen "fm") ^ ", " ^
                                      (tmp_gen "fvk") ^ ", ?" ^
                                      (tmp_gen "ch") ^
                                      ");\n\
-                                      mvc_coherent_same_len<flow_id>(" ^ 
+                                      mvc_coherent_same_len<FlowIdi>(" ^ 
                                      (tmp_gen "fm") ^
                                      ", " ^ (tmp_gen "fvk") ^
                                      ", " ^ (tmp_gen "ch") ^
                                      ");\n" ^
-                                     "assert mapp<flow_id>(_ "^
+                                     "assert mapp<FlowIdi>(_ "^
                                      ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
                                      ", _));\n" ^
-                                     "assert vectorp<flow_id>(_" ^
+                                     "assert vectorp<FlowIdi>(_" ^
                                      ", _, ?" ^ (tmp_gen "initial_flow_vec") ^
                                      ", _);\n" ^
                                      "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
@@ -323,10 +323,10 @@ let fun_types =
                  extra_ptr_types = [];
                  lemmas_before = [
                    (fun ({arg_exps;tmp_gen;_} as params) ->
-                        "//@ assert flow_idp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                        "//@ assert FlowIdp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
-                         capture_a_map "flow_id" "dm" params ^
-                         "//@ assert map_vec_chain_coherent<flow_id>(" ^
+                         capture_a_map "FlowIdi" "dm" params ^
+                         "//@ assert map_vec_chain_coherent<FlowIdi>(" ^
                          (tmp_gen "dm") ^ ", ?" ^
                          (tmp_gen "dv") ^ ", ?" ^
                          (tmp_gen "dh") ^ ");\n"
@@ -361,28 +361,28 @@ let fun_types =
                  extra_ptr_types = [];
                  lemmas_before = [
                    (fun {args;tmp_gen;_} ->
-                        "\n//@ assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                        "\n//@ assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
                         ", _));\n" ^
                         "\n/*@ {\n\
-                         assert map_vec_chain_coherent<flow_id>(" ^
+                         assert map_vec_chain_coherent<FlowIdi>(" ^
                         (tmp_gen "dm") ^ ", ?" ^
                         (tmp_gen "dv") ^ ", ?" ^
                         (tmp_gen "dh") ^
                         ");\n\
-                         mvc_coherent_dchain_non_out_of_space_map_nonfull<flow_id>(" ^
+                         mvc_coherent_dchain_non_out_of_space_map_nonfull<FlowIdi>(" ^
                         (tmp_gen "dm") ^ ", " ^
                         (tmp_gen "dv") ^ ", " ^
                         (tmp_gen "dh") ^ ");\n" ^
-                         "mvc_coherent_bounds<flow_id>(" ^
+                         "mvc_coherent_bounds<FlowIdi>(" ^
                         (tmp_gen "dm") ^ ", " ^
                         (tmp_gen "dv") ^ ", " ^
                         (tmp_gen "dh") ^ ");\n} @*/\n" ^
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
-                         assert mapp<flow_id>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                         assert vector_accp<flow_id>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
-                         assert map_vec_chain_coherent<flow_id>(?the_dm, the_dv, ?the_dh);\n\
-                         flow_id vvv = flid(" ^ arg1 ^
+                         assert mapp<FlowIdi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                         assert vector_accp<FlowIdi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<FlowIdi>(?the_dm, the_dv, ?the_dh);\n\
+                         FlowIdi vvv = flid(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
@@ -398,18 +398,18 @@ let fun_types =
                    (fun {args;tmp_gen;_} ->
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "\n/*@ {\n\
-                         assert map_vec_chain_coherent<flow_id>(" ^ (tmp_gen "dm") ^
+                         assert map_vec_chain_coherent<FlowIdi>(" ^ (tmp_gen "dm") ^
                         ", ?" ^ (tmp_gen "dv") ^
                         ", ?" ^ (tmp_gen "dh") ^
                         ");\n\
-                         flow_id " ^ (tmp_gen "ea") ^ " = flid(" ^ arg1 ^
+                         FlowIdi " ^ (tmp_gen "ea") ^ " = flid(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
                         "->dst_ip, " ^ arg1 ^
                         "->internal_device, " ^ arg1 ^
                         "->protocol);\n\
-                         mvc_coherent_put<flow_id>(" ^ (tmp_gen "dm") ^
+                         mvc_coherent_put<FlowIdi>(" ^ (tmp_gen "dm") ^
                         ", " ^ (tmp_gen "dv") ^
                         ", " ^ (tmp_gen "dh") ^
                         ", " ^ (List.nth_exn args 2) ^
@@ -454,14 +454,14 @@ let fun_types =
                                  lemmas_after = [
                                    (fun {tmp_gen;_} ->
                                       "/*@ {\n\
-                                       assert mapp<flow_id>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^ ", _));\n\
-                                       assert vectorp<flow_id>(_, _, ?" ^ (tmp_gen "fvk") ^ ", _);\n\
-                                       assert map_vec_chain_coherent<flow_id>(" ^
+                                       assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^ ", _));\n\
+                                       assert vectorp<FlowIdi>(_, _, ?" ^ (tmp_gen "fvk") ^ ", _);\n\
+                                       assert map_vec_chain_coherent<FlowIdi>(" ^
                                       (tmp_gen "fm") ^ ", " ^
                                       (tmp_gen "fvk") ^ ", ?" ^
                                       (tmp_gen "ch") ^
                                       ");\n\
-                                      mvc_coherent_same_len<flow_id>(" ^
+                                      mvc_coherent_same_len<FlowIdi>(" ^
                                       (tmp_gen "fm") ^ ", " ^
                                       (tmp_gen "fvk") ^ ", " ^
                                       (tmp_gen "ch") ^ ");\n} @*/");
@@ -500,12 +500,12 @@ let fun_types =
                                        (fun {args;tmp_gen;_} ->
                                           "{\n\
                                            assert map_vec_chain_coherent<\
-                                           flow_id>(?" ^
+                                           FlowIdi>(?" ^
                                           (tmp_gen "cur_map") ^ ", ?" ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^
                                           ");\n\
-                                           mvc_coherent_alloc_is_halfowned<flow_id>(" ^
+                                           mvc_coherent_alloc_is_halfowned<FlowIdi>(" ^
                                           (tmp_gen "cur_map") ^ ", " ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^ ", *" ^
@@ -519,7 +519,7 @@ let fun_types =
                                    (fun {args;tmp_gen;_} ->
                                       "/*@ {\n\
                                         assert map_vec_chain_coherent<\
-                                       flow_id>(?" ^
+                                       FlowIdi>(?" ^
                                       (tmp_gen "cur_map") ^ ", ?" ^
                                       (tmp_gen "cur_vec") ^ ", " ^
                                       (tmp_gen "cur_ch") ^
@@ -538,7 +538,7 @@ let fun_types =
                                    (fun params ->
                                       "/*@ if (" ^ params.ret_name ^
                                       " != 0) { \n" ^
-                                       "assert map_vec_chain_coherent<flow_id>\
+                                       "assert map_vec_chain_coherent<FlowIdi>\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
                                        cur_vec, cur_ch, " ^
@@ -735,8 +735,8 @@ struct
                   //@ option<void*> last_composed_packet = none;\n\
                   //@ list<uint8_t> last_sent_packet = nil;\n\
                   //@ dchain flow_chain;\n\
-                  //@ list<pair<flow_id, int> > flow_map;\n\
-                  //@ list<pair<flow_id, real> > flow_vec;\n\
+                  //@ list<pair<FlowIdi, int> > flow_map;\n\
+                  //@ list<pair<FlowIdi, real> > flow_vec;\n\
                   //@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
                   //@ list<int> sent_on_ports = nil; \n\

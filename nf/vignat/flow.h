@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-struct flow {
+struct FlowId {
   uint32_t src_ip;
   uint32_t dst_ip;
   uint16_t src_port;

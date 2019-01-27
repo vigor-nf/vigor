@@ -1,6 +1,8 @@
 #ifndef _BOILERPLATE_UTIL_H_INCLUDED_
 #define _BOILERPLATE_UTIL_H_INCLUDED_
 
+#include <limits.h>
+
 #include "include_ignored_by_verifast.h"
 
 #ifdef _NO_VERIFAST_
