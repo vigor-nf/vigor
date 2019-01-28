@@ -39,7 +39,7 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
             // flow is present in the table
             FlowIdi internal_flow = emap_get_key(flow_emap, flow_indx);
             flow_emap = emap_refresh_idx(flow_emap, flow_indx, now);
-            switch(internal_flow) { case flid(sp, dp, sip, dip, idev, prot):
+            switch(internal_flow) { case FlowIdc(sp, dp, sip, dip, idev, prot):
               if (dip  != isaddr ||
                   dp   != isrc_port  ||
                   prot != inpid) {
@@ -59,10 +59,10 @@ if (EXP_TIME < now) {// consider only normal moments, remote from the start of t
           }
         } else {
           // packet from the internal network
-          FlowIdi internal_flow_id = flid(isrc_port, idst_port,
-                                          isaddr, idaddr,
-                                          received_on_port,
-                                          inpid);
+          FlowIdi internal_flow_id = FlowIdc(isrc_port, idst_port,
+                                             isaddr, idaddr,
+                                             received_on_port,
+                                             inpid);
           if (emap_has(flow_emap, internal_flow_id)) {
             // flow present in the table
             int idx = emap_get(flow_emap, internal_flow_id);

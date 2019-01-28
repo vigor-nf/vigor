@@ -382,7 +382,7 @@ let fun_types =
                          assert mapp<FlowIdi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
                          assert vector_accp<FlowIdi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
                          assert map_vec_chain_coherent<FlowIdi>(?the_dm, the_dv, ?the_dh);\n\
-                         FlowIdi vvv = flid(" ^ arg1 ^
+                         FlowIdi vvv = FlowIdc(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
@@ -402,7 +402,7 @@ let fun_types =
                         ", ?" ^ (tmp_gen "dv") ^
                         ", ?" ^ (tmp_gen "dh") ^
                         ");\n\
-                         FlowIdi " ^ (tmp_gen "ea") ^ " = flid(" ^ arg1 ^
+                         FlowIdi " ^ (tmp_gen "ea") ^ " = FlowIdc(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
