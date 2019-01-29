@@ -66,13 +66,17 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
       value->bucket_size = value->bucket_size + (time - value->bucket_time) * config.rate / 1000000000 - size;
       value->bucket_time = time;
       fwd = true;
-  }
+      NF_DEBUG("  Known flow within limit. Forwarding.");
+    } else {
+      NF_DEBUG("  Known flow outside of limit. Dropping.");
+    }
 
     vector_return(dynamic_ft.values, index, value);
 
     return fwd;
   } else {
     if (size > config.burst) {
+      NF_DEBUG("  Unknown flow with packet larger than burst size. Dropping.");
       return false;
     }
 
@@ -94,6 +98,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     vector_return(dynamic_ft.keys, index, key);
     vector_return(dynamic_ft.values, index, value);
 
+    NF_DEBUG("  New flow. Forwarding.");
     return true;
   }
 }
@@ -150,37 +155,59 @@ void nf_core_init(void) {
 
 int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+//   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+  struct ether_hdr *ether_header = rte_pktmbuf_mtod(mbuf, struct ether_hdr *);
 
-  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
-		NF_DEBUG("Not IPv4, dropping");
-		return in_port;
-  }
-  uint8_t* ip_options;
-  bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
-  if (!wellformed) {
-		NF_DEBUG("Malformed IPv4, dropping");
+  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
+      !(mbuf->packet_type == 0 &&
+        ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4))) {
+    NF_DEBUG("Not IPv4, dropping");
     return in_port;
   }
-  assert(ipv4_header != NULL);
 
-  policer_expire_entries(now);
+//   uint8_t* ip_options;
+//   bool wellformed = true;
+// 	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
+//   if (!wellformed) {
+// 		NF_DEBUG("Malformed IPv4, dropping");
+//     return in_port;
+//   }
+//   assert(ipv4_header != NULL);
+
+  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
+      !(mbuf->packet_type == 0 &&
+        ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4))) {
+    NF_DEBUG("Not IPv4, dropping");
+    return in_port; // Non IPv4 packet, ignore
+  }
+  struct ipv4_hdr *ipv4_header = rte_pktmbuf_mtod_offset(
+      mbuf, struct ipv4_hdr *, sizeof(struct ether_hdr));
+
+  if (ipv4_header == NULL) {
+    NF_DEBUG("Not IPv4, dropping");
+    return in_port; // Not IPv4 packet, ignore
+  }
+
+//   policer_expire_entries(now);
 
   if (in_port == config.lan_device) {
     // Simply forward outgoing packets.
+    NF_INFO("Outgoing packet. Not policing.");
     return config.wan_device;
   } else if (in_port == config.wan_device) {
     // Police incoming packets.
     bool fwd = policer_check_tb(ipv4_header->dst_addr, mbuf->pkt_len, now);
 
     if (fwd) {
+      NF_INFO("Incoming packet within policed rate. Forwarding.");
       return config.lan_device;
     } else {
+      NF_INFO("Incoming packet outside of policed rate. Dropping.");
       return config.wan_device;
     }
   } else {
     // Drop any other packets.
+    NF_INFO("Unknown port. Dropping.");
     return in_port;
   }
 }
