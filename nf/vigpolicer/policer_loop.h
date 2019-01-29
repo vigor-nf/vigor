@@ -19,7 +19,7 @@
                                   struct Map* st_map,
                                   struct Vector* st_vec,
                                   uint32_t capacity,
-                                  time_t time,
+                                  uint64_t time,
                                   uint32_t dev_count) =
     double_chainp(?dh, dyn_heap) &*&
     mapp<ether_addri>(dyn_map, ether_addrp, eth_addr_hash,
@@ -51,7 +51,7 @@ void policer_loop_invariant_consume(struct DoubleChain** dyn_heap,
                                    struct Vector** dyn_keys,
                                    struct Vector** dyn_vals,
                                    uint32_t capacity,
-                                   time_t time,
+                                   uint64_t time,
                                    uint32_t dev_count);
 /*@ requires *dyn_heap |-> ?dh &*&
              *dyn_map |-> ?dm &*&
@@ -75,7 +75,7 @@ void policer_loop_invariant_produce(struct DoubleChain** dyn_heap,
                                    struct Vector** dyn_keys,
                                    struct Vector** dyn_vals,
                                    uint32_t capacity,
-                                   time_t* time,
+                                   uint64_t* time,
                                    uint32_t dev_count);
 /*@ requires *dyn_heap |-> ?dh &*&
              *dyn_map |-> ?dm &*&
@@ -100,7 +100,7 @@ void policer_loop_iteration_begin(struct DoubleChain** dyn_heap,
                                  struct Vector** dyn_keys,
                                  struct Vector** dyn_vals,
                                  uint32_t capacity,
-                                 time_t time,
+                                 uint64_t time,
                                  uint16_t dev_count);
 /*@ requires true; @*/
 /*@ ensures true; @*/
@@ -110,7 +110,7 @@ void policer_loop_iteration_end(struct DoubleChain** dyn_heap,
                                struct Vector** dyn_keys,
                                struct Vector** dyn_vals,
                                uint32_t capacity,
-                               time_t time,
+                               uint64_t time,
                                uint16_t dev_count);
 /*@ requires true; @*/
 /*@ ensures true; @*/
@@ -120,7 +120,7 @@ void policer_loop_iteration_assumptions(struct DoubleChain** dyn_heap,
                                        struct Vector** dyn_keys,
                                        struct Vector** dyn_vals,
                                        uint32_t capacity,
-                                       time_t time);
+                                       uint64_t time);
 /*@ requires true; @*/
 /*@ ensures true; @*/
 
