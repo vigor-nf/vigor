@@ -8,6 +8,7 @@ let predicate_name compinfo = compinfo.cname ^ "p"
 let constructor_name compinfo = compinfo.cname ^ "c"
 let lhash_name compinfo = "_" ^ compinfo.cname ^ "_hash"
 let strdescrs_name compinfo = compinfo.cname ^ "_descrs"
+let nest_descrs_name compinfo = compinfo.cname ^ "_nests"
 let alloc_fun_name compinfo = compinfo.cname ^ "_allocate"
 let eq_fun_name compinfo = compinfo.cname ^ "_eq"
 let hash_fun_name compinfo = compinfo.cname ^ "_hash"
@@ -17,7 +18,10 @@ let gen_inductive_type compinfo =
   "/*@\ninductive " ^ (inductive_name compinfo) ^
   " = " ^ (constructor_name compinfo) ^ "(" ^
   (String.concat ", " (List.map (fun {ftype;_} ->
-       P.sprint ~width:100 (d_type () ftype)
+       match ftype with
+       | TComp (field_str, _) ->
+         (inductive_name field_str)
+       | _ -> P.sprint ~width:100 (d_type () ftype)
      ) compinfo.cfields)) ^
   "); @*/"
 
@@ -25,8 +29,12 @@ let gen_predicate compinfo =
   "/*@\npredicate " ^ (predicate_name compinfo) ^ "(struct " ^
   compinfo.cname ^ "* ptr; " ^ (inductive_name compinfo) ^ " v) = \n" ^
   "  struct_" ^ compinfo.cname ^ "_padding(ptr) &*&\n" ^
-  (String.concat " &*&\n" (List.map (fun {fname;_} ->
-       "  ptr->" ^ fname ^ " |-> ?" ^ fname ^ "_f"
+  (String.concat " &*&\n" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (field_str, _) ->
+         "  " ^ (predicate_name field_str) ^ "(&ptr->" ^ fname ^ ", ?" ^
+         fname ^ "_f)"
+       | _ -> "  ptr->" ^ fname ^ " |-> ?" ^ fname ^ "_f"
      ) compinfo.cfields)) ^
    " &*&\n  v == " ^ (constructor_name compinfo) ^ "(" ^
   (String.concat ", " (List.map (fun {fname;_} ->
@@ -49,8 +57,11 @@ let gen_eq_function compinfo =
   "{\n  struct " ^ compinfo.cname ^
   "* id1 = a;\n  struct " ^ compinfo.cname ^
   "* id2 = b;\n  return " ^
-  (String.concat "\n     AND " (List.map (fun {fname;_} ->
-       "id1->" ^ fname ^ " == id2->" ^ fname) compinfo.cfields)) ^
+  (String.concat "\n     AND " (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (field_str, _) ->
+         (eq_fun_name field_str) ^ "(&id1->" ^ fname ^ ", &id2->" ^ fname ^ ")"
+       | _ -> "id1->" ^ fname ^ " == id2->" ^ fname) compinfo.cfields)) ^
   ";\n}\n"
 
 let gen_eq_function_decl compinfo =
@@ -59,14 +70,21 @@ let gen_eq_function_decl compinfo =
 
 
 let gen_logical_hash compinfo =
+  let field_name fname = fname ^ "_f" in
+  let field_hash field =
+    match field with
+    | {ftype=TComp (field_str,_);fname;_} ->
+         (lhash_name field_str) ^ "(" ^ (field_name fname) ^ ")"
+    | {fname;_} -> (field_name fname)
+  in
   let rec gen_exp_r fields acc =
     match fields with
-    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ hd.fname ^ "_f)")
+    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ (field_hash hd) ^ "_f)")
     | [] -> acc
   in
   let gen_exp fields =
     match fields with
-    | hd::tl -> gen_exp_r tl (hd.fname ^ "_f")
+    | hd::tl -> gen_exp_r tl (field_hash hd)
     | [] -> "(0)"
   in
   "/*@\nfixpoint unsigned " ^ (lhash_name compinfo) ^ "(" ^
@@ -75,7 +93,7 @@ let gen_logical_hash compinfo =
   (String.concat ", " (List.map (fun {fname;_} ->
        fname ^ "_f"
      ) compinfo.cfields)) ^ "):\n" ^
-  "return _wrap" ^ (gen_exp compinfo.cfields) ^
+  "    return _wrap" ^ (gen_exp compinfo.cfields) ^
   ";\n  }\n} @*/"
 
 let hash_contract compinfo =
@@ -89,8 +107,12 @@ let gen_hash compinfo =
   "{\n" ^
   "  struct " ^ compinfo.cname ^ "* id = obj;\n" ^
   "  unsigned long long hash = 0;\n" ^
-  (String.concat "  hash *= 31;\n" (List.map (fun {fname;_} ->
-       "  hash += id->" ^ fname ^ ";\n"
+  (String.concat "  hash *= 31;\n" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (field_str,_) ->
+         "  hash += " ^ (hash_fun_name field_str) ^ "(&id->" ^ fname ^ ");\n"
+       | _ ->
+         "  hash += id->" ^ fname ^ ";\n"
      ) compinfo.cfields)) ^
   "  hash = wrap(hash);\n" ^
   "  return (unsigned) hash;\n" ^
@@ -126,11 +148,27 @@ let gen_str_field_descrs compinfo =
        (P.sprint ~width:100 (d_type () ftype)) ^
        "), 0, \"" ^ fname ^ "\"},"
      ) compinfo.cfields)) ^
+  "\n};\n" ^
+  "struct nested_field_descr " ^ (nest_descrs_name compinfo) ^ "[] = {\n" ^
+  (String.concat "\n" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (nest_str, _) ->
+         (String.concat "\n" (List.map (fun {fname=ffname;ftype=fftype;_} ->
+              "  {offsetof(struct " ^ compinfo.cname ^ ", " ^
+              fname ^ "), offsetof(" ^ (P.sprint ~width:100 (d_type () ftype)) ^
+              ", " ^ ffname ^ "), sizeof(" ^
+              (P.sprint ~width:100 (d_type () fftype)) ^
+              "), 0, \"" ^ ffname ^ "\"},"
+            ) nest_str.cfields))
+       | _ -> ""
+     ) compinfo.cfields)) ^
   "\n};"
 
 let gen_str_field_descrs_decl compinfo =
   "extern struct str_field_descr " ^ (strdescrs_name compinfo) ^
-  "[" ^ (string_of_int (List.length compinfo.cfields)) ^ "];"
+  "[" ^ (string_of_int (List.length compinfo.cfields)) ^ "];\n" ^
+  "extern struct nested_field_descr " ^ (nest_descrs_name compinfo) ^
+  "[];"
 
 let gen_log_fun_decl compinfo =
   "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj);"
@@ -139,8 +177,13 @@ let gen_log_fun compinfo =
   "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
   "{\n" ^
   "  NF_DEBUG(\"{\");\n" ^
-  (String.concat "\n" (List.map (fun {fname;_} ->
-       "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
+  (String.concat "\n" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (nest_str, _) ->
+         "  NF_DEBUG(\"" ^ fname ^ ":\");\n" ^
+         "  " ^ (log_fun_name nest_str) ^ "(&obj->" ^ fname ^ ");"
+       | _ -> 
+         "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
      ) compinfo.cfields)) ^ "\n" ^
   "  NF_DEBUG(\"}\");\n" ^
   "}"
