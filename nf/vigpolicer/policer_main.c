@@ -34,18 +34,16 @@ struct policer_config config;
 
 struct DynamicFilterTable dynamic_ft;
 
-int policer_expire_entries(time_t time) {
+int policer_expire_entries(uint64_t time) {
   if (time < config.burst / config.rate) return 0;
 
   // This is convoluted - we want to make sure the sanitization doesn't
   // extend our time_t value in 128 bits, which would confuse the validator.
   // So we "prove" by hand that it's OK...
   // We know time >= 0 since time >= config.burst / config.rate
-  assert(sizeof(time_t) <= sizeof(uint64_t));
-  uint64_t time_u = (uint64_t) time; // OK since assert above passed and time > 0
-  uint64_t min_time_u = time_u - config.burst / config.rate; // OK because time >= config.burst / config.rate >= 0
-  assert(sizeof(uint64_t) <= sizeof(time_t));
-  time_t min_time = (time_t) min_time_u; // OK since the assert above passed
+//   assert(sizeof(time_t) <= sizeof(uint64_t));
+//   assert(sizeof(uint64_t) <= sizeof(time_t));
+  uint64_t min_time = time - config.burst * 1000000000l / config.rate; // OK because time >= config.burst / config.rate >= 0
 
   return expire_items_single_map(dynamic_ft.heap, dynamic_ft.keys,
                                  dynamic_ft.map,
@@ -61,14 +59,16 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     struct DynamicValue* value = 0;
     vector_borrow(dynamic_ft.values, index, (void**)&value);
 
+    value->bucket_size += (time - value->bucket_time) * config.rate / 1000000000;
+    if (value->bucket_size > config.burst) {
+      value->bucket_size = config.burst;
+    }
+    value->bucket_time = time;
+
     bool fwd = false;
-    if (value->bucket_size + (time - value->bucket_time) * config.rate / 1000000000 > size) {
-      value->bucket_size = value->bucket_size + (time - value->bucket_time) * config.rate / 1000000000 - size;
-      value->bucket_time = time;
+    if (value->bucket_size > size) {
+      value->bucket_size -= size;
       fwd = true;
-      NF_DEBUG("  Known flow within limit. Forwarding.");
-    } else {
-      NF_DEBUG("  Known flow outside of limit. Dropping.");
     }
 
     vector_return(dynamic_ft.values, index, value);
@@ -93,7 +93,8 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     vector_borrow(dynamic_ft.values, index, (void**)&value);
     *key = dst;
     value->bucket_size = config.burst - size;
-    map_put(dynamic_ft.map, &key, index);
+    value->bucket_time = time;
+    map_put(dynamic_ft.map, key, index);
     //the other half of the key is in the map
     vector_return(dynamic_ft.keys, index, key);
     vector_return(dynamic_ft.values, index, value);
@@ -174,12 +175,6 @@ int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
 //   }
 //   assert(ipv4_header != NULL);
 
-  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
-      !(mbuf->packet_type == 0 &&
-        ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4))) {
-    NF_DEBUG("Not IPv4, dropping");
-    return in_port; // Non IPv4 packet, ignore
-  }
   struct ipv4_hdr *ipv4_header = rte_pktmbuf_mtod_offset(
       mbuf, struct ipv4_hdr *, sizeof(struct ether_hdr));
 
@@ -188,7 +183,7 @@ int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
     return in_port; // Not IPv4 packet, ignore
   }
 
-//   policer_expire_entries(now);
+  policer_expire_entries(now);
 
   if (in_port == config.lan_device) {
     // Simply forward outgoing packets.
