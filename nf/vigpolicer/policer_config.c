@@ -43,7 +43,6 @@ void policer_config_init(struct policer_config* config,
     {"rate",     required_argument,  NULL, 'r'},
     {"burst",    required_argument,  NULL, 'b'},
     {"capacity", required_argument,  NULL, 'c'},
-    {"config",   required_argument,  NULL, 'f'},
     {NULL,       0,      NULL, 0  }
   };
 
