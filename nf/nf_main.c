@@ -180,7 +180,7 @@ lcore_main(void)
     struct rte_mbuf* mbuf;
     if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
       uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
-      nf_return_all_chunks(mbuf->buf_addr);
+//       nf_return_all_chunks(mbuf->buf_addr);
 
       if (dst_device == VIGOR_DEVICE) {
         nf_free_packet(mbuf);
