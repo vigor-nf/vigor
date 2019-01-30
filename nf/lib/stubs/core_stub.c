@@ -195,6 +195,12 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 	}
 	klee_forbid_access(buf_next, pool->elt_size, "buf_next");
 
+  uint16_t packet_length = klee_int("pkt_len");
+  uint16_t data_length = klee_int("data_len");
+
+  klee_assume(data_length <= packet_length);
+  klee_assume(sizeof(struct ether_hdr) <= data_length);
+
 	// Keep concrete values for what a driver guarantees
 	// (assignments are in the same order as the rte_mbuf declaration)
 	(*mbufp)->buf_addr = (char*) (*mbufp) + mbuf_size;
@@ -207,8 +213,8 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 	(*mbufp)->port = device;
 	(*mbufp)->ol_flags = 0;
 	// packet_type is symbolic
-	(*mbufp)->pkt_len = sizeof(struct stub_mbuf_content);
-	(*mbufp)->data_len = sizeof(struct stub_mbuf_content); // TODO ideally those should be symbolic...
+	(*mbufp)->pkt_len =  packet_length;
+	(*mbufp)->data_len = data_length;
 	// vlan_tci is symbolic
 	// hash is symbolic
 	// vlan_tci_outer is symbolic
