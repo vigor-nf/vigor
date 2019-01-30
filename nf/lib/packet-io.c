@@ -91,6 +91,7 @@ bool packet_receive(uint16_t src_device, void** p, uint16_t* len)
   global_total_length = *len;
   global_read_length = 0;
   global_unread_buf = (int8_t*)*p;
+  return true;
 }
 
 void packet_send(void* p, uint16_t dst_device)

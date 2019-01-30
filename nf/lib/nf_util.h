@@ -189,6 +189,7 @@ static inline
 bool nf_receive_packet(uint16_t src_device, struct rte_mbuf** mbuf) {
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
   if (actual_rx_len != 0) {
+    packet_receive(src_device, &(**mbuf).buf_addr, &(**mbuf).data_len);
     global_packet_type = (**mbuf).packet_type;
     return true;
   } else {
@@ -204,6 +205,7 @@ void nf_free_packet(struct rte_mbuf* mbuf) {
 static inline
 void nf_send_packet(struct rte_mbuf* mbuf, int dst_device) {
   uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
+  packet_send((*mbuf).buf_addr, dst_device);
   if (actual_tx_len == 0) {
     rte_pktmbuf_free(mbuf);
   }
