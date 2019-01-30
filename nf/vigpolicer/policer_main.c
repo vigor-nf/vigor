@@ -156,8 +156,7 @@ void nf_core_init(void) {
 
 int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
   const uint16_t in_port = mbuf->port;
-//   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
-  struct ether_hdr *ether_header = rte_pktmbuf_mtod(mbuf, struct ether_hdr *);
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
   if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
       !(mbuf->packet_type == 0 &&
