@@ -5,9 +5,8 @@
 
 #include "packet-io.h"
 
-int8_t* global_unread_buf;
 size_t global_total_length;
-size_t global_read_length;
+size_t global_read_length = 0;
 
 /*@
   fixpoint bool missing_chunks(list<pair<int8_t*, int> > missing_chunks, int8_t* start, int8_t* end) {
@@ -52,13 +51,9 @@ void packet_borrow_next_chunk(void* p, size_t length, void** chunk)
             chars(ptr, length, take(length, unread)); @*/
 {
   //TODO: support mbuf chains.
-  //@ open packetp(p, unread, mc);
-  *chunk = global_unread_buf;
-  //@ chars_split(*chunk, length);
-  global_unread_buf += length;
+  *chunk = (char*)p + global_read_length;
   global_read_length += length;
-  //@ assert *chunk |-> ?ptr;
-  //@ close packetp(p, drop(length, unread), cons(pair(ptr, length), mc));
+  global_total_length = length;
 }
 
 void packet_return_chunk(void* p, void* chunk)
@@ -66,11 +61,7 @@ void packet_return_chunk(void* p, void* chunk)
              chars(chunk, len, ?chnk); @*/
 /*@ ensures packetp(p, append(chnk, unread), mc); @*/
 {
-  //@ open packetp(p, unread, _);
-  int length = global_unread_buf - (int8_t*)chunk;
-  global_unread_buf = (int8_t*)chunk;
-  global_read_length -= (size_t)length;
-  //@ close packetp(p, append(chnk, unread), mc);
+  global_read_length = (int8_t*)chunk - (int8_t*)p;
 }
 
 uint32_t packet_get_unread_length(void* p)
@@ -83,47 +74,3 @@ uint32_t packet_get_unread_length(void* p)
   //@ close packetp(p, unread, mc);
 }
 
-bool packet_receive(uint16_t src_device, void** p, uint16_t* len)
-/*@ requires true; @*/
-/*@ ensures false; @*/
-{
-  //@ assume(false); // Admitted
-  global_total_length = *len;
-  global_read_length = 0;
-  global_unread_buf = (int8_t*)*p;
-  return true;
-}
-
-void packet_send(void* p, uint16_t dst_device)
-/*@ requires true; @*/
-/*@ ensures false; @*/
-{
-  //@ assume(false); // Admitted
-  global_unread_buf = NULL;
-}
-
-// Flood method for the bridge
-void
-packet_flood(void* p, uint16_t skip_device, uint16_t nb_devices)
-/*@ requires true; @*/
-/*@ ensures false; @*/
-{
-  //@ assume(false); // Admitted
-  global_unread_buf = NULL;
-}
-
-void packet_free(void* p)
-/*@ requires true; @*/
-/*@ ensures false; @*/
-{
-  //@ assume(false); // Admitted
-  global_unread_buf = NULL;
-}
-
-void packet_clone(void* src, void** clone)
-/*@ requires true; @*/
-/*@ ensures false; @*/
-{
-  //@ assume(false); // Admitted
-  /* do nothing */
-}
