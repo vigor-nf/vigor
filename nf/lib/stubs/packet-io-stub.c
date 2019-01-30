@@ -139,7 +139,7 @@ void packet_return_chunk(void* p, void* chunk) {
 
 void packet_state_total_length(void* p, uint16_t* len) {
   klee_trace_ret();
-  klee_trace_param_ptr_directed(p, sizeof(void*), "p", TD_BOTH);
+  klee_trace_param_just_ptr(p, sizeof(void*), "p");
   klee_trace_param_ptr_directed(len, sizeof(uint16_t), "len", TD_BOTH);
 }
 
@@ -147,7 +147,7 @@ bool packet_receive(uint16_t src_device, void** p, uint16_t* len) {
   klee_trace_ret();
   klee_trace_param_u16(src_device, "src_devices");
   klee_trace_param_ptr_directed(p, sizeof(void*), "p", TD_OUT);
-  klee_trace_param_ptr_directed(len, sizeof(uint16_t), "len", TD_OUT);
+  klee_trace_param_ptr_directed(len, sizeof(uint16_t), "len", TD_BOTH);
 
   if (klee_int("received") == 0) {
     return false;

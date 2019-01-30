@@ -54,11 +54,13 @@ void packet_state_total_length(void* p, uint16_t* len);
             *len |-> length(unread); @*/
 
 bool packet_receive(uint16_t src_device, void** p, uint16_t* len);
-/*@ requires *p |-> _; @*/
+/*@ requires *p |-> _ &*& *len |-> ?length; @*/
 /*@ ensures result ? *p |-> ?pp &*&
                      packetp(pp, ?unread, nil) &*&
-                     sizeof(struct ether_hdr) <= length(unread)
-                   : *p |-> _; @*/
+                     sizeof(struct ether_hdr) <= length(unread) &*&
+                     *len |-> length &*&
+                     length == length(unread)
+                   : *p |-> _ &*& *len |-> length; @*/
 
 void packet_send(void* p, uint16_t dst_device);
 /*@ requires packetp(p, _, nil); @*/
