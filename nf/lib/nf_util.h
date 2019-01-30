@@ -190,6 +190,7 @@ bool nf_receive_packet(uint16_t src_device, struct rte_mbuf** mbuf) {
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
   if (actual_rx_len != 0) {
     global_packet_type = (**mbuf).packet_type;
+    packet_state_total_length((**mbuf).buf_addr, &(**mbuf).data_len);
     return true;
   } else {
     return false;
