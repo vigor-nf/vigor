@@ -21,6 +21,18 @@ let gen_inductive_type compinfo =
        match ftype with
        | TComp (field_str, _) ->
          (inductive_name field_str)
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec csl_fields (c : int64) =
+           if 1L < c then
+             (P.sprint ~width:100 (d_type () field_t)) ^ ", " ^ (csl_fields (Int64.sub c 1L))
+           else if c = 1L then
+             (P.sprint ~width:100 (d_type () field_t))
+           else failwith "A 0-element array"
+         in
+         csl_fields c
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
        | _ -> P.sprint ~width:100 (d_type () ftype)
      ) compinfo.cfields)) ^
   "); @*/"
@@ -34,11 +46,38 @@ let gen_predicate compinfo =
        | TComp (field_str, _) ->
          "  " ^ (predicate_name field_str) ^ "(&ptr->" ^ fname ^ ", ?" ^
          fname ^ "_f)"
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec csl_fields (i : int64) =
+           if 1L < i then
+             "cons(?" ^ fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^ (csl_fields (Int64.sub i 1L)) ^ ")"
+           else if i = 1L then
+             "cons(?" ^ fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", ?_nil)"
+           else failwith "A 0-element array"
+         in
+         "  uchars(ptr->" ^ fname ^ ", " ^ (Int64.to_string c) ^ ", ?" ^ fname ^ "_f) " ^
+         "&*&\n  " ^ fname ^ "_f == " ^ (csl_fields c) ^ " &*&\n" ^
+         "  switch(_nil) { case nil: return true; case cons(nh, nt): return false; }"
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
        | _ -> "  ptr->" ^ fname ^ " |-> ?" ^ fname ^ "_f"
      ) compinfo.cfields)) ^
    " &*&\n  v == " ^ (constructor_name compinfo) ^ "(" ^
-  (String.concat ", " (List.map (fun {fname;_} ->
-       fname ^ "_f"
+  (String.concat ", " (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec csl_fields (i : int64) =
+           if 1L < i then
+             fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^ (csl_fields (Int64.sub i 1L))
+           else if i = 1L then
+             fname ^ "_" ^ (Int64.to_string (Int64.sub c i))
+           else failwith "A 0-element array"
+         in
+         csl_fields c
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ -> fname ^ "_f"
      ) compinfo.cfields)) ^
   "); @*/"
 
@@ -56,13 +95,36 @@ let gen_eq_function compinfo =
   (eq_fun_contract compinfo) ^ "\n" ^
   "{\n  struct " ^ compinfo.cname ^
   "* id1 = a;\n  struct " ^ compinfo.cname ^
-  "* id2 = b;\n  return " ^
+  "* id2 = b;\n" ^
+  "  //@ open [f1]" ^ (predicate_name compinfo) ^ "(a, aid);\n" ^
+  "  //@ open [f2]" ^ (predicate_name compinfo) ^ "(b, bid);\n" ^
+  "  return " ^
   (String.concat "\n     AND " (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (field_str, _) ->
          (eq_fun_name field_str) ^ "(&id1->" ^ fname ^ ", &id2->" ^ fname ^ ")"
-       | _ -> "id1->" ^ fname ^ " == id2->" ^ fname) compinfo.cfields)) ^
-  ";\n}\n"
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec arr_fields (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+           if 1L < i then
+             "id1->" ^ fname ^ "[" ^ current ^ "] == " ^
+             "id2->" ^ fname ^ "[" ^ current ^ "]\n     AND " ^
+             (arr_fields (Int64.sub i 1L))
+           else if i = 1L then
+             "id1->" ^ fname ^ "[" ^ current ^ "] == " ^
+             "id2->" ^ fname ^ "[" ^ current ^ "]"
+           else failwith "A 0-element array"
+         in
+         arr_fields c
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ -> "id1->" ^ fname ^ " == id2->" ^ fname
+     ) compinfo.cfields)) ^
+  ";\n" ^
+  "  //@ close [f1]" ^ (predicate_name compinfo) ^ "(a, aid);\n" ^
+  "  //@ close [f2]" ^ (predicate_name compinfo) ^ "(b, bid);\n" ^
+  "\n}\n"
 
 let gen_eq_function_decl compinfo =
   "bool " ^ (eq_fun_name compinfo) ^ "(void* a, void* b);\n" ^
@@ -75,11 +137,24 @@ let gen_logical_hash compinfo =
     match field with
     | {ftype=TComp (field_str,_);fname;_} ->
          (lhash_name field_str) ^ "(" ^ (field_name fname) ^ ")"
+    | {ftype=TArray (field_t, Some (Const (CInt64 (c, _, _))), _);fname;_} ->
+      let rec arr_fields (i : int64) =
+        if 1L < i then
+          "(" ^ (arr_fields (Int64.sub i 1L)) ^ "*31 + "
+          ^ fname ^ "_" ^ (Int64.to_string (Int64.sub i 1L)) ^ ")"
+        else if i = 1L then
+          fname ^ "_0"
+        else failwith "A 0-element array"
+      in
+      arr_fields c
+    | {ftype=TArray (field_t, _, _);_} ->
+      failwith "An of unsupported array count " ^
+      (P.sprint ~width:100 (d_type () field.ftype))
     | {fname;_} -> (field_name fname)
   in
   let rec gen_exp_r fields acc =
     match fields with
-    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ (field_hash hd) ^ "_f)")
+    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ (field_hash hd) ^ ")")
     | [] -> acc
   in
   let gen_exp fields =
@@ -90,8 +165,21 @@ let gen_logical_hash compinfo =
   "/*@\nfixpoint unsigned " ^ (lhash_name compinfo) ^ "(" ^
   (inductive_name compinfo) ^ " x) {\n  switch(x)" ^
   " { case " ^ (constructor_name compinfo) ^ "(" ^
-  (String.concat ", " (List.map (fun {fname;_} ->
-       fname ^ "_f"
+  (String.concat ", " (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec csl_fields (i : int64) =
+           if 1L < i then
+             fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^ (csl_fields (Int64.sub i 1L))
+           else if i = 1L then
+             fname ^ "_" ^ (Int64.to_string (Int64.sub c i))
+           else failwith "A 0-element array"
+         in
+         csl_fields c
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ -> fname ^ "_f"
      ) compinfo.cfields)) ^ "):\n" ^
   "    return _wrap" ^ (gen_exp compinfo.cfields) ^
   ";\n  }\n} @*/"
@@ -106,11 +194,46 @@ let gen_hash compinfo =
   (hash_contract compinfo) ^ "\n" ^
   "{\n" ^
   "  struct " ^ compinfo.cname ^ "* id = obj;\n" ^
+  "\n" ^
+  "  //@ open [f]" ^ (predicate_name compinfo) ^ "(obj, v);\n" ^
+  (String.concat "" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec arr_fields (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+           let curr_field = fname ^ "_" ^ current in
+           if 0L < i then
+             "  " ^ (P.sprint ~width:100 (d_type () field_t)) ^ curr_field ^ " = " ^
+             "id->" ^ fname ^ "[" ^ current ^ "];\n" ^
+             "  //@ produce_limits(" ^ curr_field ^ ");\n" ^
+             (arr_fields (Int64.sub i 1L))
+           else ""
+         in
+         arr_fields c
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ -> ""
+     ) compinfo.cfields)) ^
+  "  //@ close [f]" ^ (predicate_name compinfo) ^ "(obj, v);\n" ^
+  "\n" ^
   "  unsigned long long hash = 0;\n" ^
   (String.concat "  hash *= 31;\n" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (field_str,_) ->
          "  hash += " ^ (hash_fun_name field_str) ^ "(&id->" ^ fname ^ ");\n"
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec arr_fields (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+           let curr_field = fname ^ "_" ^ current in
+           if 1L < i then
+             "  hash += " ^ curr_field ^ ";\n" ^
+             "  hash *= 31;\n" ^ (arr_fields (Int64.sub i 1L))
+           else if 1L = i then
+             "  hash += " ^ curr_field ^ ";\n"
+           else ""
+         in
+         arr_fields c
        | _ ->
          "  hash += id->" ^ fname ^ ";\n"
      ) compinfo.cfields)) ^
@@ -143,22 +266,43 @@ let gen_alloc_function_decl compinfo =
 let gen_str_field_descrs compinfo =
   "struct str_field_descr " ^ (strdescrs_name compinfo) ^ "[] = {\n" ^
   (String.concat "\n" (List.map (fun {fname;ftype;_} ->
-       "  {offsetof(struct " ^ compinfo.cname ^
-       ", " ^ fname ^ "), sizeof(" ^
-       (P.sprint ~width:100 (d_type () ftype)) ^
-       "), 0, \"" ^ fname ^ "\"},"
+       match ftype with
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         "  {offsetof(struct " ^ compinfo.cname ^
+         ", " ^ fname ^ "), sizeof(" ^
+         (P.sprint ~width:100 (d_type () field_t)) ^
+         "), " ^ (Int64.to_string c) ^ ", \"" ^ fname ^ "\"},"
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ ->
+         "  {offsetof(struct " ^ compinfo.cname ^
+         ", " ^ fname ^ "), sizeof(" ^
+         (P.sprint ~width:100 (d_type () ftype)) ^
+         "), 0, \"" ^ fname ^ "\"},"
      ) compinfo.cfields)) ^
   "\n};\n" ^
   "struct nested_field_descr " ^ (nest_descrs_name compinfo) ^ "[] = {\n" ^
-  (String.concat "\n" (List.map (fun {fname;ftype;_} ->
+  (String.concat "" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (nest_str, _) ->
          (String.concat "\n" (List.map (fun {fname=ffname;ftype=fftype;_} ->
-              "  {offsetof(struct " ^ compinfo.cname ^ ", " ^
-              fname ^ "), offsetof(" ^ (P.sprint ~width:100 (d_type () ftype)) ^
-              ", " ^ ffname ^ "), sizeof(" ^
-              (P.sprint ~width:100 (d_type () fftype)) ^
-              "), 0, \"" ^ ffname ^ "\"},"
+              match fftype with
+              | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+                "  {offsetof(struct " ^ compinfo.cname ^ ", " ^
+                fname ^ "), offsetof(" ^ (P.sprint ~width:100 (d_type () ftype)) ^
+                ", " ^ ffname ^ "), sizeof(" ^
+                (P.sprint ~width:100 (d_type () field_t)) ^
+                "), " ^ (Int64.to_string c) ^ ", \"" ^ ffname ^ "\"},"
+              | TArray (field_t, _, _) ->
+                failwith "An unsupported array count " ^
+                (P.sprint ~width:100 (d_type () field_t))
+              | _ ->
+                "  {offsetof(struct " ^ compinfo.cname ^ ", " ^
+                fname ^ "), offsetof(" ^ (P.sprint ~width:100 (d_type () ftype)) ^
+                ", " ^ ffname ^ "), sizeof(" ^
+                (P.sprint ~width:100 (d_type () fftype)) ^
+                "), 0, \"" ^ ffname ^ "\"},"
             ) nest_str.cfields))
        | _ -> ""
      ) compinfo.cfields)) ^
@@ -182,6 +326,19 @@ let gen_log_fun compinfo =
        | TComp (nest_str, _) ->
          "  NF_DEBUG(\"" ^ fname ^ ":\");\n" ^
          "  " ^ (log_fun_name nest_str) ^ "(&obj->" ^ fname ^ ");"
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec arr_fields (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+           if 0L < i then
+             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", " ^
+             fname ^ "[" ^ current ^ "]" ^ ");\n" ^
+             (arr_fields (Int64.sub i 1L))
+           else ""
+         in
+         arr_fields c
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
        | _ -> 
          "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
      ) compinfo.cfields)) ^ "\n" ^
