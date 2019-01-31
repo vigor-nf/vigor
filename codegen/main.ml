@@ -379,12 +379,22 @@ let fill_impl_file compinfo impl_fname header_fname =
   close_out cout;
   ()
 
-let fill_header_file compinfo header_fname orig_fname =
+let gen_include_deps compinfo def_headers =
+  (String.concat "" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (nest_str, _) ->
+         let header_name = List.assoc nest_str.cname def_headers in
+         "#include \"" ^ header_name ^ "\"\n"
+       | _ -> ""
+     ) compinfo.cfields))
+
+let fill_header_file compinfo header_fname orig_fname def_headers =
   let cout = open_out header_fname in
   P.fprintf cout "#ifndef _%s_GEN_H_INCLUDED_\n" compinfo.cname;
   P.fprintf cout "#define _%s_GEN_H_INCLUDED_\n\n" compinfo.cname;
   P.fprintf cout "#include <stdbool.h>\n";
   P.fprintf cout "#include \"lib/boilerplate_util.h\"\n\n";
+  P.fprintf cout "%s\n" (gen_include_deps compinfo def_headers);
   P.fprintf cout "#include \"%s\"\n\n" orig_fname;
   P.fprintf cout "%s\n\n" (gen_inductive_type compinfo);
   P.fprintf cout "%s\n\n" (gen_predicate compinfo);
@@ -403,12 +413,14 @@ let fill_header_file compinfo header_fname orig_fname =
   ()
 
 let traverse_globals (f : file) : unit =
+  let def_headers = ref [] in
   List.iter (fun g ->
     match g with
-    | GCompTag (ifo, _) ->
-      let header_fname = f.fileName ^ ".gen.h" in
-      let impl_fname = f.fileName ^ ".gen.c" in
-      fill_header_file ifo header_fname f.fileName;
+    | GCompTag (ifo, loc) ->
+      let header_fname = loc.file ^ ".gen.h" in
+      let impl_fname = loc.file ^ ".gen.c" in
+      def_headers := (ifo.cname,header_fname)::!def_headers;
+      fill_header_file ifo header_fname loc.file !def_headers;
       fill_impl_file ifo impl_fname header_fname;
       ()
     | _ -> ())
