@@ -98,11 +98,19 @@ let gen_eq_function compinfo =
   "* id2 = b;\n" ^
   "  //@ open [f1]" ^ (predicate_name compinfo) ^ "(a, aid);\n" ^
   "  //@ open [f2]" ^ (predicate_name compinfo) ^ "(b, bid);\n" ^
+  let field_eq_name fname = fname ^ "_eq" in
+  (String.concat "" (List.map (fun {fname;ftype;_} ->
+       match ftype with
+       | TComp (field_str, _) ->
+         "  bool " ^ (field_eq_name fname) ^ " = " ^
+         (eq_fun_name field_str) ^ "(&id1->" ^ fname ^ ", &id2->" ^ fname ^ ");\n"
+       | _ -> ""
+     ) compinfo.cfields)) ^
   "  return " ^
   (String.concat "\n     AND " (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (field_str, _) ->
-         (eq_fun_name field_str) ^ "(&id1->" ^ fname ^ ", &id2->" ^ fname ^ ")"
+         (field_eq_name fname)
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
@@ -221,7 +229,9 @@ let gen_hash compinfo =
   (String.concat "  hash *= 31;\n" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (field_str,_) ->
-         "  hash += " ^ (hash_fun_name field_str) ^ "(&id->" ^ fname ^ ");\n"
+         "  unsigned " ^ fname ^ "_hash = " ^
+         (hash_fun_name field_str) ^ "(&id->" ^ fname ^ ");\n" ^
+         "  hash += " ^ fname ^ "_hash;\n"
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
