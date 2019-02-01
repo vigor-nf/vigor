@@ -157,7 +157,7 @@ void nf_core_init(void) {
 
 int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
   if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
       !(mbuf->packet_type == 0 &&
@@ -168,7 +168,7 @@ int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
 
   uint8_t* ip_options;
   bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
   if (!wellformed) {
 		NF_DEBUG("Malformed IPv4, dropping");
     return in_port;
