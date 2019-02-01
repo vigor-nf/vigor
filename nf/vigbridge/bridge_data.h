@@ -4,12 +4,13 @@
 #include "stdbool.h"
 #include "lib/stubs/core_stub.h"
 
+#include "stat_key.h.gen.h"
+#include "dyn_value.h.gen.h"
+
 struct Map;
 struct Vector;
 struct DoubleChain;
 
-#include "stat_key.h.gen.h"
-#include "dyn_value.h.gen.h"
 
 struct DynamicFilterTable {
   struct Map* map;
