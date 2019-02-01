@@ -12,8 +12,7 @@ SRCS-y := nat_main.c nat_config.c ruby/st.c nat_map_ruby.c \
           ../nf_main.c \
           ../lib/nf_time.c \
           ../lib/nf_util.c \
-          ../lib/packet-io.c \
-          ../lib/proxy-dpdk.c
+          ../lib/packet-io.c
 #          nat_map_dpdk.c
 #          nat_map_cppstl.c
 

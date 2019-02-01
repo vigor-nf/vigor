@@ -328,7 +328,7 @@ void nf_core_init(void) {
 
 int nf_core_process(struct rte_mbuf* mbuf, time_t now) {
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
   bridge_expire_entries(now);
   bridge_put_update_entry(&ether_header->s_addr, in_port, now);

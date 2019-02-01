@@ -8,8 +8,7 @@ SRCS-y := nop_main.c nat_config.c \
           ../nf_main.c \
           ../lib/nf_time.c \
           ../lib/nf_util.c \
-          ../lib/packet-io.c \
-          ../lib/proxy-dpdk.c
+          ../lib/packet-io.c
 
 # gcc flags
 CFLAGS += -O3

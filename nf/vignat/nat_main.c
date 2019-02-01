@@ -42,7 +42,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	flow_manager_expire(flow_manager, now);
 	NF_DEBUG("Flows have been expired");
 
-	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
   if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
 		NF_DEBUG("Not IPv4, dropping");
@@ -50,7 +50,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
   }
   uint8_t* ip_options;
   bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
   if (!wellformed) {
 		NF_DEBUG("Malformed IPv4, dropping");
 		return in_port;
@@ -58,11 +58,11 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
   assert(ipv4_header != NULL);
 
   if (!nf_has_tcpudp_header(ipv4_header) ||
-      packet_get_unread_length(mbuf->buf_addr) < sizeof(struct tcpudp_hdr)) {
+      packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return in_port;
 	}
-	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(mbuf->buf_addr);
+	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(mbuf_pkt(mbuf));
   assert(tcpudp_header != NULL);
 
 	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
