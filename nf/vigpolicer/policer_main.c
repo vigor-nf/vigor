@@ -107,16 +107,16 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
 
 #ifdef KLEE_VERIFICATION
 struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint8_t), 4, "dst_addr"},
+  {0, sizeof(uint32_t), 0, "dst_addr"},
 };
 
 struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint8_t), 4, "dst_addr"},
+  {0, sizeof(uint32_t), 0, "dst_addr"},
 };
 
 struct str_field_descr dynamic_vector_value_fields[] = {
-  {0, sizeof(uint32_t), 0, "bucket_size"},
-  {0, sizeof(uint64_t), 0, "bucket_time"},
+  {offsetof(struct DynamicValue, bucket_size), sizeof(uint32_t), 1, "bucket_size"},
+  {offsetof(struct DynamicValue, bucket_time), sizeof(uint64_t), 1, "bucket_size"},
 };
 #endif//KLEE_VERIFICATION
 
@@ -166,22 +166,14 @@ int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
     return in_port;
   }
 
-//   uint8_t* ip_options;
-//   bool wellformed = true;
-// 	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
-//   if (!wellformed) {
-// 		NF_DEBUG("Malformed IPv4, dropping");
-//     return in_port;
-//   }
-//   assert(ipv4_header != NULL);
-
-  struct ipv4_hdr *ipv4_header = rte_pktmbuf_mtod_offset(
-      mbuf, struct ipv4_hdr *, sizeof(struct ether_hdr));
-
-  if (ipv4_header == NULL) {
-    NF_DEBUG("Not IPv4, dropping");
-    return in_port; // Not IPv4 packet, ignore
+  uint8_t* ip_options;
+  bool wellformed = true;
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
+  if (!wellformed) {
+		NF_DEBUG("Malformed IPv4, dropping");
+    return in_port;
   }
+  assert(ipv4_header != NULL);
 
   policer_expire_entries(now);
 
