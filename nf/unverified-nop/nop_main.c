@@ -34,7 +34,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	}
 
 	// L2 forwarding
-	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 	ether_header->s_addr = config.device_macs[dst_device];
 	ether_header->d_addr = config.endpoint_macs[dst_device];
 
