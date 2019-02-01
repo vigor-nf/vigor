@@ -16,10 +16,10 @@ pushd $CODEGENDIR
 popd
 
 PREPROC_FILE_PATH=$FILE_PATH.preproc.c
-gcc -E $FILE_PATH > $PREPROC_FILE_PATH
+gcc -DCODEGEN -E $FILE_PATH -I $CODEGENDIR/../nf > $PREPROC_FILE_PATH
 swap $FILE_PATH $PREPROC_FILE_PATH
 $CODEGENDIR/_build/main.byte $FILE_PATH
 swap $FILE_PATH $PREPROC_FILE_PATH
 rm $PREPROC_FILE_PATH
 # Check the generated file
-verifast -I $CODEGENDIR/../nf -c $FILE_PATH.gen.c
+verifast -I $CODEGENDIR/../nf -I $CODEGENDIR/../nf/lib/stubs/dpdk -c $FILE_PATH.gen.c

@@ -115,19 +115,19 @@ let gen_eq_function compinfo =
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            if 1L < i then
-             "id1->" ^ fname ^ "[" ^ current ^ "] == " ^
-             "id2->" ^ fname ^ "[" ^ current ^ "]\n     AND " ^
+             "(id1->" ^ fname ^ "[" ^ current ^ "] == " ^
+             "id2->" ^ fname ^ "[" ^ current ^ "])\n     AND " ^
              (arr_fields (Int64.sub i 1L))
            else if i = 1L then
-             "id1->" ^ fname ^ "[" ^ current ^ "] == " ^
-             "id2->" ^ fname ^ "[" ^ current ^ "]"
+             "(id1->" ^ fname ^ "[" ^ current ^ "] == " ^
+             "id2->" ^ fname ^ "[" ^ current ^ "])"
            else failwith "A 0-element array"
          in
          arr_fields c
        | TArray (field_t, _, _) ->
          failwith "An of unsupported array count " ^
          (P.sprint ~width:100 (d_type () ftype))
-       | _ -> "id1->" ^ fname ^ " == id2->" ^ fname
+       | _ -> "(id1->" ^ fname ^ " == id2->" ^ fname ^ ")"
      ) compinfo.cfields)) ^
   ";\n" ^
   "  //@ close [f1]" ^ (predicate_name compinfo) ^ "(a, aid);\n" ^
@@ -168,7 +168,7 @@ let gen_logical_hash compinfo =
   let gen_exp fields =
     match fields with
     | hd::tl -> gen_exp_r tl (field_hash hd)
-    | [] -> "(0)"
+    | [] -> "0"
   in
   "/*@\nfixpoint unsigned " ^ (lhash_name compinfo) ^ "(" ^
   (inductive_name compinfo) ^ " x) {\n  switch(x)" ^
@@ -189,8 +189,8 @@ let gen_logical_hash compinfo =
          (P.sprint ~width:100 (d_type () ftype))
        | _ -> fname ^ "_f"
      ) compinfo.cfields)) ^ "):\n" ^
-  "    return _wrap" ^ (gen_exp compinfo.cfields) ^
-  ";\n  }\n} @*/"
+  "    return _wrap(" ^ (gen_exp compinfo.cfields) ^
+  ");\n  }\n} @*/"
 
 let hash_contract compinfo =
   "//@ requires [?f]" ^ (predicate_name compinfo) ^ "(obj, ?v);\n" ^
