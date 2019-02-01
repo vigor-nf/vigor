@@ -942,6 +942,12 @@ let fun_types =
                                   extra_ptr_types = [];
                                   lemmas_before = [];
                                   lemmas_after = [];};
+     "packet_state_total_length", {ret_type = Static Void;
+                                   arg_types = stt [Ptr Sint8;
+                                                    Ptr Uint16];
+                                   extra_ptr_types = [];
+                                   lemmas_before = [];
+                                   lemmas_after = [];};
      "packet_free", {ret_type = Static Void;
                      arg_types = stt [Ptr Sint8;];
                      extra_ptr_types = [];

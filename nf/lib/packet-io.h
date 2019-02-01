@@ -9,6 +9,18 @@
 struct rte_mempool;
 
 /*@
+
+  fixpoint int borrowed_len(list<pair<int8_t*, int> > missing_chunks) {
+    switch(missing_chunks) {
+      case nil: return 0;
+      case cons(h,t): return switch(h) { case pair(beginning, span):
+        return span + borrowed_len(t);
+      };
+    }
+  }
+@*/
+
+/*@
   predicate packetp(void* p,
                     list<int8_t> unread,
                     list<pair<int8_t*, int> > missing_chunks);
@@ -19,6 +31,7 @@ void packet_borrow_next_chunk(void* p, size_t length, void** chunk);
 /*@ requires packetp(p, ?unread, ?mc) &*&
              length <= length(unread) &*&
              0 < length &*& length < INT_MAX &*&
+             length + borrowed_len(mc) < INT_MAX &*&
              *chunk |-> _; @*/
 /*@ ensures *chunk |-> ?ptr &*&
             packetp(p, drop(length, unread), cons(pair(ptr, length), mc)) &*&
@@ -34,13 +47,20 @@ uint32_t packet_get_unread_length(void* p);
 /*@ ensures packetp(p, unread, mc) &*&
             result == length(unread); @*/
 
+void packet_state_total_length(void* p, uint16_t* len);
+/*@ requires packetp(p, ?unread, nil) &*&
+             *len |-> length(unread); @*/
+/*@ ensures packetp(p, unread, nil) &*&
+            *len |-> length(unread); @*/
 
 bool packet_receive(uint16_t src_device, void** p, uint16_t* len);
-/*@ requires *p |-> _; @*/
+/*@ requires *p |-> _ &*& *len |-> ?length; @*/
 /*@ ensures result ? *p |-> ?pp &*&
                      packetp(pp, ?unread, nil) &*&
-                     sizeof(struct ether_hdr) <= length(unread)
-                   : *p |-> _; @*/
+                     sizeof(struct ether_hdr) <= length(unread) &*&
+                     *len |-> length &*&
+                     length == length(unread)
+                   : *p |-> _ &*& *len |-> length; @*/
 
 void packet_send(void* p, uint16_t dst_device);
 /*@ requires packetp(p, _, nil); @*/
