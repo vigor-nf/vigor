@@ -13,52 +13,9 @@
 #include "lib/containers/double-chain.h"
 #include "lib/containers/cht.h"
 
-#ifdef KLEE_VERIFICATION
-#include <klee/klee.h>
-#include "lib/stubs/containers/str-descr.h"
-#endif//KLEE_VERIFICATION
-
-
-struct LoadBalancedFlow {
-	uint32_t src_ip;
-	uint32_t dst_ip;
-	uint16_t src_port;
-	uint16_t dst_port;
-	uint8_t protocol;
-};
-
-struct LoadBalancedBackend {
-	uint16_t nic;
-  struct ether_addr mac;
-  uint32_t ip;
-};
-
-
-/*@
-  inductive lb_flowi = lb_flowc(int, int, int, int, int);
-  predicate lb_flowp(struct LoadBalancedFlow* ptr; lb_flowi flow) =
-    struct_LoadBalancedFlow_padding(ptr) &*&
-    ptr->src_ip |-> ?sip &*&
-    ptr->dst_ip |-> ?dip &*&
-    ptr->src_port |-> ?sp &*&
-    ptr->dst_port |-> ?dp &*&
-    ptr->protocol |-> ?p &*&
-    flow == lb_flowc(sip, dip, sp, dp, p);
-
-  fixpoint unsigned lb_flow_hash_2(lb_flowi ea);
-
-  fixpoint unsigned lb_ip_hash_fp(unsigned ip);
-
-  inductive lb_backendi = lb_backendc(int, ether_addri, int);
-
-  predicate lb_backendp(struct LoadBalancedBackend* ptr; lb_backendi backend) =
-    struct_LoadBalancedBackend_padding(ptr) &*&
-    ptr->nic |-> ?i &*&
-    ether_addrp(&ptr->mac, ?mac) &*&
-    ptr->ip |-> ?ip &*&
-    backend == lb_backendc(i, mac, ip);
-
-@*/
+#include "lb_flow.h.gen.h"
+#include "lb_backend.h.gen.h"
+#include "ip_addr.h.gen.h"
 
 
 bool lb_flow_equality(void* objA, void* objB);
@@ -122,13 +79,6 @@ struct Vector** lb_get_backends(struct LoadBalancer* balancer);
 struct Map** lb_get_ip_to_backend_id(struct LoadBalancer* balancer);
 struct DoubleChain** lb_get_active_backends(struct LoadBalancer* balancer);
 struct Vector** lb_get_cht(struct LoadBalancer* balancer);
-
-extern struct str_field_descr lb_flow_fields[];
-extern struct str_field_descr lb_backend_fields[];
-extern struct nested_field_descr lb_backend_nested_fields[];
-int lb_flow_fields_number();
-int lb_backend_fields_number();
-int lb_backend_nested_fields_number();
 #endif//KLEE_VERIFICATION
 
 

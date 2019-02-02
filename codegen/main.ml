@@ -251,6 +251,36 @@ let gen_hash compinfo =
   "  return (unsigned) hash;\n" ^
   "}"
 
+let gen_hash_dummy compinfo =
+  let strdescrs = (strdescrs_name compinfo) in
+  let nests = (nest_descrs_name compinfo) in
+  "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj)\n" ^
+  "{\n" ^
+  "  klee_trace_ret();\n" ^
+  "  klee_trace_param_tagged_ptr(obj, sizeof(struct " ^ compinfo.cname ^ "),\n" ^
+  "                             \"obj\", \"" ^ compinfo.cname ^ "\", TD_BOTH);\n" ^
+  "  for (int i = 0; i < sizeof(" ^ strdescrs ^ ")/" ^
+  "sizeof(" ^ strdescrs ^ "[0]); ++i) {\n" ^
+  "    klee_trace_param_ptr_field_arr_directed(obj,\n" ^
+  "                                            " ^ strdescrs ^ "[i].offset,\n" ^
+  "                                            " ^ strdescrs ^ "[i].width,\n" ^
+  "                                            " ^ strdescrs ^ "[i].count,\n" ^
+  "                                            " ^ strdescrs ^ "[i].name,\n" ^
+  "                                            TD_BOTH);\n" ^
+  "  }" ^
+  "  for (int i = 0; i < sizeof(" ^ nests ^ ")/" ^
+  "sizeof(" ^ nests ^ "[0]); ++i) {\n" ^
+  "    klee_trace_param_ptr_nested_field_arr_directed(obj,\n" ^
+  "                                                  " ^ nests ^ "[i].base_offset,\n" ^
+  "                                                  " ^ nests ^ "[i].offset,\n" ^
+  "                                                  " ^ nests ^ "[i].width,\n" ^
+  "                                                  " ^ nests ^ "[i].count,\n" ^
+  "                                                  " ^ nests ^ "[i].name,\n" ^
+  "                                                  TD_BOTH);\n" ^
+  "  }" ^
+  "  return klee_int(\"" ^ compinfo.cname ^ "_hash\");" ^
+  "}"
+
 let gen_hash_decl compinfo =
   "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj);\n" ^
   (hash_contract compinfo)
@@ -372,16 +402,18 @@ let gen_log_fun_dummy compinfo =
 let fill_impl_file compinfo impl_fname header_fname =
   let cout = open_out impl_fname in
   P.fprintf cout "#include \"%s\"\n\n" header_fname;
-  P.fprintf cout "%s\n\n" (gen_hash compinfo);
   P.fprintf cout "%s\n\n" (gen_eq_function compinfo);
   P.fprintf cout "%s\n\n" (gen_alloc_function compinfo);
   P.fprintf cout "#ifdef KLEE_VERIFICATION\n";
   P.fprintf cout "%s\n" (gen_str_field_descrs compinfo);
+  P.fprintf cout "%s\n\n" (gen_hash_dummy compinfo);
+  P.fprintf cout "#else//KLEE_VERIFICATION\n\n";
+  P.fprintf cout "%s\n\n" (gen_hash compinfo);
   P.fprintf cout "#endif//KLEE_VERIFICATION\n\n";
   P.fprintf cout "#ifdef ENABLE_LOG\n";
   P.fprintf cout "#include \"lib/nf_log.h\"\n";
   P.fprintf cout "%s\n\n" (gen_log_fun compinfo);
-  P.fprintf cout "#else//ENABLE_LOG\n";
+  P.fprintf cout "#  else//ENABLE_LOG\n";
   P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo);
   P.fprintf cout "#endif//ENABLE_LOG\n\n";
   close_out cout;

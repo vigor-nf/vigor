@@ -5,7 +5,7 @@ APP := lb
 NF_DEVICES := 3
 
 # Runtime and verification files
-NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_data.c
+NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_flow.h.gen.c lb_backend.h.gen.c ether_addr.h.gen.c ip_addr.h.gen.c
 
 # Verification files
 NF_VERIF_FILES := lb_loop.c
@@ -17,5 +17,22 @@ NF_VERIF_ARGS := --flow-expiration 10 \
                  --cht-height 100 \
                  --backend-expiration 60
 
+AUTO_GEN_FILES := lb_flow.h.gen.c lb_flow.h.gen.h \
+                  lb_backend.h.gen.c lb_backend.h.gen.h \
+                  ether_addr.h.gen.c ether_addr.h.gen.h \
+                  ip_addr.h.gen.c ip_addr.h.gen.h
+
+
+all: $(AUTO_GEN_FILES) $(APP)
+
 # Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
+
+lb_flow.h.gen.c lb_flow.h.gen.h: lb_flow.h
+	bash ../../codegen/generate.sh lb_flow.h
+
+lb_backend.h.gen.c lb_backend.h.gen.h ether_addr.h.gen.c ether_addr.h.gen.h: lb_backend.h
+	bash ../../codegen/generate.sh lb_backend.h
+
+ip_addr.h.gen.c ip_addr.h.gen.h: ip_addr.h
+	bash ../../codegen/generate.sh ip_addr.h
