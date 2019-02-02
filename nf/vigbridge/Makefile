@@ -5,7 +5,7 @@ APP := bridge
 NF_FILES := bridge_main.c bridge_config.c stat_key.h.gen.c dyn_value.h.gen.c ether_addr.h.gen.c
 
 # Verification files
-NF_VERIF_FILES := bridge_loop.c bridge_stub.c stat_key.h.gen.c dyn_value.h.gen.c ether_addr.h.gen.c
+NF_VERIF_FILES := bridge_loop.c
 
 # Verification arguments
 NF_VERIF_ARGS := --expire 10 --capacity 100 --config no-file.cfg

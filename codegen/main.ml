@@ -319,10 +319,18 @@ let gen_str_field_descrs compinfo =
   "\n};"
 
 let gen_str_field_descrs_decl compinfo =
+  let nested_descrs_count =
+    (List.fold_left (fun count {ftype;_} ->
+       match ftype with
+       | TComp (nest_str, _) ->
+         (List.length nest_str.cfields) + count
+       | _ -> count
+     ) 0 compinfo.cfields)
+  in
   "extern struct str_field_descr " ^ (strdescrs_name compinfo) ^
   "[" ^ (string_of_int (List.length compinfo.cfields)) ^ "];\n" ^
   "extern struct nested_field_descr " ^ (nest_descrs_name compinfo) ^
-  "[];"
+  "[" ^ (string_of_int nested_descrs_count) ^ "];"
 
 let gen_log_fun_decl compinfo =
   "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj);"

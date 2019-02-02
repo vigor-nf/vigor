@@ -124,27 +124,6 @@ void allocate_static_ft(unsigned capacity) {
 }
 #ifdef KLEE_VERIFICATION
 
-struct str_field_descr static_map_key_fields[] = {
-  {offsetof(struct StaticKey, addr), sizeof(struct ether_addr), 0, "addr"},
-  {offsetof(struct StaticKey, device), sizeof(uint16_t), 0, "device"},
-};
-
-struct nested_field_descr static_map_key_nested_fields[] = {
-  {offsetof(struct StaticKey, addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
-};
-
-struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint8_t), 6, "addr_bytes"},
-};
-
-struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint8_t), 6, "addr_bytes"},
-};
-
-struct str_field_descr dynamic_vector_value_fields[] = {
-  {0, sizeof(uint16_t), 0, "device"},
-};
-
 bool stat_map_condition(void* key, int index) {
   // Do not trace the model service function
   return 0 <= index & index < rte_eth_dev_count();
@@ -159,19 +138,19 @@ bool stat_map_condition(void* key, int index) {
 void read_static_ft_from_file() {
   unsigned static_capacity = klee_range(1, CAPACITY_UPPER_LIMIT, "static_capacity");
   allocate_static_ft(static_capacity);
-  map_set_layout(static_ft.map, static_map_key_fields,
-                 sizeof(static_map_key_fields)/sizeof(static_map_key_fields[0]),
-                 static_map_key_nested_fields,
-                 sizeof(static_map_key_nested_fields)/
-                 sizeof(static_map_key_nested_fields[0]),
+  map_set_layout(static_ft.map, StaticKey_descrs,
+                 sizeof(StaticKey_descrs)/sizeof(StaticKey_descrs[0]),
+                 StaticKey_nests,
+                 sizeof(StaticKey_nests)/
+                 sizeof(StaticKey_nests[0]),
                  "StaticKey");
   map_set_entry_condition(static_ft.map, stat_map_condition);
-  vector_set_layout(static_ft.keys, static_map_key_fields,
-                    sizeof(static_map_key_fields)/
-                    sizeof(static_map_key_fields[0]),
-                    static_map_key_nested_fields,
-                    sizeof(static_map_key_nested_fields)/
-                    sizeof(static_map_key_nested_fields[0]),
+  vector_set_layout(static_ft.keys, StaticKey_descrs,
+                    sizeof(StaticKey_descrs)/
+                    sizeof(StaticKey_descrs[0]),
+                    StaticKey_nests,
+                    sizeof(StaticKey_nests)/
+                    sizeof(StaticKey_nests[0]),
                     "StaticKey");
 }
 
@@ -308,19 +287,19 @@ void nf_core_init(void) {
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating heap");
 
 #ifdef KLEE_VERIFICATION
-  map_set_layout(dynamic_ft.map, dynamic_map_key_fields,
-                 sizeof(dynamic_map_key_fields)/sizeof(dynamic_map_key_fields[0]),
+  map_set_layout(dynamic_ft.map, ether_addr_descrs,
+                 sizeof(ether_addr_descrs)/sizeof(ether_addr_descrs[0]),
                  NULL, 0, "ether_addr");
   vector_set_layout(dynamic_ft.keys,
-                    dynamic_vector_key_fields,
-                    sizeof(dynamic_vector_key_fields)/
-                    sizeof(dynamic_vector_key_fields[0]),
+                    ether_addr_descrs,
+                    sizeof(ether_addr_descrs)/
+                    sizeof(ether_addr_descrs[0]),
                     NULL, 0,
                     "ether_addr");
   vector_set_layout(dynamic_ft.values,
-                    dynamic_vector_value_fields,
-                    sizeof(dynamic_vector_value_fields)/
-                    sizeof(dynamic_vector_value_fields[0]),
+                    DynamicValue_descrs,
+                    sizeof(DynamicValue_descrs)/
+                    sizeof(DynamicValue_descrs[0]),
                     NULL, 0,
                     "DynamicValue");
 #endif//KLEE_VERIFICATION
