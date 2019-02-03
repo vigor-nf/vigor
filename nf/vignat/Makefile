@@ -5,7 +5,7 @@ APP := nat
 NF_FILES := nat_main.c nat_config.c \
             flow.h.gen.c nat_flowmanager.c
 
-AUTO_GEN_FILES := flow.h.gen.c flow.h.gen.h
+AUTO_GEN_FILES := flow.h.gen.c flow.h.gen.h ../lib/stubs/ether_addr.h.gen.h
 
 # Must generate the flow.h* files before building the app
 all: $(AUTO_GEN_FILES) $(APP)
@@ -28,3 +28,7 @@ include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 
 flow.h.gen.c flow.h.gen.h: flow.h
 	bash ../../codegen/generate.sh flow.h
+
+../lib/stubs/ether_addr.h.gen.h: ../lib/stubs/ether_addr.h
+	bash ../../codegen/generate.sh ../lib/stubs/ether_addr.h
+

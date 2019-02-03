@@ -453,8 +453,8 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ()
 
 let relativise_header_path fpath =
-  let upper_dirs = Str.regexp "/.*/../nf/" in
-  Str.replace_first upper_dirs "" fpath
+  let upper_dirs = Str.regexp ".*/lib/" in
+  Str.replace_first upper_dirs "lib/" fpath
 
 let traverse_globals (f : file) : unit =
   let def_headers = ref [] in
@@ -465,7 +465,7 @@ let traverse_globals (f : file) : unit =
       let impl_fname = loc.file ^ ".gen.c" in
       def_headers := (ifo.cname,(relativise_header_path header_fname))::!def_headers;
       fill_header_file ifo header_fname (relativise_header_path loc.file) !def_headers;
-      fill_impl_file ifo impl_fname header_fname;
+      fill_impl_file ifo impl_fname (relativise_header_path header_fname);
       ()
     | _ -> ())
   f.globals
