@@ -332,26 +332,33 @@ let fun_types =
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;
                                    (fun {tmp_gen;_} ->
+                                      let capture_mvc_args =
+                                        "?" ^ (tmp_gen "cur_map") ^ ", ?" ^
+                                        (tmp_gen "cur_vec") ^ ", " ^
+                                        (tmp_gen "cur_ch")
+                                      in
+                                      let mvc_args = 
+                                        (tmp_gen "cur_map") ^ ", " ^
+                                        (tmp_gen "cur_vec") ^ ", " ^
+                                        (tmp_gen "cur_ch")
+                                      in
                                       "/*@ if (last_map_accessed_lb_flowi) {\n\
                                         assert map_vec_chain_coherent<\
-                                       LoadBalancedFlowi>(?" ^
-                                      (tmp_gen "cur_map") ^ ", ?" ^
-                                      (tmp_gen "cur_vec") ^ ", " ^
-                                      (tmp_gen "cur_ch") ^
+                                       LoadBalancedFlowi>(" ^
+                                      capture_mvc_args ^
                                       ");\n\
                                        mvc_coherent_same_len(" ^
-                                      (tmp_gen "cur_map") ^ ", " ^
-                                      (tmp_gen "cur_vec") ^ ", " ^
-                                      (tmp_gen "cur_ch") ^ ");\n} else {" ^
-                                        "assert map_vec_chain_coherent(?" ^
-                                      (tmp_gen "cur_map") ^ ", ?" ^
-                                      (tmp_gen "cur_vec") ^ ", " ^
-                                      (tmp_gen "cur_ch") ^
+                                      mvc_args ^ ");\n} else if (last_map_accessed_ip_addri) {\n" ^
+                                        "assert map_vec_chain_coherent<ip_addri>(" ^
+                                      capture_mvc_args ^
                                       ");\n\
                                        mvc_coherent_same_len(" ^
-                                      (tmp_gen "cur_map") ^ ", " ^
-                                      (tmp_gen "cur_vec") ^ ", " ^
-                                      (tmp_gen "cur_ch") ^ ");\n} @*/";);
+                                      mvc_args ^ ");\n} else {\n" ^
+                                        "assert map_vec_chain_coherent<uint32_t>(" ^
+                                      capture_mvc_args ^
+                                      ");\n\
+                                       mvc_coherent_same_len(" ^
+                                      mvc_args ^ ");\n} @*/";);
                                    (fun {args;tmp_gen;_} ->
                                       "//@ rejuvenate_keeps_high_bounded(" ^
                                       (tmp_gen "cur_ch") ^
@@ -360,6 +367,10 @@ let fun_types =
                                       ");\n");];
                                  lemmas_after = [
                                    (fun params ->
+                                      let rej_last_args = 
+                                        (List.nth_exn params.args 1) ^ ", " ^
+                                        (List.nth_exn params.args 2)
+                                      in
                                       "/*@ if (" ^ params.ret_name ^
                                       " != 0) { \n" ^
                                       "if (last_map_accessed_lb_flowi) {\n\
@@ -367,20 +378,27 @@ let fun_types =
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
                                        cur_vec, cur_ch, " ^
-                                      (List.nth_exn params.args 1) ^ ", "
-                                      ^ (List.nth_exn params.args 2) ^ ");\n\
+                                      rej_last_args ^
+                                      ");\n\
                                        rejuvenate_preserves_index_range(cur_ch," ^
-                                      (List.nth_exn params.args 1) ^ ", " ^
-                                      (List.nth_exn params.args 2) ^ ");\n } else {\n" ^
-                                       "assert map_vec_chain_coherent\
+                                      rej_last_args ^ ");\n } else if (last_map_accessed_ip_addri) {\n" ^
+                                      "assert map_vec_chain_coherent<ip_addri>\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
                                        cur_vec, cur_ch, " ^
-                                      (List.nth_exn params.args 1) ^ ", "
-                                      ^ (List.nth_exn params.args 2) ^ ");\n\
+                                      rej_last_args ^
+                                      ");\n\
                                        rejuvenate_preserves_index_range(cur_ch," ^
-                                      (List.nth_exn params.args 1) ^ ", " ^
-                                      (List.nth_exn params.args 2) ^
+                                      rej_last_args ^
+                                      ");\n} else {\n" ^
+                                      "assert map_vec_chain_coherent<uint32_t>\
+                                       (?cur_map,?cur_vec,?cur_ch);\n" ^
+                                      "mvc_rejuvenate_preserves_coherent(cur_map,\
+                                       cur_vec, cur_ch, " ^
+                                      rej_last_args ^
+                                      ");\n\
+                                       rejuvenate_preserves_index_range(cur_ch," ^
+                                      rej_last_args ^
                                       ");\n}\n}@*/");
                                    (fun params ->
                                       (ttype_to_str (List.nth_exn params.arg_types 1)) ^
@@ -622,6 +640,7 @@ let fun_types =
                         (tmp_gen "dk") ^ ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = true;\n" ^
+                        "last_map_accessed_ip_addri = false;\n" ^
                         "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
                       | Ptr Uint32 ->
                         "/*@ if (" ^ ret_name ^
@@ -640,6 +659,7 @@ let fun_types =
                         ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = false; \n" ^
+                        "last_map_accessed_ip_addri = false;\n" ^
                         "/*@ { open hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
                       | Ptr (Str ("ip_addr", _)) ->
                         "/*@ if (" ^ ret_name ^
@@ -660,6 +680,7 @@ let fun_types =
                         ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = false; \n" ^
+                        "last_map_accessed_ip_addri = true;\n" ^
                         "/*@ { open hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
@@ -1346,6 +1367,7 @@ struct
                     bool dchain_flow_allocated = false;\n\
                     bool map_flow_expired = false;\n\
                     bool last_map_accessed_lb_flowi = false;\n\
+                    bool last_map_accessed_ip_addri = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n\
                     //@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
