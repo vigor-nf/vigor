@@ -766,7 +766,7 @@ let fun_types =
                         ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
                         ");\n\
                          } @*/\n" ^
-                        "/*@ { open hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
+                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_put.");
                    (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
      "map_erase", {ret_type = Static Void;
