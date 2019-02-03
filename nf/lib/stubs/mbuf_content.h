@@ -8,7 +8,7 @@
 #include "lib/tcpudp.h"
 
 //TODO: should autogenerate this file as well.
-#include "vigbridge/ether_addr.h.gen.h"
+#include "ether_addr.h.gen.h"
 
 // TODO more complete stub content?
 // do change the total_len in rx if this is changed!

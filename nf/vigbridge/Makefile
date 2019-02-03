@@ -2,7 +2,7 @@
 APP := bridge
 
 # Runtime and verification files
-NF_FILES := bridge_main.c bridge_config.c stat_key.h.gen.c dyn_value.h.gen.c ether_addr.h.gen.c
+NF_FILES := bridge_main.c bridge_config.c stat_key.h.gen.c dyn_value.h.gen.c ../lib/stubs/ether_addr.h.gen.c
 
 # Verification files
 NF_VERIF_FILES := bridge_loop.c
@@ -12,7 +12,7 @@ NF_VERIF_ARGS := --expire 10 --capacity 100 --config no-file.cfg
 
 AUTO_GEN_FILES := dyn_value.h.gen.c dyn_value.h.gen.h \
                   stat_key.h.gen.c stat_key.h.gen.h \
-                  ether_addr.h.gen.c ether_addr.h.gen.h
+                  ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h
 
 all: $(AUTO_GEN_FILES) $(APP)
 
@@ -22,5 +22,5 @@ include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 dyn_value.h.gen.c dyn_value.h.gen.h: dyn_value.h
 	bash ../../codegen/generate.sh dyn_value.h
 
-stat_key.h.gen.c stat_key.h.gen.h ether_addr.h.gen.c ether_addr.h.gen.h: stat_key.h ether_addr.h
+stat_key.h.gen.c stat_key.h.gen.h ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h: stat_key.h ../lib/stubs/ether_addr.h
 	bash ../../codegen/generate.sh stat_key.h

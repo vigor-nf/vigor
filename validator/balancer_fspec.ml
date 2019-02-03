@@ -37,6 +37,8 @@ let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
                                              "s_addr", ether_addr_struct;
                                              "ether_type", Uint16;])
 
+let ip_addr_struct = Ir.Str("ip_addr", ["addr", Uint32])
+
 let ipv4_hdr_struct = Ir.Str ("ipv4_hdr", ["version_ihl", Uint8;
                                            "type_of_service", Uint8;
                                            "total_length", Uint16;
@@ -118,11 +120,11 @@ let fun_types =
                       lemmas_after = [
                         (fun params ->
                            "int64_t now = " ^ (params.ret_name) ^ ";\n")];};
-     "lb_flow_hash", {ret_type = Static Uint32;
-                      arg_types = stt [Ptr lb_flow_struct];
-                      extra_ptr_types = [];
-                      lemmas_before = [];
-                      lemmas_after = [];};
+     "LoadBalancedFlow_hash", {ret_type = Static Uint32;
+                               arg_types = stt [Ptr lb_flow_struct];
+                               extra_ptr_types = [];
+                               lemmas_before = [];
+                               lemmas_after = [];};
      "lb_loop_invariant_consume", {ret_type = Static Void;
                                    arg_types = stt
                                            [Ptr (Ptr map_struct);
@@ -191,24 +193,24 @@ let fun_types =
                                             (List.nth_exn args 12) ^ "); @*/");
                                          (fun {tmp_gen;args;_} ->
                                             "\n/*@ {\n\
-                                             assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
-                                             assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
-                                             assert vectorp<lb_backendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
-                                             assert map_vec_chain_coherent<lb_flowi>(" ^
+                                             assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
+                                             assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
+                                             assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
+                                             assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
                                             (tmp_gen "fi") ^ ", " ^
                                             (tmp_gen "fh") ^ ", ?" ^
                                             (tmp_gen "ch") ^
                                             ");\n\
-                                             mvc_coherent_same_len<lb_flowi>(" ^ 
+                                             mvc_coherent_same_len<LoadBalancedFlowi>(" ^ 
                                                    (tmp_gen "fi") ^
                                             ", " ^ (tmp_gen "fh") ^
                                             ", " ^ (tmp_gen "ch") ^
                                             ");\n\
-                                             assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n" ^ 
-                                            "assert mapp<lb_flowi>(_ "^
+                                             assert mapp<LoadBalancedFlowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n" ^ 
+                                            "assert mapp<LoadBalancedFlowi>(_ "^
                                             ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
                                             ", _));\n" ^
-                                            "assert vectorp<lb_flowi>(_" ^
+                                            "assert vectorp<LoadBalancedFlowi>(_" ^
                                             ", _, ?" ^ (tmp_gen "initial_flow_vec") ^
                                             ", _);\n" ^
                                             "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
@@ -220,15 +222,15 @@ let fun_types =
                                             ", _, ?" ^ (tmp_gen "initial_fidbid_veca") ^
                                             ", _);\n" ^
                                             "assert *" ^ (List.nth_exn args 4) ^ " |-> ?" ^ (tmp_gen "arg4bis") ^
-                                            ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg4bis") ^
+                                            ";\nassert vectorp<ip_addri>(" ^ (tmp_gen "arg4bis") ^
                                             ", _, ?" ^ (tmp_gen "initial_ip_veca") ^
                                             ", _);\n" ^
                                             "assert *" ^ (List.nth_exn args 5) ^ " |-> ?" ^ (tmp_gen "arg5bis") ^
-                                            ";\nassert vectorp<lb_backendi>(" ^ (tmp_gen "arg5bis") ^
+                                            ";\nassert vectorp<LoadBalancedBackendi>(" ^ (tmp_gen "arg5bis") ^
                                             ", _, ?" ^ (tmp_gen "initial_backends_veca") ^
                                             ", _);\n" ^
                                             "assert *" ^ (List.nth_exn args 6) ^ " |-> ?" ^ (tmp_gen "arg6bis") ^
-                                            ";\nassert mapp<uint32_t>(" ^ (tmp_gen "arg6bis") ^
+                                            ";\nassert mapp<ip_addri>(" ^ (tmp_gen "arg6bis") ^
                                             ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_backend_ip_map") ^
                                             ", _));\n" ^
                                             "assert *" ^ (List.nth_exn args 7) ^ " |-> ?" ^ (tmp_gen "arg7bis") ^
@@ -260,13 +262,13 @@ let fun_types =
                          lemmas_after = [
                            on_rez_nonzero
                              "if (!dchain_flow_allocated) {\n\
-                              assert vectorp<lb_flowi>(_, _, ?allocated_vector, _);\n\
+                              assert vectorp<LoadBalancedFlowi>(_, _, ?allocated_vector, _);\n\
                               empty_map_vec_dchain_coherent\
-                              <lb_flowi>(allocated_vector);\n\
+                              <LoadBalancedFlowi>(allocated_vector);\n\
                               } else {\n\
-                              assert vectorp<uint32_t>(the_ip_vector, u_integer, ?allocated_ip_vector, _);\n\
+                              assert vectorp<ip_addri>(the_ip_vector, ip_addrp, ?allocated_ip_vector, _);\n\
                               empty_map_vec_dchain_coherent\
-                              <uint32_t>(allocated_ip_vector);\n\
+                              (allocated_ip_vector);\n\
                               }";
                            (fun _ -> "dchain_flow_allocated = true;");
                            tx_l "index_range_of_empty(65536, 0);";];};
@@ -300,24 +302,24 @@ let fun_types =
                                        (fun {args;tmp_gen;_} ->
                                           "if (last_map_accessed_lb_flowi) {\n\
                                            assert map_vec_chain_coherent<\
-                                           lb_flowi>(?" ^
+                                           LoadBalancedFlowi>(?" ^
                                           (tmp_gen "cur_map") ^ ", ?" ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^
                                           ");\n\
-                                           mvc_coherent_alloc_is_halfowned<lb_flowi>(" ^
+                                           mvc_coherent_alloc_is_halfowned<LoadBalancedFlowi>(" ^
                                           (tmp_gen "cur_map") ^ ", " ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^ ", *" ^
                                           (List.nth_exn args 1) ^ ");\n} else " ^
                                           "{\n\
                                            assert map_vec_chain_coherent<\
-                                           uint32_t>(?" ^
+                                           ip_addri>(?" ^
                                           (tmp_gen "cur_map") ^ ", ?" ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^
                                           ");\n\
-                                           mvc_coherent_alloc_is_halfowned<uint32_t>(" ^
+                                           mvc_coherent_alloc_is_halfowned<ip_addri>(" ^
                                           (tmp_gen "cur_map") ^ ", " ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^ ", *" ^
@@ -332,7 +334,7 @@ let fun_types =
                                    (fun {tmp_gen;_} ->
                                       "/*@ if (last_map_accessed_lb_flowi) {\n\
                                         assert map_vec_chain_coherent<\
-                                       lb_flowi>(?" ^
+                                       LoadBalancedFlowi>(?" ^
                                       (tmp_gen "cur_map") ^ ", ?" ^
                                       (tmp_gen "cur_vec") ^ ", " ^
                                       (tmp_gen "cur_ch") ^
@@ -341,8 +343,7 @@ let fun_types =
                                       (tmp_gen "cur_map") ^ ", " ^
                                       (tmp_gen "cur_vec") ^ ", " ^
                                       (tmp_gen "cur_ch") ^ ");\n} else {" ^
-                                        "assert map_vec_chain_coherent<\
-                                       uint32_t>(?" ^
+                                        "assert map_vec_chain_coherent(?" ^
                                       (tmp_gen "cur_map") ^ ", ?" ^
                                       (tmp_gen "cur_vec") ^ ", " ^
                                       (tmp_gen "cur_ch") ^
@@ -362,7 +363,7 @@ let fun_types =
                                       "/*@ if (" ^ params.ret_name ^
                                       " != 0) { \n" ^
                                       "if (last_map_accessed_lb_flowi) {\n\
-                                       assert map_vec_chain_coherent<lb_flowi>\
+                                       assert map_vec_chain_coherent<LoadBalancedFlowi>\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
                                        cur_vec, cur_ch, " ^
@@ -371,7 +372,7 @@ let fun_types =
                                        rejuvenate_preserves_index_range(cur_ch," ^
                                       (List.nth_exn params.args 1) ^ ", " ^
                                       (List.nth_exn params.args 2) ^ ");\n } else {\n" ^
-                                       "assert map_vec_chain_coherent<uint32_t>\
+                                       "assert map_vec_chain_coherent\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
                                        cur_vec, cur_ch, " ^
@@ -401,7 +402,7 @@ let fun_types =
                              (fun {tmp_gen;args;_} ->
                                 "//@ assert double_chainp(?" ^ (tmp_gen "ch") ^
                                 ", " ^ (List.nth_exn args 0) ^ ");\n" ^
-                                "//@ assert map_vec_chain_coherent<lb_flowi>(?" ^
+                                "//@ assert map_vec_chain_coherent<LoadBalancedFlowi>(?" ^
                                 (tmp_gen "map") ^ ", ?" ^
                                 (tmp_gen "vec") ^ ", " ^
                                 (tmp_gen "ch") ^ ");\n" ^
@@ -452,27 +453,27 @@ let fun_types =
                                    tx_l
                                       "if (!map_flow_expired) {\n\
                                        } else {\n\
-                                       close hide_mapp<lb_flowi>(_, _, _, _, _);\n\
+                                       close hide_mapp<LoadBalancedFlowi>(_, _, _, _, _);\n\
                                        }";
                                  ];
                                  lemmas_after = [
                                    (fun _ -> "if (!map_flow_expired) {\n\
                                               map_flow_expired = true;\n\
                                               } else {\n\
-                                              //@ open hide_mapp<lb_flowi>(_, _, _, _, _);\n\
+                                              //@ open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _);\n\
                                               }");
                                    (fun {tmp_gen;_} ->
                                       "/*@ {\n\
-                                       assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
-                                       assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
-                                       assert vectorp<lb_backendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
-                                       assert map_vec_chain_coherent<lb_flowi>(" ^
+                                       assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
+                                       assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
+                                       assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
+                                       assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
                                       (tmp_gen "fi") ^ ", " ^
                                       (tmp_gen "fh") ^ ", ?" ^
                                       (tmp_gen "ch") ^
                                       ");\n\
-                                       assert mapp<lb_flowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n\
-                                      mvc_coherent_same_len<lb_flowi>(" ^
+                                       assert mapp<LoadBalancedFlowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n\
+                                      mvc_coherent_same_len<LoadBalancedFlowi>(" ^
                                       (tmp_gen "fi") ^ ", " ^
                                       (tmp_gen "fh") ^ ", " ^
                                       (tmp_gen "ch") ^ ");\n\
@@ -491,26 +492,26 @@ let fun_types =
                       lemmas_before = [
                         (fun _ -> (* VeriFast will syntax-error on produce_function_pointer_chunk if not within a block *)
                             "/*@ if (!map_flow_allocated) {\nproduce_function_pointer_chunk \
-                            map_keys_equality<lb_flowi>(lb_flow_equality)\
-                            (lb_flowp)(a, b) \
+                            map_keys_equality<LoadBalancedFlowi>(LoadBalancedFlow_eq)\
+                            (LoadBalancedFlowp)(a, b) \
                             {\
                             call();\
                             }\n\
                             produce_function_pointer_chunk \
-                            map_key_hash<lb_flowi>(lb_flow_hash)\
-                            (lb_flowp, lb_flow_hash_2)(a) \
+                            map_key_hash<LoadBalancedFlowi>(LoadBalancedFlow_hash)\
+                            (LoadBalancedFlowp, _LoadBalancedFlow_hash)(a) \
                             {\
                             call();\
                             }\n\
                              } else {\nproduce_function_pointer_chunk \
-                            map_keys_equality<uint32_t>(lb_ip_equality)\
-                            (u_integer)(a, b) \
+                            map_keys_equality<ip_addri>(ip_addr_eq)\
+                            (ip_addrp)(a, b) \
                             {\
                             call();\
                             }\n\
                             produce_function_pointer_chunk \
-                            map_key_hash<uint32_t>(lb_ip_hash)\
-                            (u_integer, lb_ip_hash_fp)(a) \
+                            map_key_hash<ip_addri>(ip_addr_hash)\
+                            (ip_addrp, _ip_addr_hash)(a) \
                             {\
                             call();\
                             }\n\
@@ -518,36 +519,36 @@ let fun_types =
                       lemmas_after = [
                         (fun {tmp_gen;ret_name;_} -> (* see remark above *)
                             "/*@ if (!map_flow_allocated) {\n assert [?" ^ (tmp_gen "imkedy") ^
-                           "]is_map_keys_equality(lb_flow_equality,\
-                            lb_flowp);\n\
+                           "]is_map_keys_equality(LoadBalancedFlow_eq,\
+                            LoadBalancedFlowp);\n\
                             close [" ^ (tmp_gen "imkedy") ^
-                           "]hide_is_map_keys_equality(lb_flow_equality, \
-                            lb_flowp);\n\
+                           "]hide_is_map_keys_equality(LoadBalancedFlow_eq, \
+                            LoadBalancedFlowp);\n\
                             assert [?" ^ (tmp_gen "imkhdy") ^
-                           "]is_map_key_hash(lb_flow_hash,\
-                            lb_flowp, lb_flow_hash_2);\n\
+                           "]is_map_key_hash(LoadBalancedFlow_hash,\
+                            LoadBalancedFlowp, _LoadBalancedFlow_hash);\n\
                             close [" ^ (tmp_gen "imkhdy") ^
-                           "]hide_is_map_key_hash(lb_flow_hash, \
-                            lb_flowp, lb_flow_hash_2);\n\
+                           "]hide_is_map_key_hash(LoadBalancedFlow_hash, \
+                            LoadBalancedFlowp, _LoadBalancedFlow_hash);\n\
                             } else {\n assert [?" ^ (tmp_gen "imkedy") ^
-                           "]is_map_keys_equality(lb_ip_equality,\
-                            u_integer);\n\
+                           "]is_map_keys_equality(ip_addr_eq,\
+                            ip_addrp);\n\
                             close [" ^ (tmp_gen "imkedy") ^
-                           "]hide_is_map_keys_equality(lb_ip_equality, \
-                            u_integer);\n\
+                           "]hide_is_map_keys_equality(ip_addr_eq, \
+                            ip_addrp);\n\
                             assert [?" ^ (tmp_gen "imkhdy") ^
-                           "]is_map_key_hash(lb_ip_hash,\
-                            u_integer, lb_ip_hash_fp);\n\
+                           "]is_map_key_hash(ip_addr_hash,\
+                            ip_addrp, _ip_addr_hash);\n\
                             close [" ^ (tmp_gen "imkhdy") ^
-                           "]hide_is_map_key_hash(lb_ip_hash, \
-                            u_integer, lb_ip_hash_fp);\n\
+                           "]hide_is_map_key_hash(ip_addr_hash, \
+                            ip_addrp, _ip_addr_hash);\n\
                             if (" ^ ret_name ^
                             " == 1) {\n\
-                            assert mapp<uint32_t>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                            assert mapp<ip_addri>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
                             ", ?" ^ (tmp_gen "map") ^
                             ", ?" ^ (tmp_gen "addr_map") ^
                             "));\n\
-                             assert vectorp<uint32_t>(the_ip_vector, _, ?" ^
+                             assert vectorp<ip_addri>(the_ip_vector, _, ?" ^
                             (tmp_gen "dks") ^
                             ", ?" ^ (tmp_gen "dkaddrs") ^
                             ");\n\
@@ -563,6 +564,7 @@ let fun_types =
      "map_get", {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
                               Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                       "ip_addr", Ptr ip_addr_struct;
                                        "uint32_t", Ptr Uint32];
                               Static (Ptr Sint32)];
                  extra_ptr_types = [];
@@ -570,12 +572,12 @@ let fun_types =
                    (fun ({arg_types;arg_exps;tmp_gen;_} as params) ->
                       match List.nth_exn arg_types 1 with
                       | Ptr (Str ("LoadBalancedFlow", _)) ->
-                        "//@ assert lb_flowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
+                        "//@ assert LoadBalancedFlowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
                         ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
                         "//@ last_flow_searched_in_the_map = " ^
                         (tmp_gen "dk") ^ ";\n" ^
-                         capture_a_map "lb_flowi" "dm" params ^
-                         "//@ assert map_vec_chain_coherent<lb_flowi>(" ^
+                         capture_a_map "LoadBalancedFlowi" "dm" params ^
+                         "//@ assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
                          (tmp_gen "dm") ^ ", ?" ^
                          (tmp_gen "dv") ^ ", ?" ^
                          (tmp_gen "dh") ^ ");\n" ^
@@ -586,7 +588,14 @@ let fun_types =
                          (tmp_gen "dm") ^ ", ?" ^
                          (tmp_gen "dv") ^ ", ?" ^
                          (tmp_gen "dh") ^ ");\n" ^
-                        "/*@ { close hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
+                        "/*@ { close hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
+                      | Ptr (Str ("ip_addr", _)) ->
+                         capture_a_map "ip_addri" "dm" params ^
+                         "//@ assert map_vec_chain_coherent<ip_addri>(" ^
+                         (tmp_gen "dm") ^ ", ?" ^
+                         (tmp_gen "dv") ^ ", ?" ^
+                         (tmp_gen "dh") ^ ");\n" ^
+                        "/*@ { close hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");];
                  lemmas_after = [
                    (fun {arg_types;ret_name;tmp_gen;args;_} ->
@@ -631,12 +640,33 @@ let fun_types =
                         ");\n\
                          } @*/\n\
                         last_map_accessed_lb_flowi = false; \n" ^
-                        "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
+                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
+                      | Ptr (Str ("ip_addr", _)) ->
+                        "/*@ if (" ^ ret_name ^
+                        " != 0) {\n\
+                         assert ip_addrp(" ^ (List.nth_exn args 1) ^ ", ?" ^
+                        (tmp_gen "ip") ^ ");\n" ^
+                        "mvc_coherent_map_get_bounded(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", " ^
+                        (tmp_gen "ip") ^
+                        ");\n\
+                         mvc_coherent_map_get_vec_half(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ", " ^
+                        (tmp_gen "ip") ^
+                        ");\n\
+                         } @*/\n\
+                        last_map_accessed_lb_flowi = false; \n" ^
+                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
                               Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                       "ip_addr", Ptr ip_addr_struct;
                                        "uint32_t", Ptr Uint32];
                               Static Sint32];
                  extra_ptr_types = [];
@@ -644,28 +674,28 @@ let fun_types =
                    (fun {args;tmp_gen;arg_types;_} ->
                       match List.nth_exn arg_types 1 with
                       | Ptr (Str ("LoadBalancedFlow", _)) ->
-                        "\n//@ assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                        "\n//@ assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
                         ", _));\n" ^
                         "\n/*@ {\n\
-                         assert map_vec_chain_coherent<lb_flowi>(" ^
+                         assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
                         (tmp_gen "dm") ^ ", ?" ^
                         (tmp_gen "dv") ^ ", ?" ^
                         (tmp_gen "dh") ^
                         ");\n\
-                         mvc_coherent_dchain_non_out_of_space_map_nonfull<lb_flowi>(" ^
+                         mvc_coherent_dchain_non_out_of_space_map_nonfull<LoadBalancedFlowi>(" ^
                         (tmp_gen "dm") ^ ", " ^
                         (tmp_gen "dv") ^ ", " ^
                         (tmp_gen "dh") ^ ");\n" ^
-                         "mvc_coherent_bounds<lb_flowi>(" ^
+                         "mvc_coherent_bounds<LoadBalancedFlowi>(" ^
                         (tmp_gen "dm") ^ ", " ^
                         (tmp_gen "dv") ^ ", " ^
                         (tmp_gen "dh") ^ ");\n} @*/\n" ^
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
-                         assert mapp<lb_flowi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                         assert vector_accp<lb_flowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
-                         assert map_vec_chain_coherent<lb_flowi>(?the_dm, the_dv, ?the_dh);\n\
-                         lb_flowi vvv = lb_flowc(" ^ arg1 ^
+                         assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                         assert vector_accp<LoadBalancedFlowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<LoadBalancedFlowi>(?the_dm, the_dv, ?the_dh);\n\
+                         LoadBalancedFlowi vvv = lb_flowc(" ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
                         "->dst_ip, " ^ arg1 ^
                         "->src_port, " ^ arg1 ^
@@ -700,7 +730,32 @@ let fun_types =
                          kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
                         "); \n\
                          } @*/\n" ^
-                        "/*@ { close hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
+                        "/*@ { close hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
+                      | Ptr (Str ("ip_addr", _)) ->
+                        "\n//@ assert mapp<ip_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                        ", _));\n" ^
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<ip_addri>(" ^
+                        (tmp_gen "dm") ^ ", ?" ^
+                        (tmp_gen "dv") ^ ", ?" ^
+                        (tmp_gen "dh") ^
+                        ");\n\
+                         mvc_coherent_dchain_non_out_of_space_map_nonfull(" ^
+                        (tmp_gen "dm") ^ ", " ^
+                        (tmp_gen "dv") ^ ", " ^
+                        (tmp_gen "dh") ^ ");\n} @*/\n" ^
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "/*@ { \n\
+                         assert mapp<ip_addri>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                         assert vector_accp<ip_addri>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<ip_addri>(?the_dm, the_dv, ?the_dh);\n\
+                         close ip_addrp(" ^ arg1 ^ ", ?vvv)" ^
+                        "; \n\
+                         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
+                         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                        "); \n\
+                         } @*/\n" ^
+                        "/*@ { close hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_put.");];
                  lemmas_after = [
                    (fun {args;tmp_gen;arg_types;_} ->
@@ -708,17 +763,17 @@ let fun_types =
                       | Ptr (Str ("LoadBalancedFlow", _)) ->
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "\n/*@ {\n\
-                         assert map_vec_chain_coherent<lb_flowi>(" ^ (tmp_gen "dm") ^
+                         assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^ (tmp_gen "dm") ^
                         ", ?" ^ (tmp_gen "dv") ^
                         ", ?" ^ (tmp_gen "dh") ^
                         ");\n\
-                         lb_flowi " ^ (tmp_gen "ea") ^ " = lb_flowc(" ^ arg1 ^
+                         LoadBalancedFlowi " ^ (tmp_gen "ea") ^ " = lb_flowc(" ^ arg1 ^
                         "->src_ip, " ^ arg1 ^
                         "->dst_ip, " ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
                         "->protocol);\n\
-                         mvc_coherent_put<lb_flowi>(" ^ (tmp_gen "dm") ^
+                         mvc_coherent_put<LoadBalancedFlowi>(" ^ (tmp_gen "dm") ^
                         ", " ^ (tmp_gen "dv") ^
                         ", " ^ (tmp_gen "dh") ^
                         ", " ^ (List.nth_exn args 2) ^
@@ -742,14 +797,33 @@ let fun_types =
                         ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
                         ");\n\
                          } @*/\n" ^
-                        "/*@ { open hide_mapp<lb_flowi>(_, lb_flowp, _, _, _); } @*/\n"
+                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
+                      | Ptr (Str ("ip_addr", _)) ->
+                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                        "\n/*@ {\n\
+                         assert map_vec_chain_coherent<ip_addri>(" ^ (tmp_gen "dm") ^
+                        ", ?" ^ (tmp_gen "dv") ^
+                        ", ?" ^ (tmp_gen "dh") ^
+                        ");\n\
+                         ip_addri " ^ (tmp_gen "ea") ^ " = ip_addrc(" ^ arg1 ^
+                        "->addr);\n\
+                         mvc_coherent_put<ip_addri>(" ^ (tmp_gen "dm") ^
+                        ", " ^ (tmp_gen "dv") ^
+                        ", " ^ (tmp_gen "dh") ^
+                        ", " ^ (List.nth_exn args 2) ^
+                        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
+                        ");\n\
+                         } @*/\n" ^
+                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, LoadBalancedFlowp, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_put.");
                    (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
      "map_erase", {ret_type = Static Void;
                    arg_types = [Static (Ptr map_struct);
                                 Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
+                                         "ip_addr", Ptr ip_addr_struct;
                                          "uint32_t", Ptr Uint32];
                                 Dynamic ["LoadBalancedFlow", Ptr (Ptr lb_flow_struct);
+                                         "ip_addr", Ptr (Ptr ip_addr_struct);
                                          "uint32_t", Ptr (Ptr Uint32)];];
                    extra_ptr_types = [];
                    lemmas_before = [
@@ -759,14 +833,15 @@ let fun_types =
                           "/*@ { close hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n" ^
                           let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
-                         assert mapp<lb_flowi>(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
-                         assert vector_accp<lb_flowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
-                         assert map_vec_chain_coherent<lb_flowi>(?the_dm, the_dv, ?the_dh);\n\
-                          assert lb_flowp(" ^ arg1 ^ ", ?vvv);\n\
+                         assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
+                         assert vector_accp<LoadBalancedFlowi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert map_vec_chain_coherent<LoadBalancedFlowi>(?the_dm, the_dv, ?the_dh);\n\
+                          assert LoadBalancedFlowp(" ^ arg1 ^ ", ?vvv);\n\
                          kkeeper_erase_one(dv_addrs, the_dv, dm_addrs, map_get_fp(dm, vvv));\n\
                          } @*/\n"
-                        | Ptr Uint32 ->
-                          "/*@ { close hide_mapp<lb_flowi>(_, u_integer, _, _, _); } @*/\n"
+                        | Ptr Uint32
+                        | Ptr (Str ("ip_addr", _)) ->
+                          "/*@ { close hide_mapp<LoadBalancedFlowi>(_, u_integer, _, _, _); } @*/\n"
                         | _ -> failwith "unexpected key type for map_erase")
                    ];
                    lemmas_after = [
@@ -774,8 +849,9 @@ let fun_types =
                         match List.nth_exn arg_types 1 with
                         | Ptr (Str ("LoadBalancedFlow", _)) ->
                           "/*@ { open hide_mapp<uint32_t>(_, u_integer, _, _, _); } @*/\n"
-                        | Ptr Uint32 ->
-                          "/*@ { open hide_mapp<lb_flowi>(_, u_integer, _, _, _); } @*/\n"
+                        | Ptr Uint32
+                        | Ptr (Str ("ip_addr", _)) ->
+                          "/*@ { open hide_mapp<LoadBalancedFlowi>(_, u_integer, _, _, _); } @*/\n"
                         | _ -> failwith "unexpected key type for map_erase")];};
      "map_size", {ret_type = Static Sint32;
                   arg_types = [Static (Ptr map_struct);];
@@ -961,8 +1037,8 @@ let fun_types =
                          lemmas_before = [
                            tx_bl (* note that produce_function_pointer_chunk can only be done in an 'if', otherwise VeriFast complains *)
                               "if(!vector_flow_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<lb_flowi>(lb_flow_init)\
-                                (lb_flowp, sizeof(struct LoadBalancedFlow))(a) \
+                                produce_function_pointer_chunk vector_init_elem<LoadBalancedFlowi>(LoadBalancedFlow_allocate)\
+                                (LoadBalancedFlowp, sizeof(struct LoadBalancedFlow))(a) \
                                 {\
                                 call();\
                                 }\n\
@@ -973,14 +1049,14 @@ let fun_types =
                                 call();\
                                 }\n\
                               } else if(!vector_backend_ips_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
-                                (u_integer, sizeof(uint32_t))(a) \
+                                produce_function_pointer_chunk vector_init_elem<ip_addri>(ip_addr_allocate)\
+                                (ip_addrp, sizeof(struct ip_addr))(a) \
                                 {\
                                 call();\
                                 }\n\
                               } else if(!vector_backends_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<lb_backendi>(lb_backend_init)\
-                                (lb_backendp, sizeof(struct LoadBalancedBackend))(a) \
+                                produce_function_pointer_chunk vector_init_elem<LoadBalancedBackendi>(LoadBalancedBackend_allocate)\
+                                (LoadBalancedBackendp, sizeof(struct LoadBalancedBackend))(a) \
                                 {\
                                 call();\
                                 }\n\
@@ -997,11 +1073,11 @@ let fun_types =
                               "/*@ if (" ^ ret_name ^
                               ") {\n\
                                if (!vector_flow_allocated) {\n\
-                               assert mapp<lb_flowi>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                               assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
                               ", ?" ^ (tmp_gen "map") ^
                               ", ?" ^ (tmp_gen "addr_map") ^
                               "));\n\
-                               assert vectorp<lb_flowi>(_, _, ?" ^ (tmp_gen "dks") ^
+                               assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (tmp_gen "dks") ^
                               ", ?" ^ (tmp_gen "dkaddrs") ^
                               ");\n\
                                empty_kkeeper(" ^
@@ -1036,33 +1112,46 @@ let fun_types =
                                          Static Sint32;
                                          Dynamic ["LoadBalancedFlow", Ptr (Ptr lb_flow_struct);
                                                   "LoadBalancedBackend", Ptr (Ptr lb_backend_struct);
+                                                  "ip_addr", Ptr (Ptr ip_addr_struct);
                                                   "uint32_t", Ptr (Ptr Uint32)];];
                             extra_ptr_types = ["borrowed_cell",
                                                Dynamic ["LoadBalancedFlow", Ptr lb_flow_struct;
                                                         "LoadBalancedBackend", Ptr lb_backend_struct;
+                                                        "ip_addr", Ptr ip_addr_struct;
                                                         "uint32_t", Ptr Uint32];];
                             lemmas_before = [
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ if (!vector_backend_borrowed) { close hide_vector<lb_backendi>(_, _, _, _); } @*/\n" ^
+                                   "/*@ if (!vector_backend_borrowed) { close hide_vector<LoadBalancedBackendi>(_, _, _, _); } @*/\n" ^
                                    "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n" ^
-                                   "//@ assert vectorp<lb_flowi>(" ^ (List.nth_exn params.args 0) ^
-                                   ", lb_flowp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
+                                    //@ close hide_vector<ip_addri>(_, _, _, _);\n" ^
+                                   "//@ assert vectorp<LoadBalancedFlowi>(" ^ (List.nth_exn params.args 0) ^
+                                   ", LoadBalancedFlowp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
                                    ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n"
                                  | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
-                                   "/*@ if (!vector_flow_borrowed) { close hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
-                                   "/*@ { assert vectorp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
+                                   "/*@ if (!vector_flow_borrowed) { close hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
+                                   "/*@ { assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
                                           forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n } @*/\n" ^
                                    "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n"
+                                    //@ close hide_vector<ip_addri>(_, _, _, _);\n"
                                  | Ptr (Ptr Uint32) ->
-                                   "//@ close hide_vector<lb_backendi>(_, _, _, _);\n" ^
-                                   "/*@ if (!vector_flow_borrowed) {close hide_vector<lb_flowi>(_, _, _, _);} @*/\n" ^
+                                   "//@ close hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
+                                   "/*@ if (!vector_flow_borrowed) {close hide_vector<LoadBalancedFlowi>(_, _, _, _);} @*/\n" ^
                                    "/*@ { assert vectorp<uint32_t>(" ^ (List.nth_exn params.args 0) ^ ", _, ?" ^
+                                   (params.tmp_gen "vec") ^
+                                   ", _);\n\
+                                    if (forall(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one)) {\n\
+                                    forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n }\n}\n @*/\n"
+                                 | Ptr (Ptr (Str ("ip_addr", _))) ->
+                                   "//@ close hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
+                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n" ^
+                                   "/*@ if (!vector_flow_borrowed) {close hide_vector<LoadBalancedFlowi>(_, _, _, _);} @*/\n" ^
+                                   "/*@ { assert vectorp<ip_addri>(" ^ (List.nth_exn params.args 0) ^ ", _, ?" ^
                                    (params.tmp_gen "vec") ^
                                    ", _);\n\
                                     if (forall(" ^ (params.tmp_gen "vec") ^
@@ -1075,18 +1164,18 @@ let fun_types =
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ if (!vector_backend_borrowed) { open hide_vector<lb_backendi>(_, _, _, _); } @*/\n" ^
+                                   "/*@ if (!vector_backend_borrowed) { open hide_vector<LoadBalancedBackendi>(_, _, _, _); } @*/\n" ^
                                    "vector_flow_borrowed = true;\n" ^
                                    "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n" ^
+                                    //@ open hide_vector<ip_addri>(_, _, _, _);\n" ^
                                    "struct LoadBalancedFlow * " ^ (params.tmp_gen "elem") ^
                                    " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
                                    "//@ assert [?" ^ (params.tmp_gen "fr") ^
-                                   "]lb_flowp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
+                                   "]LoadBalancedFlowp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
                                    "/*@ if (" ^ (params.tmp_gen "fr") ^
                                    " != 1.0) {\n\
-                                    assert mapp<lb_flowi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
+                                    assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
                                    ", ?" ^ (params.tmp_gen "fma") ^
                                    "));\n\
                                     forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
@@ -1098,14 +1187,19 @@ let fun_types =
                                    in
                                    binding ^ "\n" ^
                                    "//@ open [_]ether_addrp(" ^ (render_tterm expr) ^ "->mac, _);\n" ^
-                                   "/*@ if (!vector_flow_borrowed) { open hide_vector<lb_flowi>(_, _, _, _); } @*/\n" ^
+                                   "/*@ if (!vector_flow_borrowed) { open hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = true; \n" ^
                                    "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n"
+                                    //@ open hide_vector<ip_addri>(_, _, _, _);\n"
                                  | Ptr (Ptr Uint32) ->
-                                   "//@ open hide_vector<lb_backendi>(_, _, _, _);\n" ^
-                                   "/*@ if (!vector_flow_borrowed) {open hide_vector<lb_flowi>(_, _, _, _);} @*/\n"
+                                   "//@ open hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
+                                   "/*@ if (!vector_flow_borrowed) {open hide_vector<LoadBalancedFlowi>(_, _, _, _);} @*/\n"
+                                 | Ptr (Ptr (Str ("ip_addr", _))) ->
+                                   "//@ open hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
+                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
+                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n" ^
+                                   "/*@ if (!vector_flow_borrowed) {open hide_vector<LoadBalancedFlowi>(_, _, _, _);} @*/\n"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};
@@ -1114,26 +1208,27 @@ let fun_types =
                                          Static Sint32;
                                          Dynamic ["LoadBalancedFlow", Ptr lb_flow_struct;
                                                   "LoadBalancedBackend", Ptr lb_backend_struct;
+                                                  "ip_addr", Ptr ip_addr_struct;
                                                   "uint32_t", Ptr Uint32];];
                             extra_ptr_types = [];
                             lemmas_before = [
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Str ("LoadBalancedFlow", _)) -> (* see remark in return_full *)
-                                   "/*@ { assert vector_accp<lb_flowi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
+                                   "/*@ { assert vector_accp<LoadBalancedFlowi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _, _, _); \n\
                                           update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ { assert vector_accp<lb_backendi>(_, _, ?" ^ (params.tmp_gen "vec") ^
+                                   "/*@ { assert vector_accp<LoadBalancedBackendi>(_, _, ?" ^ (params.tmp_gen "vec") ^
                                    ", _, _, _); \n\
                                     assert *&" ^
                                    (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^
                                    " |-> ? " ^ (params.tmp_gen "bknd") ^
                                    ";\n\
-                                    assert lb_backendp(" ^
+                                    assert LoadBalancedBackendp(" ^
                                    (params.tmp_gen "bknd") ^
                                    ", ?" ^ (params.tmp_gen "bknd_logical") ^
                                    ");\n\
-                                    forall_update<pair<lb_backendi, real> >(" ^ (params.tmp_gen "vec") ^
+                                    forall_update<pair<LoadBalancedBackendi, real> >(" ^ (params.tmp_gen "vec") ^
                                    ", is_one, " ^ (List.nth_exn params.args 1) ^
                                    ", pair(" ^ (params.tmp_gen "bknd_logical") ^
                                    ", 1.0));\n\
@@ -1141,7 +1236,7 @@ let fun_types =
                                  | Ptr Uint32 ->
                                    let arg2 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2) in
                                    "/*@ if (vector_flow_borrowed) {\n\
-                                    close hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n" ^
+                                    close hide_vector_acc<LoadBalancedFlowi>(_, _, _, _, _, _); } @*/\n" ^
                                    " uint32_t " ^ (params.tmp_gen "put_value") ^ " = *" ^ arg2 ^
                                    ";\n" ^
                                    "/*@ { assert vector_accp<uint32_t>(_, _, ?" ^ (params.tmp_gen "vec") ^
@@ -1153,15 +1248,31 @@ let fun_types =
                                    ", pair(" ^ (params.tmp_gen "put_value") ^
                                    ", 1.0));\n\
                                     update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); }\n}@*/"
+                                 | Ptr (Str ("ip_addr", _)) ->
+                                   let arg2 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2) in
+                                   "/*@ if (vector_flow_borrowed) {\n\
+                                    close hide_vector_acc<LoadBalancedFlowi>(_, _, _, _, _, _); } @*/\n" ^
+                                   "//@ ip_addri " ^ (params.tmp_gen "put_value") ^ " = ip_addrc(" ^ arg2 ^ "->addr" ^
+                                   ");\n" ^
+                                   "/*@ { assert vector_accp<ip_addri>(_, _, ?" ^ (params.tmp_gen "vec") ^
+                                   ", _, _, _); \n\
+                                    if (forall(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one)) {\n\
+                                    forall_update<pair<ip_addri, real> >(" ^ (params.tmp_gen "vec") ^
+                                   ", is_one, " ^ (List.nth_exn params.args 1) ^
+                                   ", pair(" ^ (params.tmp_gen "put_value") ^
+                                   ", 1.0));\n\
+                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); }\n}@*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!");
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Str ("LoadBalancedFlow", _)) ->
-                                   "/*@ if (vector_backend_borrowed) { close hide_vector_acc<lb_backendi>(_, _, _, _, _, _); } @*/\n"
+                                   "/*@ if (vector_backend_borrowed) { close hide_vector_acc<LoadBalancedBackendi>(_, _, _, _, _, _); } @*/\n"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ if (vector_flow_borrowed) { close hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n"
+                                   "/*@ if (vector_flow_borrowed) { close hide_vector_acc<LoadBalancedFlowi>(_, _, _, _, _, _); } @*/\n"
                                  | Ptr Uint32 -> ""
+                                 | Ptr (Str ("ip_addr", _)) -> ""
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];
@@ -1169,13 +1280,15 @@ let fun_types =
                               (fun params ->
                                  match List.nth_exn params.arg_types 2 with
                                  | Ptr (Str ("LoadBalancedFlow", _)) ->
-                                   "/*@ if (vector_backend_borrowed) { open hide_vector_acc<lb_backendi>(_, _, _, _, _, _); } @*/\n" ^
+                                   "/*@ if (vector_backend_borrowed) { open hide_vector_acc<LoadBalancedBackendi>(_, _, _, _, _, _); } @*/\n" ^
                                    "vector_flow_borrowed = false;"
                                  | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ if (vector_flow_borrowed) { open hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/\n" ^
+                                   "/*@ if (vector_flow_borrowed) { open hide_vector_acc<LoadBalancedFlowi>(_, _, _, _, _, _); } @*/\n" ^
                                    "vector_backend_borrowed = false;"
-                                 | Ptr Uint32 -> "/*@ if (vector_flow_borrowed) {\n\
-                                                  open hide_vector_acc<lb_flowi>(_, _, _, _, _, _); } @*/"
+                                 | Ptr Uint32
+                                 | Ptr (Str ("ip_addr", _)) ->
+                                   "/*@ if (vector_flow_borrowed) {\n\
+                                    open hide_vector_acc<LoadBalancedFlowi>(_, _, _, _, _, _); } @*/"
                                  | _ ->
                                    failwith "Unsupported type for vector!")
                             ];};]
@@ -1209,18 +1322,18 @@ struct
                  ^ "//@ struct Vector* fidbid_veca_ptr;\n\
                     //@ struct Vector* cht_ptr;\n\
                     //@ struct Vector* backends_veca_ptr;\n"
-                 ^ "//@ list<pair<lb_flowi, uint32_t> > flow_map;\n"
-                 ^ "//@ list<pair<lb_flowi, real> > flow_vec;\n"
+                 ^ "//@ list<pair<LoadBalancedFlowi, uint32_t> > flow_map;\n"
+                 ^ "//@ list<pair<LoadBalancedFlowi, real> > flow_vec;\n"
                  ^ "//@ dchain flow_chain;\n"
                  ^ "//@ list<pair<uint32_t, real> > fidbid_veca;\n"
-                 ^ "//@ list<pair<uint32_t, real> > ip_veca;\n"
-                 ^ "//@ list<pair<lb_backendi, real> > backends_veca;\n"
-                 ^ "//@ list<pair<uint32_t, uint32_t> > backend_ip_map;\n"
+                 ^ "//@ list<pair<ip_addri, real> > ip_veca;\n"
+                 ^ "//@ list<pair<LoadBalancedBackendi, real> > backends_veca;\n"
+                 ^ "//@ list<pair<ip_addri, uint32_t> > backend_ip_map;\n"
                  ^ "//@ dchain active_backends;\n"
                  ^ "//@ list<pair<uint32_t, real> > cht;\n"
-                 ^ "//@ mapi<lb_flowi> expired_indices;\n" (*FIXME: these should not be necessary*)
-                 ^ "//@ list<pair<lb_flowi, real> > expired_heap;\n"
-                 ^ "//@ list<pair<lb_backendi, real> > expired_backends;\n"
+                 ^ "//@ mapi<LoadBalancedFlowi> expired_indices;\n" (*FIXME: these should not be necessary*)
+                 ^ "//@ list<pair<LoadBalancedFlowi, real> > expired_heap;\n"
+                 ^ "//@ list<pair<LoadBalancedBackendi, real> > expired_backends;\n"
                  ^ "//@ dchain expired_chain;\n"
                  ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
                  "/*@ assume(sizeof(struct LoadBalancedFlow) == 16); @*/\n"
@@ -1235,10 +1348,11 @@ struct
                     bool last_map_accessed_lb_flowi = false;\n\
                     bool vector_flow_borrowed = false;\n\
                     bool vector_backend_borrowed = false;\n\
-                    //@ lb_flowi last_flow_searched_in_the_map;\n\
+                    //@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
                     //@ list<phdr> recv_headers = nil; \n\
                     //@ list<phdr> sent_headers = nil; \n\
                     //@ list<int> sent_on_ports = nil; \n\
+                    //@ assume(sizeof(struct ip_addr) == 4);\n\
                     //@ assume(sizeof(struct ether_hdr) == 14);\n\
                     //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
                     //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\

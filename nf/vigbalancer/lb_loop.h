@@ -2,10 +2,7 @@
 #define LB_LOOP_H_INCLUDED
 
 #include "lib/containers/map.h"
-#include "lib/containers/vector.h"
-#include "lib/containers/double-chain.h"
 #include "lib/coherence.h"
-#include "lib/nf_time.h"
 
 #include "lb_balancer.h"
 
@@ -24,17 +21,17 @@
                               uint32_t backend_capacity,
                               uint32_t flow_capacity,
                               uint32_t cht_height) =
-          mapp<lb_flowi>(flow_to_flow_id, lb_flowp, lb_flow_hash_2, nop_true, mapc(flow_capacity, ?flow_map, ?flow_mapv)) &*&
-          vectorp<lb_flowi>(flow_heap, lb_flowp, ?flow_vec, ?flow_veca) &*&
+          mapp<LoadBalancedFlowi>(flow_to_flow_id, LoadBalancedFlowp, _LoadBalancedFlow_hash, nop_true, mapc(flow_capacity, ?flow_map, ?flow_mapv)) &*&
+          vectorp<LoadBalancedFlowi>(flow_heap, LoadBalancedFlowp, ?flow_vec, ?flow_veca) &*&
           double_chainp(?flow_ch, flow_chain) &*&
           vectorp<uint32_t>(flow_id_to_backend_id, u_integer, ?fidbid_vec, ?fidbid_veca) &*&
-          vectorp<uint32_t>(backend_ips, u_integer, ?ip_vec, ?ip_veca) &*&
-          vectorp<lb_backendi>(backends, lb_backendp, ?backends_vec, ?backends_veca) &*&
-          mapp<uint32_t>(ip_to_backend_id, u_integer, lb_ip_hash_fp, nop_true, mapc(backend_capacity, ?ip_map, ?ip_mapv)) &*&
+          vectorp<ip_addri>(backend_ips, ip_addrp, ?ip_vec, ?ip_veca) &*&
+          vectorp<LoadBalancedBackendi>(backends, LoadBalancedBackendp, ?backends_vec, ?backends_veca) &*&
+          mapp<ip_addri>(ip_to_backend_id, ip_addrp, _ip_addr_hash, nop_true, mapc(backend_capacity, ?ip_map, ?ip_mapv)) &*&
           double_chainp(?bknd_ch, active_backends) &*&
           vectorp<uint32_t>(cht, u_integer, ?cht_vec, _) &*&
-          map_vec_chain_coherent<lb_flowi>(flow_map, flow_vec, flow_ch) &*&
-          map_vec_chain_coherent<uint32_t>(ip_map, ip_vec, bknd_ch) &*&
+          map_vec_chain_coherent<LoadBalancedFlowi>(flow_map, flow_vec, flow_ch) &*&
+          map_vec_chain_coherent<ip_addri>(ip_map, ip_vec, bknd_ch) &*&
           true == forall2(flow_vec, flow_veca, (kkeeper)(flow_mapv)) &*&
           true == forall2(ip_vec, ip_veca, (kkeeper)(ip_mapv)) &*&
           length(flow_vec) == flow_capacity &*&

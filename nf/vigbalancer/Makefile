@@ -5,7 +5,7 @@ APP := lb
 NF_DEVICES := 3
 
 # Runtime and verification files
-NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_flow.h.gen.c lb_backend.h.gen.c ether_addr.h.gen.c ip_addr.h.gen.c
+NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_flow.h.gen.c lb_backend.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c
 
 # Verification files
 NF_VERIF_FILES := lb_loop.c
@@ -19,7 +19,7 @@ NF_VERIF_ARGS := --flow-expiration 10 \
 
 AUTO_GEN_FILES := lb_flow.h.gen.c lb_flow.h.gen.h \
                   lb_backend.h.gen.c lb_backend.h.gen.h \
-                  ether_addr.h.gen.c ether_addr.h.gen.h \
+                  ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h \
                   ip_addr.h.gen.c ip_addr.h.gen.h
 
 
@@ -31,7 +31,7 @@ include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 lb_flow.h.gen.c lb_flow.h.gen.h: lb_flow.h
 	bash ../../codegen/generate.sh lb_flow.h
 
-lb_backend.h.gen.c lb_backend.h.gen.h ether_addr.h.gen.c ether_addr.h.gen.h: lb_backend.h
+lb_backend.h.gen.c lb_backend.h.gen.h ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h: lb_backend.h ../lib/stubs/ether_addr.h
 	bash ../../codegen/generate.sh lb_backend.h
 
 ip_addr.h.gen.c ip_addr.h.gen.h: ip_addr.h

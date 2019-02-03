@@ -140,7 +140,7 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   vector_set_layout(balancer->flow_id_to_backend_id, NULL, 0, NULL, 0, "uint32_t");
   vector_set_entry_condition(balancer->flow_id_to_backend_id, lb_flow_id2backend_id_cond, balancer);
   //vector_set_layout(balancer->backend_ips, &uint32_field, 1, NULL, 0, "uint32_t");
-  vector_set_layout(balancer->backend_ips, NULL, 0, NULL, 0, "uint32_t");
+  vector_set_layout(balancer->backend_ips, ip_addr_descrs, sizeof(ip_addr_descrs)/sizeof(ip_addr_descrs[0]), NULL, 0, "ip_addr");
   vector_set_layout(balancer->backends,
                     LoadBalancedBackend_descrs,
                     sizeof(LoadBalancedBackend_descrs)/sizeof(LoadBalancedBackend_descrs[0]),
