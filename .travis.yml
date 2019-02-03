@@ -16,6 +16,8 @@ install:
   - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/nf
   - docker cp validator vignat-deps:/home/vigor/
   - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/validator
+  - docker cp codegen vignat-deps:/home/vigor/
+  - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/codegen
   - docker cp test-vigor.sh vignat-deps:/home/vigor/
   - docker exec vignat-deps sudo chown vigor:vigor /home/vigor/test-vigor.sh
 

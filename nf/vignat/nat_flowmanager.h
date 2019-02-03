@@ -1,7 +1,7 @@
 #ifndef _FLOWMANAGER_H_INCLUDED_
 #define _FLOWMANAGER_H_INCLUDED_
 
-#include "nat_flow.h"
+#include "flow.h.gen.h"
 #include "lib/nf_time.h"
 
 #include <stdbool.h>
