@@ -142,6 +142,13 @@ let fun_types =
                       lemmas_after = [
                         (fun params ->
                            "int64_t now = " ^ (params.ret_name) ^ ";\n");];};
+     "ether_addr_hash", {ret_type = Static Uint32;
+                         arg_types = stt [Ptr ether_addr_struct];
+                         extra_ptr_types = [];
+                         lemmas_before = [];
+                         lemmas_after = [
+                           (fun {args;_} ->
+                              "//@ open ether_addrp(" ^ (List.nth_exn args 0) ^ ", _);\n")];};
      "bridge_loop_invariant_consume", {ret_type = Static Void;
                                        arg_types = stt
                                            [Ptr (Ptr dchain_struct);
