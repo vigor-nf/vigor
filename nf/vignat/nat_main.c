@@ -9,7 +9,7 @@
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
-#include "nat_flow.h"
+#include "flow.h.gen.h"
 #include "nat_flowmanager.h"
 #include "nat_config.h"
 #include "lib/nf_forward.h"
@@ -74,7 +74,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
     struct FlowId internal_flow;
 		if (flow_manager_get_external(flow_manager, tcpudp_header->dst_port, now, &internal_flow)) {
 			NF_DEBUG("Found internal flow.");
-      flow_log_id(&internal_flow);
+      log_FlowId(&internal_flow);
 
       if (internal_flow.dst_ip != ipv4_header->src_addr ||
           internal_flow.dst_port != tcpudp_header->src_port ||
@@ -101,7 +101,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
     };
 
     NF_DEBUG("For id:");
-    flow_log_id(&id);
+    log_FlowId(&id);
 
 		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config.wan_device);
 

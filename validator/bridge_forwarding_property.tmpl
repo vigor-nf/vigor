@@ -1,20 +1,20 @@
 // Captrue the final state
-assert mapp<ether_addri>(_, ether_addrp, eth_addr_hash, nop_true, mapc(_, ?final_dyn_map, _));
-assert mapp<stat_keyi>(_, static_keyp, st_key_hash, nop_true, mapc(_, ?final_stat_map, _));
+assert mapp<ether_addri>(_, ether_addrp, _ether_addr_hash, nop_true, mapc(_, ?final_dyn_map, _));
+assert mapp<StaticKeyi>(_, StaticKeyp, _StaticKey_hash, nop_true, mapc(_, ?final_stat_map, _));
 assert vectorp<ether_addri>(_, ether_addrp, ?final_dyn_key_vec, _);
-assert vectorp<stat_keyi>(_, static_keyp, ?final_stat_key_vec, _);
-assert vectorp<uint16_t>(_, dyn_valp, ?final_dyn_val_vec, _);
+assert vectorp<StaticKeyi>(_, StaticKeyp, ?final_stat_key_vec, _);
+assert vectorp<DynamicValuei>(_, DynamicValuep, ?final_dyn_val_vec, _);
 assert double_chainp(?final_chain,_);
 
 emap<ether_addri> dyn_emap = emap(initial_dyn_map, initial_dyn_key_vec, initial_chain);
-list<pair<uint16_t, real> > dyn_val_vec = initial_dyn_val_vec;
+list<pair<DynamicValuei, real> > dyn_val_vec = initial_dyn_val_vec;
 dchain stat_chain;//dummy
-emap<stat_keyi> stat_emap = emap(initial_stat_map, initial_stat_key_vec, stat_chain);
-vector<uint16_t> dyn_val_vector = vector(dyn_val_vec);
+emap<StaticKeyi> stat_emap = emap(initial_stat_map, initial_stat_key_vec, stat_chain);
+vector<DynamicValuei> dyn_val_vector = vector(dyn_val_vec);
 
 emap<ether_addri> final_dyn_emap = emap(final_dyn_map, final_dyn_key_vec, final_chain);
-emap<stat_keyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_chain);
-vector<uint16_t> final_dyn_val_vector = vector(final_dyn_val_vec);
+emap<StaticKeyi> final_stat_emap = emap(final_stat_map, final_stat_key_vec, stat_chain);
+vector<DynamicValuei> final_dyn_val_vector = vector(final_dyn_val_vec);
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
      case hd1(x): assert nil == sent_on_ports; \
@@ -31,7 +31,7 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
   switch(recv_headers) { case cons(h1,t1): switch(h1) { case ether_hdr(hdr1):
     switch(hdr1) { case ether_hdrc(iesaddr, iedaddr, ietype):
 
-    stat_keyi static_key = stkc(received_on_port, iedaddr);
+    StaticKeyi static_key = StaticKeyc(iedaddr, received_on_port);
 
     dyn_emap = emap_expire_all(dyn_emap, now - 10);
 
@@ -42,7 +42,7 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
       if (!emap_full(dyn_emap)) {
         int idx = the_index_allocated;
         dyn_emap = emap_add(dyn_emap, iesaddr, idx, now);
-        dyn_val_vector = vector_set(dyn_val_vector, idx, received_on_port);
+        dyn_val_vector = vector_set(dyn_val_vector, idx, DynamicValuec(received_on_port));
       }
     }
 
@@ -59,12 +59,14 @@ if (300 < now) {// consider only normal moments, remote from the start of the ep
     } else {
       if (emap_has(dyn_emap, iedaddr)) {
         int idx = emap_get(dyn_emap, iedaddr);
-        int output_port = vector_get(dyn_val_vector, idx);
-        if (output_port == received_on_port) {
-          assert sent_on_ports == nil;
-        } else {
-          assert sent_on_ports == cons(output_port, nil);
-          assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
+        switch(vector_get(dyn_val_vector, idx)) {
+          case DynamicValuec(output_port):
+            if (output_port == received_on_port) {
+              assert sent_on_ports == nil;
+            } else {
+              assert sent_on_ports == cons(output_port, nil);
+              assert sent_headers == cons(ether_hdr(ether_hdrc(iesaddr, iedaddr, ietype)), nil);
+            }
         }
       } else {
         assert sent_on_ports == cons(1-received_on_port, nil);

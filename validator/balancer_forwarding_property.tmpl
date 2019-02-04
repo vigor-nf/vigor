@@ -3,11 +3,11 @@
 #define BACKEND_EXP_TIME 60
 
 //Capture the final state.
-assert map_vec_chain_coherent<lb_flowi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
-assert map_vec_chain_coherent<uint32_t>(?final_backend_ip_map, ?final_ip_veca, ?final_active_backends);
+assert map_vec_chain_coherent<LoadBalancedFlowi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
+assert map_vec_chain_coherent<ip_addri>(?final_backend_ip_map, ?final_ip_veca, ?final_active_backends);
 assert vectorp<uint32_t>(fidbid_veca_ptr, u_integer, ?final_fidbid_veca, _);
 assert vectorp<uint32_t>(cht_ptr, u_integer, ?final_cht, _);
-assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca, _);
+assert vectorp<LoadBalancedBackendi>(backends_veca_ptr, LoadBalancedBackendp, ?final_backends_veca, _);
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
      case hd1(x): assert nil == sent_on_ports; \
@@ -15,15 +15,15 @@ assert vectorp<lb_backendi>(backends_veca_ptr, lb_backendp, ?final_backends_veca
      case hd3(x): assert nil == sent_on_ports
 #define NIL_DROP case nil: assert nil == sent_on_ports
 
-emap<lb_flowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
-emap<uint32_t> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
+emap<LoadBalancedFlowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
+emap<ip_addri> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
 vector<uint32_t> fidbid_vec = vector(fidbid_veca);
-vector<lb_backendi> backends_vec = vector(backends_veca);
+vector<LoadBalancedBackendi> backends_vec = vector(backends_veca);
 
-emap<lb_flowi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
-emap<uint32_t> final_backend_ip_emap = emap(final_backend_ip_map, final_ip_veca, final_active_backends);
+emap<LoadBalancedFlowi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
+emap<ip_addri> final_backend_ip_emap = emap(final_backend_ip_map, final_ip_veca, final_active_backends);
 vector<uint32_t> final_fidbid_vec = vector(final_fidbid_veca);
-vector<lb_backendi> final_backends_vec = vector(final_backends_veca);
+vector<LoadBalancedBackendi> final_backends_vec = vector(final_backends_veca);
 
 // Consider only normal moments, remote from the start of the epoch
 if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
@@ -49,7 +49,7 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
         // 0 -> Packet received from the external network
         if (received_on_port == 0) {
 
-          lb_flowi packet_flow = lb_flowc(isaddr, idaddr, isrc_port, idst_port, inpid);
+          LoadBalancedFlowi packet_flow = LoadBalancedFlowc(isaddr, idaddr, isrc_port, idst_port, inpid);
 
           bool alloc_flow_and_process_packet = false;
           if (emap_has(flow_emap, packet_flow)) {
@@ -57,8 +57,8 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
             int backend_id = vector_get(fidbid_vec, flow_id);
             if (emap_has_idx(backend_ip_emap, backend_id)) {
               flow_emap = emap_refresh_idx(flow_emap, emap_get(flow_emap, packet_flow), now);
-              lb_backendi backend = vector_get(backends_vec, backend_id);
-              switch(backend) { case lb_backendc(nic, mac, ip):
+              LoadBalancedBackendi backend = vector_get(backends_vec, backend_id);
+              switch(backend) { case LoadBalancedBackendc(nic, mac, ip):
                 assert sent_on_ports == cons(nic, nil);
                 assert sent_headers ==
                        cons(ether_hdr(ether_hdrc(_, mac, ietype)),
@@ -75,8 +75,8 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
           }
           //flow_map, fwd_flow, out_dev = pp_with_flow_alloc(paket_flow, flow_map, backend_ip_map, now);
           if (alloc_flow_and_process_packet) {
-            if (emap_exists_with_cht(backend_ip_emap, cht, lb_flow_hash_2(packet_flow))) {
-              int bknd = emap_choose_with_cht(backend_ip_emap, cht, lb_flow_hash_2(packet_flow));
+            if (emap_exists_with_cht(backend_ip_emap, cht, _LoadBalancedFlow_hash(packet_flow))) {
+              int bknd = emap_choose_with_cht(backend_ip_emap, cht, _LoadBalancedFlow_hash(packet_flow));
               if (emap_full(flow_emap)) {
                 // do not change the state
               } else {
@@ -84,8 +84,8 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
                 flow_emap = emap_add(flow_emap, packet_flow, idx, now);
                 fidbid_vec = vector_set(fidbid_vec, idx, bknd);
               }
-              lb_backendi backend = vector_get(backends_vec, bknd);
-              switch(backend) { case lb_backendc(nic, mac, ip):
+              LoadBalancedBackendi backend = vector_get(backends_vec, bknd);
+              switch(backend) { case LoadBalancedBackendc(nic, mac, ip):
                 assert sent_on_ports == cons(nic, nil);
                 assert sent_headers ==
                        cons(ether_hdr(ether_hdrc(_, mac, ietype)),
@@ -99,18 +99,18 @@ if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
           }
         } else { // A heartbeat packet from a backend
           {
-            if (emap_has(backend_ip_emap, isaddr)) {
+            if (emap_has(backend_ip_emap, ip_addrc(isaddr))) {
               backend_ip_emap = emap_refresh_idx(backend_ip_emap,
-                                                 emap_get(backend_ip_emap, isaddr),
+                                                 emap_get(backend_ip_emap, ip_addrc(isaddr)),
                                                  now);
             } else {
               if (emap_full(backend_ip_emap)) {
                 // What you gonna do? (nothing, the question is rhetorical)
               } else {
                 int idx = the_index_allocated;
-                backend_ip_emap = emap_add(backend_ip_emap, isaddr, idx, now);
+                backend_ip_emap = emap_add(backend_ip_emap, ip_addrc(isaddr), idx, now);
                 backends_vec = vector_set(backends_vec, idx,
-                                          lb_backendc(received_on_port, iesaddr, isaddr));
+                                          LoadBalancedBackendc(received_on_port, iesaddr, isaddr));
               }
             }
           }

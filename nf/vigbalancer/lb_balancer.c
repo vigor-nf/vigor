@@ -93,11 +93,12 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   }
 
 
-  if (map_allocate(lb_flow_equality, lb_flow_hash, flow_capacity, &(balancer->flow_to_flow_id)) == 0) {
+  if (map_allocate(LoadBalancedFlow_eq, LoadBalancedFlow_hash,
+                   flow_capacity, &(balancer->flow_to_flow_id)) == 0) {
     goto err;
   }
 
-  if (vector_allocate(sizeof(struct LoadBalancedFlow), flow_capacity, lb_flow_init, &(balancer->flow_heap)) == 0) {
+  if (vector_allocate(sizeof(struct LoadBalancedFlow), flow_capacity, LoadBalancedFlow_allocate, &(balancer->flow_heap)) == 0) {
     goto err;
   }
 
@@ -109,15 +110,15 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
     goto err;
   }
 
-  if (vector_allocate(sizeof(uint32_t), backend_capacity, null_init, &(balancer->backend_ips)) == 0) {
+  if (vector_allocate(sizeof(struct ip_addr), backend_capacity, ip_addr_allocate, &(balancer->backend_ips)) == 0) {
     goto err;
   }
 
-  if (vector_allocate(sizeof(struct LoadBalancedBackend), backend_capacity, lb_backend_init, &(balancer->backends)) == 0) {
+  if (vector_allocate(sizeof(struct LoadBalancedBackend), backend_capacity, LoadBalancedBackend_allocate, &(balancer->backends)) == 0) {
     goto err;
   }
 
-  if (map_allocate(lb_ip_equality, lb_ip_hash, backend_capacity, &(balancer->ip_to_backend_id)) == 0) {
+  if (map_allocate(ip_addr_eq, ip_addr_hash, backend_capacity, &(balancer->ip_to_backend_id)) == 0) {
     goto err;
   }
 
@@ -130,20 +131,23 @@ lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
   }
 
 #ifdef KLEE_VERIFICATION
-  map_set_layout(balancer->flow_to_flow_id, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
+  map_set_layout(balancer->flow_to_flow_id, LoadBalancedFlow_descrs,
+                 sizeof(LoadBalancedFlow_descrs)/sizeof(LoadBalancedFlow_descrs[0]), NULL, 0, "LoadBalancedFlow");
   map_set_entry_condition(balancer->flow_to_flow_id, lb_flow_id_condition);
-  vector_set_layout(balancer->flow_heap, lb_flow_fields, lb_flow_fields_number(), NULL, 0, "LoadBalancedFlow");
+  vector_set_layout(balancer->flow_heap, LoadBalancedFlow_descrs,
+                    sizeof(LoadBalancedFlow_descrs)/sizeof(LoadBalancedFlow_descrs[0]), NULL, 0, "LoadBalancedFlow");
   //vector_set_layout(balancer->flow_id_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
   vector_set_layout(balancer->flow_id_to_backend_id, NULL, 0, NULL, 0, "uint32_t");
   vector_set_entry_condition(balancer->flow_id_to_backend_id, lb_flow_id2backend_id_cond, balancer);
   //vector_set_layout(balancer->backend_ips, &uint32_field, 1, NULL, 0, "uint32_t");
-  vector_set_layout(balancer->backend_ips, NULL, 0, NULL, 0, "uint32_t");
+  vector_set_layout(balancer->backend_ips, ip_addr_descrs, sizeof(ip_addr_descrs)/sizeof(ip_addr_descrs[0]), NULL, 0, "ip_addr");
   vector_set_layout(balancer->backends,
-                    lb_backend_fields, lb_backend_fields_number(),
-                    lb_backend_nested_fields, lb_backend_nested_fields_number(),
+                    LoadBalancedBackend_descrs,
+                    sizeof(LoadBalancedBackend_descrs)/sizeof(LoadBalancedBackend_descrs[0]),
+                    LoadBalancedBackend_nests, sizeof(LoadBalancedBackend_nests)/sizeof(LoadBalancedBackend_nests[0]),
                     "LoadBalancedBackend");
   vector_set_entry_condition(balancer->backends, lb_backend_condition, balancer);
-  map_set_layout(balancer->ip_to_backend_id, &uint32_field, 1, NULL, 0, "uint32_t");
+  map_set_layout(balancer->ip_to_backend_id, ip_addr_descrs, sizeof(ip_addr_descrs)/sizeof(ip_addr_descrs[0]), NULL, 0, "ip_addr");
   map_set_entry_condition(balancer->ip_to_backend_id, lb_backend_id_condition);
   vector_set_layout(balancer->cht, NULL, 0, NULL, 0, "uint32_t");
 #endif//KLEE_VERIFICATION
@@ -184,7 +188,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, tim
   if (map_get(balancer->flow_to_flow_id, flow, &flow_index) == 0) {
     int backend_index = 0;
     int found =
-      cht_find_preferred_available_backend((uint64_t) lb_flow_hash(flow),
+      cht_find_preferred_available_backend((uint64_t) LoadBalancedFlow_hash(flow),
                                            balancer->cht,
                                            balancer->active_backends,
                                            balancer->cht_height,

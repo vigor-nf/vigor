@@ -78,12 +78,12 @@ flow_manager_allocate(uint16_t starting_port,
   manager->in_vec = NULL;
   manager->chain = NULL;
 
-  if (map_allocate(flow_id_eq, flow_id_hash, max_flows, &(manager->in_table)) == 0) {
+  if (map_allocate(FlowId_eq, FlowId_hash, max_flows, &(manager->in_table)) == 0) {
     // Do not free stuff, as we are exiting anyway
     return NULL;
   }
 
-  if (vector_allocate(sizeof(struct FlowId), max_flows, flow_id_allocate, &(manager->in_vec)) == 0) {
+  if (vector_allocate(sizeof(struct FlowId), max_flows, FlowId_allocate, &(manager->in_vec)) == 0) {
     // Do not free stuff, as we are exiting anyway
     return NULL;
   }
@@ -96,9 +96,9 @@ flow_manager_allocate(uint16_t starting_port,
 #ifdef KLEE_VERIFICATION
   //NOTE: need more entry conditions? e.g. to ensure that the in_table value indexes
   // fit into the in_values vector, or that flow_ids feature a proper internal port.
-  map_set_layout(manager->in_table, flow_id_descrs, sizeof(flow_id_descrs)/sizeof(flow_id_descrs[0]),
+  map_set_layout(manager->in_table, FlowId_descrs, sizeof(FlowId_descrs)/sizeof(FlowId_descrs[0]),
                  NULL, 0, "FlowId");
-  vector_set_layout(manager->in_vec, flow_id_descrs, sizeof(flow_id_descrs)/sizeof(flow_id_descrs[0]),
+  vector_set_layout(manager->in_vec, FlowId_descrs, sizeof(FlowId_descrs)/sizeof(FlowId_descrs[0]),
                     NULL, 0, "FlowId");
   vector_set_entry_condition(manager->in_vec, flow_consistency, manager);
 #endif
