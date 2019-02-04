@@ -23,6 +23,8 @@
 #include "lib/nf_forward.h"
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
+#include "ip_addr.h.gen.h"
+#include "dynamic_value.h.gen.h"
 #include "policer_config.h"
 #include "policer_data.h"
 
@@ -105,51 +107,36 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
   }
 }
 
-#ifdef KLEE_VERIFICATION
-struct str_field_descr dynamic_map_key_fields[] = {
-  {0, sizeof(uint32_t), 0, "dst_addr"},
-};
-
-struct str_field_descr dynamic_vector_key_fields[] = {
-  {0, sizeof(uint32_t), 0, "dst_addr"},
-};
-
-struct str_field_descr dynamic_vector_value_fields[] = {
-  {offsetof(struct DynamicValue, bucket_size), sizeof(uint32_t), 1, "bucket_size"},
-  {offsetof(struct DynamicValue, bucket_time), sizeof(uint64_t), 1, "bucket_size"},
-};
-#endif//KLEE_VERIFICATION
-
 void nf_core_init(void) {
   unsigned capacity = config.dyn_capacity;
   int happy = map_allocate(ip_addr_eq, ip_addr_hash,
                            capacity, &dynamic_ft.map);
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic map");
-  happy = vector_allocate(sizeof(struct ether_addr), capacity,
-                          init_nothing_ea,
+  happy = vector_allocate(sizeof(struct ip_addr), capacity,
+                          ip_addr_allocate,
                           &dynamic_ft.keys);
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic key array");
   happy = vector_allocate(sizeof(struct DynamicValue), capacity,
-                          init_nothing_dv,
+                          DynamicValue_allocate,
                           &dynamic_ft.values);
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic value array");
   happy = dchain_allocate(capacity, &dynamic_ft.heap);
   if (!happy) rte_exit(EXIT_FAILURE, "error allocating heap");
 
 #ifdef KLEE_VERIFICATION
-  map_set_layout(dynamic_ft.map, dynamic_map_key_fields,
-                 sizeof(dynamic_map_key_fields)/sizeof(dynamic_map_key_fields[0]),
-                 NULL, 0, "ether_addr");
+  map_set_layout(dynamic_ft.map, ip_addr_descrs,
+                 sizeof(ip_addr_descrs)/sizeof(ip_addr_descrs[0]),
+                 NULL, 0, "ip_addr");
   vector_set_layout(dynamic_ft.keys,
-                    dynamic_vector_key_fields,
-                    sizeof(dynamic_vector_key_fields)/
-                    sizeof(dynamic_vector_key_fields[0]),
+                    ip_addr_descrs,
+                    sizeof(ip_addr_descrs)/
+                    sizeof(ip_addr_descrs[0]),
                     NULL, 0,
-                    "ether_addr");
+                    "ip_addr");
   vector_set_layout(dynamic_ft.values,
-                    dynamic_vector_value_fields,
-                    sizeof(dynamic_vector_value_fields)/
-                    sizeof(dynamic_vector_value_fields[0]),
+                    DynamicValue_descrs,
+                    sizeof(DynamicValue_descrs)/
+                    sizeof(DynamicValue_descrs[0]),
                     NULL, 0,
                     "DynamicValue");
 #endif//KLEE_VERIFICATION
@@ -157,7 +144,7 @@ void nf_core_init(void) {
 
 int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
   if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
       !(mbuf->packet_type == 0 &&
@@ -168,7 +155,7 @@ int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
 
   uint8_t* ip_options;
   bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
   if (!wellformed) {
 		NF_DEBUG("Malformed IPv4, dropping");
     return in_port;
