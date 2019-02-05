@@ -20,7 +20,7 @@
  */
 int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
                                  struct DoubleMap* map,
-                                 uint64_t time);
+                                 vigor_time_t time);
 /*@ requires dmappingp<K1,K2,V>(?m, ?kp1, ?kp2, ?hsh1, ?hsh2,
                                 ?fvp, ?bvp, ?rof, ?vsz,
                                 ?vk1, ?vk2, ?rp1, ?rp2, map) &*&
@@ -65,7 +65,7 @@ typedef void entry_pack_key/*@ <kt,et> (predicate (void*;kt) kp,
 int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
                                         struct Vector* vector,
                                         struct Map* map,
-                                        uint64_t time);
+                                        vigor_time_t time);
 /*@ requires mapp<kt>(map, ?kp, ?hsh, ?recp, mapc(?cap, ?m, ?addrs)) &*&
              vectorp<kt>(vector, kp, ?v, ?vaddrs) &*&
              true == forall2(v, vaddrs, (kkeeper)(addrs)) &*&

@@ -1,6 +1,5 @@
 #include "nf_time.h"
 
-#undef time_t // catch potential mismatch
 #include <time.h>
 
 vigor_time_t current_time(void)
