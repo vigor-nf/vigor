@@ -141,6 +141,28 @@ let gen_eq_function_decl compinfo =
 
 let gen_logical_hash compinfo =
   let field_name fname = fname ^ "_f" in
+  let rec basic_hash fname ftype =
+    match ftype with
+    | TInt (ILong, _)
+    | TInt (IULong, _)
+    | TInt (ILongLong, _)
+    | TInt (IULongLong, _) ->
+      (* Take only the least signigicant 44 bits,
+         to make sure it fits in uint64_t*)
+      "(" ^ fname ^ "&0xfffffffffff)"
+    | TInt (IChar, _)
+    | TInt (ISChar, _) ->
+      "(" ^ fname ^ "&0xff)"
+    | TInt (IShort, _)
+    | TInt (IInt, _) -> (* peel off the sign bit*)
+      "(" ^ fname ^ "&0xfffffff)"
+    | TInt (IUChar, _)
+    | TInt (IBool, _)
+    | TInt (IUShort, _)
+    | TInt (IUInt, _) -> fname
+    | TNamed (tinfo,_) -> basic_hash fname tinfo.ttype
+    | _ -> "<unsupported field type>"
+  in
   let field_hash field =
     match field with
     | {ftype=TComp (field_str,_);fname;_} ->
@@ -149,7 +171,8 @@ let gen_logical_hash compinfo =
       let rec arr_fields (i : int64) =
         if 1L < i then
           "(" ^ (arr_fields (Int64.sub i 1L)) ^ "*31 + "
-          ^ fname ^ "_" ^ (Int64.to_string (Int64.sub i 1L)) ^ ")"
+          ^ (basic_hash (fname ^ "_" ^ (Int64.to_string (Int64.sub i 1L)))
+               field_t) ^ ")"
         else if i = 1L then
           fname ^ "_0"
         else failwith "A 0-element array"
@@ -158,7 +181,7 @@ let gen_logical_hash compinfo =
     | {ftype=TArray (field_t, _, _);_} ->
       failwith "An of unsupported array count " ^
       (P.sprint ~width:100 (d_type () field.ftype))
-    | {fname;_} -> (field_name fname)
+    | {fname;ftype;_} -> (basic_hash (field_name fname) ftype)
   in
   let rec gen_exp_r fields acc =
     match fields with
@@ -198,6 +221,28 @@ let hash_contract compinfo =
   "(obj, v) &*& result == " ^ (lhash_name compinfo) ^ "(v);"
 
 let gen_hash compinfo =
+  let rec basic_hash fname ftype =
+    match ftype with
+    | TInt (ILong, _)
+    | TInt (IULong, _)
+    | TInt (ILongLong, _)
+    | TInt (IULongLong, _) ->
+      (* Take only the least signigicant 44 bits,
+         to make sure it fits in uint64_t*)
+      "(unsigned long long)(" ^ fname ^ "&0xfffffffffff)"
+    | TInt (IChar, _)
+    | TInt (ISChar, _) ->
+      "(unsigned long long)(" ^ fname ^ "&0xff)"
+    | TInt (IShort, _)
+    | TInt (IInt, _) -> (* peel off the sign bit*)
+      "(unsigned long long)(" ^ fname ^ "&0xfffffff)"
+    | TInt (IUChar, _)
+    | TInt (IBool, _)
+    | TInt (IUShort, _)
+    | TInt (IUInt, _) -> fname
+    | TNamed (tinfo,_) -> basic_hash fname tinfo.ttype
+    | _ -> "<unsupported field type>"
+  in
   "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj)\n" ^
   (hash_contract compinfo) ^ "\n" ^
   "{\n" ^
@@ -237,15 +282,15 @@ let gen_hash compinfo =
            let current = (Int64.to_string (Int64.sub c i)) in
            let curr_field = fname ^ "_" ^ current in
            if 1L < i then
-             "  hash += " ^ curr_field ^ ";\n" ^
+             "  hash += " ^ (basic_hash curr_field field_t) ^ ";\n" ^
              "  hash *= 31;\n" ^ (arr_fields (Int64.sub i 1L))
            else if 1L = i then
-             "  hash += " ^ curr_field ^ ";\n"
+             "  hash += " ^ (basic_hash curr_field field_t) ^ ";\n"
            else ""
          in
          arr_fields c
        | _ ->
-         "  hash += id->" ^ fname ^ ";\n"
+         "  hash += " ^ (basic_hash ("id->" ^ fname) ftype) ^ ";\n"
      ) compinfo.cfields)) ^
   "  hash = wrap(hash);\n" ^
   "  return (unsigned) hash;\n" ^

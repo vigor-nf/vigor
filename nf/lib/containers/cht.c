@@ -171,6 +171,7 @@ cht_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
                 vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
                 cht_height*backend_capacity == length(values) &*&
                 double_chainp(ch, active_backends) &*&
+                true == forall(values, is_one) &*&
                 *chosen_backend |-> _ &*&
                 0 <= start &*& start < cht_height; @*/
   {
@@ -187,6 +188,7 @@ cht_find_preferred_available_backend(uint64_t hash, struct Vector* cht,
     //@ nth_map(candidate_idx, fst, values);
     //@ forall_nth(map(fst, values), (ge)(0), candidate_idx);
     //@ update_id(candidate_idx, values);
+    //@ forall_nth(values, is_one, candidate_idx);
     if (dchain_is_index_allocated(active_backends, (int)*candidate)) {
       *chosen_backend = (int)*candidate;
       vector_return(cht, (int)candidate_idx, candidate);

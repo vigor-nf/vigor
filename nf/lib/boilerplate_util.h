@@ -11,6 +11,7 @@
 #  define IGNORE(x)
 #endif //_NO_VERIFAST_
 
+//TODO: replace this with a cheaper(performancewise) equivalent:
 /*@
   fixpoint long long _wrap(long long x) { return x % INT_MAX; }
   @*/
