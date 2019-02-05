@@ -190,37 +190,24 @@ let fun_types =
                             extra_ptr_types = estt ["borrowed_cell", Ptr flow_id_struct;];
                             lemmas_before = [
                               (fun params ->
-                                   "//@ assert vectorp<FlowIdi>(" ^ (List.nth_exn params.args 0) ^
-                                   ", FlowIdp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
-                                   ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n")
-                            ];
-                            lemmas_after = [
+                                 "//@ assert vectorp<FlowIdi>(" ^ (List.nth_exn params.args 0) ^
+                                 ", FlowIdp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
+                                 ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n");
                               (fun params ->
-                                   "struct FlowId * " ^ (params.tmp_gen "elem") ^
-                                   " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
-                                   "//@ assert [?" ^ (params.tmp_gen "fr") ^
-                                   "]FlowIdp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
-                                   "/*@ if (" ^ (params.tmp_gen "fr") ^
-                                   " != 1.0) {\n\
-                                    assert mapp<FlowIdi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
-                                   ", ?" ^ (params.tmp_gen "fma") ^
-                                   "));\n\
-                                    forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
-                                   ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
-                                   ");\n} @*/ ")
-                            ];};
+                                 "/*@ {\n\
+                                  assert mapp<FlowIdi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
+                                 ", ?" ^ (params.tmp_gen "fma") ^
+                                 "));\n\
+                                  forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
+                                 ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
+                                 ");\n} @*/ ")];
+                            lemmas_after = [];};
      "vector_return",      {ret_type = Static Void;
                             arg_types = stt [Ptr vector_struct;
                                              Sint32;
                                              Ptr flow_id_struct;];
                             extra_ptr_types = [];
-                            lemmas_before = [
-                              (fun params ->
-                                 "/*@ { assert vector_accp<FlowIdi>(_, _, ?" ^ (params.tmp_gen "vec") ^
-                                 ", _, _, _); \n update_id(" ^
-                                 (List.nth_exn params.args 1) ^ ", " ^
-                                 (params.tmp_gen "vec") ^ "); } @*/");
-                            ];
+                            lemmas_before = [];
                             lemmas_after = [];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
@@ -380,7 +367,7 @@ let fun_types =
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
                          assert mapp<FlowIdi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                         assert vector_accp<FlowIdi>(_, _, ?the_dv, ?dv_addrs, _, _); \n\
+                         assert vectorp<FlowIdi>(_, _, ?the_dv, ?dv_addrs); \n\
                          assert map_vec_chain_coherent<FlowIdi>(?the_dm, the_dv, ?the_dh);\n\
                          FlowIdi vvv = FlowIdc(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
@@ -659,7 +646,7 @@ let fun_types =
                                     ", _);\n\
                                      //@ open ether_addrp(&(" ^
                                     (render_tterm (List.nth_exn arg_exps 1)) ^
-                                    "->s_addr), _);\n
+                                    "->s_addr), _);\n\
                                      //@ open ether_addrp(&(" ^
                                     (render_tterm (List.nth_exn arg_exps 1)) ^
                                     "->d_addr), _);\n"
@@ -748,7 +735,7 @@ struct
                   //@ list<int> sent_on_ports = nil; \n\
                   //@ assume(sizeof(struct ether_hdr) == 14);\n\
                   //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
-                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n
+                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
                  "
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

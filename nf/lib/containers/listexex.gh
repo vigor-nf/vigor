@@ -164,7 +164,7 @@ ensures tail(lst) == tail(update(0, val, lst));
   }
 }
 
-lemma void update_id<T>(int index, list<T> lst)
+lemma_auto(update(index, nth(index, lst), lst)) void update_id<T>(int index, list<T> lst)
 requires true;
 ensures lst == update(index, nth(index, lst), lst);
 {
@@ -1151,6 +1151,17 @@ ensures true == mem(el1, update(index, el2, l));
     case cons(h,t):
       if (h != el1)
         mem_update_unrelevant(el1, index - 1, el2, t);
+  }
+}
+
+lemma_auto(update(index, el1, update(index, el2, l))) void update_update_rewrite<t>(t el1, int index, t el2, list<t> l)
+requires true;
+ensures update(index, el1, update(index, el2, l)) == update(index, el1, l);
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      if (index != 0) update_update_rewrite(el1, index - 1, el2, t);
   }
 }
 
