@@ -16,8 +16,6 @@
                                   struct Map* dyn_map,
                                   struct Vector* dyn_keys,
                                   struct Vector* dyn_vals,
-                                  struct Map* st_map,
-                                  struct Vector* st_vec,
                                   uint32_t capacity,
                                   vigor_time_t time,
                                   uint32_t dev_count) =
@@ -26,7 +24,7 @@
                       nop_true,
                       mapc(capacity, ?dm, ?daddrs)) &*&
     vectorp<ip_addri>(dyn_keys, ip_addrp, ?dks, ?dkaddrs) &*&
-    vectorp<uint16_t>(dyn_vals, DynamicValuep, ?dvs, ?dvaddrs) &*&
+    vectorp<DynamicValuei>(dyn_vals, DynamicValuep, ?dvs, ?dvaddrs) &*&
     true == forall2(dks, dkaddrs, (kkeeper)(daddrs)) &*&
     0 < capacity &*&
     length(dks) == capacity &*&
@@ -34,8 +32,7 @@
     true == forall(dvs, is_one) &*&
     map_vec_chain_coherent<ip_addri>(dm, dks, dh) &*&
     dchain_high_fp(dh) <= time &*&
-    last_time(time) &*&
-    true == forall(sm, (st_entry_bound)(dev_count));
+    last_time(time);
 
     //TODO: true == forall2(sv, skaddrs, (kkeeper)(saddrs))  ?
     //TODO: true == forall2(dks, dkaddrs, (kkeeper)(daddrs)) ?
@@ -52,17 +49,13 @@ void policer_loop_invariant_consume(struct DoubleChain** dyn_heap,
              *dyn_map |-> ?dm &*&
              *dyn_keys |-> ?dks &*&
              *dyn_vals |-> ?dvs &*&
-             *st_map |-> ?sm &*&
-             *st_vec |-> ?sv &*&
-             policer_loop_invariant(dh, dm, dks, dvs, sm, sv,
+             policer_loop_invariant(dh, dm, dks, dvs,
                                    capacity, time,
                                    dev_count); @*/
 /*@ ensures *dyn_heap |-> dh &*&
             *dyn_map |-> dm &*&
             *dyn_keys |-> dks &*&
-            *dyn_vals |-> dvs &*&
-            *st_map |-> sm &*&
-            *st_vec |-> sv; @*/
+            *dyn_vals |-> dvs; @*/
 
 
 void policer_loop_invariant_produce(struct DoubleChain** dyn_heap,
@@ -76,17 +69,13 @@ void policer_loop_invariant_produce(struct DoubleChain** dyn_heap,
              *dyn_map |-> ?dm &*&
              *dyn_keys |-> ?dks &*&
              *dyn_vals |-> ?dvs &*&
-             *st_map |-> ?sm &*&
-             *st_vec |-> ?sv &*&
              *time |-> _; @*/
 /*@ ensures *dyn_heap |-> dh &*&
             *dyn_map |-> dm &*&
             *dyn_keys |-> dks &*&
             *dyn_vals |-> dvs &*&
-            *st_map |-> sm &*&
-            *st_vec |-> sv &*&
             *time |-> ?t &*&
-            policer_loop_invariant(dh, dm, dks, dvs, sm, sv,
+            policer_loop_invariant(dh, dm, dks, dvs,
                                   capacity, t,
                                   dev_count); @*/
 
