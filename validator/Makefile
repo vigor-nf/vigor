@@ -1,4 +1,4 @@
-all: validator.byte nat_fspec.cmo bridge_fspec.cmo balancer_fspec.cmo
+all: validator.byte nat_fspec.cmo bridge_fspec.cmo balancer_fspec.cmo policer_fspec.cmo
 
 validator.byte: .PHONY
 	corebuild -no-hygiene -use-menhir -lib dynlink -lib str validator.byte -use-ocamlfind -cflag -unsafe-string

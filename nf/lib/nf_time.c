@@ -3,7 +3,7 @@
 #undef time_t // catch potential mismatch
 #include <time.h>
 
-uint64_t current_time(void)
+vigor_time_t current_time(void)
 //@ requires last_time(?x);
 //@ ensures result >= 0 &*& x <= result &*& last_time(result);
 {

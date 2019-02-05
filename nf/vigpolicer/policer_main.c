@@ -23,8 +23,6 @@
 #include "lib/nf_forward.h"
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
-#include "ip_addr.h.gen.h"
-#include "dynamic_value.h.gen.h"
 #include "policer_config.h"
 #include "policer_data.h"
 
@@ -41,11 +39,11 @@ int policer_expire_entries(uint64_t time) {
   if (time < config.burst / config.rate) return 0;
 
   // This is convoluted - we want to make sure the sanitization doesn't
-  // extend our time_t value in 128 bits, which would confuse the validator.
+  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
   // So we "prove" by hand that it's OK...
   // We know time >= 0 since time >= config.burst / config.rate
-//   assert(sizeof(time_t) <= sizeof(uint64_t));
-//   assert(sizeof(uint64_t) <= sizeof(time_t));
+//   assert(sizeof(vigor_time_t) <= sizeof(int64_t));
+//   assert(sizeof(int64_t) <= sizeof(vigor_time_t));
   uint64_t min_time = time - config.burst * 1000000000l / config.rate; // OK because time >= config.burst / config.rate >= 0
 
   return expire_items_single_map(dynamic_ft.heap, dynamic_ft.keys,
@@ -201,7 +199,7 @@ void nf_print_config() {
 #ifdef KLEE_VERIFICATION
 
 void nf_loop_iteration_begin(unsigned lcore_id,
-                             time_t time) {
+                             vigor_time_t time) {
   policer_loop_iteration_begin(&dynamic_ft.heap,
                               &dynamic_ft.map,
                               &dynamic_ft.keys,
@@ -212,7 +210,7 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       time_t time) {
+                                       vigor_time_t time) {
   policer_loop_iteration_assumptions(&dynamic_ft.heap,
                                     &dynamic_ft.map,
                                     &dynamic_ft.keys,
@@ -222,7 +220,7 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
-                           time_t time) {
+                           vigor_time_t time) {
   policer_loop_iteration_end(&dynamic_ft.heap,
                             &dynamic_ft.map,
                             &dynamic_ft.keys,

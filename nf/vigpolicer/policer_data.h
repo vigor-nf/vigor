@@ -3,7 +3,8 @@
 
 #include "stdbool.h"
 
-#include "rte_ether.h"
+#include "ip_addr.h.gen.h"
+#include "dynamic_value.h.gen.h"
 
 #include "lib/stubs/core_stub.h"
 
