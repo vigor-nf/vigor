@@ -36,7 +36,7 @@ struct policer_config config;
 struct DynamicFilterTable dynamic_ft;
 
 int policer_expire_entries(uint64_t time) {
-  if (time < config.burst / config.rate) return 0;
+  if (time < config.burst * 1000000000l / config.rate) return 0;
 
   // This is convoluted - we want to make sure the sanitization doesn't
   // extend our vigor_time_t value in 128 bits, which would confuse the validator.
