@@ -19,6 +19,10 @@ AUTO_GEN_FILES := dynamic_value.h.gen.c dynamic_value.h.gen.h \
 
 all: $(AUTO_GEN_FILES) $(APP)
 
+clean: clean-gen
+clean-gen:
+	rm -f $(AUTO_GEN_FILES)
+
 dynamic_value.h.gen.c dynamic_value.h.gen.h: dynamic_value.h
 	bash ../../codegen/generate.sh $<
 
