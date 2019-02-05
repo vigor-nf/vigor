@@ -277,10 +277,8 @@ let fun_types =
                                      "\n/*@ {\n\
                                       assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
                                      ", _));\n\
-                                      assert vectorp<FlowIdi>(_, _, ?" ^ (tmp_gen "fvk") ^
-                                     ", _);\n\
                                       assert map_vec_chain_coherent<FlowIdi>(" ^
-                                     (tmp_gen "fm") ^ ", " ^
+                                     (tmp_gen "fm") ^ ", ?" ^
                                      (tmp_gen "fvk") ^ ", ?" ^
                                      (tmp_gen "ch") ^
                                      ");\n\
@@ -367,8 +365,8 @@ let fun_types =
                         let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
                          assert mapp<FlowIdi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                         assert vectorp<FlowIdi>(_, _, ?the_dv, ?dv_addrs); \n\
-                         assert map_vec_chain_coherent<FlowIdi>(?the_dm, the_dv, ?the_dh);\n\
+                         assert vectorp<FlowIdi>(_, _, _, ?dv_addrs); \n\
+                         assert map_vec_chain_coherent<FlowIdi>(?the_dm, ?the_dv, ?the_dh);\n\
                          FlowIdi vvv = FlowIdc(" ^ arg1 ^
                         "->src_port, " ^ arg1 ^
                         "->dst_port, " ^ arg1 ^
@@ -442,9 +440,8 @@ let fun_types =
                                    (fun {tmp_gen;_} ->
                                       "/*@ {\n\
                                        assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^ ", _));\n\
-                                       assert vectorp<FlowIdi>(_, _, ?" ^ (tmp_gen "fvk") ^ ", _);\n\
                                        assert map_vec_chain_coherent<FlowIdi>(" ^
-                                      (tmp_gen "fm") ^ ", " ^
+                                      (tmp_gen "fm") ^ ", ?" ^
                                       (tmp_gen "fvk") ^ ", ?" ^
                                       (tmp_gen "ch") ^
                                       ");\n\
