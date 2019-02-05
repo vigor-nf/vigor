@@ -48,7 +48,6 @@ void policer_config_init(struct policer_config* config,
 
   int opt;
   while ((opt = getopt_long(argc, argv, "l:w:r:b:c:", long_options, NULL)) != EOF) {
-    unsigned device;
     switch (opt) {
     case 'l':
       config->lan_device = nf_util_parse_int(optarg, "lan", 10, '\0');
