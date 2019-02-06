@@ -570,12 +570,13 @@ let fun_types =
                       ", ?" ^ (tmp_gen "dv") ^
                       ", ?" ^ (tmp_gen "dh") ^
                       ");\n\
-                       assert [_]ether_addrp(" ^ arg1 ^ "bis->addr_bytes, ?" ^ (tmp_gen "ea") ^ ");\n\
+                       assert [?" ^ (tmp_gen "fr") ^ "]ether_addrp(" ^ arg1 ^ "bis, ?" ^ (tmp_gen "ea") ^ ");\n\
                        mvc_coherent_put<ether_addri>(" ^ (tmp_gen "dm") ^
                       ", " ^ (tmp_gen "dv") ^
                       ", " ^ (tmp_gen "dh") ^
                       ", " ^ (List.nth_exn args 2) ^
                       ", time_for_allocated_index, " ^ (tmp_gen "ea") ^ ");\n\
+                      open [" ^ (tmp_gen "fr") ^ "]ether_addrp(" ^ arg1 ^ "bis, " ^ (tmp_gen "ea") ^ ");\n\
                        } @*/"
                    );
                    reveal_the_other_mapp];};
