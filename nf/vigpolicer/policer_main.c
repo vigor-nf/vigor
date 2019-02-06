@@ -140,7 +140,7 @@ void nf_core_init(void) {
 #endif//KLEE_VERIFICATION
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, uint64_t now) {
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
