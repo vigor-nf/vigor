@@ -84,16 +84,16 @@ struct Vector;
   @*/
 
 /*@
+   fixpoint bool is_one<t>(pair<t,real> r) { return snd(r) == 1.0; }
+  @*/
+
+/*@
   lemma_auto void forall_is_one_update<t>(list<pair<t, real> > lst, int i, t v)
   requires true == forall(lst, is_one);
   ensures true == forall(update(i, pair(v, 1.0), lst), is_one);
   {
     forall_update(lst, is_one, i, pair(v, 1.0));
   }
-  @*/
-
-/*@
-   fixpoint bool is_one<t>(pair<t,real> r) { return snd(r) == 1.0; }
   @*/
 
 typedef void vector_init_elem/*@ <t> (predicate (void*;t) entp,

@@ -194,10 +194,9 @@ let fun_types =
                                          (fun {tmp_gen;args;_} ->
                                             "\n/*@ {\n\
                                              assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
-                                             assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
                                              assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
                                              assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
-                                            (tmp_gen "fi") ^ ", " ^
+                                            (tmp_gen "fi") ^ ", ?" ^
                                             (tmp_gen "fh") ^ ", ?" ^
                                             (tmp_gen "ch") ^
                                             ");\n\
@@ -483,10 +482,9 @@ let fun_types =
                                    (fun {tmp_gen;_} ->
                                       "/*@ {\n\
                                        assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
-                                       assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (tmp_gen "fh") ^ ", _);\n\
                                        assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
                                        assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
-                                      (tmp_gen "fi") ^ ", " ^
+                                      (tmp_gen "fi") ^ ", ?" ^
                                       (tmp_gen "fh") ^ ", ?" ^
                                       (tmp_gen "ch") ^
                                       ");\n\
@@ -784,8 +782,8 @@ let fun_types =
                           let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
                         "/*@ { \n\
                          assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
-                         assert vectorp<LoadBalancedFlowi>(_, _, ?the_dv, ?dv_addrs); \n\
-                         assert map_vec_chain_coherent<LoadBalancedFlowi>(?the_dm, the_dv, ?the_dh);\n\
+                         assert vectorp<LoadBalancedFlowi>(_, _, _, ?dv_addrs); \n\
+                         assert map_vec_chain_coherent<LoadBalancedFlowi>(?the_dm, ?the_dv, ?the_dh);\n\
                           assert LoadBalancedFlowp(" ^ arg1 ^ ", ?vvv);\n\
                          kkeeper_erase_one(dv_addrs, the_dv, dm_addrs, map_get_fp(dm, vvv));\n\
                          } @*/\n"
@@ -1124,12 +1122,7 @@ let fun_types =
                                    "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<uint32_t>(_, _, _, _);\n\
                                     //@ open hide_vector<ip_addri>(_, _, _, _);\n" ^
-                                   "struct LoadBalancedFlow * " ^ (params.tmp_gen "elem") ^
-                                   " = *" ^ (List.nth_exn params.args 2) ^ ";\n" ^
-                                   "//@ assert [?" ^ (params.tmp_gen "fr") ^
-                                   "]LoadBalancedFlowp(" ^ (params.tmp_gen "elem") ^ ", _);\n" ^
-                                   "/*@ if (" ^ (params.tmp_gen "fr") ^
-                                   " != 1.0) {\n\
+                                   "/*@ {\n\
                                     assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
                                    ", ?" ^ (params.tmp_gen "fma") ^
                                    "));\n\
