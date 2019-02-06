@@ -30,7 +30,7 @@ void nf_core_init()
 	}
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 {
 	lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
@@ -102,7 +102,7 @@ void nf_print_config() {
 #include "lb_loop.h"
 
 void nf_loop_iteration_begin(unsigned lcore_id,
-                             time_t time) {
+                             vigor_time_t time) {
   lb_loop_iteration_begin(lb_get_flow_to_flow_id(balancer),
                           lb_get_flow_heap(balancer),
                           lb_get_flow_chain(balancer),
@@ -119,7 +119,7 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       time_t time) {
+                                       vigor_time_t time) {
   lb_loop_iteration_assumptions(lb_get_flow_to_flow_id(balancer),
                                 lb_get_flow_heap(balancer),
                                 lb_get_flow_chain(balancer),
@@ -136,7 +136,7 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
-                           time_t time) {
+                           vigor_time_t time) {
   lb_loop_iteration_end(lb_get_flow_to_flow_id(balancer),
                         lb_get_flow_heap(balancer),
                         lb_get_flow_chain(balancer),

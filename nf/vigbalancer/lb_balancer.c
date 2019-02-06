@@ -182,7 +182,7 @@ err:
 }
 
 struct LoadBalancedBackend
-lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, time_t now) {
+lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, vigor_time_t now) {
   int flow_index;
   struct LoadBalancedBackend backend;
   if (map_get(balancer->flow_to_flow_id, flow, &flow_index) == 0) {
@@ -259,7 +259,7 @@ void lb_process_heartbit(struct LoadBalancer* balancer,
                          struct LoadBalancedFlow* flow,
                          struct ether_addr mac_addr,
                          int nic,
-                         time_t now) {
+                         vigor_time_t now) {
   int backend_index;
   if (map_get(balancer->ip_to_backend_id, &flow->src_ip, &backend_index) == 0) {
     if (0 != dchain_allocate_new_index(balancer->active_backends,
@@ -285,32 +285,32 @@ void lb_process_heartbit(struct LoadBalancer* balancer,
   }
 }
 
-void lb_expire_flows(struct LoadBalancer* balancer, time_t now) {
+void lb_expire_flows(struct LoadBalancer* balancer, vigor_time_t now) {
   if (now < balancer->flow_expiration_time) return;
 
   // This is hacky - we want to make sure the sanitization doesn't
-  // extend our time_t value in 128 bits, which would confuse the validator.
+  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
   // So we "prove" by hand that it's OK...
-  assert(sizeof(uint64_t) == sizeof(time_t));
+  assert(sizeof(int64_t) == sizeof(vigor_time_t));
   if (now < 0) return; // we don't support the past
   uint64_t now_u = (uint64_t) now; // OK since assert above passed and now > 0
   uint64_t last_time_u = now_u - balancer->flow_expiration_time; // OK because now >= flow_expiration_time >= 0
-  time_t last_time = (time_t) last_time_u; // OK since the assert above passed
+  vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
 
   expire_items_single_map(balancer->flow_chain, balancer->flow_heap, balancer->flow_to_flow_id, last_time);
 }
 
-void lb_expire_backends(struct LoadBalancer* balancer, time_t now) {
+void lb_expire_backends(struct LoadBalancer* balancer, vigor_time_t now) {
   if (now < balancer->backend_expiration_time) return;
 
   // This is hacky - we want to make sure the sanitization doesn't
-  // extend our time_t value in 128 bits, which would confuse the validator.
+  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
   // So we "prove" by hand that it's OK...
-  assert(sizeof(uint64_t) == sizeof(time_t));
+  assert(sizeof(int64_t) == sizeof(vigor_time_t));
   if (now < 0) return; // we don't support the past
   uint64_t now_u = (uint64_t) now; // OK since assert above passed and now > 0
   uint64_t last_time_u = now_u - balancer->backend_expiration_time; // OK because now >= flow_expiration_time >= 0
-  time_t last_time = (time_t) last_time_u; // OK since the assert above passed
+  vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
 
   expire_items_single_map(balancer->active_backends, balancer->backend_ips, balancer->ip_to_backend_id, last_time);
 }

@@ -18,7 +18,7 @@ void lb_loop_iteration_assumptions(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height) {
@@ -43,7 +43,7 @@ void lb_loop_invariant_consume(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time, uint32_t backend_capacity, uint32_t flow_capacity,
+        vigor_time_t time, uint32_t backend_capacity, uint32_t flow_capacity,
         uint32_t cht_height) {
 	klee_trace_ret();
 	klee_trace_param_ptr(flow_to_flow_id, sizeof(struct Map*), "flow_to_flow_id");
@@ -71,7 +71,7 @@ void lb_loop_invariant_produce(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t* time,
+        vigor_time_t* time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height) {
@@ -85,7 +85,7 @@ void lb_loop_invariant_produce(
 	klee_trace_param_ptr(ip_to_backend_id, sizeof(struct Map*), "ip_to_backend_id");
 	klee_trace_param_ptr(active_backends, sizeof(struct DoubleChain*), "active_backends");
 	klee_trace_param_ptr(cht, sizeof(struct Vector*), "cht");
-	klee_trace_param_ptr(time, sizeof(time_t), "time");
+	klee_trace_param_ptr(time, sizeof(vigor_time_t), "time");
 	klee_trace_param_u32(backend_capacity, "backend_capacity");
 	klee_trace_param_u32(flow_capacity, "flow_capacity");
 	klee_trace_param_u32(cht_height, "cht_height");
@@ -116,7 +116,7 @@ void lb_loop_iteration_begin(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height) {
@@ -158,7 +158,7 @@ void lb_loop_iteration_end(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height) {
