@@ -12,7 +12,7 @@ predicate evproc_loop_invariant(struct Map* mp,
                                 struct Vector* in_vec,
                                 struct DoubleChain *chp,
                                 unsigned int lcore_id,
-                                time_t time, int max_flows,
+                                vigor_time_t time, int max_flows,
                                 int start_port,
                                 uint32_t ext_ip) =
           mapp<FlowIdi>(mp, FlowIdp, _FlowId_hash, nop_true, mapc(max_flows, ?m, ?maddr)) &*&
@@ -32,21 +32,21 @@ void loop_iteration_assumptions(struct Map** m,
                                 struct Vector** v,
                                 struct DoubleChain** ch,
                                 unsigned int lcore_id,
-                                time_t time, int max_flows, int start_port,
+                                vigor_time_t time, int max_flows, int start_port,
                                 uint32_t ext_ip);
 
 void loop_iteration_assertions(struct Map** m,
                                struct Vector** v,
                                struct DoubleChain** ch,
                                unsigned int lcore_id,
-                               time_t time, int max_flows, int start_port,
+                               vigor_time_t time, int max_flows, int start_port,
                                uint32_t ext_ip);
 
 void loop_invariant_consume(struct Map** m,
                             struct Vector** v,
                             struct DoubleChain** ch,
                             unsigned int lcore_id,
-                            time_t time, int max_flows, int start_port,
+                            vigor_time_t time, int max_flows, int start_port,
                             uint32_t ext_ip);
 /*@ requires *m |-> ?mp &*& *v |-> ?vkp &*& *ch |-> ?chp &*&
              evproc_loop_invariant(mp, vkp, chp, lcore_id,
@@ -58,7 +58,7 @@ void loop_invariant_produce(struct Map** m,
                             struct Vector** v,
                             struct DoubleChain** ch,
                             unsigned int* lcore_id,
-                            time_t *time, int max_flows, int start_port,
+                            vigor_time_t *time, int max_flows, int start_port,
                             uint32_t ext_ip);
 /*@ requires *m |-> ?mp &*& *v |-> ?vkp &*& *ch |-> ?chp &*&
              *lcore_id |-> _ &*&
@@ -74,21 +74,21 @@ void loop_iteration_begin(struct Map** m,
                           struct Vector** v,
                           struct DoubleChain** ch,
                           unsigned int lcore_id,
-                          time_t time, int max_flows, int start_port,
+                          vigor_time_t time, int max_flows, int start_port,
                           uint32_t ext_ip);
 
 void loop_iteration_end(struct Map** m,
                         struct Vector** v,
                         struct DoubleChain** ch,
                         unsigned int lcore_id,
-                        time_t time, int max_flows, int start_port,
+                        vigor_time_t time, int max_flows, int start_port,
                         uint32_t ext_ip);
 
 void loop_enumeration_begin(struct Map** m,
                             struct Vector** v,
                             struct DoubleChain** ch,
                             unsigned int lcore_id,
-                            time_t time, int max_flows, int start_port,
+                            vigor_time_t time, int max_flows, int start_port,
                             uint32_t ext_ip,
                             int cnt);
 //@ requires true;
@@ -98,7 +98,7 @@ void loop_enumeration_end(struct Map** m,
                           struct Vector** v,
                           struct DoubleChain** ch,
                           unsigned int lcore_id,
-                          time_t time, int max_flows, int start_port,
+                          vigor_time_t time, int max_flows, int start_port,
                           uint32_t ext_ip);
 //@ requires true;
 //@ ensures true;
