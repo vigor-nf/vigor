@@ -241,7 +241,7 @@ let fun_types =
                               }";
                            tx_l "index_range_of_empty(65536, 0);";];};
      "dchain_allocate_new_index", {ret_type = Static Sint32;
-                                   arg_types = stt [Ptr dchain_struct; Ptr Sint32; time_t;];
+                                   arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
                                    extra_ptr_types = [];
                                    lemmas_before = [
                                      capture_chain "cur_ch" 0;
@@ -289,7 +289,7 @@ let fun_types =
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct;
-                                                  Sint32; time_t;];
+                                                  Sint32; vigor_time_t;];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;
@@ -332,7 +332,7 @@ let fun_types =
                                  arg_types = stt [Ptr dchain_struct;
                                                   Ptr vector_struct;
                                                   Ptr map_struct;
-                                                  time_t];
+                                                  vigor_time_t];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    (fun {tmp_gen;_} ->
