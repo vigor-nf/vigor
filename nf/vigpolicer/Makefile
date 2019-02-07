@@ -5,7 +5,7 @@ APP := policer
 NF_FILES := policer_main.c policer_config.c dynamic_value.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c
 
 # Verification files
-NF_VERIF_FILES := policer_loop.c policer_stub.c
+NF_VERIF_FILES := policer_loop.c
 
 # Verification arguments
 NF_VERIF_ARGS := --lan 0 --wan 1 --rate 12500 --burst 125000 --capacity 100
