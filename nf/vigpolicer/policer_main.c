@@ -36,7 +36,8 @@ struct policer_config config;
 struct DynamicFilterTable dynamic_ft;
 
 int policer_expire_entries(uint64_t time) {
-  if (time < config.burst * 1000000000l / config.rate) return 0;
+  if (time < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate)
+    return 0;
 
   // This is convoluted - we want to make sure the sanitization doesn't
   // extend our vigor_time_t value in 128 bits, which would confuse the validator.
@@ -44,7 +45,7 @@ int policer_expire_entries(uint64_t time) {
   // We know time >= 0 since time >= config.burst / config.rate
 //   assert(sizeof(vigor_time_t) <= sizeof(int64_t));
 //   assert(sizeof(int64_t) <= sizeof(vigor_time_t));
-  uint64_t min_time = time - config.burst * 1000000000l / config.rate; // OK because time >= config.burst / config.rate >= 0
+  uint64_t min_time = time - config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate; // OK because time >= config.burst / config.rate >= 0
 
   return expire_items_single_map(dynamic_ft.heap, dynamic_ft.keys,
                                  dynamic_ft.map,
@@ -60,7 +61,8 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     struct DynamicValue* value = 0;
     vector_borrow(dynamic_ft.values, index, (void**)&value);
 
-    value->bucket_size += (time - value->bucket_time) * config.rate / 1000000000;
+    value->bucket_size +=
+        (time - value->bucket_time) * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
     if (value->bucket_size > config.burst) {
       value->bucket_size = config.burst;
     }
