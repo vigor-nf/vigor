@@ -96,7 +96,7 @@ void lb_config_cmdline_print_usage(void)
 	NF_INFO("Usage:\n"
 		"[DPDK EAL options] --\n"
 		"\t--backend <mac>: backend MAC address (one per backend, configured sequentially).\n"
-		"\t--flow-expiration <time>: flow expiration time.\n"
+		"\t--flow-expiration <time>: flow expiration time (ns).\n"
 		"\t--flow-capacity <n>: flow table capacity.\n"
    		"\t--backend-capacity <n>: backend table capacity.\n"
    		"\t--cht-height <n>: consistent hashing table height: bigger <n> generates more smooth distribution.\n"
@@ -116,7 +116,7 @@ void lb_print_config(struct lb_config* config)
 		free(dev_mac_str);
 	}
 
-	NF_INFO("Flow expiration time: %" PRIu32, config->flow_expiration_time);
+	NF_INFO("Flow expiration time: %" PRIu32 "ns", config->flow_expiration_time);
 	NF_INFO("Flow capacity: %" PRIu32, config->flow_capacity);
 
 	NF_INFO("\n--- --- ------ ---\n");

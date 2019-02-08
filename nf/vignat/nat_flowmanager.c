@@ -108,7 +108,7 @@ flow_manager_allocate(uint16_t starting_port,
 
 bool
 flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
-                           uint16_t internal_device, time_t time,
+                           uint16_t internal_device, vigor_time_t time,
                            uint16_t* external_port) {
 	int index;
 	if (dchain_allocate_new_index(manager->chain, &index, time) == 0) {
@@ -126,21 +126,21 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
 }
 
 void
-flow_manager_expire(struct FlowManager* manager, time_t time) {
+flow_manager_expire(struct FlowManager* manager, vigor_time_t time) {
 	// too early, nothing can expire yet.
 	if (time < manager->expiration_time) {
 		return;
 	}
 
 	// This is convoluted - we want to make sure the sanitization doesn't
-	// extend our time_t value in 128 bits, which would confuse the validator.
+	// extend our vigor_time_t value in 128 bits, which would confuse the validator.
 	// So we "prove" by hand that it's OK...
 	if (time < 0) return; // we don't support the past
-	assert(sizeof(time_t) <= sizeof(uint64_t));
+	assert(sizeof(vigor_time_t) <= sizeof(int64_t));
 	uint64_t time_u = (uint64_t) time; // OK since assert above passed and time > 0
 	uint64_t last_time_u = time_u - manager->expiration_time; // OK because time >= expiration_time >= 0
-	assert(sizeof(uint64_t) <= sizeof(time_t));
-	time_t last_time = (time_t) last_time_u; // OK since the assert above passed
+	assert(sizeof(int64_t) <= sizeof(vigor_time_t));
+	vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
 
 	expire_items_single_map(manager->chain, manager->in_vec, manager->in_table, last_time);
 }
@@ -148,7 +148,7 @@ flow_manager_expire(struct FlowManager* manager, time_t time) {
 
 bool
 flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id,
-                          time_t time,
+                          vigor_time_t time,
                           uint16_t* external_port) {
 	int index;
 	if (map_get(manager->in_table, id, &index) == 0) {
@@ -161,7 +161,7 @@ flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id,
 
 bool
 flow_manager_get_external(struct FlowManager* manager, uint16_t external_port,
-                          time_t time,
+                          vigor_time_t time,
                           struct FlowId* out_flow) {
 	int index = external_port - manager->starting_port;
   if (dchain_is_index_allocated(manager->chain, index) == 0) {

@@ -114,7 +114,7 @@ let fun_types =
                       lemmas_before = [];
                       lemmas_after = [
                         (fun params ->
-                        "time_t now = " ^ (params.ret_name) ^ ";\n")];};
+                        "vigor_time_t now = " ^ (params.ret_name) ^ ";\n")];};
      "start_time", {ret_type = Static Sint64;
                     arg_types = [];
                     extra_ptr_types = [];
@@ -406,7 +406,7 @@ let fun_types =
                                  arg_types = stt [Ptr dchain_struct;
                                                   Ptr vector_struct;
                                                   Ptr map_struct;
-                                                  time_t];
+                                                  vigor_time_t];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    (fun {tmp_gen;args;_} ->
@@ -451,7 +451,7 @@ let fun_types =
                                       (tmp_gen "ch") ^ ");\n} @*/");
                                  ];};
      "dchain_allocate_new_index", {ret_type = Static Sint32;
-                                   arg_types = stt [Ptr dchain_struct; Ptr Sint32; time_t;];
+                                   arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
                                    extra_ptr_types = [];
                                    lemmas_before = [
                                      capture_chain "cur_ch" 0;
@@ -496,7 +496,7 @@ let fun_types =
                                           (List.nth_exn args 1) ^ ");\n}");
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
-                                 arg_types = stt [Ptr dchain_struct; Sint32; time_t;];
+                                 arg_types = stt [Ptr dchain_struct; Sint32; vigor_time_t;];
                                  extra_ptr_types = [];
                                  lemmas_before = [
                                    capture_chain "cur_ch" 0;

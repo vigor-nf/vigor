@@ -68,6 +68,7 @@ let parse_int str =
   (* As another hack: handle -300 in 64bits. *)
   else if (String.equal str "18446744073709551316") then Some (-300)
   else if (String.equal str "18446744073709551556") then Some (-60)
+  else if (String.equal str "18446744063709551616") then Some (-10000000000)
   else
     try Some (int_of_string str)
     with _ -> None
@@ -451,6 +452,8 @@ let get_sint_in_bounds v =
   else if (String.equal v "18446744073709551316") then -300
   (* and -60 *)
   else if (String.equal v "18446744073709551556") then -60
+  (* and -10000000000 *)
+  else if (String.equal v "18446744063709551616") then -10000000000
   else
     let integer_val = Int.of_string v in
     if Int.(integer_val > 2147483647) then

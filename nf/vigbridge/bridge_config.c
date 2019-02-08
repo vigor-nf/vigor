@@ -16,7 +16,7 @@
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
 
-const uint32_t DEFAULT_EXP_TIME = 300;//seconds
+const uint64_t DEFAULT_EXP_TIME = 300000000000l;//nanoseconds
 const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses
 
 #define PARSE_ERROR(format, ...) \
@@ -77,7 +77,7 @@ void bridge_config_cmdline_print_usage(void)
 {
   NF_INFO("Usage:\n"
          "[DPDK EAL options] --\n"
-         "\t--expire <time>: flow expiration time, default: %" PRIu32 ".\n"
+         "\t--expire <time>: flow expiration time (ns), default: %" PRIu64 ".\n"
          "\t--capacity <n>: dynamic mac learning table capacity,"
          " default: %" PRIu32 ".\n"
          "\t--config <fname>: static filtering table configuration file.\n",
@@ -89,7 +89,7 @@ void bridge_print_config(struct bridge_config* config)
 {
   NF_INFO("\n--- Bridge Config ---\n");
 
-  NF_INFO("Expiration time: %" PRIu32, config->expiration_time);
+  NF_INFO("Expiration time: %" PRIu64 "ns", config->expiration_time);
   NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
   NF_INFO("Static configuration file: %s", config->static_config_fname);
 

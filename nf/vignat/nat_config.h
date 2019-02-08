@@ -27,7 +27,7 @@ struct nat_config {
 	uint16_t start_port;
 
 	// Expiration time of flows in seconds
-	uint32_t expiration_time;
+	uint64_t expiration_time;
 
 	// Size of the flow table
 	uint32_t max_flows;

@@ -21,6 +21,11 @@ pushd nf/vigbalancer
   make
   make verify-dpdk
 popd
+pushd nf/vigpolicer
+  make clean
+  make
+  make verify-dpdk
+popd
 
 echo "All symbex succeeded"
 

@@ -17,7 +17,7 @@
                               struct Map* ip_to_backend_id,
                               struct DoubleChain* active_backends,
                               struct Vector* cht,
-                              time_t time,
+                              vigor_time_t time,
                               uint32_t backend_capacity,
                               uint32_t flow_capacity,
                               uint32_t cht_height) =
@@ -58,7 +58,7 @@ void lb_loop_iteration_assumptions(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height);
@@ -73,7 +73,7 @@ void lb_loop_invariant_consume(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height);
@@ -119,7 +119,7 @@ void lb_loop_invariant_produce(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t* time,
+        vigor_time_t* time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height);
@@ -167,7 +167,7 @@ void lb_loop_iteration_begin(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height);
@@ -182,7 +182,7 @@ void lb_loop_iteration_end(
 				struct Map** ip_to_backend_id,
 				struct DoubleChain** active_backends,
 				struct Vector** cht,
-        time_t time,
+        vigor_time_t time,
         uint32_t backend_capacity,
         uint32_t flow_capacity,
         uint32_t cht_height);

@@ -1,25 +1,13 @@
-all: validator.byte nat_fspec.cmo bridge_fspec.cmo balancer_fspec.cmo
+all: validator.byte nat_fspec.cmo bridge_fspec.cmo balancer_fspec.cmo policer_fspec.cmo
 
 validator.byte: .PHONY
 	corebuild -no-hygiene -use-menhir -lib dynlink -lib str validator.byte -use-ocamlfind -cflag -unsafe-string
 
-nat_fspec.cmo: _build/nat_fspec.cmo
-	cp _build/nat_fspec.cmo ./
+%.cmo: _build/%.cmo
+	cp $< ./
 
-bridge_fspec.cmo: _build/bridge_fspec.cmo
-	cp _build/bridge_fspec.cmo ./
-
-balancer_fspec.cmo: _build/balancer_fspec.cmo
-	cp _build/balancer_fspec.cmo ./
-
-_build/nat_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlink -lib str nat_fspec.cmo -cflag -unsafe-string
-
-_build/bridge_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlink -lib str bridge_fspec.cmo -cflag -unsafe-string
-
-_build/balancer_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlinc balancer_fspec.cmo -cflag -unsafe-string
+_build/%.cmo: .PHONY
+	corebuild -no-hygiene -lib dynlink -lib str $(notdir $@) -cflag -unsafe-string
 
 .PHONY:
 
@@ -38,6 +26,9 @@ validate-bridge: clean
 
 validate-balancer: clean
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cmo
+
+validate-policer: clean
+	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cmo
 
 # Regression test suite
 test-results/%.done: regression-tests/%

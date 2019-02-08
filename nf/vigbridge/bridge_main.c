@@ -36,18 +36,18 @@ struct bridge_config config;
 struct StaticFilterTable static_ft;
 struct DynamicFilterTable dynamic_ft;
 
-int bridge_expire_entries(time_t time) {
+int bridge_expire_entries(vigor_time_t time) {
   if (time < config.expiration_time) return 0;
 
   // This is convoluted - we want to make sure the sanitization doesn't
-  // extend our time_t value in 128 bits, which would confuse the validator.
+  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
   // So we "prove" by hand that it's OK...
   // We know time >= 0 since time >= config.expiration_time
-  assert(sizeof(time_t) <= sizeof(uint64_t));
+  assert(sizeof(vigor_time_t) <= sizeof(int64_t));
   uint64_t time_u = (uint64_t) time; // OK since assert above passed and time > 0
   uint64_t min_time_u = time_u - config.expiration_time; // OK because time >= expiration_time >= 0
-  assert(sizeof(uint64_t) <= sizeof(time_t));
-  time_t min_time = (time_t) min_time_u; // OK since the assert above passed
+  assert(sizeof(int64_t) <= sizeof(vigor_time_t));
+  vigor_time_t min_time = (vigor_time_t) min_time_u; // OK since the assert above passed
 
   return expire_items_single_map(dynamic_ft.heap, dynamic_ft.keys,
                                  dynamic_ft.map,
@@ -83,7 +83,7 @@ int bridge_get_device(struct ether_addr* dst,
 
 void bridge_put_update_entry(struct ether_addr* src,
                              uint16_t src_device,
-                             time_t time) {
+                             vigor_time_t time) {
   int index = -1;
   int hash = ether_addr_hash(src);
   int present = map_get(dynamic_ft.map, src, &index);
@@ -305,7 +305,7 @@ void nf_core_init(void) {
 #endif//KLEE_VERIFICATION
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now) {
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
@@ -348,7 +348,7 @@ void nf_print_config() {
 #ifdef KLEE_VERIFICATION
 
 void nf_loop_iteration_begin(unsigned lcore_id,
-                             time_t time) {
+                             vigor_time_t time) {
   bridge_loop_iteration_begin(&dynamic_ft.heap,
                               &dynamic_ft.map,
                               &dynamic_ft.keys,
@@ -361,7 +361,7 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       time_t time) {
+                                       vigor_time_t time) {
   bridge_loop_iteration_assumptions(&dynamic_ft.heap,
                                     &dynamic_ft.map,
                                     &dynamic_ft.keys,
@@ -373,7 +373,7 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
-                           time_t time) {
+                           vigor_time_t time) {
   bridge_loop_iteration_end(&dynamic_ft.heap,
                             &dynamic_ft.map,
                             &dynamic_ft.keys,

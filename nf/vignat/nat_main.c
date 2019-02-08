@@ -34,7 +34,7 @@ void nf_core_init()
 	}
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 {
   const int in_port = mbuf->port;
 	NF_DEBUG("It is %" PRId64, now);
@@ -146,7 +146,7 @@ void nf_print_config() {
 #include "nat_loop.h"
 
 void nf_loop_iteration_begin(unsigned lcore_id,
-                             time_t time) {
+                             vigor_time_t time) {
   loop_iteration_begin(flow_manager_get_in_table(flow_manager),
                        flow_manager_get_in_vec(flow_manager),
                        flow_manager_get_chain(flow_manager),
@@ -157,7 +157,7 @@ void nf_loop_iteration_begin(unsigned lcore_id,
 }
 
 void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       time_t time) {
+                                       vigor_time_t time) {
   loop_iteration_assumptions(flow_manager_get_in_table(flow_manager),
                              flow_manager_get_in_vec(flow_manager),
                              flow_manager_get_chain(flow_manager),
@@ -168,7 +168,7 @@ void nf_add_loop_iteration_assumptions(unsigned lcore_id,
 }
 
 void nf_loop_iteration_end(unsigned lcore_id,
-                           time_t time) {
+                           vigor_time_t time) {
   loop_iteration_end(flow_manager_get_in_table(flow_manager),
                      flow_manager_get_in_vec(flow_manager),
                      flow_manager_get_chain(flow_manager),

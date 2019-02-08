@@ -30,7 +30,7 @@ struct lb_config {
   // The time for which the load balancer is willing to wait hoping to get
   // another heartbeat. If no heartbeat comes for a host for this time,
   // it is considered down and removed from the pool of backends.
-  uint32_t backend_expiration_time;
+  uint64_t backend_expiration_time;
 };
 
 
