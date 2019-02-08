@@ -39,13 +39,8 @@ int policer_expire_entries(uint64_t time) {
   if (time < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate)
     return 0;
 
-  // This is convoluted - we want to make sure the sanitization doesn't
-  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
-  // So we "prove" by hand that it's OK...
-  // We know time >= 0 since time >= config.burst / config.rate
-//   assert(sizeof(vigor_time_t) <= sizeof(int64_t));
-//   assert(sizeof(int64_t) <= sizeof(vigor_time_t));
-  uint64_t min_time = time - config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate; // OK because time >= config.burst / config.rate >= 0
+  // OK because time >= config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate >= 0
+  uint64_t min_time = time - config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate;
 
   return expire_items_single_map(dynamic_ft.heap, dynamic_ft.keys,
                                  dynamic_ft.map,
