@@ -108,14 +108,14 @@ let copy_stub_mbuf_content var_name ptr =
 
 let fun_types =
   String.Map.of_alist_exn
-    ["current_time", {ret_type = Static Sint64;
+    ["current_time", {ret_type = Static vigor_time_t;
                       arg_types = [];
                       extra_ptr_types = [];
                       lemmas_before = [];
                       lemmas_after = [
                         (fun params ->
                         "vigor_time_t now = " ^ (params.ret_name) ^ ";\n")];};
-     "start_time", {ret_type = Static Sint64;
+     "start_time", {ret_type = Static vigor_time_t;
                     arg_types = [];
                     extra_ptr_types = [];
                     lemmas_before = [];
@@ -224,17 +224,17 @@ let fun_types =
                                 arg_types = stt [Ptr (Ptr map_struct);
                                                  Ptr (Ptr vector_struct);
                                                  Ptr (Ptr dchain_struct);
+                                                 Sint32;
+                                                 Sint32;
                                                  Uint32;
-                                                 Sint64;
-                                                 Sint32;
-                                                 Sint32;
-                                                 Uint32];
+                                                 Uint32;
+                                                 vigor_time_t];
                                 extra_ptr_types = [];
                                 lemmas_before = [
                                   (fun {args;_} ->
-                                     "start_port = " ^ List.nth_exn args 6 ^ ";");
+                                     "start_port = " ^ List.nth_exn args 4 ^ ";");
                                   (fun {args;_} ->
-                                     "external_addr = " ^ List.nth_exn args 7 ^ ";");
+                                     "external_addr = " ^ List.nth_exn args 5 ^ ";");
                                   (fun {args;_} ->
                                      "/*@ close evproc_loop_invariant(*" ^
                                      List.nth_exn args 0 ^ ", *" ^
@@ -251,11 +251,11 @@ let fun_types =
                                 arg_types = stt [Ptr (Ptr map_struct);
                                                  Ptr (Ptr vector_struct);
                                                  Ptr (Ptr dchain_struct);
+                                                 Sint32;
+                                                 Sint32;
+                                                 Uint32;
                                                  Ptr Uint32;
-                                                 Ptr Sint64;
-                                                 Sint32;
-                                                 Sint32;
-                                                 Uint32];
+                                                 Ptr vigor_time_t];
                                 extra_ptr_types = [];
                                 lemmas_before = [];
                                 lemmas_after = [
@@ -263,16 +263,16 @@ let fun_types =
                                      "/*@ open evproc_loop_invariant (*" ^
                                      (List.nth_exn args 0) ^ ", *" ^
                                      (List.nth_exn args 1) ^ ", *" ^
-                                     (List.nth_exn args 2) ^ ", *" ^
-                                     (List.nth_exn args 3) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", " ^
+                                     (List.nth_exn args 3) ^ ", " ^
                                      (List.nth_exn args 4) ^ ", " ^
-                                     (List.nth_exn args 5) ^ ", " ^
-                                     (List.nth_exn args 6) ^ ", " ^
+                                     (List.nth_exn args 5) ^ ", *" ^
+                                     (List.nth_exn args 6) ^ ", *" ^
                                      (List.nth_exn args 7) ^ "); @*/");
                                   (fun params ->
-                                     "start_port = " ^ List.nth_exn params.args 6 ^ ";");
+                                     "start_port = " ^ List.nth_exn params.args 4 ^ ";");
                                   (fun {args;_} ->
-                                     "external_addr = " ^ List.nth_exn args 7 ^ ";");
+                                     "external_addr = " ^ List.nth_exn args 5 ^ ";");
                                   (fun {tmp_gen;args;_} ->
                                      "\n/*@ {\n\
                                       assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^

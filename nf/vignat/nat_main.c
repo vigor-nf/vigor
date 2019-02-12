@@ -145,37 +145,15 @@ void nf_print_config() {
 #ifdef KLEE_VERIFICATION
 #include "nat_loop.h"
 
-void nf_loop_iteration_begin(unsigned lcore_id,
-                             vigor_time_t time) {
-  loop_iteration_begin(flow_manager_get_in_table(flow_manager),
-                       flow_manager_get_in_vec(flow_manager),
-                       flow_manager_get_chain(flow_manager),
-                       lcore_id, time,
-                       config.max_flows,
-                       config.start_port,
-                       config.external_addr);
-}
-
-void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       vigor_time_t time) {
-  loop_iteration_assumptions(flow_manager_get_in_table(flow_manager),
-                             flow_manager_get_in_vec(flow_manager),
-                             flow_manager_get_chain(flow_manager),
-                             lcore_id, time,
-                             config.max_flows,
-                             config.start_port,
-                             config.external_addr);
-}
-
-void nf_loop_iteration_end(unsigned lcore_id,
-                           vigor_time_t time) {
-  loop_iteration_end(flow_manager_get_in_table(flow_manager),
-                     flow_manager_get_in_vec(flow_manager),
-                     flow_manager_get_chain(flow_manager),
-                     lcore_id, time,
-                     config.max_flows,
-                     config.start_port,
-                     config.external_addr);
+void nf_loop_iteration_border(unsigned lcore_id,
+                              vigor_time_t time) {
+  loop_iteration_border(flow_manager_get_in_table(flow_manager),
+                        flow_manager_get_in_vec(flow_manager),
+                        flow_manager_get_chain(flow_manager),
+                        config.max_flows,
+                        config.start_port,
+                        config.external_addr,
+                        lcore_id, time);
 }
 #endif
 

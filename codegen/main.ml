@@ -532,7 +532,7 @@ let main () =
   warnTruncate := false;
   E.colorFlag := true;
   Cabs2cil.doCollapseCallCast := true;
-  let usageMsg = "Usage: ciltutcc [options] source-files" in
+  let usageMsg = "Usage: main.byte [options] source-files" in
   Arg.parse [] Ciloptions.recordFile usageMsg;
   Ciloptions.fileNames := List.rev !Ciloptions.fileNames;
   let files = List.map parseOneFile !Ciloptions.fileNames in

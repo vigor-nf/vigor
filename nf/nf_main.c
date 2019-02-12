@@ -38,8 +38,7 @@
     unsigned _d;                                                        \
     klee_possibly_havoc(&_d, sizeof(_d), "_d");                         \
     while(klee_induce_invariants() & _vigor_loop_termination) { \
-      nf_add_loop_iteration_assumptions(_vigor_lcore_id, _vigor_start_time); \
-      nf_loop_iteration_begin(_vigor_lcore_id, _vigor_start_time);      \
+      nf_loop_iteration_border(_vigor_lcore_id, _vigor_start_time);      \
       VIGOR_NOW = current_time(); \
       /* concretize the device to avoid leaking symbols into DPDK */ \
       VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
@@ -48,7 +47,7 @@
       stub_hardware_receive_packet(VIGOR_DEVICE);
 #define VIGOR_LOOP_END                                \
       stub_hardware_reset_receive(VIGOR_DEVICE);          \
-      nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW);  \
+      nf_loop_iteration_border(_vigor_lcore_id, VIGOR_NOW);  \
       }
 #else//KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN \
