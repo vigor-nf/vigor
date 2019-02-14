@@ -149,85 +149,89 @@ let fun_types =
                          lemmas_after = [
                            (fun {args;_} ->
                               "//@ open ether_addrp(" ^ (List.nth_exn args 0) ^ ", _);\n")];};
-     "bridge_loop_invariant_consume", {ret_type = Static Void;
-                                       arg_types = stt
-                                           [Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Uint32;
-                                            Sint64;
-                                            Uint16];
-                                       extra_ptr_types = [];
-                                       lemmas_before = [
-                                         (fun {args;_} ->
-                                            "/*@ close bridge_loop_invariant(*" ^
-                                            (List.nth_exn args 0) ^ ", *" ^
-                                            (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", *" ^
-                                            (List.nth_exn args 4) ^ ", *" ^
-                                            (List.nth_exn args 5) ^ ", " ^
-                                            (List.nth_exn args 6) ^ ", " ^
-                                            (List.nth_exn args 7) ^ ", " ^
-                                            (List.nth_exn args 8) ^ "); @*/");];
-                                       lemmas_after = [];};
-     "bridge_loop_invariant_produce", {ret_type = Static Void;
-                                       arg_types = stt
-                                           [Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Uint32;
-                                            Ptr Sint64;
-                                            Uint16];
-                                       extra_ptr_types = [];
-                                       lemmas_before = [];
-                                       lemmas_after = [
-                                         (fun {args;_} ->
-                                            "/*@ open bridge_loop_invariant (*" ^
-                                            (List.nth_exn args 0) ^ ", *" ^
-                                            (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", *" ^
-                                            (List.nth_exn args 4) ^ ", *" ^
-                                            (List.nth_exn args 5) ^ ", " ^
-                                            (List.nth_exn args 6) ^ ", *" ^
-                                            (List.nth_exn args 7) ^ ", " ^
-                                            (List.nth_exn args 8) ^ "); @*/");
-                                         (fun {tmp_gen;_} ->
-                                            "\n/*@ {\n\
-                                             assert mapp<ether_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                                            ", _));\n\
-                                             assert vectorp<ether_addri>(_, _, ?" ^ (tmp_gen "dv") ^
-                                            ", _);\n\
-                                             assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "dv_init") ^
-                                            ", _);\n\
-                                             assert vectorp<StaticKeyi>(_, _, ?" ^ (tmp_gen "sv") ^
-                                            ", _);\n\
-                                             assert map_vec_chain_coherent<ether_addri>(" ^
-                                            (tmp_gen "dm") ^ ", " ^
-                                            (tmp_gen "dv") ^ ", ?" ^
-                                            (tmp_gen "dh") ^
-                                            ");\n\
-                                             mvc_coherent_same_len<ether_addri>(" ^ (tmp_gen "dm") ^
-                                            ", " ^ (tmp_gen "dv") ^
-                                            ", " ^ (tmp_gen "dh") ^
-                                            ");\n\
-                                             assert mapp<StaticKeyi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "sm") ^
-                                            ", _));\n\
-                                            initial_dyn_map = " ^ (tmp_gen "dm") ^
-                                            ";\ninitial_dyn_val_vec = " ^ (tmp_gen "dv_init") ^
-                                            ";\ninitial_dyn_key_vec = " ^ (tmp_gen "dv") ^
-                                            ";\ninitial_chain = " ^ (tmp_gen "dh") ^
-                                            ";\ninitial_stat_map = " ^ (tmp_gen "sm") ^
-                                            ";\ninitial_stat_key_vec = " ^ (tmp_gen "sv") ^
-                                            ";\n} @*/");
-                                       ];};
+     "loop_invariant_consume", {ret_type = Static Void;
+                                arg_types = stt
+                                    [Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr dchain_struct);
+                                     Uint32;
+                                     Uint32;
+                                     Uint32;
+                                     Sint64];
+                                extra_ptr_types = [];
+                                lemmas_before = [
+                                  (fun {args;_} ->
+                                     "/*@ close evproc_loop_invariant(*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", *" ^
+                                     (List.nth_exn args 4) ^ ", *" ^
+                                     (List.nth_exn args 5) ^ ", " ^
+                                     (List.nth_exn args 6) ^ ", " ^
+                                     (List.nth_exn args 7) ^ ", " ^
+                                     (List.nth_exn args 8) ^ ", " ^
+                                     (List.nth_exn args 9) ^ "); @*/");];
+                                lemmas_after = [];};
+     "loop_invariant_produce", {ret_type = Static Void;
+                                arg_types = stt
+                                    [Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr dchain_struct);
+                                     Uint32;
+                                     Uint32;
+                                     Ptr Uint32;
+                                     Ptr Sint64];
+                                extra_ptr_types = [];
+                                lemmas_before = [];
+                                lemmas_after = [
+                                  (fun {args;_} ->
+                                     "/*@ open evproc_loop_invariant (*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", *" ^
+                                     (List.nth_exn args 4) ^ ", *" ^
+                                     (List.nth_exn args 5) ^ ", " ^
+                                     (List.nth_exn args 6) ^ ", " ^
+                                     (List.nth_exn args 7) ^ ", *" ^
+                                     (List.nth_exn args 8) ^ ", *" ^
+                                     (List.nth_exn args 9) ^ "); @*/");
+                                  (fun {tmp_gen;_} ->
+                                     "\n/*@ {\n\
+                                      assert mapp<ether_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                                     ", _));\n\
+                                      assert vectorp<ether_addri>(_, _, ?" ^ (tmp_gen "dv") ^
+                                     ", _);\n\
+                                      assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "dv_init") ^
+                                     ", _);\n\
+                                      assert vectorp<StaticKeyi>(_, _, ?" ^ (tmp_gen "sv") ^
+                                     ", _);\n\
+                                      assert map_vec_chain_coherent<ether_addri>(" ^
+                                     (tmp_gen "dm") ^ ", " ^
+                                     (tmp_gen "dv") ^ ", ?" ^
+                                     (tmp_gen "dh") ^
+                                     ");\n\
+                                      mvc_coherent_same_len<ether_addri>(" ^ (tmp_gen "dm") ^
+                                     ", " ^ (tmp_gen "dv") ^
+                                     ", " ^ (tmp_gen "dh") ^
+                                     ");\n\
+                                      assert mapp<StaticKeyi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "sm") ^
+                                     ", _));\n\
+                                      initial_dyn_map = " ^ (tmp_gen "dm") ^
+                                     ";\ninitial_dyn_val_vec = " ^ (tmp_gen "dv_init") ^
+                                     ";\ninitial_dyn_key_vec = " ^ (tmp_gen "dv") ^
+                                     ";\ninitial_chain = " ^ (tmp_gen "dh") ^
+                                     ";\ninitial_stat_map = " ^ (tmp_gen "sm") ^
+                                     ";\ninitial_stat_key_vec = " ^ (tmp_gen "sv") ^
+                                     ";\n} @*/");
+                                ];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];
@@ -522,9 +526,6 @@ let fun_types =
                         ", ?stkey);\n\
                          map_get_mem(" ^ (tmp_gen "stm") ^
                         ", stkey);\n\
-                         forall_mem(pair(stkey, *" ^ (List.nth_exn args 2) ^
-                        "), " ^ (tmp_gen "stm") ^
-                        ", (st_entry_bound)(2));\n\
                          } @*/\n" ^
                         "//@ open StaticKeyp(" ^ (List.nth_exn args 1) ^ ", _);\n" ^
                         "//@ open ether_addrp(" ^ (List.nth_exn args 1) ^ ".addr, _);\n"
@@ -1002,10 +1003,10 @@ struct
                   bool dyn_vs_borrowed = false;\n\
                   bool stat_vec_borrowed = false;\n"
   let fun_types = fun_types
-  let boundary_fun = "bridge_loop_invariant_produce"
-  let finishing_fun = "bridge_loop_invariant_consume"
-  let eventproc_iteration_begin = "bridge_loop_invariant_produce"
-  let eventproc_iteration_end = "bridge_loop_invariant_consume"
+  let boundary_fun = "loop_invariant_produce"
+  let finishing_fun = "loop_invariant_consume"
+  let eventproc_iteration_begin = "loop_invariant_produce"
+  let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration = In_channel.read_all "bridge_forwarding_property.tmpl"
 end
 

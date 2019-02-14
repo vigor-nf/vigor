@@ -18,6 +18,13 @@ let log_fun_name cname = "log_" ^ cname
 let concat_flatten_map sep f lst extra =
   (String.concat sep ((List.flatten (List.map f lst))@extra))
 
+let is_free_vector containers name =
+  not (List.exists (fun (_,spec) ->
+      match spec with
+      | EMap (_, _, vec_name, _) -> String.equal name vec_name
+      | _ -> false)
+      containers)
+
 let gen_loop_invariant containers =
   "/*@ predicate evproc_loop_invariant(" ^
   (concat_flatten_map ",\n                                    "
@@ -39,7 +46,14 @@ let gen_loop_invariant containers =
      (fun (name, cnt) ->
         match cnt with
         | Map (typ, cap) -> ["mapp<" ^ (inductive_name typ) ^ ">(" ^ name ^ ", " ^ (predicate_name typ) ^ ", " ^ (lhash_name typ) ^ ", " ^ "nop_true, " ^ "mapc(" ^ cap ^ ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs))"]
-        | Vector (typ, cap) -> ["vectorp<" ^ (inductive_name typ) ^ ">(" ^ name ^ ", " ^ (predicate_name typ) ^ ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"]
+        | Vector (typ, cap) ->
+          let vectorp = "vectorp<" ^ (inductive_name typ) ^ ">(" ^ name ^ ", " ^ (predicate_name typ) ^ ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"
+          in
+          let len = "length(_" ^ name ^ ") == " ^ cap in
+          let is_one = "true == forall(_" ^ name ^ ", is_one)" in
+          vectorp::
+          (if is_free_vector containers name then [is_one] else [])@
+          (if (String.equal cap "") || (String.equal cap "_") then [] else [len])
         | DChain cap -> ["double_chainp(?_" ^ name ^ ", " ^ name ^ ")";
                          "dchain_high_fp(_" ^ name ^ ") <= time";
                          "dchain_index_range_fp(_" ^ name ^ ") == " ^ cap]

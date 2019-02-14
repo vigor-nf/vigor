@@ -347,42 +347,18 @@ void nf_print_config() {
 
 #ifdef KLEE_VERIFICATION
 
-void nf_loop_iteration_begin(unsigned lcore_id,
-                             vigor_time_t time) {
-  bridge_loop_iteration_begin(&dynamic_ft.heap,
-                              &dynamic_ft.map,
-                              &dynamic_ft.keys,
-                              &dynamic_ft.values,
-                              &static_ft.map,
-                              &static_ft.keys,
-                              config.dyn_capacity,
-                              time,
-                              rte_eth_dev_count());
-}
-
-void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       vigor_time_t time) {
-  bridge_loop_iteration_assumptions(&dynamic_ft.heap,
-                                    &dynamic_ft.map,
-                                    &dynamic_ft.keys,
-                                    &dynamic_ft.values,
-                                    &static_ft.map,
-                                    &static_ft.keys,
-                                    config.dyn_capacity,
-                                    time);
-}
-
-void nf_loop_iteration_end(unsigned lcore_id,
-                           vigor_time_t time) {
-  bridge_loop_iteration_end(&dynamic_ft.heap,
-                            &dynamic_ft.map,
-                            &dynamic_ft.keys,
-                            &dynamic_ft.values,
-                            &static_ft.map,
-                            &static_ft.keys,
-                            config.dyn_capacity,
-                            time,
-                            rte_eth_dev_count());
+void nf_loop_iteration_border(unsigned lcore_id,
+                              vigor_time_t time) {
+  loop_iteration_border(&dynamic_ft.map,
+                        &dynamic_ft.keys,
+                        &dynamic_ft.values,
+                        &static_ft.map,
+                        &static_ft.keys,
+                        &dynamic_ft.heap,
+                        config.dyn_capacity,
+                        rte_eth_dev_count(),
+                        lcore_id,
+                        time);
 }
 
 #endif//KLEE_VERIFICATION
