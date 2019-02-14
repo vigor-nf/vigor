@@ -125,135 +125,139 @@ let fun_types =
                                extra_ptr_types = [];
                                lemmas_before = [];
                                lemmas_after = [];};
-     "lb_loop_invariant_consume", {ret_type = Static Void;
-                                   arg_types = stt
-                                           [Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Sint64;
-                                            Uint32;
-                                            Uint32;
-                                            Uint32];
-                                       extra_ptr_types = [];
-                                       lemmas_before = [
-                                         (fun {args;_} ->
-                                            "/*@ close lb_loop_invariant(*" ^
-                                            (List.nth_exn args 0) ^ ", *" ^
-                                            (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", *" ^
-                                            (List.nth_exn args 4) ^ ", *" ^
-                                            (List.nth_exn args 5) ^ ", *" ^
-                                            (List.nth_exn args 6) ^ ", *" ^
-                                            (List.nth_exn args 7) ^ ", *" ^
-                                            (List.nth_exn args 8) ^ ", " ^
-                                            (List.nth_exn args 9) ^ ", " ^
-                                            (List.nth_exn args 10) ^ ", " ^
-                                            (List.nth_exn args 11) ^ ", " ^
-                                            (List.nth_exn args 12) ^ "); @*/");];
-                                       lemmas_after = [];};
-     "lb_loop_invariant_produce", {ret_type = Static Void;
-                                       arg_types = stt
-                                           [Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr Sint64;
-                                            Uint32;
-                                            Uint32;
-                                            Uint32];
-                                       extra_ptr_types = [];
-                                       lemmas_before = [];
-                                       lemmas_after = [
-                                         (fun {args;_} ->
-                                            "/*@ open lb_loop_invariant (*" ^
-                                            (List.nth_exn args 0) ^ ", *" ^
-                                            (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", *" ^
-                                            (List.nth_exn args 4) ^ ", *" ^
-                                            (List.nth_exn args 5) ^ ", *" ^
-                                            (List.nth_exn args 6) ^ ", *" ^
-                                            (List.nth_exn args 7) ^ ", *" ^
-                                            (List.nth_exn args 8) ^ ", *" ^
-                                            (List.nth_exn args 9) ^ ", " ^
-                                            (List.nth_exn args 10) ^ ", " ^
-                                            (List.nth_exn args 11) ^ ", " ^
-                                            (List.nth_exn args 12) ^ "); @*/");
-                                         (fun {tmp_gen;args;_} ->
-                                            "\n/*@ {\n\
-                                             assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
-                                             assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
-                                             assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
-                                            (tmp_gen "fi") ^ ", ?" ^
-                                            (tmp_gen "fh") ^ ", ?" ^
-                                            (tmp_gen "ch") ^
-                                            ");\n\
-                                             mvc_coherent_same_len<LoadBalancedFlowi>(" ^ 
-                                                   (tmp_gen "fi") ^
-                                            ", " ^ (tmp_gen "fh") ^
-                                            ", " ^ (tmp_gen "ch") ^
-                                            ");\n\
-                                             assert mapp<LoadBalancedFlowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n" ^ 
-                                            "assert mapp<LoadBalancedFlowi>(_ "^
-                                            ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
-                                            ", _));\n" ^
-                                            "assert vectorp<LoadBalancedFlowi>(_" ^
-                                            ", _, ?" ^ (tmp_gen "initial_flow_vec") ^
-                                            ", _);\n" ^
-                                            "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
-                                            ";\nassert double_chainp(?" ^ (tmp_gen "initial_flow_chain") ^
-                                            ", " ^ (tmp_gen "arg2bis") ^
-                                            ");\n" ^
-                                            "assert *" ^ (List.nth_exn args 3) ^ " |-> ?" ^ (tmp_gen "arg3bis") ^
-                                            ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg3bis") ^
-                                            ", _, ?" ^ (tmp_gen "initial_fidbid_veca") ^
-                                            ", _);\n" ^
-                                            "assert *" ^ (List.nth_exn args 4) ^ " |-> ?" ^ (tmp_gen "arg4bis") ^
-                                            ";\nassert vectorp<ip_addri>(" ^ (tmp_gen "arg4bis") ^
-                                            ", _, ?" ^ (tmp_gen "initial_ip_veca") ^
-                                            ", _);\n" ^
-                                            "assert *" ^ (List.nth_exn args 5) ^ " |-> ?" ^ (tmp_gen "arg5bis") ^
-                                            ";\nassert vectorp<LoadBalancedBackendi>(" ^ (tmp_gen "arg5bis") ^
-                                            ", _, ?" ^ (tmp_gen "initial_backends_veca") ^
-                                            ", _);\n" ^
-                                            "assert *" ^ (List.nth_exn args 6) ^ " |-> ?" ^ (tmp_gen "arg6bis") ^
-                                            ";\nassert mapp<ip_addri>(" ^ (tmp_gen "arg6bis") ^
-                                            ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_backend_ip_map") ^
-                                            ", _));\n" ^
-                                            "assert *" ^ (List.nth_exn args 7) ^ " |-> ?" ^ (tmp_gen "arg7bis") ^
-                                            ";\nassert double_chainp(?" ^ (tmp_gen "initial_active_backends") ^
-                                            ", " ^ (tmp_gen "arg7bis") ^
-                                            ");\n" ^
-                                            "assert *" ^ (List.nth_exn args 8) ^ " |-> ?" ^ (tmp_gen "arg8bis") ^
-                                            ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg8bis") ^
-                                            ", _, ?" ^ (tmp_gen "initial_cht") ^
-                                            ", _);\n" ^
-                                            ";\nfidbid_veca_ptr = " ^ (tmp_gen "arg3bis") ^
-                                            ";\nbackends_veca_ptr = " ^ (tmp_gen "arg5bis") ^
-                                            ";\ncht_ptr = " ^ (tmp_gen "arg8bis") ^
-                                            ";\nflow_map = " ^ (tmp_gen "initial_flow_map") ^
-                                            ";\nflow_vec = " ^ (tmp_gen "initial_flow_vec") ^
-                                            ";\nflow_chain = " ^ (tmp_gen "initial_flow_chain") ^
-                                            ";\nfidbid_veca = " ^ (tmp_gen "initial_fidbid_veca") ^
-                                            ";\nip_veca = " ^ (tmp_gen "initial_ip_veca") ^
-                                            ";\nbackends_veca = " ^ (tmp_gen "initial_backends_veca") ^
-                                            ";\nbackend_ip_map = " ^ (tmp_gen "initial_backend_ip_map") ^
-                                            ";\nactive_backends = " ^ (tmp_gen "initial_active_backends") ^
-                                            ";\ncht = " ^ (tmp_gen "initial_cht") ^
-                                            ";\n} @*/");
-                                       ];};
+     "loop_invariant_consume", {ret_type = Static Void;
+                                arg_types = stt
+                                    [Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr dchain_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr map_struct);
+                                     Ptr (Ptr dchain_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Uint32;
+                                     Uint32;
+                                     Uint32;
+                                     Uint32;
+                                     vigor_time_t];
+                                extra_ptr_types = [];
+                                lemmas_before = [
+                                  (fun {args;_} ->
+                                     "/*@ close evproc_loop_invariant(*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", *" ^
+                                     (List.nth_exn args 4) ^ ", *" ^
+                                     (List.nth_exn args 5) ^ ", *" ^
+                                     (List.nth_exn args 6) ^ ", *" ^
+                                     (List.nth_exn args 7) ^ ", *" ^
+                                     (List.nth_exn args 8) ^ ", " ^
+                                     (List.nth_exn args 9) ^ ", " ^
+                                     (List.nth_exn args 10) ^ ", " ^
+                                     (List.nth_exn args 11) ^ ", " ^
+                                     (List.nth_exn args 12) ^ ", " ^
+                                     (List.nth_exn args 13) ^ "); @*/");];
+                                lemmas_after = [];};
+     "loop_invariant_produce", {ret_type = Static Void;
+                                arg_types = stt
+                                    [Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr dchain_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr map_struct);
+                                     Ptr (Ptr dchain_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Uint32;
+                                     Uint32;
+                                     Uint32;
+                                     Ptr Uint32;
+                                     Ptr vigor_time_t];
+                                extra_ptr_types = [];
+                                lemmas_before = [];
+                                lemmas_after = [
+                                  (fun {args;_} ->
+                                     "/*@ open evproc_loop_invariant (*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", *" ^
+                                     (List.nth_exn args 4) ^ ", *" ^
+                                     (List.nth_exn args 5) ^ ", *" ^
+                                     (List.nth_exn args 6) ^ ", *" ^
+                                     (List.nth_exn args 7) ^ ", *" ^
+                                     (List.nth_exn args 8) ^ ", " ^
+                                     (List.nth_exn args 9) ^ ", " ^
+                                     (List.nth_exn args 10) ^ ", " ^
+                                     (List.nth_exn args 11) ^ ", *" ^
+                                     (List.nth_exn args 12) ^ ", *" ^
+                                     (List.nth_exn args 13) ^ "); @*/");
+                                  (fun {tmp_gen;args;_} ->
+                                     "\n/*@ {\n\
+                                      assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
+                                                                                                                assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
+                                                                                                        assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
+                                     (tmp_gen "fi") ^ ", ?" ^
+                                     (tmp_gen "fh") ^ ", ?" ^
+                                     (tmp_gen "ch") ^
+                                     ");\n\
+                                      mvc_coherent_same_len<LoadBalancedFlowi>(" ^ 
+                                     (tmp_gen "fi") ^
+                                     ", " ^ (tmp_gen "fh") ^
+                                     ", " ^ (tmp_gen "ch") ^
+                                     ");\n\
+                                      assert mapp<LoadBalancedFlowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n" ^ 
+                                     "assert mapp<LoadBalancedFlowi>(_ "^
+                                     ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
+                                     ", _));\n" ^
+                                     "assert vectorp<LoadBalancedFlowi>(_" ^
+                                     ", _, ?" ^ (tmp_gen "initial_flow_vec") ^
+                                     ", _);\n" ^
+                                     "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
+                                     ";\nassert double_chainp(?" ^ (tmp_gen "initial_flow_chain") ^
+                                     ", " ^ (tmp_gen "arg2bis") ^
+                                     ");\n" ^
+                                     "assert *" ^ (List.nth_exn args 3) ^ " |-> ?" ^ (tmp_gen "arg3bis") ^
+                                     ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg3bis") ^
+                                     ", _, ?" ^ (tmp_gen "initial_fidbid_veca") ^
+                                     ", _);\n" ^
+                                     "assert *" ^ (List.nth_exn args 4) ^ " |-> ?" ^ (tmp_gen "arg4bis") ^
+                                     ";\nassert vectorp<ip_addri>(" ^ (tmp_gen "arg4bis") ^
+                                     ", _, ?" ^ (tmp_gen "initial_ip_veca") ^
+                                     ", _);\n" ^
+                                     "assert *" ^ (List.nth_exn args 5) ^ " |-> ?" ^ (tmp_gen "arg5bis") ^
+                                     ";\nassert vectorp<LoadBalancedBackendi>(" ^ (tmp_gen "arg5bis") ^
+                                     ", _, ?" ^ (tmp_gen "initial_backends_veca") ^
+                                     ", _);\n" ^
+                                     "assert *" ^ (List.nth_exn args 6) ^ " |-> ?" ^ (tmp_gen "arg6bis") ^
+                                     ";\nassert mapp<ip_addri>(" ^ (tmp_gen "arg6bis") ^
+                                     ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_backend_ip_map") ^
+                                     ", _));\n" ^
+                                     "assert *" ^ (List.nth_exn args 7) ^ " |-> ?" ^ (tmp_gen "arg7bis") ^
+                                     ";\nassert double_chainp(?" ^ (tmp_gen "initial_active_backends") ^
+                                     ", " ^ (tmp_gen "arg7bis") ^
+                                     ");\n" ^
+                                     "assert *" ^ (List.nth_exn args 8) ^ " |-> ?" ^ (tmp_gen "arg8bis") ^
+                                     ";\nassert vectorp<uint32_t>(" ^ (tmp_gen "arg8bis") ^
+                                     ", _, ?" ^ (tmp_gen "initial_cht") ^
+                                     ", _);\n" ^
+                                     ";\nfidbid_veca_ptr = " ^ (tmp_gen "arg3bis") ^
+                                     ";\nbackends_veca_ptr = " ^ (tmp_gen "arg5bis") ^
+                                     ";\ncht_ptr = " ^ (tmp_gen "arg8bis") ^
+                                     ";\nflow_map = " ^ (tmp_gen "initial_flow_map") ^
+                                     ";\nflow_vec = " ^ (tmp_gen "initial_flow_vec") ^
+                                     ";\nflow_chain = " ^ (tmp_gen "initial_flow_chain") ^
+                                     ";\nfidbid_veca = " ^ (tmp_gen "initial_fidbid_veca") ^
+                                     ";\nip_veca = " ^ (tmp_gen "initial_ip_veca") ^
+                                     ";\nbackends_veca = " ^ (tmp_gen "initial_backends_veca") ^
+                                     ";\nbackend_ip_map = " ^ (tmp_gen "initial_backend_ip_map") ^
+                                     ";\nactive_backends = " ^ (tmp_gen "initial_active_backends") ^
+                                     ";\ncht = " ^ (tmp_gen "initial_cht") ^
+                                     ";\n} @*/");
+                                ];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];
@@ -1311,10 +1315,10 @@ struct
                     //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
                  "
   let fun_types = fun_types
-  let boundary_fun = "lb_loop_invariant_produce"
-  let finishing_fun = "lb_loop_invariant_consume"
-  let eventproc_iteration_begin = "lb_loop_invariant_produce"
-  let eventproc_iteration_end = "lb_loop_invariant_consume"
+  let boundary_fun = "loop_invariant_produce"
+  let finishing_fun = "loop_invariant_consume"
+  let eventproc_iteration_begin = "loop_invariant_produce"
+  let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration = In_channel.read_all "balancer_forwarding_property.tmpl"
 end
 

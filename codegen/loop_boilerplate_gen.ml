@@ -4,9 +4,18 @@ open Data_spec
 let containers = Nf_data_spec.containers
 
 
-let inductive_name cname = cname ^ "i"
-let predicate_name cname = cname ^ "p"
-let constructor_name cname = cname ^ "c"
+let inductive_name cname = match cname with
+  | "uint32_t" -> "uint32_t"
+  | _ -> cname ^ "i"
+
+let predicate_name cname = match cname with
+  | "uint32_t" -> "u_integer"
+  | _ ->  cname ^ "p"
+
+let constructor_name cname = match cname with
+  | "uint32_t" -> "(uint32_t)"
+  | _ ->  cname ^ "c"
+
 let lhash_name cname = "_" ^ cname ^ "_hash"
 let strdescrs_name cname = cname ^ "_descrs"
 let nest_descrs_name cname = cname ^ "_nests"
@@ -32,6 +41,7 @@ let gen_loop_invariant containers =
         match cnt with
         | Map (_, _) -> ["struct Map* " ^ name]
         | Vector (_, _) -> ["struct Vector* " ^ name]
+        | CHT _ -> ["struct Vector* " ^ name]
         | DChain _ -> ["struct DoubleChain* " ^ name]
         | UInt
         | UInt32
@@ -54,6 +64,11 @@ let gen_loop_invariant containers =
           vectorp::
           (if is_free_vector containers name then [is_one] else [])@
           (if (String.equal cap "") || (String.equal cap "_") then [] else [len])
+        | CHT cap ->
+          let vectorp =
+            "vectorp<uint32_t>(" ^ name ^ ", u_integer, ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"
+          in
+          [vectorp]
         | DChain cap -> ["double_chainp(?_" ^ name ^ ", " ^ name ^ ")";
                          "dchain_high_fp(_" ^ name ^ ") <= time";
                          "dchain_index_range_fp(_" ^ name ^ ") == " ^ cap]
@@ -74,6 +89,7 @@ let untraced_funs_args containers spaces =
         match cnt with
         | Map (_, _) -> ["struct Map** " ^ name]
         | Vector (_, _) -> ["struct Vector** " ^ name]
+        | CHT _ -> ["struct Vector** " ^ name]
         | DChain _ -> ["struct DoubleChain** " ^ name]
         | Int -> ["int " ^ name]
         | UInt -> ["unsigned int " ^ name]
@@ -95,6 +111,7 @@ let gen_invariant_consume_decl containers =
         match cnt with
         | Map (_, _)
         | Vector (_, _)
+        | CHT _
         | DChain _ -> ["*" ^ name ^ " |-> ?_" ^ name]
         | Int -> []
         | UInt -> []
@@ -108,6 +125,7 @@ let gen_invariant_consume_decl containers =
         match cnt with
         | Map (_, _)
         | Vector (_, _)
+        | CHT _
         | DChain _ -> ["_" ^ name]
         | Int
         | UInt
@@ -120,6 +138,7 @@ let gen_invariant_consume_decl containers =
         match cnt with
         | Map (_, _)
         | Vector (_, _)
+        | CHT _
         | DChain _ -> ["*" ^ name ^ " |-> _" ^ name]
         | Int -> []
         | UInt -> []
@@ -134,6 +153,7 @@ let gen_invariant_produce_decl containers =
           match cnt with
           | Map (_, _) -> ["struct Map** " ^ name]
           | Vector (_, _) -> ["struct Vector** " ^ name]
+          | CHT _ -> ["struct Vector** " ^ name]
           | DChain _ -> ["struct DoubleChain** " ^ name]
           | Int -> ["int " ^ name]
           | UInt -> ["unsigned int " ^ name]
@@ -150,6 +170,7 @@ let gen_invariant_produce_decl containers =
         match cnt with
         | Map (_, _)
         | Vector (_, _)
+        | CHT _
         | DChain _ -> ["*" ^ name ^ " |-> ?_" ^ name]
         | Int -> []
         | UInt -> []
@@ -163,6 +184,7 @@ let gen_invariant_produce_decl containers =
         match cnt with
         | Map (_, _)
         | Vector (_, _)
+        | CHT _
         | DChain _ -> ["*" ^ name ^ " |-> _" ^ name]
         | Int -> []
         | UInt -> []
@@ -176,6 +198,7 @@ let gen_invariant_produce_decl containers =
         match cnt with
         | Map (_, _)
         | Vector (_, _)
+        | CHT _
         | DChain _ -> ["_" ^ name]
         | Int
         | UInt
@@ -195,6 +218,7 @@ let gen_loop_reset_impl containers =
         match cnt with
         | Map (_, _) -> ["struct Map** " ^ name]
         | Vector (_, _) -> ["struct Vector** " ^ name]
+        | CHT _ -> ["struct Vector** " ^ name]
         | DChain _ -> ["struct DoubleChain** " ^ name]
         | Int -> ["int " ^ name]
         | UInt -> ["unsigned int " ^ name]
@@ -210,6 +234,7 @@ let gen_loop_reset_impl containers =
         match cnt with
         | Map (_, _) -> ["  map_reset(*" ^ name ^ ");\n"]
         | Vector (_, _) -> ["  vector_reset(*" ^ name ^ ");\n"]
+        | CHT _ -> ["  vector_reset(*" ^ name ^ ");\n"]
         | DChain cap -> ["  dchain_reset(*" ^ name ^ ", " ^ cap ^ ");\n"]
         | Int -> []
         | UInt -> []
@@ -225,6 +250,7 @@ let gen_loop_invariant_consume_stub containers =
           match cnt with
           | Map (_, _) -> ["struct Map** " ^ name]
           | Vector (_, _) -> ["struct Vector** " ^ name]
+          | CHT _ -> ["struct Vector** " ^ name]
           | DChain _ -> ["struct DoubleChain** " ^ name]
           | Int -> ["int " ^ name]
           | UInt -> ["unsigned int " ^ name]
@@ -241,6 +267,7 @@ let gen_loop_invariant_consume_stub containers =
           match cnt with
           | Map (_, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Map*), \"" ^ name ^ "\");\n"]
           | Vector (_, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
+          | CHT _ -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
           | DChain _ -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct DoubleChain*), \"" ^ name ^ "\");\n"]
           | Int -> ["  klee_trace_param_i32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
           | UInt -> ["  klee_trace_param_u32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
@@ -258,6 +285,7 @@ let gen_loop_invariant_produce_stub containers =
           match cnt with
           | Map (_, _) -> ["struct Map** " ^ name]
           | Vector (_, _) -> ["struct Vector** " ^ name]
+          | CHT _ -> ["struct Vector** " ^ name]
           | DChain _ -> ["struct DoubleChain** " ^ name]
           | Int -> ["int " ^ name]
           | UInt -> ["unsigned int " ^ name]
@@ -274,6 +302,7 @@ let gen_loop_invariant_produce_stub containers =
           match cnt with
           | Map (_, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Map*), \"" ^ name ^ "\");\n"]
           | Vector (_, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
+          | CHT _ -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
           | DChain _ -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct DoubleChain*), \"" ^ name ^ "\");\n"]
           | Int -> ["  klee_trace_param_i32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
           | UInt -> ["  klee_trace_param_u32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
@@ -319,6 +348,7 @@ let () =
   fprintf cout "#include \"lib/containers/double-chain.h\"\n";
   fprintf cout "#include \"lib/containers/map.h\"\n";
   fprintf cout "#include \"lib/containers/vector.h\"\n";
+  fprintf cout "#include \"lib/containers/cht.h\"\n";
   fprintf cout "#include \"lib/coherence.h\"\n";
   fprintf cout "#include \"lib/nf_time.h\"\n";
   List.iter (fun incl ->

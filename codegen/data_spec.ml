@@ -1,6 +1,7 @@
 
 type container = Map of string * string
                | Vector of string * string
+               | CHT of string
                | DChain of string
                | Int
                | UInt

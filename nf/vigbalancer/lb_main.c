@@ -101,43 +101,9 @@ void nf_print_config() {
 #ifdef KLEE_VERIFICATION
 #include "lb_loop.h"
 
-void nf_loop_iteration_begin(unsigned lcore_id,
-                             vigor_time_t time) {
-  lb_loop_iteration_begin(lb_get_flow_to_flow_id(balancer),
-                          lb_get_flow_heap(balancer),
-                          lb_get_flow_chain(balancer),
-                          lb_get_flow_id_to_backend_id(balancer),
-                          lb_get_backend_ips(balancer),
-                          lb_get_backends(balancer),
-                          lb_get_ip_to_backend_id(balancer),
-                          lb_get_active_backends(balancer),
-                          lb_get_cht(balancer),
-                          time,
-                          config.backend_capacity,
-                          config.flow_capacity,
-                          config.cht_height);
-}
-
-void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       vigor_time_t time) {
-  lb_loop_iteration_assumptions(lb_get_flow_to_flow_id(balancer),
-                                lb_get_flow_heap(balancer),
-                                lb_get_flow_chain(balancer),
-                                lb_get_flow_id_to_backend_id(balancer),
-                                lb_get_backend_ips(balancer),
-                                lb_get_backends(balancer),
-                                lb_get_ip_to_backend_id(balancer),
-                                lb_get_active_backends(balancer),
-                                lb_get_cht(balancer),
-                                time,
-                                config.backend_capacity,
-                                config.flow_capacity,
-                                config.cht_height);
-}
-
-void nf_loop_iteration_end(unsigned lcore_id,
-                           vigor_time_t time) {
-  lb_loop_iteration_end(lb_get_flow_to_flow_id(balancer),
+void nf_loop_iteration_border(unsigned lcore_id,
+                              vigor_time_t time) {
+  loop_iteration_border(lb_get_flow_to_flow_id(balancer),
                         lb_get_flow_heap(balancer),
                         lb_get_flow_chain(balancer),
                         lb_get_flow_id_to_backend_id(balancer),
@@ -146,10 +112,11 @@ void nf_loop_iteration_end(unsigned lcore_id,
                         lb_get_ip_to_backend_id(balancer),
                         lb_get_active_backends(balancer),
                         lb_get_cht(balancer),
-                        time,
                         config.backend_capacity,
                         config.flow_capacity,
-                        config.cht_height);
+                        config.cht_height,
+                        lcore_id,
+                        time);
 }
 #endif
 
