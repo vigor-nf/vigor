@@ -23,7 +23,9 @@ uint32_t global_packet_type = 0;
 bool
 nf_has_tcpudp_header(struct ipv4_hdr* header)
 {
-  return header->next_proto_id == IPPROTO_TCP || header->next_proto_id == IPPROTO_UDP;
+  // NOTE: Use non-short-circuiting version of OR, so that symbex doesn't fork
+  //       since here we only care of it's UDP or TCP, not if it's a specific one
+  return header->next_proto_id == IPPROTO_TCP | header->next_proto_id == IPPROTO_UDP;
 }
 
 void
