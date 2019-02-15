@@ -111,70 +111,74 @@ let fun_types =
                       lemmas_after = [
                         (fun params ->
                            "int64_t now = " ^ (params.ret_name) ^ ";\n");];};
-     "policer_loop_invariant_consume", {ret_type = Static Void;
-                                       arg_types = stt
-                                           [Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Uint32;
-                                            vigor_time_t;
-                                            Uint16];
-                                       extra_ptr_types = [];
-                                       lemmas_before = [
-                                         (fun {args;_} ->
-                                            "/*@ close policer_loop_invariant(*" ^
-                                            (List.nth_exn args 0) ^ ", *" ^
-                                            (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", " ^
-                                            (List.nth_exn args 4) ^ ", " ^
-                                            (List.nth_exn args 5) ^ ", " ^
-                                            (List.nth_exn args 6) ^ "); @*/");];
-                                       lemmas_after = [];};
-     "policer_loop_invariant_produce", {ret_type = Static Void;
-                                       arg_types = stt
-                                           [Ptr (Ptr dchain_struct);
-                                            Ptr (Ptr map_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Ptr (Ptr vector_struct);
-                                            Uint32;
-                                            Ptr vigor_time_t;
-                                            Uint16];
-                                       extra_ptr_types = [];
-                                       lemmas_before = [];
-                                       lemmas_after = [
-                                         (fun {args;_} ->
-                                            "/*@ open policer_loop_invariant (*" ^
-                                            (List.nth_exn args 0) ^ ", *" ^
-                                            (List.nth_exn args 1) ^ ", *" ^
-                                            (List.nth_exn args 2) ^ ", *" ^
-                                            (List.nth_exn args 3) ^ ", " ^
-                                            (List.nth_exn args 4) ^ ", *" ^
-                                            (List.nth_exn args 5) ^ ", " ^
-                                            (List.nth_exn args 6) ^ "); @*/");
-                                         (fun {tmp_gen;_} ->
-                                            "\n/*@ {\n\
-                                             assert mapp<ip_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                                            ", _));\n\
-                                             assert vectorp<ip_addri>(_, _, _, _);\n\
-                                             assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "dv_init") ^
-                                            ", _);\n\
-                                             assert map_vec_chain_coherent<ip_addri>(" ^
-                                            (tmp_gen "dm") ^ ", ?" ^
-                                            (tmp_gen "dv") ^ ", ?" ^
-                                            (tmp_gen "dh") ^
-                                            ");\n\
-                                             mvc_coherent_same_len<ip_addri>(" ^ (tmp_gen "dm") ^
-                                            ", " ^ (tmp_gen "dv") ^
-                                            ", " ^ (tmp_gen "dh") ^
-                                            ");\n\
-                                            initial_dyn_map = " ^ (tmp_gen "dm") ^
-                                            ";\ninitial_dyn_val_vec = " ^ (tmp_gen "dv_init") ^
-                                            ";\ninitial_dyn_key_vec = " ^ (tmp_gen "dv") ^
-                                            ";\ninitial_chain = " ^ (tmp_gen "dh") ^
-                                            ";\n} @*/");
-                                       ];};
+     "loop_invariant_consume", {ret_type = Static Void;
+                                arg_types = stt
+                                    [Ptr (Ptr dchain_struct);
+                                     Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Uint32;
+                                     Uint32;
+                                     Uint32;
+                                     vigor_time_t];
+                                extra_ptr_types = [];
+                                lemmas_before = [
+                                  (fun {args;_} ->
+                                     "/*@ close evproc_loop_invariant(*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", " ^
+                                     (List.nth_exn args 4) ^ ", " ^
+                                     (List.nth_exn args 5) ^ ", " ^
+                                     (List.nth_exn args 6) ^ ", " ^
+                                     (List.nth_exn args 7) ^ "); @*/");];
+                                lemmas_after = [];};
+     "loop_invariant_produce", {ret_type = Static Void;
+                                arg_types = stt
+                                    [Ptr (Ptr dchain_struct);
+                                     Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Uint32;
+                                     Uint32;
+                                     Ptr Uint32;
+                                     Ptr vigor_time_t];
+                                extra_ptr_types = [];
+                                lemmas_before = [];
+                                lemmas_after = [
+                                  (fun {args;_} ->
+                                     "/*@ open evproc_loop_invariant (*" ^
+                                     (List.nth_exn args 0) ^ ", *" ^
+                                     (List.nth_exn args 1) ^ ", *" ^
+                                     (List.nth_exn args 2) ^ ", *" ^
+                                     (List.nth_exn args 3) ^ ", " ^
+                                     (List.nth_exn args 4) ^ ", " ^
+                                     (List.nth_exn args 5) ^ ", *" ^
+                                     (List.nth_exn args 6) ^ ", *" ^
+                                     (List.nth_exn args 7) ^ "); @*/");
+                                  (fun {tmp_gen;_} ->
+                                     "\n/*@ {\n\
+                                      assert mapp<ip_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                                     ", _));\n\
+                                      assert vectorp<ip_addri>(_, _, _, _);\n\
+                                      assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "dv_init") ^
+                                     ", _);\n\
+                                      assert map_vec_chain_coherent<ip_addri>(" ^
+                                     (tmp_gen "dm") ^ ", ?" ^
+                                     (tmp_gen "dv") ^ ", ?" ^
+                                     (tmp_gen "dh") ^
+                                     ");\n\
+                                      mvc_coherent_same_len<ip_addri>(" ^ (tmp_gen "dm") ^
+                                     ", " ^ (tmp_gen "dv") ^
+                                     ", " ^ (tmp_gen "dh") ^
+                                     ");\n\
+                                      initial_dyn_map = " ^ (tmp_gen "dm") ^
+                                     ";\ninitial_dyn_val_vec = " ^ (tmp_gen "dv_init") ^
+                                     ";\ninitial_dyn_key_vec = " ^ (tmp_gen "dv") ^
+                                     ";\ninitial_chain = " ^ (tmp_gen "dh") ^
+                                     ";\n} @*/");
+                                ];};
      "dchain_allocate", {ret_type = Static Sint32;
                          arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
                          extra_ptr_types = [];
@@ -800,10 +804,10 @@ struct
                  "bool dyn_ks_borrowed = false;\n\
                   bool dyn_vs_borrowed = false;\n"
   let fun_types = fun_types
-  let boundary_fun = "policer_loop_invariant_produce"
-  let finishing_fun = "policer_loop_invariant_consume"
-  let eventproc_iteration_begin = "policer_loop_invariant_produce"
-  let eventproc_iteration_end = "policer_loop_invariant_consume"
+  let boundary_fun = "loop_invariant_produce"
+  let finishing_fun = "loop_invariant_consume"
+  let eventproc_iteration_begin = "loop_invariant_produce"
+  let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration = In_channel.read_all "policer_forwarding_property.tmpl"
 end
 
