@@ -8,7 +8,7 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity");
                   "backends", Vector ("LoadBalancedBackend", "backend_capacity");
                   "ip_to_backend_id", Map ("ip_addr", "backend_capacity");
                   "active_backends", DChain "backend_capacity";
-                  "cht", CHT "cht_height";
+                  "cht", CHT ("backend_capacity", "cht_height");
                   "backend_capacity", UInt32;
                   "flow_capacity", UInt32;
                   "cht_height", UInt32;
