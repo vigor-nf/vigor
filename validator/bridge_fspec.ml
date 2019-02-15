@@ -160,6 +160,7 @@ let fun_types =
                                      Uint32;
                                      Uint32;
                                      Uint32;
+                                     Uint32;
                                      Sint64];
                                 extra_ptr_types = [];
                                 lemmas_before = [
@@ -174,7 +175,8 @@ let fun_types =
                                      (List.nth_exn args 6) ^ ", " ^
                                      (List.nth_exn args 7) ^ ", " ^
                                      (List.nth_exn args 8) ^ ", " ^
-                                     (List.nth_exn args 9) ^ "); @*/");];
+                                     (List.nth_exn args 9) ^ ", " ^
+                                     (List.nth_exn args 10) ^ "); @*/");];
                                 lemmas_after = [];};
      "loop_invariant_produce", {ret_type = Static Void;
                                 arg_types = stt
@@ -184,6 +186,7 @@ let fun_types =
                                      Ptr (Ptr map_struct);
                                      Ptr (Ptr vector_struct);
                                      Ptr (Ptr dchain_struct);
+                                     Uint32;
                                      Uint32;
                                      Uint32;
                                      Ptr Uint32;
@@ -200,9 +203,10 @@ let fun_types =
                                      (List.nth_exn args 4) ^ ", *" ^
                                      (List.nth_exn args 5) ^ ", " ^
                                      (List.nth_exn args 6) ^ ", " ^
-                                     (List.nth_exn args 7) ^ ", *" ^
+                                     (List.nth_exn args 7) ^ ", " ^
                                      (List.nth_exn args 8) ^ ", *" ^
-                                     (List.nth_exn args 9) ^ "); @*/");
+                                     (List.nth_exn args 9) ^ ", *" ^
+                                     (List.nth_exn args 10) ^ "); @*/");
                                   (fun {tmp_gen;_} ->
                                      "\n/*@ {\n\
                                       assert mapp<ether_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
@@ -762,35 +766,40 @@ let fun_types =
                          extra_ptr_types = [];
                          lemmas_before = [
                            tx_bl
-                             "if (stat_vec_allocated) {\n\
-                              if (dyn_keys_allocated) {\n\
-                              produce_function_pointer_chunk \
-                              vector_init_elem<DynamicValuei>(DynamicValue_allocate)\
-                              (DynamicValuep, sizeof(struct DynamicValue))(a) \
-                              {\
-                              call();\
-                              }\n\
-                              } else {\n\
-                              produce_function_pointer_chunk \
-                              vector_init_elem<ether_addri>(ether_addr_allocate)\
-                              (ether_addrp, sizeof(struct ether_addr))(a) \
-                              {\
-                              call();\
-                              }\n\
-                              }\n\
-                              } else {\n\
-                              produce_function_pointer_chunk \
-                              vector_init_elem<StaticKeyi>(StaticKey_allocate)\
-                              (StaticKeyp, sizeof(struct StaticKey))(a) \
-                              {\
-                              call();\
-                              }\n\
-                              }";
+                             "\n\
+                             switch(vector_allocation_order) {\n\
+                               case 0:\n\
+                                  produce_function_pointer_chunk \
+                                  vector_init_elem<ether_addri>(ether_addr_allocate)\
+                                  (ether_addrp, sizeof(struct ether_addr))(a) \
+                                  {\
+                                  call();\
+                                  }\n\
+                                  break;\n\
+                               case 1:\n\
+                                  produce_function_pointer_chunk \
+                                  vector_init_elem<DynamicValuei>(DynamicValue_allocate)\
+                                  (DynamicValuep, sizeof(struct DynamicValue))(a) \
+                                  {\
+                                  call();\
+                                  }\n\
+                                  break;\n\
+                               case 2:\n\
+                                  produce_function_pointer_chunk \
+                                  vector_init_elem<StaticKeyi>(StaticKey_allocate)\
+                                  (StaticKeyp, sizeof(struct StaticKey))(a) \
+                                  {\
+                                  call();\
+                                  }\n\
+                                  break;\n\
+                               default:\n\
+                                  assert false;\n\
+                             }\n";
                          ];
                          lemmas_after = [
                            (fun {tmp_gen;ret_name;_} ->
                               "/*@ if (" ^ ret_name ^
-                              " && stat_vec_allocated && !dyn_keys_allocated) {\n\
+                              " && vector_allocation_order == 0) {\n\
                                assert mapp<ether_addri>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
                               ", ?" ^ (tmp_gen "map") ^
                               ", ?" ^ (tmp_gen "addr_map") ^
@@ -804,9 +813,7 @@ let fun_types =
                               ", " ^ (tmp_gen "addr_map") ^
                               ", " ^ (tmp_gen "cap") ^ ");\n } @*/");
                            (fun _ ->
-                              "if (!stat_vec_allocated)\
-                               stat_vec_allocated = true;\n\
-                               else if (!dyn_keys_allocated)\ dyn_keys_allocated = true;");];};
+                              "vector_allocation_order += 1;");];};
      "vector_borrow",      {ret_type = Static Void;
                             arg_types = [Static (Ptr vector_struct);
                                          Static Sint32;
@@ -995,9 +1002,7 @@ struct
                  ^
                  "/*@ assume(ether_addr_eq != StaticKey_eq); @*/\n"
                  ^
-                 "bool stat_vec_allocated = false;\n"
-                 ^
-                 "bool dyn_keys_allocated = false;\n"
+                 "int vector_allocation_order = 0;\n"
                  ^
                  "bool dyn_ks_borrowed = false;\n\
                   bool dyn_vs_borrowed = false;\n\
