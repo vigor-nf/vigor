@@ -616,6 +616,22 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
                         | _ -> {v=Int n;t} end
           | None -> {v=Id v;t} end
     end
+  (* Hardcode this because VeriFast doesn't like bit ors
+     false == (0 == (a | b))
+     ==>
+     false == (a == 0 && b == 0)
+     ==>
+     a || b *)
+  | Sexp.List [Sexp.Atom "Eq"; Sexp.Atom "false";
+               Sexp.List [Sexp.Atom "Eq"; 
+                          Sexp.List [Sexp.Atom "w32"; Sexp.Atom "0"];
+                          Sexp.List [Sexp.Atom "Or"; Sexp.Atom "w32";
+                                     Sexp.List [Sexp.Atom "ZExt"; Sexp.Atom "w32"; left];
+                                     Sexp.List [Sexp.Atom "ZExt"; Sexp.Atom "w32"; right];
+                                    ];
+                         ];
+              ] ->
+    {v=Bop(Or, get_sexp_value_raw left Boolean ~at, get_sexp_value_raw right Boolean ~at);t=Boolean}
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w8"; Sexp.Atom "0"; src;] ->
     get_sexp_value_raw src t ~at
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
