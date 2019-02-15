@@ -228,6 +228,7 @@ let fun_types =
                                                  Sint32;
                                                  Uint32;
                                                  Uint32;
+                                                 Uint32;
                                                  vigor_time_t];
                                 extra_ptr_types = [];
                                 lemmas_before = [
@@ -244,7 +245,8 @@ let fun_types =
                                      List.nth_exn args 4 ^ ", " ^
                                      List.nth_exn args 5 ^ ", " ^
                                      List.nth_exn args 6 ^ ", " ^
-                                     List.nth_exn args 7 ^ "); @*/");
+                                     List.nth_exn args 7 ^ ", " ^
+                                     List.nth_exn args 8 ^ "); @*/");
                                 ];
                                 lemmas_after = [];};
      "loop_invariant_produce", {ret_type = Static Void;
@@ -253,6 +255,7 @@ let fun_types =
                                                  Ptr (Ptr dchain_struct);
                                                  Sint32;
                                                  Sint32;
+                                                 Uint32;
                                                  Uint32;
                                                  Ptr Uint32;
                                                  Ptr vigor_time_t];
@@ -266,9 +269,10 @@ let fun_types =
                                      (List.nth_exn args 2) ^ ", " ^
                                      (List.nth_exn args 3) ^ ", " ^
                                      (List.nth_exn args 4) ^ ", " ^
-                                     (List.nth_exn args 5) ^ ", *" ^
+                                     (List.nth_exn args 5) ^ ", " ^
                                      (List.nth_exn args 6) ^ ", *" ^
-                                     (List.nth_exn args 7) ^ "); @*/");
+                                     (List.nth_exn args 7) ^ ", *" ^
+                                     (List.nth_exn args 8) ^ "); @*/");
                                   (fun params ->
                                      "start_port = " ^ List.nth_exn params.args 4 ^ ";");
                                   (fun {args;_} ->

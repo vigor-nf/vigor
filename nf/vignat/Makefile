@@ -3,9 +3,10 @@ APP := nat
 
 # Runtime and verification files
 NF_FILES := nat_main.c nat_config.c \
-            flow.h.gen.c nat_flowmanager.c
+            flow.h.gen.c nat_flowmanager.c \
+            nat_state.c
 
-AUTO_GEN_FILES := flow.h.gen.c flow.h.gen.h ../lib/stubs/ether_addr.h.gen.h nat_loop.h nat_loop.c
+AUTO_GEN_FILES := flow.h.gen.c flow.h.gen.h ../lib/stubs/ether_addr.h.gen.h nat_loop.h nat_loop.c nat_state.h nat_state.c
 
 # Must generate the flow.h* files before building the app
 all: $(AUTO_GEN_FILES) $(APP)
@@ -32,5 +33,5 @@ flow.h.gen.c flow.h.gen.h: flow.h
 ../lib/stubs/ether_addr.h.gen.h: ../lib/stubs/ether_addr.h
 	bash ../../codegen/generate.sh ../lib/stubs/ether_addr.h
 
-nat_loop.h nat_loop.c: nat_data_spec.ml
+nat_loop.h nat_loop.c nat_state.h nat_state.c: nat_data_spec.ml
 	bash ../../codegen/gen-loop-boilerplate.sh nat_data_spec.ml

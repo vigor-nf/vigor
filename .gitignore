@@ -42,3 +42,5 @@ nat/testbed/hard/util/plot/*.png
 /nat/testbed/hard/util/plot/.Rhistory
 /nf/*/*.gen.h
 /nf/*/*.gen.c
+/nf/*/*_loop.h
+/nf/*/*_loop.c

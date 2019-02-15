@@ -141,19 +141,3 @@ void nf_config_cmdline_print_usage(void) {
 void nf_print_config() {
   nat_print_config(&config);
 }
-
-#ifdef KLEE_VERIFICATION
-#include "nat_loop.h"
-
-void nf_loop_iteration_border(unsigned lcore_id,
-                              vigor_time_t time) {
-  loop_iteration_border(flow_manager_get_in_table(flow_manager),
-                        flow_manager_get_in_vec(flow_manager),
-                        flow_manager_get_chain(flow_manager),
-                        config.max_flows,
-                        config.start_port,
-                        config.external_addr,
-                        lcore_id, time);
-}
-#endif
-

@@ -21,10 +21,6 @@ NF_VERIF_ARGS := --lan 0 --wan 1 --rate 12500 --burst 125000 --capacity 100
 # Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 
-clean: clean-gen
-clean-gen:
-	rm -f $(AUTO_GEN_FILES)
-
 dynamic_value.h.gen.c dynamic_value.h.gen.h: dynamic_value.h
 	bash ../../codegen/generate.sh $<
 

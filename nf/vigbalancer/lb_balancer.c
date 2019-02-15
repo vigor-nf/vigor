@@ -79,10 +79,6 @@ lb_flow_id2backend_id_cond(void* key, int index, void* state) {
 struct str_field_descr uint32_field = {0, sizeof(uint32_t), 0, "value"};
 #endif//KLEE_VERIFICATION
 
-void null_init(void* obj) {
-  *(uint32_t*)obj = 0;
-}
-
 struct LoadBalancer*
 lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
                      uint32_t cht_height, uint32_t backend_expiration_time,

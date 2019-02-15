@@ -1,6 +1,6 @@
 
-type container = Map of string * string
-               | Vector of string * string
+type container = Map of string * string * string
+               | Vector of string * string * string
                | CHT of string * string
                | DChain of string
                | Int

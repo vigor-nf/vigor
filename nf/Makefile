@@ -156,6 +156,9 @@ VERIF_COMMAND := /usr/bin/time -v \
 # NF args for the verification
 NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
 
+clean: clean-gen
+clean-gen:
+	rm -f $(AUTO_GEN_FILES)
 
 verify-dpdk: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
