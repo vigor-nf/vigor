@@ -733,7 +733,7 @@ struct
                   //@ list<pair<FlowIdi, real> > flow_vec;\n\
                   //@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
-                  //@ list<int> sent_on_ports = nil; \n\
+                  //@ list<uint16_t> sent_on_ports = nil; \n\
                   //@ assume(sizeof(struct ether_hdr) == 14);\n\
                   //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
                   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
