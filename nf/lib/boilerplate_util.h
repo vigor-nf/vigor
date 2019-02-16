@@ -33,7 +33,10 @@ static inline unsigned long long wrap(unsigned long long x)
   return x % INT_MAX;
 }
 
-static void null_init(void* obj) {
+static void null_init(void* obj)
+/*@ requires chars(obj, sizeof(uint32_t), _); @*/
+/*@ ensures u_integer(obj, _); @*/
+{
   *(uint32_t*)obj = 0;
 }
 

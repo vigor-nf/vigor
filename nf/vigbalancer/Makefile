@@ -5,7 +5,7 @@ APP := lb
 NF_DEVICES := 3
 
 # Runtime and verification files
-NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_flow.h.gen.c lb_backend.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c
+NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_flow.h.gen.c lb_backend.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c lb_state.c
 
 # Verification files
 NF_VERIF_FILES := lb_loop.c
@@ -21,7 +21,8 @@ AUTO_GEN_FILES := lb_flow.h.gen.c lb_flow.h.gen.h \
                   lb_backend.h.gen.c lb_backend.h.gen.h \
                   ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h \
                   ip_addr.h.gen.c ip_addr.h.gen.h \
-                  lb_loop.h lb_loop.c
+                  lb_loop.h lb_loop.c \
+                  lb_state.h lb_state.c
 
 
 all: $(AUTO_GEN_FILES) $(APP)
@@ -38,5 +39,5 @@ lb_backend.h.gen.c lb_backend.h.gen.h ../lib/stubs/ether_addr.h.gen.c ../lib/stu
 ip_addr.h.gen.c ip_addr.h.gen.h: ip_addr.h
 	bash ../../codegen/generate.sh ip_addr.h
 
-lb_loop.h lb_loop.c: lb_data_spec.ml
+lb_loop.h lb_loop.c lb_state.h lb_state.c: lb_data_spec.ml
 	bash ../../codegen/gen-loop-boilerplate.sh lb_data_spec.ml

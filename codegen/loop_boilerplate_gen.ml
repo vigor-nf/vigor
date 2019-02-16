@@ -19,7 +19,10 @@ let constructor_name cname = match cname with
 let lhash_name cname = "_" ^ cname ^ "_hash"
 let strdescrs_name cname = cname ^ "_descrs"
 let nest_descrs_name cname = cname ^ "_nests"
-let alloc_fun_name cname = cname ^ "_allocate"
+let alloc_fun_name cname = match cname with
+  | "uint32_t" -> "null_init"
+  | _ ->  cname ^ "_allocate"
+
 let eq_fun_name cname = cname ^ "_eq"
 let hash_fun_name cname = cname ^ "_hash"
 let log_fun_name cname = "log_" ^ cname
@@ -390,9 +393,15 @@ let gen_allocation containers =
                                 abort_on_null ("map_allocate(" ^ eq_fun_name typ ^
                                             ", " ^ hash_fun_name typ ^ ", " ^ cap ^
                                             ", &(ret->" ^ name ^ "))")]
-        | Vector (typ, cap, _) -> ["  ret->" ^ name ^ " = NULL;\n";
-                                   abort_on_null ("vector_allocate(sizeof(struct " ^ typ ^ "), " ^ cap ^
-                                                  ", " ^ alloc_fun_name typ ^ ", &(ret->" ^ name ^ "))")]
+        | Vector (typ, cap, _) ->
+          let typ_size =
+            if String.equal typ "uint32_t" then
+              "sizeof(uint32_t)" else
+              "sizeof(struct " ^ typ ^ ")"
+          in
+          ["  ret->" ^ name ^ " = NULL;\n";
+           abort_on_null ("vector_allocate(" ^ typ_size ^ ", " ^ cap ^
+                          ", " ^ alloc_fun_name typ ^ ", &(ret->" ^ name ^ "))")]
         | CHT (depth, height) -> ["  ret->" ^ name ^ " = NULL;\n";
                                   abort_on_null ("vector_allocate(sizeof(uint32_t), " ^
                                                  depth ^ "*" ^ height ^ ", null_init, &(ret->" ^ name ^ "))");
