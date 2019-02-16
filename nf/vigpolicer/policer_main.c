@@ -1,11 +1,3 @@
-#ifdef KLEE_VERIFICATION
-#  include <klee/klee.h>
-#  include "lib/stubs/containers/map-stub-control.h"
-#  include "lib/stubs/containers/double-chain-stub-control.h"
-#  include "lib/stubs/containers/vector-stub-control.h"
-#  include "policer_loop.h"
-#endif //KLEE_VERIFICATION
-
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -24,7 +16,7 @@
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
 #include "policer_config.h"
-#include "policer_data.h"
+#include "policer_state.h"
 
 #include "lib/containers/double-chain.h"
 #include "lib/containers/map.h"
@@ -33,7 +25,7 @@
 
 struct policer_config config;
 
-struct DynamicFilterTable dynamic_ft;
+struct State* dynamic_ft;
 
 int policer_expire_entries(uint64_t time) {
   if (time < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate)
@@ -42,19 +34,19 @@ int policer_expire_entries(uint64_t time) {
   // OK because time >= config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate >= 0
   uint64_t min_time = time - config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate;
 
-  return expire_items_single_map(dynamic_ft.heap, dynamic_ft.keys,
-                                 dynamic_ft.map,
+  return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
+                                 dynamic_ft->dyn_map,
                                  min_time);
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
   int index = -1;
-  int present = map_get(dynamic_ft.map, &dst, &index);
+  int present = map_get(dynamic_ft->dyn_map, &dst, &index);
   if (present) {
-    dchain_rejuvenate_index(dynamic_ft.heap, index, time);
+    dchain_rejuvenate_index(dynamic_ft->dyn_heap, index, time);
 
     struct DynamicValue* value = 0;
-    vector_borrow(dynamic_ft.values, index, (void**)&value);
+    vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
 
     value->bucket_size +=
         (time - value->bucket_time) * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
@@ -69,7 +61,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
       fwd = true;
     }
 
-    vector_return(dynamic_ft.values, index, value);
+    vector_return(dynamic_ft->dyn_vals, index, value);
 
     return fwd;
   } else {
@@ -78,7 +70,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
       return false;
     }
 
-    int allocated = dchain_allocate_new_index(dynamic_ft.heap,
+    int allocated = dchain_allocate_new_index(dynamic_ft->dyn_heap,
                                               &index,
                                               time);
     if (!allocated) {
@@ -87,15 +79,15 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     }
     uint32_t *key;
     struct DynamicValue* value = 0;
-    vector_borrow(dynamic_ft.keys, index, (void**)&key);
-    vector_borrow(dynamic_ft.values, index, (void**)&value);
+    vector_borrow(dynamic_ft->dyn_keys, index, (void**)&key);
+    vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
     *key = dst;
     value->bucket_size = config.burst - size;
     value->bucket_time = time;
-    map_put(dynamic_ft.map, key, index);
+    map_put(dynamic_ft->dyn_map, key, index);
     //the other half of the key is in the map
-    vector_return(dynamic_ft.keys, index, key);
-    vector_return(dynamic_ft.values, index, value);
+    vector_return(dynamic_ft->dyn_keys, index, key);
+    vector_return(dynamic_ft->dyn_vals, index, value);
 
     NF_DEBUG("  New flow. Forwarding.");
     return true;
@@ -104,37 +96,10 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
 
 void nf_core_init(void) {
   unsigned capacity = config.dyn_capacity;
-  int happy = map_allocate(ip_addr_eq, ip_addr_hash,
-                           capacity, &dynamic_ft.map);
-  if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic map");
-  happy = vector_allocate(sizeof(struct ip_addr), capacity,
-                          ip_addr_allocate,
-                          &dynamic_ft.keys);
-  if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic key array");
-  happy = vector_allocate(sizeof(struct DynamicValue), capacity,
-                          DynamicValue_allocate,
-                          &dynamic_ft.values);
-  if (!happy) rte_exit(EXIT_FAILURE, "error allocating dynamic value array");
-  happy = dchain_allocate(capacity, &dynamic_ft.heap);
-  if (!happy) rte_exit(EXIT_FAILURE, "error allocating heap");
-
-#ifdef KLEE_VERIFICATION
-  map_set_layout(dynamic_ft.map, ip_addr_descrs,
-                 sizeof(ip_addr_descrs)/sizeof(ip_addr_descrs[0]),
-                 NULL, 0, "ip_addr");
-  vector_set_layout(dynamic_ft.keys,
-                    ip_addr_descrs,
-                    sizeof(ip_addr_descrs)/
-                    sizeof(ip_addr_descrs[0]),
-                    NULL, 0,
-                    "ip_addr");
-  vector_set_layout(dynamic_ft.values,
-                    DynamicValue_descrs,
-                    sizeof(DynamicValue_descrs)/
-                    sizeof(DynamicValue_descrs[0]),
-                    NULL, 0,
-                    "DynamicValue");
-#endif//KLEE_VERIFICATION
+  dynamic_ft = alloc_state(capacity, rte_eth_dev_count());
+  if (dynamic_ft == NULL) {
+    rte_exit(EXIT_FAILURE, "error allocating nf state");
+  }
 }
 
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
@@ -192,19 +157,3 @@ void nf_config_cmdline_print_usage(void) {
 void nf_print_config() {
   policer_print_config(&config);
 }
-
-#ifdef KLEE_VERIFICATION
-
-void nf_loop_iteration_border(unsigned lcore_id,
-                              vigor_time_t time) {
-  loop_iteration_border(&dynamic_ft.heap,
-                        &dynamic_ft.map,
-                        &dynamic_ft.keys,
-                        &dynamic_ft.values,
-                        config.dyn_capacity,
-                        rte_eth_dev_count(),
-                        lcore_id,
-                        time);
-}
-
-#endif//KLEE_VERIFICATION

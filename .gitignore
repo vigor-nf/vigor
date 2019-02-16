@@ -44,3 +44,5 @@ nat/testbed/hard/util/plot/*.png
 /nf/*/*.gen.c
 /nf/*/*_loop.h
 /nf/*/*_loop.c
+/nf/*/*_state.h
+/nf/*/*_state.c

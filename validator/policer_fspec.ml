@@ -184,12 +184,6 @@ let fun_types =
                          extra_ptr_types = [];
                          lemmas_before = [];
                          lemmas_after = [
-                           on_rez_nonzero
-                             "{\n\
-                              assert vectorp<ip_addri>(_, _, ?allocated_vector, _);\n\
-                              empty_map_vec_dchain_coherent\
-                              <ip_addri>(allocated_vector);\n\
-                              }";
                            tx_l "index_range_of_empty(65536, 0);";];};
      "dchain_allocate_new_index", {ret_type = Static Sint32;
                                    arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
@@ -655,6 +649,9 @@ let fun_types =
                               "));\n\
                                assert vectorp<ip_addri>(_, _, ?" ^ (tmp_gen "dks") ^
                               ", ?" ^ (tmp_gen "dkaddrs") ^
+                              ");\n\
+                               empty_map_vec_dchain_coherent\
+                               <ip_addri>(" ^ (tmp_gen "dks") ^
                               ");\n\
                                empty_kkeeper(" ^
                               (tmp_gen "dkaddrs") ^

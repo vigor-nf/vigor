@@ -2,12 +2,13 @@
 APP := policer
 
 # Runtime and verification files
-NF_FILES := policer_main.c policer_config.c dynamic_value.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c
+NF_FILES := policer_main.c policer_config.c dynamic_value.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c policer_state.c
 
 AUTO_GEN_FILES := dynamic_value.h.gen.c dynamic_value.h.gen.h \
                   ip_addr.h.gen.c ip_addr.h.gen.h \
                   ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h \
-                  policer_loop.h policer_loop.c
+                  policer_loop.h policer_loop.c \
+                  policer_state.h policer_state.c
 
 
 all: $(AUTO_GEN_FILES) $(APP)
@@ -30,5 +31,5 @@ ip_addr.h.gen.c ip_addr.h.gen.h: ip_addr.h
 ../lib/stubs/ether_addr.h.gen.c ../lib/stubs/ether_addr.h.gen.h: ../lib/stubs/ether_addr.h
 	bash ../../codegen/generate.sh $<
 
-policer_loop.h policer_loop.c: policer_data_spec.ml
+policer_loop.h policer_loop.c policer_state.c policer_state.h: policer_data_spec.ml
 	bash ../../codegen/gen-loop-boilerplate.sh policer_data_spec.ml
