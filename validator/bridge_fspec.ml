@@ -616,7 +616,7 @@ let fun_types =
                        )];
                      lemmas_after = [
                        (fun {args;_} ->
-                         "sent_on_ports = cons(" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n" 
+                         "sent_on_ports = cons((uint16_t)" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n" 
                        )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
                                   arg_types = [Static (Ptr Sint8);
@@ -990,7 +990,7 @@ struct
                  ^ "//@ list<pair<StaticKeyi, real> > initial_stat_key_vec;\n" ^
                  "//@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
-                  //@ list<int> sent_on_ports = nil; \n"
+                  //@ list<uint16_t> sent_on_ports = nil; \n"
                  ^
                  "/*@ //TODO: this hack should be \
                   converted to a system \n\

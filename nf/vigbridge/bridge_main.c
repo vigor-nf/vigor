@@ -1,3 +1,6 @@
+#ifdef KLEE_VERIFICATION
+#include "lib/stubs/containers/map-stub-control.h" //for map_reset
+#endif//KLEE_VERIFICATION
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -58,6 +61,9 @@ int bridge_get_device(struct ether_addr* dst,
   if (present) {
     return device;
   }
+#ifdef KLEE_VERIFICATION
+  map_reset(mac_tables->dyn_map);//simplify the traces for easy validation
+#endif//KLEE_VERIFICATION
 
   int index = -1;
   present = map_get(mac_tables->dyn_map, dst, &index);
