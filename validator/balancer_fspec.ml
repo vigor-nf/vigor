@@ -849,7 +849,7 @@ let fun_types =
                           }\n }\n @*/"
                        )];
                      lemmas_after = [(fun {args;_} ->
-                         "sent_on_ports = cons(" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n"
+                         "sent_on_ports = cons((uint16_t)" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n"
                        )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
                                   arg_types = [Static (Ptr Sint8);
@@ -1308,7 +1308,7 @@ struct
                     //@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
                     //@ list<phdr> recv_headers = nil; \n\
                     //@ list<phdr> sent_headers = nil; \n\
-                    //@ list<int> sent_on_ports = nil; \n\
+                    //@ list<uint16_t> sent_on_ports = nil; \n\
                     //@ assume(sizeof(struct ip_addr) == 4);\n\
                     //@ assume(sizeof(struct ether_hdr) == 14);\n\
                     //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
