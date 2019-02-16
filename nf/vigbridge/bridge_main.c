@@ -19,7 +19,6 @@
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
 #include "bridge_config.h"
-#include "bridge_data.h"
 
 #include "lib/containers/double-chain.h"
 #include "lib/containers/map.h"
