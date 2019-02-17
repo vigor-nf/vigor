@@ -572,7 +572,7 @@ let fun_types =
                           }\n }\n @*/"
                        )];
                      lemmas_after = [(fun {args;_} ->
-                         "sent_on_ports = cons(" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n" 
+                         "sent_on_ports = cons((uint16_t)" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n" 
                        )];};
      "packet_borrow_next_chunk", {ret_type = Static Void;
                                   arg_types = [Static (Ptr Sint8);
