@@ -1,13 +1,13 @@
-all: validator.byte nat_fspec.cmo bridge_fspec.cmo balancer_fspec.cmo policer_fspec.cmo
+all: validator.byte nat_fspec.cma bridge_fspec.cma balancer_fspec.cma policer_fspec.cma
 
 validator.byte: .PHONY
 	corebuild -no-hygiene -use-menhir -lib dynlink -lib str validator.byte -use-ocamlfind -cflag -unsafe-string
 
-%.cmo: _build/%.cmo
-	cp $< ./
+%.cma: _build/common_fspec.cmo _build/%.cmo
+	ocamlc -a $^ -o $@
 
 _build/%.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlink -lib str $(notdir $@) -cflag -unsafe-string
+	corebuild -no-hygiene -lib dynlink -lib str $(notdir $@) common_fspec.ml -cflag -unsafe-string
 
 .PHONY:
 
@@ -15,20 +15,21 @@ clean:
 	rm -rf out
 	rm -rf _build
 	find -iname '*.cmo' -delete
+	find -iname '*.cma' -delete
 	find -iname '*.log' -delete
 	rm -f validator.byte
 
 validate-nat: clean
-	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cmo
+	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cma
 
 validate-bridge: clean
-	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cmo
+	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cma
 
 validate-balancer: clean
-	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cmo
+	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cma
 
 validate-policer: clean
-	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cmo
+	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
 # Regression test suite
 test-results/%.done: regression-tests/%

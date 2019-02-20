@@ -1,8 +1,8 @@
 open Data_spec
 
-let containers = ["dyn_heap", DChain "capacity";
-                  "dyn_map", Map ("ip_addr", "capacity", "");
+let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
                   "dyn_keys", Vector ("ip_addr", "capacity", "");
+                  "dyn_heap", DChain "capacity";
                   "dyn_vals", Vector ("DynamicValue", "capacity", "");
                   "capacity", UInt32;
                   "dev_count", UInt32;

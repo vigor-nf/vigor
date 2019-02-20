@@ -5,6 +5,7 @@
 *~
 *.aux
 *.cmo
+*.cma
 *.byte
 #*
 *#
