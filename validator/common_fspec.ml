@@ -568,7 +568,11 @@ let map_put_spec ityp pred entry_type ctor =
          } @*/\n"
      );];}
 
-let expire_items_single_map_spec ityp =
+let expire_items_single_map_spec ityps =
+  let other_types excl_ityp =
+    List.filter ityps ~f:(fun ityp ->
+        ityp <> excl_ityp)
+  in
   {ret_type = Static Sint32;
    arg_types = stt [Ptr dchain_struct;
                     Ptr vector_struct;
@@ -576,6 +580,18 @@ let expire_items_single_map_spec ityp =
                     vigor_time_t];
    extra_ptr_types = [];
    lemmas_before = [
+     (fun _ ->
+        "switch(expire_items_single_map_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi ityps ~f:(fun i ityp ->
+             " case " ^ (string_of_int i) ^ ":\n" ^
+             (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun other_ityp ->
+                  "//@ close hide_mapp<" ^ other_ityp ^ ">(_, _, _, _, _);\n"
+                ))) ^
+              "break;\n"
+           )) ) ^
+        "default:\n\
+         assert false;\n\
+         }\n");
      (fun {tmp_gen;args;_} ->
         "//@ assert double_chainp(?" ^
         (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
@@ -605,18 +621,30 @@ let expire_items_single_map_spec ityp =
    ];
    lemmas_after = [
      (fun {tmp_gen;_} ->
-        "/*@ {\n\
-         assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
-        ", _));\n\
-         assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
-        (tmp_gen "fm") ^ ", ?" ^
-        (tmp_gen "fvk") ^ ", ?" ^
-        (tmp_gen "ch") ^
-        ");\n\
-         mvc_coherent_same_len<" ^ ityp ^ ">(" ^
-        (tmp_gen "fm") ^ ", " ^
-        (tmp_gen "fvk") ^ ", " ^
-        (tmp_gen "ch") ^ ");\n} @*/");
+        "switch(expire_items_single_map_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi ityps ~f:(fun i ityp ->
+             " case " ^ (string_of_int i) ^ ":\n" ^
+             "/*@ {\n\
+              assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
+             ", _));\n\
+              assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
+             (tmp_gen "fm") ^ ", ?" ^
+             (tmp_gen "fvk") ^ ", ?" ^
+             (tmp_gen "ch") ^
+             ");\n\
+              mvc_coherent_same_len<" ^ ityp ^ ">(" ^
+             (tmp_gen "fm") ^ ", " ^
+             (tmp_gen "fvk") ^ ", " ^
+             (tmp_gen "ch") ^ ");\n} @*/\n" ^
+             (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun other_ityp ->
+                  "//@ open hide_mapp<" ^ other_ityp ^ ">(_, _, _, _, _);\n"
+                ))) ^
+              "break;\n"
+           )) ) ^
+        "default:\n\
+         assert false;\n\
+         }\n" ^
+     "expire_items_single_map_order += 1;");
    ];}
 
 let dchain_allocate_new_index_spec ityp =

@@ -100,7 +100,7 @@ let fun_types =
          "->dst_ip, " ^ str ^
          "->internal_device, " ^ str ^
          "->protocol)")) ;
-     "expire_items_single_map", (expire_items_single_map_spec "FlowIdi");
+     "expire_items_single_map", (expire_items_single_map_spec ["FlowIdi"]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "FlowIdi");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "FlowIdi");
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
@@ -139,7 +139,8 @@ struct
                   //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
                   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n"
                  ^
-                 "int vector_allocation_order = 0;\n"
+                 "int vector_allocation_order = 0;\n\
+                  int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

@@ -175,77 +175,7 @@ let fun_types =
      "dchain_allocate", (dchain_alloc_spec "65536" (Some "ether_addri"));
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ether_addri");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ether_addri");
-     "expire_items_single_map", {ret_type = Static Sint32;
-                                 arg_types = stt [Ptr dchain_struct;
-                                                  Ptr vector_struct;
-                                                  Ptr map_struct;
-                                                  vigor_time_t];
-                                 extra_ptr_types = [];
-                                 lemmas_before = [
-                                   (fun {tmp_gen;_} ->
-                                      "//@ assert mapp<StaticKeyi>(?" ^
-                                      (tmp_gen "stmp") ^ ", _, _, _, ?stm);\n" ^
-                                      "//@ close hide_mapp<StaticKeyi>(" ^
-                                      (tmp_gen "stmp") ^ ", StaticKeyp,\
-                                                          _StaticKey_hash,\
-                                                          _,\
-                                                          stm);\n");
-                                   (fun {tmp_gen;args;_} ->
-                                      "//@ assert double_chainp(?" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
-                                      "//@ expire_olds_keeps_high_bounded(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
-                                   (fun {args;tmp_gen;_} ->
-                                      "/*@ {\n\
-                                       expire_preserves_index_range(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      ");\n\
-                                       length_nonnegative(\
-                                       dchain_get_expired_indexes_fp(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      "));\n\
-                                       if (length(dchain_get_expired_indexes_fp(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      ")) > 0 ) {\n\
-                                       expire_old_dchain_nonfull\
-                                       (" ^ (List.nth_exn args 0) ^ ", " ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      ");\n\
-                                       }} @*/");
-                                 ];
-                                 lemmas_after = [
-                                   (fun {tmp_gen;_} ->
-                                      "//@ open hide_mapp<StaticKeyi>(" ^
-                                      (tmp_gen "stmp") ^ ", StaticKeyp,\
-                                                          _StaticKey_hash,\
-                                                          _,\
-                                                          stm);\n");
-                                   (fun {tmp_gen;_} ->
-                                      "\n/*@ {\n\
-                                       assert mapp<ether_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                                      ", _));\n\
-                                       assert vectorp<ether_addri>(_, _, ?" ^ (tmp_gen "dv") ^
-                                      ", _);\n\
-                                       assert map_vec_chain_coherent<ether_addri>(" ^
-                                      (tmp_gen "dm") ^ ", " ^
-                                      (tmp_gen "dv") ^ ", ?" ^
-                                      (tmp_gen "dh") ^
-                                      ");\n\
-                                       mvc_coherent_same_len<ether_addri>(" ^
-                                      (tmp_gen "dm") ^ ", " ^
-                                      (tmp_gen "dv") ^ ", " ^
-                                      (tmp_gen "dh") ^
-                                      ");\nmvc_coherent_distinct<ether_addri>(" ^
-                                      (tmp_gen "dm") ^ ", " ^
-                                      (tmp_gen "dv") ^ ", " ^
-                                      (tmp_gen "dh") ^
-                                      ");\n} @*/"
-                                         );
-                                 ];};
+     "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", {ret_type = Static Sint32;
                       arg_types = stt [Fptr "map_keys_equality";
                                        Fptr "map_key_hash";
@@ -477,7 +407,8 @@ struct
                  ^
                  "/*@ assume(ether_addr_eq != StaticKey_eq); @*/\n"
                  ^
-                 "int vector_allocation_order = 0;\n"
+                 "int vector_allocation_order = 0;\n\
+                  int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
