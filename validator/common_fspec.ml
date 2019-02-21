@@ -398,8 +398,8 @@ let vector_borrow_spec entry_specs =
         match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
               Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
-                         "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
-                       )))
+                         "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n")) ^
+                    "//@ open " ^ pred ^ "(*" ^ (List.nth_exn args 2) ^ ", _);\n")
             else
               None))
         with
