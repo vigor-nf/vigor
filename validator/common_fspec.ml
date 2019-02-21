@@ -280,7 +280,7 @@ let map_alloc_spec typ pred eq_fun hash_fun lhash_fun =
    ];
    lemmas_after = [];}
 
-let vector_alloc_spec ityp typ pred alloc_fun ~has_keeper =
+let vector_alloc_spec vector_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Sint32;
                     Uint32;
@@ -289,72 +289,158 @@ let vector_alloc_spec ityp typ pred alloc_fun ~has_keeper =
    extra_ptr_types = [];
    lemmas_before = [
      tx_bl
-       ("{\n\
-         produce_function_pointer_chunk vector_init_elem<" ^ ityp ^ ">(" ^ alloc_fun ^
-        ")\
-         (" ^ pred ^ ", sizeof(struct " ^ typ ^
-        "))(a) \
-         {\
-         call();\
-         }\n\
-         }\n");
+       (
+        "\n\
+        switch(vector_allocation_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
+             " case " ^ (string_of_int i) ^ ":\n\
+              produce_function_pointer_chunk \
+              vector_init_elem<" ^ ityp ^ ">(" ^ alloc_fun ^
+             ")(" ^ pred ^
+             ", sizeof(struct " ^ typ ^
+             "))(a) \
+              {\
+              call();\
+              }\n\
+              break;\n"
+           )) ) ^
+          "default:\n\
+            assert false;\n\
+        }\n");
      (fun {args;_} ->
-        "/*@ { \n\
-         assume(sizeof(struct " ^ typ ^ ") == " ^
-        (List.nth_exn args 0) ^
-        ");\n } @*/ ");
+       ("\n\
+        switch(vector_allocation_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
+             " case " ^ (string_of_int i) ^ ":\n\
+               //@assume(sizeof(struct " ^ typ ^ ") == " ^
+             (List.nth_exn args 0) ^
+             ");\n\
+              break;\n"
+           )) ) ^
+          "default:\n\
+            assert false;\n\
+        }\n"));
    ];
-   lemmas_after = if has_keeper then
-       [(fun {tmp_gen;ret_name;_} ->
-           "/*@ if (" ^ ret_name ^
-           ") {\n\
-            assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
-           ", ?" ^ (tmp_gen "map") ^
-           ", ?" ^ (tmp_gen "addr_map") ^
-           "));\n\
-            assert vectorp<" ^ ityp ^ ">(_, _, ?" ^ (tmp_gen "dks") ^
-           ", ?" ^ (tmp_gen "dkaddrs") ^
-           ");\n\
-            empty_kkeeper(" ^
-           (tmp_gen "dkaddrs") ^
-           ", " ^ (tmp_gen "dks") ^
-           ", " ^ (tmp_gen "addr_map") ^
-           ", " ^ (tmp_gen "cap") ^
-           ");\n\
-            }@*/");]
-     else [];}
+   lemmas_after = [
+     (fun {tmp_gen;ret_name;_} ->
+       ("\n\
+        switch(vector_allocation_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
+             " case " ^ (string_of_int i) ^ ":\n" ^
+             (if has_keeper then
+                "/*@ if (" ^ ret_name ^
+                ") {\n\
+                 assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                ", ?" ^ (tmp_gen "map") ^
+                ", ?" ^ (tmp_gen "addr_map") ^
+                "));\n\
+                 assert vectorp<" ^ ityp ^ ">(_, _, ?" ^ (tmp_gen "dks") ^
+                ", ?" ^ (tmp_gen "dkaddrs") ^
+                ");\n\
+                 empty_kkeeper(" ^
+                (tmp_gen "dkaddrs") ^
+                ", " ^ (tmp_gen "dks") ^
+                ", " ^ (tmp_gen "addr_map") ^
+                ", " ^ (tmp_gen "cap") ^
+                ");\n\
+                 }@*/"
+              else
+                ""
+             ) ^
+              "break;\n"
+           )) ) ^
+          "default:\n\
+            assert false;\n\
+           }\n"));
+     (fun _ ->
+        "vector_allocation_order += 1;")];}
 
-let vector_borrow_spec ityp pred entry_type ~has_keeper =
+let vector_borrow_spec entry_specs =
+  let other_types excl_ityp =
+    List.filter entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+        ityp <> excl_ityp)
+  in
   {ret_type = Static Void;
-   arg_types = stt [Ptr vector_struct;
-                    Sint32;
-                    Ptr (Ptr entry_type);];
-   extra_ptr_types = estt ["borrowed_cell", Ptr entry_type;];
-   lemmas_before = (
-       (fun params ->
-          "//@ assert vectorp<" ^ ityp ^ ">(" ^ (List.nth_exn params.args 0) ^
-          ", " ^ pred ^ ", ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
-          ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n")::
-       (if has_keeper then
-          [(fun params ->
-              "/*@ {\n\
-               assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
-              ", ?" ^ (params.tmp_gen "fma") ^
-              "));\n\
-               forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
-              ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
-              ");\n} @*/ ")]
-        else []));
-   lemmas_after = [];}
+   arg_types = [Static (Ptr vector_struct);
+                Static Sint32;
+                Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                  (typ, Ptr (Ptr entry_type))));];
+   extra_ptr_types = ["borrowed_cell",
+                      Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                        (typ, Ptr entry_type)));];
+   lemmas_before = [
+     (fun {arg_types;args;tmp_gen;_} ->
+        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
+               Some ((String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                          "//@ close hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+                        ))) ^"//@ assert vectorp<" ^ ityp ^ ">(" ^ (List.nth_exn args 0) ^
+                     ", " ^ pred ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^ (tmp_gen "veca") ^
+                     ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn args 0) ^ ");\n" ^
+                     (if has_keeper then
+                        "/*@ {\n\
+                         assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen "fm") ^
+                        ", ?" ^ (tmp_gen "fma") ^
+                        "));\n\
+                         forall2_nth(" ^ (tmp_gen "vec") ^ ", " ^ (tmp_gen "veca") ^
+                        ", (kkeeper)(" ^ (tmp_gen "fma") ^ "), " ^ (List.nth_exn args 1) ^
+                        ");\n} @*/ "
+                      else
+                        "//@ forall_mem(nth(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "), " ^ (tmp_gen "vec") ^ ", is_one);"))
+             else
+               None
+           ))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)));];
+   lemmas_after = [
+     (fun {arg_types;args;tmp_gen;_} ->
+        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+            if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
+              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                         "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+                       )))
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];}
 
-let vector_return_spec entry_type =
+let vector_return_spec entry_specs =
+  let other_types excl_ityp =
+    List.filter entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+        ityp <> excl_ityp)
+  in
   {ret_type = Static Void;
-   arg_types = stt [Ptr vector_struct;
-                    Sint32;
-                    Ptr entry_type;];
+   arg_types = [Static (Ptr vector_struct);
+                Static Sint32;
+                Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                    (typ, Ptr entry_type)));];
    extra_ptr_types = [];
-   lemmas_before = [];
-   lemmas_after = [];}
+   lemmas_before = [
+     (fun {arg_types;args;tmp_gen;_} ->
+        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+            if (List.nth_exn arg_types 2) = (Ptr entry_type) then
+              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                         "//@ close hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+                       )))
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];
+   lemmas_after = [
+     (fun {arg_types;args;tmp_gen;_} ->
+        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+            if (List.nth_exn arg_types 2) = (Ptr entry_type) then
+              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                         "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+                       )))
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];}
 
 let dchain_alloc_spec cap mvc_coherent_ityp =
   {ret_type = Static Sint32;

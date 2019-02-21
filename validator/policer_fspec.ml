@@ -113,145 +113,12 @@ let fun_types =
      "map_get", (map_get_spec "ip_addri" "ip_addrp" ip_addr_struct);
      "map_put", (map_put_spec "ip_addri" "ip_addrp" ip_addr_struct
                    (fun str -> "ip_addrc(" ^ str ^ "->addr)"));
-     "vector_allocate", {ret_type = Static Sint32;
-                         arg_types = stt [Sint32;
-                                          Uint32;
-                                          Fptr "vector_init_elem";
-                                          Ptr (Ptr vector_struct)];
-                         extra_ptr_types = [];
-                         lemmas_before = [
-                           tx_bl
-                             "if (dyn_keys_allocated) {\n\
-                              produce_function_pointer_chunk \
-                              vector_init_elem<DynamicValuei>(DynamicValue_allocate)\
-                              (DynamicValuep, sizeof(struct DynamicValue))(a) \
-                              {\
-                              call();\
-                              }\n\
-                              } else {\n\
-                              produce_function_pointer_chunk \
-                              vector_init_elem<ip_addri>(ip_addr_allocate)\
-                              (ip_addrp, sizeof(struct ip_addr))(a) \
-                              {\
-                              call();\
-                              }\n\
-                              }";
-                         ];
-                         lemmas_after = [
-                           (fun {tmp_gen;ret_name;_} ->
-                              "/*@ if (" ^ ret_name ^
-                              " && !dyn_keys_allocated) {\n\
-                               assert mapp<ip_addri>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
-                              ", ?" ^ (tmp_gen "map") ^
-                              ", ?" ^ (tmp_gen "addr_map") ^
-                              "));\n\
-                               assert vectorp<ip_addri>(_, _, ?" ^ (tmp_gen "dks") ^
-                              ", ?" ^ (tmp_gen "dkaddrs") ^
-                              ");\n\
-                               empty_kkeeper(" ^
-                              (tmp_gen "dkaddrs") ^
-                              ", " ^ (tmp_gen "dks") ^
-                              ", " ^ (tmp_gen "addr_map") ^
-                              ", " ^ (tmp_gen "cap") ^ ");\n } @*/");
-                           (fun _ ->
-                              "if (!dyn_keys_allocated)\ dyn_keys_allocated = true;");];};
-     "vector_borrow",      {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Dynamic ["ip_addr",
-                                                  Ptr (Ptr ip_addr_struct);
-                                                  "DynamicValue",
-                                                  Ptr (Ptr dynamic_value_struct)]];
-                            extra_ptr_types = ["borrowed_cell",
-                                               Dynamic ["ip_addr",
-                                                        Ptr ip_addr_struct;
-                                                        "DynamicValue",
-                                                        Ptr dynamic_value_struct]];
-                            lemmas_before = [
-                              (fun {args;arg_types;tmp_gen;_} ->
-                                 match List.nth_exn arg_types 2 with
-                                 | Ptr (Ptr (Str (name, _)))
-                                   when String.equal name "ip_addr"->
-                                   "/*@ {\n\
-                                    close hide_vector<DynamicValuei>(_, _, _, _);\n} @*/\n"
-                                 | Ptr (Ptr (Str (name, _)))
-                                   when String.equal name "DynamicValue"->
-                                   "/*@ {\n\
-                                    close hide_vector<ip_addri>(_, _, _, _);\n\
-                                    assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "vec") ^ ", _);\n\
-                                    forall_mem(nth(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "), " ^ (tmp_gen "vec") ^ ", is_one);\n} @*/"
-                                 | x -> "Error: unexpected argument type: " ^ (ttype_to_str x))
-                            ];
-                            lemmas_after = [
-                              (fun {arg_types;args;_} ->
-                                 match List.nth_exn arg_types 2 with
-                                 | Ptr (Ptr (Str (name, _)))
-                                   when String.equal name "ip_addr"->
-                                   "/*@ {\n\
-                                    open hide_vector<DynamicValuei>(_, _, _, _);\n} @*/\n\
-                                    dyn_ks_borrowed = true;\n" ^
-                                   "//@ open ip_addrp(*" ^ (List.nth_exn args 2) ^ ", _);\n"
-                                 | Ptr (Ptr (Str (name, _)))
-                                   when String.equal name "DynamicValue"->
-                                   "/*@ {\n\
-                                    open hide_vector<ip_addri>(_, _, _, _);\n} @*/\n\
-                                    dyn_vs_borrowed = true;"
-                                 | x -> "Error: unexpected argument type: " ^ (ttype_to_str x));
-                              ];};
-     "vector_return",      {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Dynamic ["ip_addr",
-                                                  Ptr ip_addr_struct;
-                                                  "DynamicValue",
-                                                  Ptr dynamic_value_struct]];
-                            extra_ptr_types = [];
-                            lemmas_before = [
-                              (fun {arg_types;tmp_gen;args;_} ->
-                                 match List.nth_exn arg_types 2 with
-                                 | Ptr (Str (name, _))
-                                   when String.equal name "ip_addr"->
-                                   "\n/*@ { \n\
-                                    assert vectorp<ip_addri>(_, _, ?vectr, _); \n\
-                                    update_id(" ^ (List.nth_exn args 1) ^
-                                   ", vectr);\n\
-                                      } @*/"
-                                 | Ptr (Str (name, _))
-                                   when String.equal name "DynamicValue"->
-                                   "\n/*@ {\n\
-                                    assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "vec") ^
-                                   ", _);\n\
-                                    update_id(" ^ (List.nth_exn args 1) ^
-                                   ", " ^ (tmp_gen "vec") ^ ");\n\
-                                   } @*/\n"
-                                 | x -> "Error: unexpected argument type: " ^ (ttype_to_str x));
-                                (fun {arg_types;_} ->
-                                   match List.nth_exn arg_types 2 with
-                                   | Ptr (Str (name, _))
-                                     when String.equal name "ip_addr" ->
-                                     "/*@ {\n\
-                                      close hide_vector<DynamicValuei>(_, _, _, _);\n} @*/"
-                                   | Ptr (Str (name, _))
-                                     when String.equal name "DynamicValue" ->
-                                     "/*@ {\n\
-                                      close hide_vector<ip_addri>(_, _, _, _);} @*/"
-                                   | x -> "Error: unexpected argument type: " ^ (ttype_to_str x));
-                            ];
-                            lemmas_after = [
-                                (fun {arg_types;_} ->
-                                   match List.nth_exn arg_types 2 with
-                                   | Ptr (Str (name, _))
-                                     when String.equal name "ip_addr" ->
-                                     "/*@ {\n\
-                                      open hide_vector<DynamicValuei>(_, _, _, _);\n} @*/\n\
-                                      dyn_ks_borrowed = false;"
-                                   | Ptr (Str (name, _))
-                                     when String.equal name "DynamicValue" ->
-                                     "/*@ {\n\
-                                      open hide_vector<ip_addri>(_, _, _, _);} @*/\n\
-                                      dyn_vs_borrowed = false;"
-                                   | x -> "Error: unexpected argument type: " ^ (ttype_to_str x));
-                            ];};])
+     "vector_allocate", (vector_alloc_spec [("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
+                                            ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);]);
+     "vector_borrow",      (vector_borrow_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
+                                                ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);]);
+     "vector_return",      (vector_return_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
+                                                ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);]);])
 
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
@@ -282,7 +149,7 @@ struct
                  ^ "//@ list<pair<ip_addri, real> > initial_dyn_key_vec;\n"
                  ^ "//@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
-                  //@ list<int> sent_on_ports = nil; \n"
+                  //@ list<uint16_t> sent_on_ports = nil; \n"
                  ^
                  "/*@ //TODO: this hack should be \
                   converted to a system \n\
@@ -295,6 +162,8 @@ struct
                  ^
                  "bool dyn_ks_borrowed = false;\n\
                   bool dyn_vs_borrowed = false;\n"
+                 ^
+                 "int vector_allocation_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

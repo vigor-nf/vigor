@@ -22,9 +22,9 @@ let fun_types =
     (common_fun_types @
     [
      "map_allocate", (map_alloc_spec "FlowIdi" "FlowIdp" "FlowId_eq" "FlowId_hash" "_FlowId_hash");
-     "vector_allocate", (vector_alloc_spec "FlowIdi" "FlowId" "FlowIdp" "FlowId_allocate" ~has_keeper:true);
-     "vector_borrow", (vector_borrow_spec "FlowIdi" "FlowIdp" flow_id_struct ~has_keeper:true);
-     "vector_return", (vector_return_spec flow_id_struct);
+     "vector_allocate", (vector_alloc_spec [("FlowIdi", "FlowId", "FlowIdp", "FlowId_allocate", true)]);
+     "vector_borrow", (vector_borrow_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
+     "vector_return", (vector_return_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
      "dchain_allocate", (dchain_alloc_spec "65535" (Some "FlowIdi"));
      "loop_invariant_consume", (loop_invariant_consume_spec [Ptr (Ptr map_struct);
                                                              Ptr (Ptr vector_struct);
@@ -137,8 +137,9 @@ struct
                   //@ list<uint16_t> sent_on_ports = nil; \n\
                   //@ assume(sizeof(struct ether_hdr) == 14);\n\
                   //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
-                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
-                 "
+                  //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n"
+                 ^
+                 "int vector_allocation_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
