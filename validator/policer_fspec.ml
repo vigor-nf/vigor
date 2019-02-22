@@ -115,8 +115,8 @@ let fun_types =
                    (fun str -> "ip_addrc(" ^ str ^ "->addr)"));
      "vector_allocate", (vector_alloc_spec [("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);]);
-     "vector_borrow",      (vector_borrow_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
-                                                ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);]);
+     "vector_borrow",      (vector_borrow_spec [("ip_addri","ip_addr","ip_addrp",noop,ip_addr_struct,true);
+                                                ("DynamicValuei","DynamicValue","DynamicValuep",noop,dynamic_value_struct,false);]);
      "vector_return",      (vector_return_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
                                                 ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);]);])
 

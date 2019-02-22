@@ -64,6 +64,8 @@ let rte_mbuf_struct = Ir.Str ( "rte_mbuf",
                                 "timesync", Uint16; 
                                 "seqn", Uint32] )
 
+let noop _ = ""
+
 let capture_a_map t name {tmp_gen;_} =
   "//@ assert mapp<" ^ t ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen name) ^ ", _));\n"
 
@@ -280,6 +282,9 @@ let map_alloc_spec typ pred eq_fun hash_fun lhash_fun =
    ];
    lemmas_after = [];}
 
+let c_type typ =
+  if typ = "uint32_t" then typ else "struct " ^ typ
+
 let vector_alloc_spec vector_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Sint32;
@@ -297,7 +302,7 @@ let vector_alloc_spec vector_specs =
               produce_function_pointer_chunk \
               vector_init_elem<" ^ ityp ^ ">(" ^ alloc_fun ^
              ")(" ^ pred ^
-             ", sizeof(struct " ^ typ ^
+             ", sizeof(" ^ (c_type typ) ^
              "))(a) \
               {\
               call();\
@@ -312,7 +317,7 @@ let vector_alloc_spec vector_specs =
         switch(vector_allocation_order) {\n" ^
         (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
              " case " ^ (string_of_int i) ^ ":\n\
-               //@assume(sizeof(struct " ^ typ ^ ") == " ^
+               //@assume(sizeof(" ^ (c_type typ) ^ ") == " ^
              (List.nth_exn args 0) ^
              ");\n\
               break;\n"
@@ -357,22 +362,23 @@ let vector_alloc_spec vector_specs =
 
 let vector_borrow_spec entry_specs =
   let other_types excl_ityp =
-    List.filter entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+    List.filter entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
         ityp <> excl_ityp)
   in
   {ret_type = Static Void;
    arg_types = [Static (Ptr vector_struct);
                 Static Sint32;
-                Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
                   (typ, Ptr (Ptr entry_type))));];
    extra_ptr_types = ["borrowed_cell",
-                      Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                      Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
                         (typ, Ptr entry_type)));];
    lemmas_before = [
      (fun {arg_types;args;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
              if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
-               Some ((String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+               Some ((String.concat ~sep:"" (List.map (other_types ityp)
+                                               ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
                           "//@ close hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
                         ))) ^"//@ assert vectorp<" ^ ityp ^ ">(" ^ (List.nth_exn args 0) ^
                      ", " ^ pred ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^ (tmp_gen "veca") ^
@@ -395,11 +401,11 @@ let vector_borrow_spec entry_specs =
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
      (fun {arg_types;args;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
-              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
                          "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n")) ^
-                    "//@ open " ^ pred ^ "(*" ^ (List.nth_exn args 2) ^ ", _);\n")
+                    (open_callback (List.nth_exn args 2)))
             else
               None))
         with

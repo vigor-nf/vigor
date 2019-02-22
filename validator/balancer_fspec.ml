@@ -62,9 +62,9 @@ let fun_types =
                                      Ptr (Ptr vector_struct);
                                      Ptr (Ptr dchain_struct);
                                      Ptr (Ptr vector_struct);
-                                     Ptr (Ptr vector_struct);
-                                     Ptr (Ptr vector_struct);
                                      Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
                                      Ptr (Ptr dchain_struct);
                                      Ptr (Ptr vector_struct);
                                      Uint32;
@@ -97,9 +97,9 @@ let fun_types =
                                      Ptr (Ptr vector_struct);
                                      Ptr (Ptr dchain_struct);
                                      Ptr (Ptr vector_struct);
-                                     Ptr (Ptr vector_struct);
-                                     Ptr (Ptr vector_struct);
                                      Ptr (Ptr map_struct);
+                                     Ptr (Ptr vector_struct);
+                                     Ptr (Ptr vector_struct);
                                      Ptr (Ptr dchain_struct);
                                      Ptr (Ptr vector_struct);
                                      Uint32;
@@ -156,17 +156,17 @@ let fun_types =
                                      ", _, ?" ^ (tmp_gen "initial_fidbid_veca") ^
                                      ", _);\n" ^
                                      "assert *" ^ (List.nth_exn args 4) ^ " |-> ?" ^ (tmp_gen "arg4bis") ^
-                                     ";\nassert vectorp<ip_addri>(" ^ (tmp_gen "arg4bis") ^
-                                     ", _, ?" ^ (tmp_gen "initial_ip_veca") ^
-                                     ", _);\n" ^
-                                     "assert *" ^ (List.nth_exn args 5) ^ " |-> ?" ^ (tmp_gen "arg5bis") ^
-                                     ";\nassert vectorp<LoadBalancedBackendi>(" ^ (tmp_gen "arg5bis") ^
-                                     ", _, ?" ^ (tmp_gen "initial_backends_veca") ^
-                                     ", _);\n" ^
-                                     "assert *" ^ (List.nth_exn args 6) ^ " |-> ?" ^ (tmp_gen "arg6bis") ^
-                                     ";\nassert mapp<ip_addri>(" ^ (tmp_gen "arg6bis") ^
+                                     ";\nassert mapp<ip_addri>(" ^ (tmp_gen "arg4bis") ^
                                      ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_backend_ip_map") ^
                                      ", _));\n" ^
+                                     "assert *" ^ (List.nth_exn args 5) ^ " |-> ?" ^ (tmp_gen "arg5bis") ^
+                                     ";\nassert vectorp<ip_addri>(" ^ (tmp_gen "arg5bis") ^
+                                     ", _, ?" ^ (tmp_gen "initial_ip_veca") ^
+                                     ", _);\n" ^
+                                     "assert *" ^ (List.nth_exn args 6) ^ " |-> ?" ^ (tmp_gen "arg6bis") ^
+                                     ";\nassert vectorp<LoadBalancedBackendi>(" ^ (tmp_gen "arg6bis") ^
+                                     ", _, ?" ^ (tmp_gen "initial_backends_veca") ^
+                                     ", _);\n" ^
                                      "assert *" ^ (List.nth_exn args 7) ^ " |-> ?" ^ (tmp_gen "arg7bis") ^
                                      ";\nassert double_chainp(?" ^ (tmp_gen "initial_active_backends") ^
                                      ", " ^ (tmp_gen "arg7bis") ^
@@ -176,7 +176,7 @@ let fun_types =
                                      ", _, ?" ^ (tmp_gen "initial_cht") ^
                                      ", _);\n" ^
                                      ";\nfidbid_veca_ptr = " ^ (tmp_gen "arg3bis") ^
-                                     ";\nbackends_veca_ptr = " ^ (tmp_gen "arg5bis") ^
+                                     ";\nbackends_veca_ptr = " ^ (tmp_gen "arg6bis") ^
                                      ";\ncht_ptr = " ^ (tmp_gen "arg8bis") ^
                                      ";\nflow_map = " ^ (tmp_gen "initial_flow_map") ^
                                      ";\nflow_vec = " ^ (tmp_gen "initial_flow_vec") ^
@@ -200,7 +200,7 @@ let fun_types =
                               empty_map_vec_dchain_coherent\
                               <LoadBalancedFlowi>(allocated_vector);\n\
                               } else {\n\
-                              assert vectorp<ip_addri>(the_ip_vector, ip_addrp, ?allocated_ip_vector, _);\n\
+                              assert vectorp<ip_addri>(_, ip_addrp, ?allocated_ip_vector, _);\n\
                               empty_map_vec_dchain_coherent\
                               (allocated_ip_vector);\n\
                               }";
@@ -364,71 +364,7 @@ let fun_types =
                                 (tmp_gen "ch") ^ ", allocated_index_0);\n"
                              )];
                            lemmas_after = [];};
-     "expire_items_single_map", {ret_type = Static Sint32;
-                                 arg_types = stt [Ptr dchain_struct;
-                                                  Ptr vector_struct;
-                                                  Ptr map_struct;
-                                                  vigor_time_t];
-                                 extra_ptr_types = [];
-                                 lemmas_before = [
-                                   (fun {tmp_gen;args;_} ->
-                                      "//@ assert double_chainp(?" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
-                                      "//@ expire_olds_keeps_high_bounded(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
-                                   (fun {args;tmp_gen;_} ->
-                                      "/*@ {\n\
-                                       expire_preserves_index_range(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      ");\n\
-                                       length_nonnegative(\
-                                       dchain_get_expired_indexes_fp(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      "));\n\
-                                       if (length(dchain_get_expired_indexes_fp(" ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      ")) > 0 ) {\n\
-                                       expire_old_dchain_nonfull\
-                                       (" ^ (List.nth_exn args 0) ^ ", " ^
-                                      (tmp_gen "cur_ch") ^ ", " ^
-                                      (List.nth_exn args 3) ^
-                                      ");\n\
-                                       }} @*/");
-                                   tx_l
-                                      "if (!map_flow_expired) {\n\
-                                       } else {\n\
-                                       close hide_mapp<LoadBalancedFlowi>(_, _, _, _, _);\n\
-                                       }";
-                                 ];
-                                 lemmas_after = [
-                                   (fun _ -> "if (!map_flow_expired) {\n\
-                                              map_flow_expired = true;\n\
-                                              } else {\n\
-                                              //@ open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _);\n\
-                                              }");
-                                   (fun {tmp_gen;_} ->
-                                      "/*@ {\n\
-                                       assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fi") ^ ", _));\n\
-                                       assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (tmp_gen "fb") ^ ", _);\n\
-                                       assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
-                                      (tmp_gen "fi") ^ ", ?" ^
-                                      (tmp_gen "fh") ^ ", ?" ^
-                                      (tmp_gen "ch") ^
-                                      ");\n\
-                                       assert mapp<LoadBalancedFlowi>(_, _, _, _, ?" ^ (tmp_gen "fi_full") ^ ");\n\
-                                      mvc_coherent_same_len<LoadBalancedFlowi>(" ^
-                                      (tmp_gen "fi") ^ ", " ^
-                                      (tmp_gen "fh") ^ ", " ^
-                                      (tmp_gen "ch") ^ ");\n\
-                                      expired_indices = " ^ (tmp_gen "fi_full") ^ ";\n\
-                                      expired_heap = " ^ (tmp_gen "fh") ^ ";\n\
-                                      expired_backends = " ^ (tmp_gen "fb") ^ ";\n\
-                                      expired_chain = " ^ (tmp_gen "ch") ^ ";\n} @*/"
-                                         );
-                                 ];};
+     "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
      "map_allocate", {ret_type = Static Sint32;
                       arg_types = stt [Fptr "map_keys_equality";
                                        Fptr "map_key_hash";
@@ -488,23 +424,6 @@ let fun_types =
                             close [" ^ (tmp_gen "imkhdy") ^
                            "]hide_is_map_key_hash(ip_addr_hash, \
                             ip_addrp, _ip_addr_hash);\n\
-                            if (" ^ ret_name ^
-                            " == 1) {\n\
-                            assert mapp<ip_addri>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
-                            ", ?" ^ (tmp_gen "map") ^
-                            ", ?" ^ (tmp_gen "addr_map") ^
-                            "));\n\
-                             assert vectorp<ip_addri>(the_ip_vector, _, ?" ^
-                            (tmp_gen "dks") ^
-                            ", ?" ^ (tmp_gen "dkaddrs") ^
-                            ");\n\
-                             empty_kkeeper(" ^
-                            (tmp_gen "dkaddrs") ^
-                            ", " ^ (tmp_gen "dks") ^
-                            ", " ^ (tmp_gen "addr_map") ^
-                            ", " ^ (tmp_gen "cap") ^
-                            ");\n\
-                             }\n\
                             } @*/");
                         (fun _ -> "map_flow_allocated = true;")];};
      "map_get", {ret_type = Static Sint32;
@@ -741,78 +660,11 @@ let fun_types =
        extra_ptr_types = [];
        lemmas_before = [];
        lemmas_after = [];};
-     "vector_allocate", {ret_type = Static Sint32;
-                         arg_types = stt [Sint32;
-                                          Uint32;
-                                          Fptr "vector_init_elem";
-                                          Ptr (Ptr vector_struct)];
-                         extra_ptr_types = [];
-                         lemmas_before = [
-                           tx_bl (* note that produce_function_pointer_chunk can only be done in an 'if', otherwise VeriFast complains *)
-                              "if(!vector_flow_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<LoadBalancedFlowi>(LoadBalancedFlow_allocate)\
-                                (LoadBalancedFlowp, sizeof(struct LoadBalancedFlow))(a) \
-                                {\
-                                call();\
-                                }\n\
-                              } else if(!vector_flow_id_to_bknd_id_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
-                                (u_integer, sizeof(uint32_t))(a) \
-                                {\
-                                call();\
-                                }\n\
-                              } else if(!vector_backend_ips_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<ip_addri>(ip_addr_allocate)\
-                                (ip_addrp, sizeof(struct ip_addr))(a) \
-                                {\
-                                call();\
-                                }\n\
-                              } else if(!vector_backends_allocated) {\n\
-                                produce_function_pointer_chunk vector_init_elem<LoadBalancedBackendi>(LoadBalancedBackend_allocate)\
-                                (LoadBalancedBackendp, sizeof(struct LoadBalancedBackend))(a) \
-                                {\
-                                call();\
-                                }\n\
-                              } else {\n\
-                                produce_function_pointer_chunk vector_init_elem<uint32_t>(null_init)\
-                                (u_integer, sizeof(uint32_t))(a) \
-                                {\
-                                call();\
-                                }\n\
-                              }\n";
-                         ];
-                         lemmas_after = [
-                           (fun {tmp_gen;ret_name;_} ->
-                              "/*@ if (" ^ ret_name ^
-                              ") {\n\
-                               if (!vector_flow_allocated) {\n\
-                               assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
-                              ", ?" ^ (tmp_gen "map") ^
-                              ", ?" ^ (tmp_gen "addr_map") ^
-                              "));\n\
-                               assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (tmp_gen "dks") ^
-                              ", ?" ^ (tmp_gen "dkaddrs") ^
-                              ");\n\
-                               empty_kkeeper(" ^
-                              (tmp_gen "dkaddrs") ^
-                              ", " ^ (tmp_gen "dks") ^
-                              ", " ^ (tmp_gen "addr_map") ^
-                              ", " ^ (tmp_gen "cap") ^
-                              ");\n\
-                               } \n\
-                               }@*/");
-                           (fun {args;_} ->
-                              "if (!vector_flow_allocated) {\n\
-                               vector_flow_allocated = true; } else {\n\
-                               if (!vector_flow_id_to_bknd_id_allocated) {\n\
-                               vector_flow_id_to_bknd_id_allocated = true; } else {\n\
-                               if (!vector_backend_ips_allocated) {\n\
-                               the_ip_vector = *" ^ (List.nth_exn args 3) ^
-                              ";\n\
-                               vector_backend_ips_allocated = true;\n\
-                               } else {\n\
-                               vector_backends_allocated = true;\n\
-                               }}}");];};
+     "vector_allocate", (vector_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp","LoadBalancedFlow_allocate",true);
+                                            ("uint32_t","uint32_t","u_integer","null_init",false);
+                                            ("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
+                                            ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp","LoadBalancedBackend_allocate",false);
+                                            ("uint32_t","uint32_t","u_integer","null_init",false);]);
      "cht_fill_cht",        {ret_type = Static Void;
                              arg_types = [Static (Ptr vector_struct);
                                           Static Sint32;
@@ -820,193 +672,20 @@ let fun_types =
                              extra_ptr_types = [];
                              lemmas_before = [];
                              lemmas_after = []};
-     "vector_borrow",      {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", Ptr (Ptr lb_flow_struct);
-                                                  "LoadBalancedBackend", Ptr (Ptr lb_backend_struct);
-                                                  "ip_addr", Ptr (Ptr ip_addr_struct);
-                                                  "uint32_t", Ptr (Ptr Uint32)];];
-                            extra_ptr_types = ["borrowed_cell",
-                                               Dynamic ["LoadBalancedFlow", Ptr lb_flow_struct;
-                                                        "LoadBalancedBackend", Ptr lb_backend_struct;
-                                                        "ip_addr", Ptr ip_addr_struct;
-                                                        "uint32_t", Ptr Uint32];];
-                            lemmas_before = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ { close hide_vector<LoadBalancedBackendi>(_, _, _, _); } @*/\n" ^
-                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<ip_addri>(_, _, _, _);\n" ^
-                                   "//@ assert vectorp<LoadBalancedFlowi>(" ^ (List.nth_exn params.args 0) ^
-                                   ", LoadBalancedFlowp, ?" ^ (params.tmp_gen "vec") ^ ", ?" ^ (params.tmp_gen "veca") ^
-                                   ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn params.args 0) ^ ");\n"
-                                 | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
-                                   "/*@ { close hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
-                                   "/*@ { assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _);\n\
-                                          forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n } @*/\n" ^
-                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Ptr Uint32) ->
-                                   "//@ close hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
-                                   "/*@ { close hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
-                                   "/*@ { assert vectorp<uint32_t>(" ^ (List.nth_exn params.args 0) ^ ", _, ?" ^
-                                   (params.tmp_gen "vec") ^
-                                   ", _);\n\
-                                    if (forall(" ^ (params.tmp_gen "vec") ^
-                                   ", is_one)) {\n\
-                                    forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^
-                                   (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n }\n}\n @*/\n" ^
-                                   "//@ close hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Ptr (Str ("ip_addr", _))) ->
-                                   "//@ close hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
-                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n" ^
-                                   "/*@ { close hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
-                                   "/*@ { assert vectorp<ip_addri>(" ^ (List.nth_exn params.args 0) ^ ", _, ?" ^
-                                   (params.tmp_gen "vec") ^
-                                   ", _);\n\
-                                    if (forall(" ^ (params.tmp_gen "vec") ^
-                                   ", is_one)) {\n\
-                                    forall_mem(nth(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "), " ^ (params.tmp_gen "vec") ^ ", is_one);\n }\n}\n @*/\n"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!")
-                            ];
-                            lemmas_after = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Ptr (Str ("LoadBalancedFlow", _))) ->
-                                   "/*@ { open hide_vector<LoadBalancedBackendi>(_, _, _, _); } @*/\n" ^
-                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<ip_addri>(_, _, _, _);\n" ^
-                                   "/*@ {\n\
-                                    assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_,?" ^ (params.tmp_gen "fm") ^
-                                   ", ?" ^ (params.tmp_gen "fma") ^
-                                   "));\n\
-                                    forall2_nth(" ^ (params.tmp_gen "vec") ^ ", " ^ (params.tmp_gen "veca") ^
-                                   ", (kkeeper)(" ^ (params.tmp_gen "fma") ^ "), " ^ (List.nth_exn params.args 1) ^
-                                   ");\n} @*/ "
-                                 | Ptr (Ptr (Str ("LoadBalancedBackend", _))) ->
-                                   let (binding,expr) =
-                                     self_dereference (List.nth_exn params.arg_exps 2) params.tmp_gen
-                                   in
-                                   binding ^ "\n" ^
-                                   "//@ open [_]ether_addrp(" ^ (render_tterm expr) ^ "->mac, _);\n" ^
-                                   "/*@ { open hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
-                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Ptr Uint32) ->
-                                   "//@ open hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
-                                   "/*@ { open hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n" ^
-                                   "//@ open hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Ptr (Str ("ip_addr", _))) ->
-                                   "//@ open hide_vector<LoadBalancedBackendi>(_, _, _, _);\n" ^
-                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n" ^
-                                   "/*@ { open hide_vector<LoadBalancedFlowi>(_, _, _, _); } @*/\n"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!")
-                            ];};
-     "vector_return",      {ret_type = Static Void;
-                            arg_types = [Static (Ptr vector_struct);
-                                         Static Sint32;
-                                         Dynamic ["LoadBalancedFlow", Ptr lb_flow_struct;
-                                                  "LoadBalancedBackend", Ptr lb_backend_struct;
-                                                  "ip_addr", Ptr ip_addr_struct;
-                                                  "uint32_t", Ptr Uint32];];
-                            extra_ptr_types = [];
-                            lemmas_before = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Str ("LoadBalancedFlow", _)) ->
-                                   "/*@ close hide_vector<LoadBalancedBackendi>(_, _, _, _); @*/\n" ^
-                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ close hide_vector<LoadBalancedFlowi>(_, _, _, _); @*/\n" ^
-                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr Uint32 ->
-                                   "/*@ close hide_vector<LoadBalancedBackendi>(_, _, _, _); @*/\n" ^
-                                   "/*@ close hide_vector<LoadBalancedFlowi>(_, _, _, _); @*/\n" ^
-                                   "//@ close hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Str ("ip_addr", _)) -> 
-                                   "/*@ close hide_vector<LoadBalancedBackendi>(_, _, _, _); @*/\n" ^
-                                   "/*@ close hide_vector<LoadBalancedFlowi>(_, _, _, _); @*/\n" ^
-                                   "//@ close hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ close hide_vector<uint32_t>(_, _, _, _);\n"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!");
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Str ("LoadBalancedFlow", _)) -> (* see remark in return_full *)
-                                   "/*@ { assert vectorp<LoadBalancedFlowi>(_, _, ?" ^ (params.tmp_gen "vec") ^ ", _); \n\
-                                          update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
-                                 | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ { assert vectorp<LoadBalancedBackendi>(_, _, ?" ^ (params.tmp_gen "vec") ^
-                                   ", _); \n\
-                                    assert *&" ^
-                                   (Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2)) ^
-                                   " |-> ? " ^ (params.tmp_gen "bknd") ^
-                                   ";\n\
-                                    assert LoadBalancedBackendp(" ^
-                                   (params.tmp_gen "bknd") ^
-                                   ", ?" ^ (params.tmp_gen "bknd_logical") ^
-                                   ");\n\
-                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); } @*/"
-                                 | Ptr Uint32 ->
-                                   let arg2 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2) in
-                                   " uint32_t " ^ (params.tmp_gen "put_value") ^ " = *" ^ arg2 ^
-                                   ";\n" ^
-                                   "/*@ { assert vectorp<uint32_t>(_, _, ?" ^ (params.tmp_gen "vec") ^
-                                   ", _); \n\
-                                    if (forall(" ^ (params.tmp_gen "vec") ^
-                                   ", is_one)) {\n\
-                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); }\n}@*/"
-                                 | Ptr (Str ("ip_addr", _)) ->
-                                   let arg2 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn params.args 2) in
-                                   "//@ ip_addri " ^ (params.tmp_gen "put_value") ^ " = ip_addrc(" ^ arg2 ^ "->addr" ^
-                                   ");\n" ^
-                                   "/*@ { assert vectorp<ip_addri>(_, _, ?" ^ (params.tmp_gen "vec") ^
-                                   ", _); \n\
-                                    if (forall(" ^ (params.tmp_gen "vec") ^
-                                   ", is_one)) {\n\
-                                    update_id(" ^ (List.nth_exn params.args 1) ^ ", " ^ (params.tmp_gen "vec") ^ "); }\n}@*/"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!");
-                            ];
-                            lemmas_after = [
-                              (fun params ->
-                                 match List.nth_exn params.arg_types 2 with
-                                 | Ptr (Str ("LoadBalancedFlow", _)) ->
-                                   "/*@ open hide_vector<LoadBalancedBackendi>(_, _, _, _); @*/\n" ^
-                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Str ("LoadBalancedBackend", _)) ->
-                                   "/*@ open hide_vector<LoadBalancedFlowi>(_, _, _, _); @*/\n" ^
-                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr Uint32 ->
-                                   "/*@ open hide_vector<LoadBalancedBackendi>(_, _, _, _); @*/\n" ^
-                                   "/*@ open hide_vector<LoadBalancedFlowi>(_, _, _, _); @*/\n" ^
-                                   "//@ open hide_vector<ip_addri>(_, _, _, _);\n"
-                                 | Ptr (Str ("ip_addr", _)) ->
-                                   "/*@ open hide_vector<LoadBalancedBackendi>(_, _, _, _); @*/\n" ^
-                                   "/*@ open hide_vector<LoadBalancedFlowi>(_, _, _, _); @*/\n" ^
-                                   "//@ open hide_vector<uint32_t>(_, _, _, _);\n\
-                                    //@ open hide_vector<uint32_t>(_, _, _, _);\n"
-                                 | _ ->
-                                   failwith "Unsupported type for vector!")
-                            ];};])
+      "vector_borrow", (vector_borrow_spec [
+          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",(fun name ->
+               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n"),lb_flow_struct,true);
+          ("uint32_t","uint32_t","u_integer",noop,Uint32,false);
+          ("ip_addri","ip_addr","ip_addrp",noop,ip_addr_struct,true);
+          ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp",(fun name ->
+               "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
+               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n"),lb_backend_struct,false);
+                                           ("uint32_t","uint32_t","u_integer",noop,Uint32,false);]);
+     "vector_return", (vector_return_spec [("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",lb_flow_struct,true);
+                                           ("uint32_t","uint32_t","u_integer",Uint32,false);
+                                           ("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
+                                           ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp",lb_backend_struct,false);
+                                           ("uint32_t","uint32_t","u_integer",Uint32,false);]);])
 
 module Iface : Fspec_api.Spec =
 struct
@@ -1032,7 +711,6 @@ struct
                   //@ list<uint8_t> last_sent_packet = nil;\n\
                   uint32_t pkt_sent_type;\n\
                   bool backend_known = false;\n\
-                  struct Vector* the_ip_vector;\n\
                   int32_t backend_index = -1;\n"
                  ^ "//@ struct Vector* fidbid_veca_ptr;\n\
                     //@ struct Vector* cht_ptr;\n\
@@ -1071,6 +749,9 @@ struct
                     //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
                     //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
                  "
+                 ^
+                 "int vector_allocation_order = 0;\n\
+                  int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

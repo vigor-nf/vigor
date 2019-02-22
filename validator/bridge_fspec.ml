@@ -357,9 +357,11 @@ let fun_types =
      "vector_allocate", (vector_alloc_spec [("ether_addri","ether_addr","ether_addrp","ether_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);
                                             ("StaticKeyi","StaticKey","StaticKeyp","StaticKey_allocate",true);]);
-     "vector_borrow", (vector_borrow_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,true);
-                                            ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);
-                                            ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,true);]) ;
+     "vector_borrow", (vector_borrow_spec [
+         ("ether_addri","ether_addr","ether_addrp",(fun name ->
+              "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n"),ether_addr_struct,true);
+         ("DynamicValuei","DynamicValue","DynamicValuep",noop,dynamic_value_struct,false);
+         ("StaticKeyi","StaticKey","StaticKeyp",noop,static_key_struct,true);]) ;
      "vector_return", (vector_return_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,true);
                                            ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);
                                            ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,true);]);])

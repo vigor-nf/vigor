@@ -4,9 +4,9 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "
                   "flow_heap", Vector ("LoadBalancedFlow", "flow_capacity", "");
                   "flow_chain", DChain "flow_capacity";
                   "flow_id_to_backend_id", Vector ("uint32_t", "flow_capacity", "lb_flow_id2backend_id_cond");
+                  "ip_to_backend_id", Map ("ip_addr", "backend_capacity", "lb_backend_id_condition");
                   "backend_ips", Vector ("ip_addr", "backend_capacity", "");
                   "backends", Vector ("LoadBalancedBackend", "backend_capacity", "lb_backend_condition");
-                  "ip_to_backend_id", Map ("ip_addr", "backend_capacity", "lb_backend_id_condition");
                   "active_backends", DChain "backend_capacity";
                   "cht", CHT ("backend_capacity", "cht_height");
                   "backend_capacity", UInt32;
