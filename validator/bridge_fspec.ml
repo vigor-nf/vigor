@@ -178,8 +178,14 @@ let fun_types =
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");
                                       ("StaticKeyi","StaticKeyp","StaticKey_eq","StaticKey_hash","_StaticKey_hash")]) ;
-     "map_get", (map_get_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,true);
-                               ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,false);]);
+     "map_get", (map_get_spec [
+         ("ether_addri","ether_addr","ether_addrp",ether_addr_struct,(fun name ->
+              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n"),true);
+         ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,
+          (fun name ->
+             "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
+             "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
+          ,false);]);
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
                               Dynamic ["ether_addr", Ptr ether_addr_struct;

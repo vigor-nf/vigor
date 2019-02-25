@@ -518,21 +518,21 @@ let loop_invariant_consume_spec types =
 
 let map_get_spec map_specs =
   let other_specs excl_ityp =
-    List.filter map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+    List.filter map_specs ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
         ityp <> excl_ityp)
   in
   {ret_type = Static Sint32;
    arg_types = [Static (Ptr map_struct);
-                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
                   typ, Ptr entry_type));
                 Static (Ptr Sint32)];
    extra_ptr_types = [];
    lemmas_before = [
      (fun ({arg_exps;tmp_gen;arg_types;_} as params) ->
-        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
-                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
                      "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
                    ))) ^
                 (if coherent then
@@ -556,31 +556,35 @@ let map_get_spec map_specs =
 
      );];
    lemmas_after = [
-     (fun {ret_name;tmp_gen;arg_types;_} ->
-        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+     (fun {ret_name;tmp_gen;arg_types;args;_} ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
-              Some ("/*@ if (" ^ ret_name ^
-                    " != 0) {\n\
-                     mvc_coherent_map_get_bounded(" ^
-                    (tmp_gen "dm") ^ ", " ^
-                    (tmp_gen "dv") ^ ", " ^
-                    (tmp_gen "dh") ^ ", " ^
-                    (tmp_gen "fk") ^
-                    ");\n\
-                     mvc_coherent_map_get_vec_half(" ^
-                    (tmp_gen "dm") ^ ", " ^
-                    (tmp_gen "dv") ^ ", " ^
-                    (tmp_gen "dh") ^ ", " ^
-                    (tmp_gen "fk") ^
-                    ");\n\
-                     mvc_coherent_map_get(" ^
-                    (tmp_gen "dm") ^ ", " ^
-                    (tmp_gen "dv") ^ ", " ^
-                    (tmp_gen "dh") ^ ", " ^
-                    (tmp_gen "fk") ^ ");\n} @*/\n" ^
-                    (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
-                         "//@ open hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
-                       )))
+              Some ((if coherent then
+                       "/*@ if (" ^ ret_name ^
+                       " != 0) {\n\
+                        mvc_coherent_map_get_bounded(" ^
+                       (tmp_gen "dm") ^ ", " ^
+                       (tmp_gen "dv") ^ ", " ^
+                       (tmp_gen "dh") ^ ", " ^
+                       (tmp_gen "fk") ^
+                       ");\n\
+                        mvc_coherent_map_get_vec_half(" ^
+                       (tmp_gen "dm") ^ ", " ^
+                       (tmp_gen "dv") ^ ", " ^
+                       (tmp_gen "dh") ^ ", " ^
+                       (tmp_gen "fk") ^
+                       ");\n\
+                        mvc_coherent_map_get(" ^
+                       (tmp_gen "dm") ^ ", " ^
+                       (tmp_gen "dv") ^ ", " ^
+                       (tmp_gen "dh") ^ ", " ^
+                       (tmp_gen "fk") ^ ");\n} @*/\n"
+                     else "") ^
+                    (open_callback (List.nth_exn args 1)) ^
+                    (String.concat ~sep:"" (List.map (other_specs ityp)
+                                              ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
+                                                  "//@ open hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
+                                                )))
                    )
             else
               None))
