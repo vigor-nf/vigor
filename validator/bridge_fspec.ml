@@ -186,57 +186,15 @@ let fun_types =
              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
           ,false);]);
-     "map_put", {ret_type = Static Void;
-                 arg_types = [Static (Ptr map_struct);
-                              Dynamic ["ether_addr", Ptr ether_addr_struct;
-                                       "StaticKey", Ptr static_key_struct];
-                              Static Sint32];
-                 extra_ptr_types = [];
-                 lemmas_before = [
-                   (fun {tmp_gen;_} ->
-                       "\n//@ assert mapp<ether_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                       ", _));\n");
-                   (fun {tmp_gen;_} ->
-                      "\n/*@ {\n\
-                       assert map_vec_chain_coherent<ether_addri>(" ^
-                      (tmp_gen "dm") ^ ", ?" ^
-                      (tmp_gen "dv") ^ ", ?" ^
-                      (tmp_gen "dh") ^
-                      ");\n\
-                       mvc_coherent_dchain_non_out_of_space_map_nonfull<ether_addri>(" ^
-                      (tmp_gen "dm") ^ ", " ^
-                      (tmp_gen "dv") ^ ", " ^
-                      (tmp_gen "dh") ^ ");\n} @*/");
-                   (fun {args;_} ->
-                      let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                   arg1 ^ "bis = " ^ arg1 ^ ";\n" ^
-                   "/*@ { \n\
-                    assert mapp<ether_addri>(_, _, _, _, mapc(_, ?the_dm, ?dm_addrs)); \n\
-                    assert vectorp<ether_addri>(_, _, _, ?dv_addrs); \n\
-                    assert map_vec_chain_coherent<ether_addri>(the_dm, ?the_dv, ?the_dh);\n\
-                    assert ether_addrp(" ^ arg1 ^ "bis->addr_bytes, ?vvv);\n\
-                    mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-                    kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^ "); \n\
-                    } @*/");
-                   hide_the_other_mapp];
-                 lemmas_after = [
-                   (fun {tmp_gen;args;_} -> let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                      arg1 ^ "bis = " ^ arg1 ^ ";\n" ^ 
-                      "/*@ {\n\
-                       assert map_vec_chain_coherent<ether_addri>(" ^ (tmp_gen "dm") ^
-                      ", ?" ^ (tmp_gen "dv") ^
-                      ", ?" ^ (tmp_gen "dh") ^
-                      ");\n\
-                       assert [?" ^ (tmp_gen "fr") ^ "]ether_addrp(" ^ arg1 ^ "bis, ?" ^ (tmp_gen "ea") ^ ");\n\
-                       mvc_coherent_put<ether_addri>(" ^ (tmp_gen "dm") ^
-                      ", " ^ (tmp_gen "dv") ^
-                      ", " ^ (tmp_gen "dh") ^
-                      ", " ^ (List.nth_exn args 2) ^
-                      ", time_for_allocated_index, " ^ (tmp_gen "ea") ^ ");\n\
-                      open [" ^ (tmp_gen "fr") ^ "]ether_addrp(" ^ arg1 ^ "bis, " ^ (tmp_gen "ea") ^ ");\n\
-                       } @*/"
-                   );
-                   reveal_the_other_mapp];};
+     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,
+                                (fun str -> "ether_addrc(" ^ str ^ "->addr_bytes[0], " ^
+                                            str ^ "->addr_bytes[1], " ^
+                                            str ^ "->addr_bytes[2], " ^
+                                            str ^ "->addr_bytes[3], " ^
+                                            str ^ "->addr_bytes[4], " ^
+                                            str ^ "->addr_bytes[5])"),true);
+                               ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,
+                                (fun str -> "not needed"),false)]);
      "vector_allocate", (vector_alloc_spec [("ether_addri","ether_addr","ether_addrp","ether_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);
                                             ("StaticKeyi","StaticKey","StaticKeyp","StaticKey_allocate",true);]);

@@ -593,58 +593,91 @@ let map_get_spec map_specs =
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));
    ];}
 
-let map_put_spec ityp pred entry_type ctor =
+let map_put_spec map_specs =
+  let other_specs excl_ityp =
+    List.filter map_specs ~f:(fun (ityp,typ,pred,entry_type,ctor,coherent) ->
+        ityp <> excl_ityp)
+  in
   {ret_type = Static Void;
-   arg_types = stt [Ptr map_struct;
-                    Ptr entry_type;
-                    Sint32];
+   arg_types = [Static (Ptr map_struct);
+                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,entry_type,ctor,coherent) ->
+                  typ, Ptr entry_type));
+                Static Sint32];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun {args;tmp_gen;_} ->
-        "\n//@ assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-        ", _));\n" ^
-        "\n/*@ {\n\
-         assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
-        (tmp_gen "dm") ^ ", ?" ^
-        (tmp_gen "dv") ^ ", ?" ^
-        (tmp_gen "dh") ^
-        ");\n\
-         mvc_coherent_dchain_non_out_of_space_map_nonfull<" ^ ityp ^ ">(" ^
-        (tmp_gen "dm") ^ ", " ^
-        (tmp_gen "dv") ^ ", " ^
-        (tmp_gen "dh") ^ ");\n" ^
-        "mvc_coherent_bounds<" ^ ityp ^ ">(" ^
-        (tmp_gen "dm") ^ ", " ^
-        (tmp_gen "dv") ^ ", " ^
-        (tmp_gen "dh") ^ ");\n} @*/\n" ^
-        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-        "/*@ { \n\
-         assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-         assert vectorp<" ^ ityp ^ ">(_, _, _, ?dv_addrs); \n\
-         assert map_vec_chain_coherent<" ^ ityp ^ ">(?the_dm, ?the_dv, ?the_dh);\n\
-         " ^ ityp ^ " vvv = " ^ (ctor arg1) ^ "; \n\
-         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
-        "); \n\
-         } @*/\n"
-     );];
+     (fun {args;tmp_gen;arg_types;_} ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,ctor,coherent) ->
+            if (List.nth_exn arg_types 1) = (Ptr entry_type) then
+              Some (
+                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,entry_type,ctor,coherent) ->
+                     "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
+                   ))) ^
+                if coherent then
+                "\n//@ assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                ", _));\n" ^
+                "\n/*@ {\n\
+                 assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
+                (tmp_gen "dm") ^ ", ?" ^
+                (tmp_gen "dv") ^ ", ?" ^
+                (tmp_gen "dh") ^
+                ");\n\
+                 mvc_coherent_dchain_non_out_of_space_map_nonfull<" ^ ityp ^ ">(" ^
+                (tmp_gen "dm") ^ ", " ^
+                (tmp_gen "dv") ^ ", " ^
+                (tmp_gen "dh") ^ ");\n" ^
+                "mvc_coherent_bounds<" ^ ityp ^ ">(" ^
+                (tmp_gen "dm") ^ ", " ^
+                (tmp_gen "dv") ^ ", " ^
+                (tmp_gen "dh") ^ ");\n} @*/\n" ^
+                let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                "/*@ { \n\
+                 assert mapp<" ^ ityp ^
+                ">(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                 assert vectorp<" ^ ityp ^
+                ">(_, _, _, ?dv_addrs); \n\
+                 assert map_vec_chain_coherent<" ^ ityp ^
+                ">(?the_dm, ?the_dv, ?the_dh);\n\
+                " ^ ityp ^ " vvv = " ^ (ctor arg1) ^
+                "; \n\
+                 mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
+                 kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                "); \n\
+                 } @*/\n"
+              else "")
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1))
+              );];
    lemmas_after = [
-     (fun {args;tmp_gen;_} ->
-        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-        "\n/*@ {\n\
-         assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^ (tmp_gen "dm") ^
-        ", ?" ^ (tmp_gen "dv") ^
-        ", ?" ^ (tmp_gen "dh") ^
-        ");\n\
-         " ^ ityp ^ " " ^ (tmp_gen "ea") ^ " = " ^ (ctor arg1) ^ ";\n\
-         mvc_coherent_put<" ^ ityp ^ ">(" ^ (tmp_gen "dm") ^
-        ", " ^ (tmp_gen "dv") ^
-        ", " ^ (tmp_gen "dh") ^
-        ", " ^ (List.nth_exn args 2) ^
-        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
-        ");\n\
-         } @*/\n"
-     );];}
+     (fun {args;tmp_gen;arg_types;_} ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,ctor,coherent) ->
+            if (List.nth_exn arg_types 1) = (Ptr entry_type) then
+              Some ((if coherent then
+                       let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                       "\n/*@ {\n\
+                        assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^ (tmp_gen "dm") ^
+                       ", ?" ^ (tmp_gen "dv") ^
+                       ", ?" ^ (tmp_gen "dh") ^
+                       ");\n\
+                       " ^ ityp ^ " " ^ (tmp_gen "ea") ^ " = " ^ (ctor arg1) ^ ";\n\
+                                                                                 mvc_coherent_put<" ^ ityp ^ ">(" ^ (tmp_gen "dm") ^
+                       ", " ^ (tmp_gen "dv") ^
+                       ", " ^ (tmp_gen "dh") ^
+                       ", " ^ (List.nth_exn args 2) ^
+                       ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
+                       ");\n\
+                        } @*/\n"
+                     else "") ^
+                    (String.concat ~sep:"" (List.map (other_specs ityp)
+                                              ~f:(fun (ityp,typ,pred,entry_type,open_callback,coherent) ->
+                                                  "//@ open hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"))))
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));];}
 
 let expire_items_single_map_spec ityps =
   let other_types excl_ityp =

@@ -92,14 +92,14 @@ let fun_types =
                                      "} @*/");
                                 ];};
      "map_get", (map_get_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,noop,true)]);
-     "map_put", (map_put_spec "FlowIdi" "FlowIdp" flow_id_struct (fun str ->
+     "map_put", (map_put_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,(fun str ->
          "FlowIdc(" ^ str ^
          "->src_port, " ^ str ^
          "->dst_port, " ^ str ^
          "->src_ip, " ^ str ^
          "->dst_ip, " ^ str ^
          "->internal_device, " ^ str ^
-         "->protocol)")) ;
+         "->protocol)"),true)]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["FlowIdi"]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "FlowIdi");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "FlowIdi");
@@ -116,7 +116,8 @@ struct
 #include \"lib/containers/double-chain.h\"\n\
 #include \"lib/stubs/containers/double-map-stub-control.h\"\n\
 #include \"vignat/nat_loop.h\"\n" ^
-                  (In_channel.read_all "preamble.tmpl") ^
+                 (In_channel.read_all "preamble.tmpl") ^
+                 (In_channel.read_all "preamble_hide.tmpl") ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
