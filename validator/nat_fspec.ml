@@ -25,7 +25,7 @@ let fun_types =
      "vector_allocate", (vector_alloc_spec [("FlowIdi", "FlowId", "FlowIdp", "FlowId_allocate", true)]);
      "vector_borrow", (vector_borrow_spec [("FlowIdi","FlowId","FlowIdp",noop,flow_id_struct,true)]);
      "vector_return", (vector_return_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
-     "dchain_allocate", (dchain_alloc_spec "65535" (Some "FlowIdi"));
+     "dchain_allocate", (dchain_alloc_spec [("65535",(Some "FlowIdi"))]);
      "loop_invariant_consume", (loop_invariant_consume_spec [Ptr (Ptr map_struct);
                                                              Ptr (Ptr vector_struct);
                                                              Ptr (Ptr dchain_struct);

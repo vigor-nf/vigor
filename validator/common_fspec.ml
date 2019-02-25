@@ -483,22 +483,35 @@ let vector_return_spec entry_specs =
         | Some x -> x
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];}
 
-let dchain_alloc_spec cap mvc_coherent_ityp =
+let dchain_alloc_spec dchain_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
    extra_ptr_types = [];
    lemmas_before = [];
    lemmas_after =
-     (tx_l ("index_range_of_empty(" ^ cap ^ ", 0);")) ::
-     (match mvc_coherent_ityp with
-      | Some ityp ->[
-          on_rez_nonzero
-            ("{\n\
-              assert vectorp<" ^ ityp ^
-             ">(_, _, ?allocated_vector, _);\n\
-              empty_map_vec_dchain_coherent\
-              <" ^ ityp ^ ">(allocated_vector);\n}")]
-      | None -> []);}
+     (fun {ret_name;_} ->
+        "switch(dchain_allocation_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi dchain_specs ~f:(fun i (cap,mvc_coherent_ityp) ->
+             " case " ^ (string_of_int i) ^ ":\n" ^
+             "//@ index_range_of_empty(" ^ cap ^ ", 0);\n" ^
+             (match mvc_coherent_ityp with
+              | Some ityp -> 
+                "/*@ if (" ^ ret_name ^ " != 0) {\n\
+                                     assert vectorp<" ^ ityp ^
+                ">(_, _, ?allocated_vector, _);\n\
+                 empty_map_vec_dchain_coherent\
+                 <" ^ ityp ^ ">(allocated_vector);\n} @*/\n"
+              | None -> ""
+             ) ^
+             "break;\n"
+           ))) ^
+        "default:\n\
+         assert false;\n\
+         }\n" ^
+     "dchain_allocation_order += 1;")
+     ::
+     (List.map dchain_specs ~f:(fun (cap,mvc_coherent_ityp) ->
+        (tx_l ("index_range_of_empty(" ^ cap ^ ", 0);"))))}
 
 let loop_invariant_consume_spec types =
   {ret_type = Static Void;

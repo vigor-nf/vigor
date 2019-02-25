@@ -172,7 +172,7 @@ let fun_types =
                                      ";\ninitial_stat_key_vec = " ^ (tmp_gen "sv") ^
                                      ";\n} @*/");
                                 ];};
-     "dchain_allocate", (dchain_alloc_spec "65536" (Some "ether_addri"));
+     "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ether_addri"))]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ether_addri");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ether_addri");
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);

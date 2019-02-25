@@ -189,23 +189,8 @@ let fun_types =
                                      ";\ncht = " ^ (tmp_gen "initial_cht") ^
                                      ";\n} @*/");
                                 ];};
-     "dchain_allocate", {ret_type = Static Sint32;
-                         arg_types = stt [Sint32; Ptr (Ptr dchain_struct)];
-                         extra_ptr_types = [];
-                         lemmas_before = [];
-                         lemmas_after = [
-                           on_rez_nonzero
-                             "if (!dchain_flow_allocated) {\n\
-                              assert vectorp<LoadBalancedFlowi>(_, _, ?allocated_vector, _);\n\
-                              empty_map_vec_dchain_coherent\
-                              <LoadBalancedFlowi>(allocated_vector);\n\
-                              } else {\n\
-                              assert vectorp<ip_addri>(_, ip_addrp, ?allocated_ip_vector, _);\n\
-                              empty_map_vec_dchain_coherent\
-                              (allocated_ip_vector);\n\
-                              }";
-                           (fun _ -> "dchain_flow_allocated = true;");
-                           tx_l "index_range_of_empty(65536, 0);";];};
+      "dchain_allocate", (dchain_alloc_spec [("65536", Some "LoadBalancedFlowi");
+                                             ("20", Some "ip_addri")]);
      "dchain_allocate_new_index", {ret_type = Static Sint32;
                                    arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
                                    extra_ptr_types = [];
@@ -365,68 +350,16 @@ let fun_types =
                              )];
                            lemmas_after = [];};
      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
-     "map_allocate", {ret_type = Static Sint32;
-                      arg_types = stt [Fptr "map_keys_equality";
-                                       Fptr "map_key_hash";
-                                       Uint32;
-                                       Ptr (Ptr map_struct)];
-                      extra_ptr_types = [];
-                      lemmas_before = [
-                        (fun _ -> (* VeriFast will syntax-error on produce_function_pointer_chunk if not within a block *)
-                            "/*@ if (!map_flow_allocated) {\nproduce_function_pointer_chunk \
-                            map_keys_equality<LoadBalancedFlowi>(LoadBalancedFlow_eq)\
-                            (LoadBalancedFlowp)(a, b) \
-                            {\
-                            call();\
-                            }\n\
-                            produce_function_pointer_chunk \
-                            map_key_hash<LoadBalancedFlowi>(LoadBalancedFlow_hash)\
-                            (LoadBalancedFlowp, _LoadBalancedFlow_hash)(a) \
-                            {\
-                            call();\
-                            }\n\
-                             } else {\nproduce_function_pointer_chunk \
-                            map_keys_equality<ip_addri>(ip_addr_eq)\
-                            (ip_addrp)(a, b) \
-                            {\
-                            call();\
-                            }\n\
-                            produce_function_pointer_chunk \
-                            map_key_hash<ip_addri>(ip_addr_hash)\
-                            (ip_addrp, _ip_addr_hash)(a) \
-                            {\
-                            call();\
-                            }\n\
-                            } @*/ \n");];
-                      lemmas_after = [
-                        (fun {tmp_gen;ret_name;_} -> (* see remark above *)
-                            "/*@ if (!map_flow_allocated) {\n assert [?" ^ (tmp_gen "imkedy") ^
-                           "]is_map_keys_equality(LoadBalancedFlow_eq,\
-                            LoadBalancedFlowp);\n\
-                            close [" ^ (tmp_gen "imkedy") ^
-                           "]hide_is_map_keys_equality(LoadBalancedFlow_eq, \
-                            LoadBalancedFlowp);\n\
-                            assert [?" ^ (tmp_gen "imkhdy") ^
-                           "]is_map_key_hash(LoadBalancedFlow_hash,\
-                            LoadBalancedFlowp, _LoadBalancedFlow_hash);\n\
-                            close [" ^ (tmp_gen "imkhdy") ^
-                           "]hide_is_map_key_hash(LoadBalancedFlow_hash, \
-                            LoadBalancedFlowp, _LoadBalancedFlow_hash);\n\
-                            } else {\n assert [?" ^ (tmp_gen "imkedy") ^
-                           "]is_map_keys_equality(ip_addr_eq,\
-                            ip_addrp);\n\
-                            close [" ^ (tmp_gen "imkedy") ^
-                           "]hide_is_map_keys_equality(ip_addr_eq, \
-                            ip_addrp);\n\
-                            assert [?" ^ (tmp_gen "imkhdy") ^
-                           "]is_map_key_hash(ip_addr_hash,\
-                            ip_addrp, _ip_addr_hash);\n\
-                            close [" ^ (tmp_gen "imkhdy") ^
-                           "]hide_is_map_key_hash(ip_addr_hash, \
-                            ip_addrp, _ip_addr_hash);\n\
-                            } @*/");
-                        (fun _ -> "map_flow_allocated = true;")];};
-     "map_get", {ret_type = Static Sint32;
+     "map_allocate", (map_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlowp","LoadBalancedFlow_eq","LoadBalancedFlow_hash","_LoadBalancedFlow_hash");
+                                      ("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
+     "map_get", (* (map_get_spec [
+          *  ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",lb_flow_struct,(fun name ->
+          *      "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n"),true);
+          * ("ip_addri","ip_addr","ip_addrp",ip_addr_struct,
+          *  (fun name ->
+          *     "//@ open ip_addrp(" ^ name ^ ", _);\n")
+          * ,false);]) *)
+       {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
                               Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
                                        "ip_addr", Ptr ip_addr_struct];
@@ -752,6 +685,7 @@ struct
                  ^
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\
+                  int dchain_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

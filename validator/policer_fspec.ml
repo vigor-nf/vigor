@@ -105,7 +105,7 @@ let fun_types =
                                      ";\ninitial_chain = " ^ (tmp_gen "dh") ^
                                      ";\n} @*/");
                                 ];};
-     "dchain_allocate", (dchain_alloc_spec "65536" (Some "ip_addri"));
+     "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ip_addri"))]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ip_addri");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ip_addri");
      "expire_items_single_map", (expire_items_single_map_spec ["ip_addri"]);
