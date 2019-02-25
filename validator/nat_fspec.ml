@@ -91,7 +91,7 @@ let fun_types =
                                       flow_vec = " ^ (tmp_gen "initial_flow_vec") ^ ";\n" ^
                                      "} @*/");
                                 ];};
-     "map_get", (map_get_spec "FlowIdi" "FlowIdp" flow_id_struct);
+     "map_get", (map_get_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
      "map_put", (map_put_spec "FlowIdi" "FlowIdp" flow_id_struct (fun str ->
          "FlowIdc(" ^ str ^
          "->src_port, " ^ str ^

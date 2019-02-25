@@ -11,4 +11,6 @@ pushd $CODEGENDIR
   ocamlbuild loop_boilerplate_gen.byte
 popd
 
+rm $CODEGENDIR/nf_data_spec.ml
+
 $CODEGENDIR/_build/loop_boilerplate_gen.byte

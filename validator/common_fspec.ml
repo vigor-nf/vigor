@@ -516,44 +516,77 @@ let loop_invariant_consume_spec types =
    ];
    lemmas_after = [];}
 
-let map_get_spec ityp pred entry_type =
+let map_get_spec map_specs =
+  let other_specs excl_ityp =
+    List.filter map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+        ityp <> excl_ityp)
+  in
   {ret_type = Static Sint32;
-   arg_types = stt [Ptr map_struct;
-                    Ptr entry_type;
-                    Ptr Sint32];
+   arg_types = [Static (Ptr map_struct);
+                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+                  typ, Ptr entry_type));
+                Static (Ptr Sint32)];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun ({arg_exps;tmp_gen;_} as params) ->
-        "//@ assert " ^ pred ^ "(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
-        ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
-        capture_a_map ityp "dm" params ^
-        "//@ assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
-        (tmp_gen "dm") ^ ", ?" ^
-        (tmp_gen "dv") ^ ", ?" ^
-        (tmp_gen "dh") ^ ");\n"
+     (fun ({arg_exps;tmp_gen;arg_types;_} as params) ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+            if (List.nth_exn arg_types 1) = (Ptr entry_type) then
+              Some (
+                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+                     "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
+                   ))) ^
+                (if coherent then
+                   let (binding,expr) =
+                     self_dereference (List.nth_exn arg_exps 1) tmp_gen
+                   in
+                   binding ^
+                   "\n//@ assert " ^ pred ^ "(" ^ (render_tterm expr) ^
+                   ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                   capture_a_map ityp "dm" params ^
+                   "//@ assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
+                   (tmp_gen "dm") ^ ", ?" ^
+                   (tmp_gen "dv") ^ ", ?" ^
+                   (tmp_gen "dh") ^ ");\n"
+                 else ""))
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1))
+
      );];
    lemmas_after = [
-     (fun {ret_name;tmp_gen;args;_} ->
-        "/*@ if (" ^ ret_name ^
-        " != 0) {\n\
-         mvc_coherent_map_get_bounded(" ^
-        (tmp_gen "dm") ^ ", " ^
-        (tmp_gen "dv") ^ ", " ^
-        (tmp_gen "dh") ^ ", " ^
-        (tmp_gen "fk") ^
-        ");\n\
-         mvc_coherent_map_get_vec_half(" ^
-        (tmp_gen "dm") ^ ", " ^
-        (tmp_gen "dv") ^ ", " ^
-        (tmp_gen "dh") ^ ", " ^
-        (tmp_gen "fk") ^
-        ");\n\
-         mvc_coherent_map_get(" ^
-        (tmp_gen "dm") ^ ", " ^
-        (tmp_gen "dv") ^ ", " ^
-        (tmp_gen "dh") ^ ", " ^
-        (tmp_gen "fk") ^ ");\n} @*/"
-     );
+     (fun {ret_name;tmp_gen;arg_types;_} ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+            if (List.nth_exn arg_types 1) = (Ptr entry_type) then
+              Some ("/*@ if (" ^ ret_name ^
+                    " != 0) {\n\
+                     mvc_coherent_map_get_bounded(" ^
+                    (tmp_gen "dm") ^ ", " ^
+                    (tmp_gen "dv") ^ ", " ^
+                    (tmp_gen "dh") ^ ", " ^
+                    (tmp_gen "fk") ^
+                    ");\n\
+                     mvc_coherent_map_get_vec_half(" ^
+                    (tmp_gen "dm") ^ ", " ^
+                    (tmp_gen "dv") ^ ", " ^
+                    (tmp_gen "dh") ^ ", " ^
+                    (tmp_gen "fk") ^
+                    ");\n\
+                     mvc_coherent_map_get(" ^
+                    (tmp_gen "dm") ^ ", " ^
+                    (tmp_gen "dv") ^ ", " ^
+                    (tmp_gen "dh") ^ ", " ^
+                    (tmp_gen "fk") ^ ");\n} @*/\n" ^
+                    (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,entry_type,coherent) ->
+                         "//@ open hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
+                       )))
+                   )
+            else
+              None))
+        with
+        | Some x -> x
+        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));
    ];}
 
 let map_put_spec ityp pred entry_type ctor =

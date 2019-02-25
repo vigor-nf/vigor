@@ -110,7 +110,7 @@ let fun_types =
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ip_addri");
      "expire_items_single_map", (expire_items_single_map_spec ["ip_addri"]);
      "map_allocate", (map_alloc_spec [("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
-     "map_get", (map_get_spec "ip_addri" "ip_addrp" ip_addr_struct);
+     "map_get", (map_get_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true)]);
      "map_put", (map_put_spec "ip_addri" "ip_addrp" ip_addr_struct
                    (fun str -> "ip_addrc(" ^ str ^ "->addr)"));
      "vector_allocate", (vector_alloc_spec [("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
