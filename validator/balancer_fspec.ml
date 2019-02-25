@@ -751,6 +751,7 @@ struct
                  "
                  ^
                  "int vector_allocation_order = 0;\n\
+                  int map_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

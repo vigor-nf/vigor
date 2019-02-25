@@ -55,6 +55,7 @@ let gen_predicate compinfo =
            else failwith "A 0-element array"
          in
          "  uchars(ptr->" ^ fname ^ ", " ^ (Int64.to_string c) ^ ", ?" ^ fname ^ "_f) " ^
+         "&*&\n  length(" ^ fname ^ "_f) == 6 " ^
          "&*&\n  " ^ fname ^ "_f == " ^ (csl_fields c) ^ " &*&\n" ^
          "  switch(_nil) { case nil: return true; case cons(nh, nt): return false; }"
        | TArray (field_t, _, _) ->

@@ -21,7 +21,7 @@ let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
     [
-     "map_allocate", (map_alloc_spec "FlowIdi" "FlowIdp" "FlowId_eq" "FlowId_hash" "_FlowId_hash");
+     "map_allocate", (map_alloc_spec [("FlowIdi","FlowIdp","FlowId_eq","FlowId_hash","_FlowId_hash")]);
      "vector_allocate", (vector_alloc_spec [("FlowIdi", "FlowId", "FlowIdp", "FlowId_allocate", true)]);
      "vector_borrow", (vector_borrow_spec [("FlowIdi","FlowId","FlowIdp",noop,flow_id_struct,true)]);
      "vector_return", (vector_return_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
@@ -140,6 +140,7 @@ struct
                   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n"
                  ^
                  "int vector_allocation_order = 0;\n\
+                  int map_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

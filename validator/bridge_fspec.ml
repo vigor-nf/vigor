@@ -176,72 +176,8 @@ let fun_types =
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ether_addri");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ether_addri");
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
-     "map_allocate", {ret_type = Static Sint32;
-                      arg_types = stt [Fptr "map_keys_equality";
-                                       Fptr "map_key_hash";
-                                       Uint32;
-                                       Ptr (Ptr map_struct)];
-                      extra_ptr_types = [];
-                      lemmas_before = [
-                        (fun {args;_} ->
-                           "/*@ if (" ^ (List.nth_exn args 0) ^
-                           " == StaticKey_eq) {\n" ^
-                           "produce_function_pointer_chunk \
-                            map_keys_equality<StaticKeyi>(StaticKey_eq)\
-                            (StaticKeyp)(a, b) \
-                            {\
-                            call();\
-                            }\n\
-                            produce_function_pointer_chunk \
-                            map_key_hash<StaticKeyi>(StaticKey_hash)\
-                            (StaticKeyp, _StaticKey_hash)(a) \
-                            {\
-                            call();\
-                            }\n\
-                            } else {\n\
-                            produce_function_pointer_chunk \
-                            map_keys_equality<ether_addri>(ether_addr_eq)\
-                            (ether_addrp)(a, b) \
-                            {\
-                            call();\
-                            }\n\
-                            produce_function_pointer_chunk \
-                            map_key_hash<ether_addri>(ether_addr_hash)\
-                            (ether_addrp, _ether_addr_hash)(a) \
-                            {\
-                            call();\
-                            }\n\
-                            } @*/ \n");];
-                      lemmas_after = [
-                        (fun params ->
-                           "/*@ if (" ^ (List.nth_exn params.args 0) ^
-                           " == StaticKey_eq) {\n\
-                            assert [?" ^ (params.tmp_gen "imkest") ^
-                           "]is_map_keys_equality(StaticKey_eq,\
-                            StaticKeyp);\n\
-                            close [" ^ (params.tmp_gen "imkest") ^
-                           "]hide_is_map_keys_equality(StaticKey_eq, \
-                            StaticKeyp);\n\
-                            assert [?" ^ (params.tmp_gen "imkhst") ^
-                           "]is_map_key_hash(StaticKey_hash,\
-                            StaticKeyp, _StaticKey_hash);\n\
-                            close [" ^ (params.tmp_gen "imkhst") ^
-                           "]hide_is_map_key_hash(StaticKey_hash, \
-                            StaticKeyp, _StaticKey_hash);\n\
-                            } else {\n\
-                            assert [?" ^ (params.tmp_gen "imkedy") ^
-                           "]is_map_keys_equality(ether_addr_eq,\
-                            ether_addrp);\n\
-                            close [" ^ (params.tmp_gen "imkedy") ^
-                           "]hide_is_map_keys_equality(ether_addr_eq, \
-                            ether_addrp);\n\
-                            assert [?" ^ (params.tmp_gen "imkhdy") ^
-                           "]is_map_key_hash(ether_addr_hash,\
-                            ether_addrp, _ether_addr_hash);\n\
-                            close [" ^ (params.tmp_gen "imkhdy") ^
-                           "]hide_is_map_key_hash(ether_addr_hash, \
-                            ether_addrp, _ether_addr_hash);\n\
-                            } @*/")];};
+     "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");
+                                      ("StaticKeyi","StaticKeyp","StaticKey_eq","StaticKey_hash","_StaticKey_hash")]) ;
      "map_get", {ret_type = Static Sint32;
                  arg_types = [Static (Ptr map_struct);
                               Dynamic ["ether_addr", Ptr ether_addr_struct;
@@ -263,10 +199,7 @@ let fun_types =
                          capture_a_map "ether_addri" "dm" params ^
                          capture_a_vector "ether_addri" "dv" params);
                       | Ptr (Str ("StaticKey", _)) ->
-                        (capture_a_map "StaticKeyi" "stm" params) ^
-                        "//@ assert uchars((" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
-                        ")->addr.addr_bytes, 6, ?" ^ (tmp_gen "sk") ^ ");\n" ^
-                        "//@ list_of_six(" ^ (tmp_gen "sk") ^ ");\n"
+                        (capture_a_map "StaticKeyi" "stm" params)
                       | _ -> "#error unexpected key type")];
                  lemmas_after = [
                    reveal_the_other_mapp;
@@ -359,7 +292,7 @@ let fun_types =
                                             ("StaticKeyi","StaticKey","StaticKeyp","StaticKey_allocate",true);]);
      "vector_borrow", (vector_borrow_spec [
          ("ether_addri","ether_addr","ether_addrp",(fun name ->
-              "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n"),ether_addr_struct,true);
+              "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n"),ether_addr_struct,true);
          ("DynamicValuei","DynamicValue","DynamicValuep",noop,dynamic_value_struct,false);
          ("StaticKeyi","StaticKey","StaticKeyp",noop,static_key_struct,true);]) ;
      "vector_return", (vector_return_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,true);
@@ -410,6 +343,7 @@ struct
                  "/*@ assume(ether_addr_eq != StaticKey_eq); @*/\n"
                  ^
                  "int vector_allocation_order = 0;\n\
+                  int map_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"

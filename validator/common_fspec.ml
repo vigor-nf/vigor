@@ -254,7 +254,7 @@ let common_fun_types =
                     lemmas_after = [];};
   ]
 
-let map_alloc_spec typ pred eq_fun hash_fun lhash_fun =
+let map_alloc_spec map_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Fptr "map_keys_equality";
                     Fptr "map_key_hash";
@@ -262,25 +262,60 @@ let map_alloc_spec typ pred eq_fun hash_fun lhash_fun =
                     Ptr (Ptr map_struct)];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun _ ->
-        "/*@ {\nproduce_function_pointer_chunk \
-         map_keys_equality<" ^ typ ^ ">(" ^ eq_fun ^
-        ")\
-         (" ^ pred ^
-        ")(a, b) \
-         {\
-         call();\
-         }\n\
-         produce_function_pointer_chunk \
-                      map_key_hash<" ^ typ ^ ">(" ^ hash_fun ^
-        ")\
-         (" ^ pred ^ ", " ^ lhash_fun ^
-        ")(a) \
-         {\
-         call();\
-         }\n} @*/ \n");
+     tx_bl
+       ("\n\
+        switch(map_allocation_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi map_specs ~f:(fun i (typ,pred,eq_fun,hash_fun,lhash_fun) ->
+             " case " ^ (string_of_int i) ^
+             ":\n\
+              produce_function_pointer_chunk \
+              map_keys_equality<" ^ typ ^ ">(" ^ eq_fun ^
+             ")\
+              (" ^ pred ^
+             ")(a, b) \
+              {\
+              call();\
+              }\n\
+              produce_function_pointer_chunk \
+              map_key_hash<" ^ typ ^ ">(" ^ hash_fun ^
+             ")\
+              (" ^ pred ^ ", " ^ lhash_fun ^
+             ")(a) \
+              {\
+              call();\
+              }\n
+              break;\n"
+           )) ) ^
+          "default:\n\
+            assert false;\n\
+        }\n");
    ];
-   lemmas_after = [];}
+   lemmas_after = [
+     (fun {tmp_gen;_} ->
+        "/*@ \n\
+        switch(map_allocation_order) {\n" ^
+        (String.concat ~sep:"" (List.mapi map_specs ~f:(fun i (typ,pred,eq_fun,hash_fun,lhash_fun) ->
+             " case " ^ (string_of_int i) ^
+             ":\n\
+              assert [?" ^ (tmp_gen "imkest") ^
+             "]is_map_keys_equality(" ^ eq_fun ^ ",\
+              " ^ pred ^ ");\n\
+              close [" ^ (tmp_gen "imkest") ^
+             "]hide_is_map_keys_equality(" ^ eq_fun ^ ", \
+              " ^ pred ^ ");\n\
+              assert [?" ^ (tmp_gen "imkhst") ^
+             "]is_map_key_hash(" ^ hash_fun ^ ",\
+              " ^ pred ^ ", " ^ lhash_fun ^ ");\n\
+              close [" ^ (tmp_gen "imkhst") ^
+             "]hide_is_map_key_hash(" ^ hash_fun ^ ", \
+              " ^ pred ^ ", " ^ lhash_fun ^ ");\n\
+              break;\n"
+           )) ) ^
+          "default:\n\
+            assert false;\n\
+        }\n @*/");
+     (fun _ ->
+        "map_allocation_order += 1;");];}
 
 let c_type typ =
   if typ = "uint32_t" then typ else "struct " ^ typ

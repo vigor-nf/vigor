@@ -109,7 +109,7 @@ let fun_types =
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ip_addri");
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ip_addri");
      "expire_items_single_map", (expire_items_single_map_spec ["ip_addri"]);
-     "map_allocate", (map_alloc_spec "ip_addri" "ip_addrp" "ip_addr_eq" "ip_addr_hash" "_ip_addr_hash");
+     "map_allocate", (map_alloc_spec [("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
      "map_get", (map_get_spec "ip_addri" "ip_addrp" ip_addr_struct);
      "map_put", (map_put_spec "ip_addri" "ip_addrp" ip_addr_struct
                    (fun str -> "ip_addrc(" ^ str ^ "->addr)"));
@@ -164,6 +164,7 @@ struct
                   bool dyn_vs_borrowed = false;\n"
                  ^
                  "int vector_allocation_order = 0;\n\
+                  int map_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
