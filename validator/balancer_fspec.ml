@@ -280,11 +280,6 @@ let fun_types =
                                       capture_mvc_args ^
                                       ");\n\
                                        mvc_coherent_same_len(" ^
-                                      mvc_args ^ ");\n} else {\n" ^
-                                        "assert map_vec_chain_coherent<uint32_t>(" ^
-                                      capture_mvc_args ^
-                                      ");\n\
-                                       mvc_coherent_same_len(" ^
                                       mvc_args ^ ");\nbreak;\n\
                                                   default:\n\
                                                   break;\n\
