@@ -174,26 +174,26 @@ let fun_types =
                                 ];};
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ether_addri"))]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ether_addri");
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ether_addri");
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["ether_addri", "LMA_ETHER_ADDR"]);
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");
                                       ("StaticKeyi","StaticKeyp","StaticKey_eq","StaticKey_hash","_StaticKey_hash")]) ;
      "map_get", (map_get_spec [
-         ("ether_addri","ether_addr","ether_addrp",ether_addr_struct,(fun name ->
+         ("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR",ether_addr_struct,(fun name ->
               "//@ open [_]ether_addrp(" ^ name ^ ", _);\n"),true);
-         ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,
+         ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY",static_key_struct,
           (fun name ->
              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
           ,false);]);
-     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,
+     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR",ether_addr_struct,
                                 (fun str -> "ether_addrc(" ^ str ^ "->addr_bytes[0], " ^
                                             str ^ "->addr_bytes[1], " ^
                                             str ^ "->addr_bytes[2], " ^
                                             str ^ "->addr_bytes[3], " ^
                                             str ^ "->addr_bytes[4], " ^
                                             str ^ "->addr_bytes[5])"),true);
-                               ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,
+                               ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY",static_key_struct,
                                 (fun str -> "not needed"),false)]);
      "vector_allocate", (vector_alloc_spec [("ether_addri","ether_addr","ether_addrp","ether_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);
@@ -218,6 +218,7 @@ struct
 #include \"vigbridge/bridge_loop.h\"\n" ^
                  (In_channel.read_all "preamble.tmpl") ^
                  (In_channel.read_all "preamble_hide.tmpl") ^
+                 "enum LMA_enum {LMA_ETHER_ADDR, LMA_ST_KEY, LMA_INVALID};\n" ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
@@ -252,7 +253,8 @@ struct
                  ^
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\
-                  int expire_items_single_map_order = 0;\n"
+                  int expire_items_single_map_order = 0;\n\
+                  enum LMA_enum last_map_accessed = LMA_INVALID;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

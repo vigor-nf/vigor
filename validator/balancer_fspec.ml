@@ -250,84 +250,8 @@ let fun_types =
                                             assert false;\n\
                                           }\n");
                                    ];};
-     "dchain_rejuvenate_index", {ret_type = Static Sint32;
-                                 arg_types = stt [Ptr dchain_struct;
-                                                  Sint32; vigor_time_t;];
-                                 extra_ptr_types = [];
-                                 lemmas_before = [
-                                   capture_chain "cur_ch" 0;
-                                   (fun {tmp_gen;_} ->
-                                      let capture_mvc_args =
-                                        "?" ^ (tmp_gen "cur_map") ^ ", ?" ^
-                                        (tmp_gen "cur_vec") ^ ", " ^
-                                        (tmp_gen "cur_ch")
-                                      in
-                                      let mvc_args = 
-                                        (tmp_gen "cur_map") ^ ", " ^
-                                        (tmp_gen "cur_vec") ^ ", " ^
-                                        (tmp_gen "cur_ch")
-                                      in
-                                      "/*@ switch(last_map_accessed) {\n\
-                                          case LMA_LB_FLOW:\n\
-                                        assert map_vec_chain_coherent<\
-                                       LoadBalancedFlowi>(" ^
-                                      capture_mvc_args ^
-                                      ");\n\
-                                       mvc_coherent_same_len(" ^
-                                      mvc_args ^ ");\nbreak;\n\
-                                                   case LMA_IP_ADDR:\n" ^
-                                        "assert map_vec_chain_coherent<ip_addri>(" ^
-                                      capture_mvc_args ^
-                                      ");\n\
-                                       mvc_coherent_same_len(" ^
-                                      mvc_args ^ ");\nbreak;\n\
-                                                  default:\n\
-                                                  break;\n\
-                                                  assert false;\n\
-                                                  } @*/";);
-                                   (fun {args;tmp_gen;_} ->
-                                      "//@ rejuvenate_keeps_high_bounded(" ^
-                                      (tmp_gen "cur_ch") ^
-                                      ", " ^ (List.nth_exn args 1) ^
-                                      ", " ^ (List.nth_exn args 2) ^
-                                      ");\n");];
-                                 lemmas_after = [
-                                   (fun params ->
-                                      let rej_last_args = 
-                                        (List.nth_exn params.args 1) ^ ", " ^
-                                        (List.nth_exn params.args 2)
-                                      in
-                                      "/*@ if (" ^ params.ret_name ^
-                                      " != 0) { \n" ^
-                                      "switch(last_map_accessed) {\n\
-                                        case LMA_LB_FLOW:\n\
-                                       assert map_vec_chain_coherent<LoadBalancedFlowi>\
-                                       (?cur_map,?cur_vec,?cur_ch);\n" ^
-                                      "mvc_rejuvenate_preserves_coherent(cur_map,\
-                                       cur_vec, cur_ch, " ^
-                                      rej_last_args ^
-                                      ");\n\
-                                       rejuvenate_preserves_index_range(cur_ch," ^
-                                      rej_last_args ^ ");\nbreak;\n\
-                                                       case LMA_IP_ADDR:\n" ^
-                                      "assert map_vec_chain_coherent<ip_addri>\
-                                       (?cur_map,?cur_vec,?cur_ch);\n" ^
-                                      "mvc_rejuvenate_preserves_coherent(cur_map,\
-                                       cur_vec, cur_ch, " ^
-                                      rej_last_args ^
-                                      ");\n\
-                                       rejuvenate_preserves_index_range(cur_ch," ^
-                                      rej_last_args ^
-                                      ");\nbreak;\n\
-                                       default:\n\
-                                       assert false;\n\
-                                       }\n\
-                                       \n}@*/");
-                                   (fun params ->
-                                      (ttype_to_str (List.nth_exn params.arg_types 1)) ^
-                                      " the_index_rejuvenated = " ^
-                                      (List.nth_exn params.args 1) ^ ";\n");
-                                 ];};
+      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW";
+                                                                "ip_addri", "LMA_IP_ADDR"]);
 
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
      "dchain_free_index", {ret_type = Static Sint32;

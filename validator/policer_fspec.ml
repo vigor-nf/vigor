@@ -107,11 +107,11 @@ let fun_types =
                                 ];};
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ip_addri"))]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ip_addri");
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec "ip_addri");
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["ip_addri", "LMA_IP_ADDR"]);
      "expire_items_single_map", (expire_items_single_map_spec ["ip_addri"]);
      "map_allocate", (map_alloc_spec [("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
-     "map_get", (map_get_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,noop,true)]);
-     "map_put", (map_put_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,(fun str -> "ip_addrc(" ^ str ^ "->addr)"),true)]);
+     "map_get", (map_get_spec [("ip_addri","ip_addr","ip_addrp","LMA_IP_ADDR",ip_addr_struct,noop,true)]);
+     "map_put", (map_put_spec [("ip_addri","ip_addr","ip_addrp","LMA_IP_ADDR",ip_addr_struct,(fun str -> "ip_addrc(" ^ str ^ "->addr)"),true)]);
      "vector_allocate", (vector_alloc_spec [("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);]);
      "vector_borrow",      (vector_borrow_spec [("ip_addri","ip_addr","ip_addrp",noop,ip_addr_struct,true);
@@ -130,6 +130,7 @@ struct
 #include \"vigpolicer/policer_loop.h\"\n" ^
                  (In_channel.read_all "preamble.tmpl") ^
                  (In_channel.read_all "preamble_hide.tmpl") ^
+                 "enum LMA_enum {LMA_IP_ADDR, LMA_INVALID};\n" ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
@@ -164,7 +165,8 @@ struct
                  ^
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\
-                  int expire_items_single_map_order = 0;\n"
+                  int expire_items_single_map_order = 0;\n\
+                  enum LMA_enum last_map_accessed = LMA_INVALID;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
