@@ -219,7 +219,8 @@ let fun_types =
                                         (List.nth_exn params.args 1) ^ ";\n");
                                      on_rez_nz
                                        (fun {args;tmp_gen;_} ->
-                                          "if (last_map_accessed_lb_flowi) {\n\
+                                          "switch(last_map_accessed) {\n\
+                                            case LMA_LB_FLOW:\n\
                                            assert map_vec_chain_coherent<\
                                            LoadBalancedFlowi>(?" ^
                                           (tmp_gen "cur_map") ^ ", ?" ^
@@ -230,9 +231,10 @@ let fun_types =
                                           (tmp_gen "cur_map") ^ ", " ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^ ", *" ^
-                                          (List.nth_exn args 1) ^ ");\n} else " ^
-                                          "{\n\
-                                           assert map_vec_chain_coherent<\
+                                          (List.nth_exn args 1) ^ ");\n\
+                                                                   break;\n\
+                                                                    case LMA_IP_ADDR:\n" ^
+                                          "assert map_vec_chain_coherent<\
                                            ip_addri>(?" ^
                                           (tmp_gen "cur_map") ^ ", ?" ^
                                           (tmp_gen "cur_vec") ^ ", " ^
@@ -242,7 +244,11 @@ let fun_types =
                                           (tmp_gen "cur_map") ^ ", " ^
                                           (tmp_gen "cur_vec") ^ ", " ^
                                           (tmp_gen "cur_ch") ^ ", *" ^
-                                          (List.nth_exn args 1) ^ ");\n}");
+                                          (List.nth_exn args 1) ^ ");\n" ^
+                                          "break;\n\
+                                            default:\n\
+                                            assert false;\n\
+                                          }\n");
                                    ];};
      "dchain_rejuvenate_index", {ret_type = Static Sint32;
                                  arg_types = stt [Ptr dchain_struct;
@@ -261,13 +267,15 @@ let fun_types =
                                         (tmp_gen "cur_vec") ^ ", " ^
                                         (tmp_gen "cur_ch")
                                       in
-                                      "/*@ if (last_map_accessed_lb_flowi) {\n\
+                                      "/*@ switch(last_map_accessed) {\n\
+                                          case LMA_LB_FLOW:\n\
                                         assert map_vec_chain_coherent<\
                                        LoadBalancedFlowi>(" ^
                                       capture_mvc_args ^
                                       ");\n\
                                        mvc_coherent_same_len(" ^
-                                      mvc_args ^ ");\n} else if (last_map_accessed_ip_addri) {\n" ^
+                                      mvc_args ^ ");\nbreak;\n\
+                                                   case LMA_IP_ADDR:\n" ^
                                         "assert map_vec_chain_coherent<ip_addri>(" ^
                                       capture_mvc_args ^
                                       ");\n\
@@ -277,7 +285,11 @@ let fun_types =
                                       capture_mvc_args ^
                                       ");\n\
                                        mvc_coherent_same_len(" ^
-                                      mvc_args ^ ");\n} @*/";);
+                                      mvc_args ^ ");\nbreak;\n\
+                                                  default:\n\
+                                                  break;\n\
+                                                  assert false;\n\
+                                                  } @*/";);
                                    (fun {args;tmp_gen;_} ->
                                       "//@ rejuvenate_keeps_high_bounded(" ^
                                       (tmp_gen "cur_ch") ^
@@ -292,7 +304,8 @@ let fun_types =
                                       in
                                       "/*@ if (" ^ params.ret_name ^
                                       " != 0) { \n" ^
-                                      "if (last_map_accessed_lb_flowi) {\n\
+                                      "switch(last_map_accessed) {\n\
+                                        case LMA_LB_FLOW:\n\
                                        assert map_vec_chain_coherent<LoadBalancedFlowi>\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
@@ -300,7 +313,8 @@ let fun_types =
                                       rej_last_args ^
                                       ");\n\
                                        rejuvenate_preserves_index_range(cur_ch," ^
-                                      rej_last_args ^ ");\n } else if (last_map_accessed_ip_addri) {\n" ^
+                                      rej_last_args ^ ");\nbreak;\n\
+                                                       case LMA_IP_ADDR:\n" ^
                                       "assert map_vec_chain_coherent<ip_addri>\
                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
                                       "mvc_rejuvenate_preserves_coherent(cur_map,\
@@ -309,16 +323,11 @@ let fun_types =
                                       ");\n\
                                        rejuvenate_preserves_index_range(cur_ch," ^
                                       rej_last_args ^
-                                      ");\n} else {\n" ^
-                                      "assert map_vec_chain_coherent<uint32_t>\
-                                       (?cur_map,?cur_vec,?cur_ch);\n" ^
-                                      "mvc_rejuvenate_preserves_coherent(cur_map,\
-                                       cur_vec, cur_ch, " ^
-                                      rej_last_args ^
-                                      ");\n\
-                                       rejuvenate_preserves_index_range(cur_ch," ^
-                                      rej_last_args ^
-                                      ");\n}\n}@*/");
+                                      ");\nbreak;\n\
+                                       default:\n\
+                                       assert false;\n\
+                                       }\n\
+                                       \n}@*/");
                                    (fun params ->
                                       (ttype_to_str (List.nth_exn params.arg_types 1)) ^
                                       " the_index_rejuvenated = " ^
@@ -411,8 +420,7 @@ let fun_types =
                         (tmp_gen "dh") ^ ", " ^
                         (tmp_gen "dk") ^ ");\n\
                          } @*/\n\
-                        last_map_accessed_lb_flowi = true;\n" ^
-                        "last_map_accessed_ip_addri = false;\n" ^
+                        last_map_accessed = LMA_LB_FLOW;\n" ^
                         "/*@ { open hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
                       | Ptr (Str ("ip_addr", _)) ->
                         "/*@ if (" ^ ret_name ^
@@ -432,8 +440,7 @@ let fun_types =
                         (tmp_gen "ip") ^
                         ");\n\
                          } @*/\n\
-                        last_map_accessed_lb_flowi = false; \n" ^
-                        "last_map_accessed_ip_addri = true;\n" ^
+                        last_map_accessed = LMA_IP_ADDR;\n" ^
                         "/*@ { open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
                       | _ -> failwith "unexpected key type for map_get.");
                    (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
@@ -631,6 +638,7 @@ struct
 #include \"vigbalancer/lb_balancer.h\"\n" ^
                  (In_channel.read_all "preamble.tmpl") ^
                  (In_channel.read_all "preamble_hide.tmpl") ^
+                 "enum LMA_enum {LMA_LB_FLOW, LMA_IP_ADDR, LMA_INVALID};\n" ^
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
@@ -664,16 +672,7 @@ struct
                  ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
                  "/*@ assume(sizeof(struct LoadBalancedFlow) == 16); @*/\n"
                  ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 12); @*/\n"
-                 ^ "bool vector_flow_allocated = false;\n\
-                    bool vector_flow_id_to_bknd_id_allocated = false;\n\
-                    bool vector_backend_ips_allocated = false;\n\
-                    bool vector_backends_allocated = false;\n\
-                    bool map_flow_allocated = false;\n\
-                    bool dchain_flow_allocated = false;\n\
-                    bool map_flow_expired = false;\n\
-                    bool last_map_accessed_lb_flowi = false;\n\
-                    bool last_map_accessed_ip_addri = false;\n\
-                    //@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
+                 ^ "//@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
                     //@ list<phdr> recv_headers = nil; \n\
                     //@ list<phdr> sent_headers = nil; \n\
                     //@ list<uint16_t> sent_on_ports = nil; \n\
@@ -686,7 +685,8 @@ struct
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\
                   int dchain_allocation_order = 0;\n\
-                  int expire_items_single_map_order = 0;\n"
+                  int expire_items_single_map_order = 0;\n\
+                  enum LMA_enum last_map_accessed = LMA_INVALID;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
