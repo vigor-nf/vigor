@@ -101,7 +101,7 @@ let fun_types =
          "->internal_device, " ^ str ^
          "->protocol)"),true)]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["FlowIdi"]);
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec "FlowIdi");
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["FlowIdi","LMA_FLOW_ID"]);
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["FlowIdi","LMA_FLOW_ID"]);
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
     ])

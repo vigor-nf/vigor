@@ -773,7 +773,7 @@ let expire_items_single_map_spec ityps =
      "expire_items_single_map_order += 1;");
    ];}
 
-let dchain_allocate_new_index_spec ityp =
+let dchain_allocate_new_index_spec dchain_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
    extra_ptr_types = [];
@@ -800,21 +800,25 @@ let dchain_allocate_new_index_spec ityp =
      (fun params ->
         "the_index_allocated = *" ^
         (List.nth_exn params.args 1) ^ ";\n");
-     on_rez_nz
-       (fun {args;tmp_gen;_} ->
-          "{\n\
-           assert map_vec_chain_coherent<" ^
-          ityp ^ ">(?" ^
-          (tmp_gen "cur_map") ^ ", ?" ^
-          (tmp_gen "cur_vec") ^ ", " ^
-          (tmp_gen "cur_ch") ^
-          ");\n\
-           mvc_coherent_alloc_is_halfowned<" ^ ityp ^
-          ">(" ^
-          (tmp_gen "cur_map") ^ ", " ^
-          (tmp_gen "cur_vec") ^ ", " ^
-          (tmp_gen "cur_ch") ^ ", *" ^
-          (List.nth_exn args 1) ^ ");\n}");
+     (fun {args;tmp_gen;ret_name;_} ->
+        "switch(last_map_accessed) {" ^
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal) ->
+             " case " ^ lma_literal ^ ":\n" ^
+             "/*@ if (" ^ ret_name ^ " != 0) {\n\
+                                  assert map_vec_chain_coherent<" ^
+             ityp ^ ">(?" ^
+             (tmp_gen "cur_map") ^ ", ?" ^
+             (tmp_gen "cur_vec") ^ ", " ^
+             (tmp_gen "cur_ch") ^
+             ");\n\
+              mvc_coherent_alloc_is_halfowned<" ^ ityp ^
+             ">(" ^
+             (tmp_gen "cur_map") ^ ", " ^
+             (tmp_gen "cur_vec") ^ ", " ^
+             (tmp_gen "cur_ch") ^ ", *" ^
+             (List.nth_exn args 1) ^ ");\n} @*/\n" ^
+             "break;\n"))) ^
+        "default:\n assert false;\n break;\n}\n");
    ];}
 
 let dchain_rejuvenate_index_spec dchain_specs =

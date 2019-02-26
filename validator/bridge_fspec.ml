@@ -173,7 +173,7 @@ let fun_types =
                                      ";\n} @*/");
                                 ];};
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ether_addri"))]);
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ether_addri");
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["ether_addri", "LMA_ETHER_ADDR"]);
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["ether_addri", "LMA_ETHER_ADDR"]);
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");

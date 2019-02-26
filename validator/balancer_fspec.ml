@@ -191,65 +191,8 @@ let fun_types =
                                 ];};
       "dchain_allocate", (dchain_alloc_spec [("65536", Some "LoadBalancedFlowi");
                                              ("20", Some "ip_addri")]);
-     "dchain_allocate_new_index", {ret_type = Static Sint32;
-                                   arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
-                                   extra_ptr_types = [];
-                                   lemmas_before = [
-                                     capture_chain "cur_ch" 0;
-                                   ];
-                                   lemmas_after = [
-                                     (fun {args;_} ->
-                                        "time_for_allocated_index = " ^ (List.nth_exn args 2) ^
-                                        ";\n");
-                                     on_rez_nz
-                                       (fun params ->
-                                          "{\n allocate_preserves_index_range(" ^
-                                          (params.tmp_gen "cur_ch") ^
-                                          ", *" ^
-                                          (List.nth_exn params.args 1) ^ ", " ^
-                                          (List.nth_exn params.args 2) ^ ");\n}");
-                                     (fun params ->
-                                        "//@ allocate_keeps_high_bounded(" ^
-                                        (params.tmp_gen "cur_ch") ^
-                                        ", *" ^ (List.nth_exn params.args 1) ^
-                                        ", " ^ (List.nth_exn params.args 2) ^
-                                        ");\n");
-                                     (fun params ->
-                                        "the_index_allocated = *" ^
-                                        (List.nth_exn params.args 1) ^ ";\n");
-                                     on_rez_nz
-                                       (fun {args;tmp_gen;_} ->
-                                          "switch(last_map_accessed) {\n\
-                                            case LMA_LB_FLOW:\n\
-                                           assert map_vec_chain_coherent<\
-                                           LoadBalancedFlowi>(?" ^
-                                          (tmp_gen "cur_map") ^ ", ?" ^
-                                          (tmp_gen "cur_vec") ^ ", " ^
-                                          (tmp_gen "cur_ch") ^
-                                          ");\n\
-                                           mvc_coherent_alloc_is_halfowned<LoadBalancedFlowi>(" ^
-                                          (tmp_gen "cur_map") ^ ", " ^
-                                          (tmp_gen "cur_vec") ^ ", " ^
-                                          (tmp_gen "cur_ch") ^ ", *" ^
-                                          (List.nth_exn args 1) ^ ");\n\
-                                                                   break;\n\
-                                                                    case LMA_IP_ADDR:\n" ^
-                                          "assert map_vec_chain_coherent<\
-                                           ip_addri>(?" ^
-                                          (tmp_gen "cur_map") ^ ", ?" ^
-                                          (tmp_gen "cur_vec") ^ ", " ^
-                                          (tmp_gen "cur_ch") ^
-                                          ");\n\
-                                           mvc_coherent_alloc_is_halfowned<ip_addri>(" ^
-                                          (tmp_gen "cur_map") ^ ", " ^
-                                          (tmp_gen "cur_vec") ^ ", " ^
-                                          (tmp_gen "cur_ch") ^ ", *" ^
-                                          (List.nth_exn args 1) ^ ");\n" ^
-                                          "break;\n\
-                                            default:\n\
-                                            assert false;\n\
-                                          }\n");
-                                   ];};
+      "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW";
+                                                                    "ip_addri", "LMA_IP_ADDR"]);
       "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW";
                                                                 "ip_addri", "LMA_IP_ADDR"]);
 

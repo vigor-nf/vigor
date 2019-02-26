@@ -106,7 +106,7 @@ let fun_types =
                                      ";\n} @*/");
                                 ];};
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ip_addri"))]);
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec "ip_addri");
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["ip_addri", "LMA_IP_ADDR"]);
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["ip_addri", "LMA_IP_ADDR"]);
      "expire_items_single_map", (expire_items_single_map_spec ["ip_addri"]);
      "map_allocate", (map_alloc_spec [("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
