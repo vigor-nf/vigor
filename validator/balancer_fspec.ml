@@ -202,89 +202,13 @@ let fun_types =
      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
      "map_allocate", (map_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlowp","LoadBalancedFlow_eq","LoadBalancedFlow_hash","_LoadBalancedFlow_hash");
                                       ("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
-     "map_get", (* (map_get_spec [
-          *  ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",lb_flow_struct,(fun name ->
-          *      "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n"),true);
-          * ("ip_addri","ip_addr","ip_addrp",ip_addr_struct,
-          *  (fun name ->
-          *     "//@ open ip_addrp(" ^ name ^ ", _);\n")
-          * ,false);]) *)
-       {ret_type = Static Sint32;
-                 arg_types = [Static (Ptr map_struct);
-                              Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                       "ip_addr", Ptr ip_addr_struct];
-                              Static (Ptr Sint32)];
-                 extra_ptr_types = [];
-                 lemmas_before = [
-                   (fun ({arg_types;arg_exps;tmp_gen;_} as params) ->
-                      match List.nth_exn arg_types 1 with
-                      | Ptr (Str ("LoadBalancedFlow", _)) ->
-                        "//@ assert LoadBalancedFlowp(" ^ (render_tterm (List.nth_exn arg_exps 1)) ^
-                        ", ?" ^ (tmp_gen "dk") ^ ");\n" ^
-                        "//@ last_flow_searched_in_the_map = " ^
-                        (tmp_gen "dk") ^ ";\n" ^
-                         capture_a_map "LoadBalancedFlowi" "dm" params ^
-                         "//@ assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
-                         (tmp_gen "dm") ^ ", ?" ^
-                         (tmp_gen "dv") ^ ", ?" ^
-                         (tmp_gen "dh") ^ ");\n" ^
-                        "/*@ { close hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
-                      | Ptr (Str ("ip_addr", _)) ->
-                         capture_a_map "ip_addri" "dm" params ^
-                         "//@ assert map_vec_chain_coherent<ip_addri>(" ^
-                         (tmp_gen "dm") ^ ", ?" ^
-                         (tmp_gen "dv") ^ ", ?" ^
-                         (tmp_gen "dh") ^ ");\n" ^
-                        "/*@ { close hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
-                      | _ -> failwith "unexpected key type for map_get.");];
-                 lemmas_after = [
-                   (fun {arg_types;ret_name;tmp_gen;args;_} ->
-                      match List.nth_exn arg_types 1 with
-                      | Ptr (Str ("LoadBalancedFlow", _)) ->
-                        "/*@ if (" ^ ret_name ^
-                        " != 0) {\n\
-                         mvc_coherent_map_get_bounded(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ", " ^
-                        (tmp_gen "dk") ^
-                        ");\n\
-                         mvc_coherent_map_get_vec_half(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ", " ^
-                        (tmp_gen "dk") ^
-                        ");\n\
-                         mvc_coherent_map_get(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ", " ^
-                        (tmp_gen "dk") ^ ");\n\
-                         } @*/\n\
-                        last_map_accessed = LMA_LB_FLOW;\n" ^
-                        "/*@ { open hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
-                      | Ptr (Str ("ip_addr", _)) ->
-                        "/*@ if (" ^ ret_name ^
-                        " != 0) {\n\
-                         assert ip_addrp(" ^ (List.nth_exn args 1) ^ ", ?" ^
-                        (tmp_gen "ip") ^ ");\n" ^
-                        "mvc_coherent_map_get_bounded(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ", " ^
-                        (tmp_gen "ip") ^
-                        ");\n\
-                         mvc_coherent_map_get_vec_half(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ", " ^
-                        (tmp_gen "ip") ^
-                        ");\n\
-                         } @*/\n\
-                        last_map_accessed = LMA_IP_ADDR;\n" ^
-                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
-                      | _ -> failwith "unexpected key type for map_get.");
-                   (fun params -> "if (" ^ params.ret_name ^ " != 0) { backend_known = true; backend_index = *" ^ (List.nth_exn params.args 2) ^ "; }\n" );];};
+      "map_get", (map_get_spec [
+          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW", "last_flow_searched_in_the_map",lb_flow_struct,(fun name ->
+               "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n"),true);
+          ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR", "last_ip_addr_searched_in_the_map",ip_addr_struct,
+           (fun name ->
+              "//@ open ip_addrp(" ^ name ^ ", _);\n")
+          ,true);]) ;
      "map_put", {ret_type = Static Void;
                  arg_types = [Static (Ptr map_struct);
                               Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);

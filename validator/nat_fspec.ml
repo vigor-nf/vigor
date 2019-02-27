@@ -91,7 +91,7 @@ let fun_types =
                                       flow_vec = " ^ (tmp_gen "initial_flow_vec") ^ ";\n" ^
                                      "} @*/");
                                 ];};
-     "map_get", (map_get_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID",flow_id_struct,noop,true)]);
+     "map_get", (map_get_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID","last_flow_searched_in_the_map",flow_id_struct,noop,true)]);
      "map_put", (map_put_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID",flow_id_struct,(fun str ->
          "FlowIdc(" ^ str ^
          "->src_port, " ^ str ^
@@ -143,8 +143,10 @@ struct
                  ^
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\
+                  int dchain_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n\
-                  enum LMA_enum last_map_accessed = LMA_INVALID;\n"
+                  enum LMA_enum last_map_accessed = LMA_INVALID;\n\
+                  FlowIdi last_flow_searched_in_the_map;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

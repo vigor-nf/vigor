@@ -531,30 +531,31 @@ let loop_invariant_consume_spec types =
 
 let map_get_spec map_specs =
   let other_specs excl_ityp =
-    List.filter map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+    List.filter map_specs ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
         ityp <> excl_ityp)
   in
   {ret_type = Static Sint32;
    arg_types = [Static (Ptr map_struct);
-                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
                   typ, Ptr entry_type));
                 Static (Ptr Sint32)];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun ({arg_exps;tmp_gen;arg_types;_} as params) ->
-        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+     (fun ({arg_exps;tmp_gen;arg_types;args;_} as params) ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
-                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
                      "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
                    ))) ^
                 (if coherent then
-                   let (binding,expr) =
-                     self_dereference (List.nth_exn arg_exps 1) tmp_gen
-                   in
-                   binding ^
-                   "\n//@ assert " ^ pred ^ "(" ^ (render_tterm expr) ^
+                   (* let (binding,expr) =
+                    *   self_dereference (List.nth_exn arg_exps 1) tmp_gen
+                    * in
+                    * binding ^ *)
+                   "\n//@ assert " ^ pred ^ "(" ^ (List.nth_exn args 1) ^
                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                   lsim_variable ^ " = " ^ (tmp_gen "fk") ^ ";\n" ^
                    capture_a_map ityp "dm" params ^
                    "//@ assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
                    (tmp_gen "dm") ^ ", ?" ^
@@ -570,7 +571,7 @@ let map_get_spec map_specs =
      );];
    lemmas_after = [
      (fun {ret_name;tmp_gen;arg_types;args;_} ->
-        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some ((if coherent then
                        "/*@ if (" ^ ret_name ^
@@ -596,7 +597,7 @@ let map_get_spec map_specs =
                      else "") ^
                     (open_callback (List.nth_exn args 1)) ^
                     (String.concat ~sep:"" (List.map (other_specs ityp)
-                                              ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+                                              ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
                                                   "//@ open hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
                                                 )))
                    )
@@ -819,7 +820,7 @@ let dchain_allocate_new_index_spec dchain_specs =
              (tmp_gen "cur_ch") ^ ", *" ^
              (List.nth_exn args 1) ^ ");\n} @*/\n" ^
              "break;\n"))) ^
-        "default:\n assert false;\n break;\n}\n");
+        "}\n");
    ];}
 
 let dchain_rejuvenate_index_spec dchain_specs =
@@ -850,7 +851,7 @@ let dchain_rejuvenate_index_spec dchain_specs =
              ");\n} @*/\n" ^
              "break;\n"
            ))) ^
-        "default:\n assert false;\n break;\n}\n"
+        "}\n"
      );];
    lemmas_after = [
      (fun {args;ret_name;_} ->
@@ -870,7 +871,7 @@ let dchain_rejuvenate_index_spec dchain_specs =
              (List.nth_exn args 1) ^ ", " ^
              (List.nth_exn args 2) ^ ");\n }@*/" ^
              "break;\n"))) ^
-        "default:\n assert false;\n break;\n}\n");];}
+        "}\n");];}
 
 let dchain_free_index_spec dchain_specs =
   {ret_type = Static Sint32;
@@ -897,7 +898,7 @@ let dchain_free_index_spec dchain_specs =
              (tmp_gen "cur_ch") ^ ", allocated_index_0);\n" ^
              "break;\n"
            ))) ^
-        "default:\n assert false;\n break;\n}\n"
+        "}\n"
      );];
    lemmas_after = [];}
 

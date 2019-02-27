@@ -179,9 +179,9 @@ let fun_types =
      "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");
                                       ("StaticKeyi","StaticKeyp","StaticKey_eq","StaticKey_hash","_StaticKey_hash")]) ;
      "map_get", (map_get_spec [
-         ("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR",ether_addr_struct,(fun name ->
+         ("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR","last_ether_addr_searched_in_the_map",ether_addr_struct,(fun name ->
               "//@ open [_]ether_addrp(" ^ name ^ ", _);\n"),true);
-         ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY",static_key_struct,
+         ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY","last_st_key_searched_in_the_map",static_key_struct,
           (fun name ->
              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
@@ -253,8 +253,11 @@ struct
                  ^
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\
+                  int dchain_allocation_order = 0;\n\
                   int expire_items_single_map_order = 0;\n\
-                  enum LMA_enum last_map_accessed = LMA_INVALID;\n"
+                  enum LMA_enum last_map_accessed = LMA_INVALID;\n\
+                  ether_addri last_ether_addr_searched_in_the_map;\n\
+                  StaticKeyi last_st_key_searched_in_the_map;\n"
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
