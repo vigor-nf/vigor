@@ -197,29 +197,8 @@ let fun_types =
                                                                 "ip_addri", "LMA_IP_ADDR"]);
 
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
-     "dchain_free_index", {ret_type = Static Sint32;
-                           arg_types = stt [Ptr dchain_struct;
-                                            Sint32];
-                           extra_ptr_types = [];
-                           lemmas_before = [
-                             (fun {tmp_gen;args;_} ->
-                                "//@ assert double_chainp(?" ^ (tmp_gen "ch") ^
-                                ", " ^ (List.nth_exn args 0) ^ ");\n" ^
-                                "//@ assert map_vec_chain_coherent<LoadBalancedFlowi>(?" ^
-                                (tmp_gen "map") ^ ", ?" ^
-                                (tmp_gen "vec") ^ ", " ^
-                                (tmp_gen "ch") ^ ");\n" ^
-                                "//@ mvc_coherent_erase(" ^
-                                (tmp_gen "map") ^ ", " ^
-                                (tmp_gen "vec") ^ ", " ^
-                                (tmp_gen "ch") ^ ", last_flow_searched_in_the_map);\n" ^
-                                "//@ remove_index_keeps_high_bounded(" ^
-                                (tmp_gen "ch") ^ ", " ^
-                                (List.nth_exn args 1) ^ ");\n" ^
-                                "//@ dchain_remove_keeps_ir(" ^
-                                (tmp_gen "ch") ^ ", allocated_index_0);\n"
-                             )];
-                           lemmas_after = [];};
+     "dchain_free_index", (dchain_free_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW", "last_flow_searched_in_the_map";
+                                                   "ip_addri", "LMA_IP_ADDR", "last_ip_addr_searched_in_the_map"]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
      "map_allocate", (map_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlowp","LoadBalancedFlow_eq","LoadBalancedFlow_hash","_LoadBalancedFlow_hash");
                                       ("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
@@ -535,6 +514,7 @@ struct
                  "/*@ assume(sizeof(struct LoadBalancedFlow) == 16); @*/\n"
                  ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 12); @*/\n"
                  ^ "//@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
+                    //@ ip_addri last_ip_addr_searched_in_the_map;\n\
                     //@ list<phdr> recv_headers = nil; \n\
                     //@ list<phdr> sent_headers = nil; \n\
                     //@ list<uint16_t> sent_on_ports = nil; \n\

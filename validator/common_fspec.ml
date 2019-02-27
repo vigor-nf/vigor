@@ -804,8 +804,9 @@ let dchain_allocate_new_index_spec dchain_specs =
         "switch(last_map_accessed) {" ^
         (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal) ->
              " case " ^ lma_literal ^ ":\n" ^
-             "/*@ if (" ^ ret_name ^ " != 0) {\n\
-                                  assert map_vec_chain_coherent<" ^
+             "/*@ if (" ^ ret_name ^
+             " != 0) {\n\
+              assert map_vec_chain_coherent<" ^
              ityp ^ ">(?" ^
              (tmp_gen "cur_map") ^ ", ?" ^
              (tmp_gen "cur_vec") ^ ", " ^
@@ -870,6 +871,35 @@ let dchain_rejuvenate_index_spec dchain_specs =
              (List.nth_exn args 2) ^ ");\n }@*/" ^
              "break;\n"))) ^
         "default:\n assert false;\n break;\n}\n");];}
+
+let dchain_free_index_spec dchain_specs =
+  {ret_type = Static Sint32;
+   arg_types = stt [Ptr dchain_struct; Sint32;];
+   extra_ptr_types = [];
+   lemmas_before = [
+     capture_chain "cur_ch" 0;
+     (fun {args;tmp_gen;_} ->
+        "switch(last_map_accessed) {" ^
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal,lsim_variable) ->
+             " case " ^ lma_literal ^ ":\n" ^
+             "//@ assert map_vec_chain_coherent<" ^ ityp ^ ">(?" ^
+             (tmp_gen "map") ^ ", ?" ^
+             (tmp_gen "vec") ^ ", " ^
+             (tmp_gen "cur_ch") ^ ");\n" ^
+             "//@ mvc_coherent_erase(" ^
+             (tmp_gen "map") ^ ", " ^
+             (tmp_gen "vec") ^ ", " ^
+             (tmp_gen "cur_ch") ^ ", " ^ lsim_variable ^ ");\n" ^
+             "//@ remove_index_keeps_high_bounded(" ^
+             (tmp_gen "cur_ch") ^ ", " ^
+             (List.nth_exn args 1) ^ ");\n" ^
+             "//@ dchain_remove_keeps_ir(" ^
+             (tmp_gen "cur_ch") ^ ", allocated_index_0);\n" ^
+             "break;\n"
+           ))) ^
+        "default:\n assert false;\n break;\n}\n"
+     );];
+   lemmas_after = [];}
 
 let dchain_is_index_allocated_spec =
   {ret_type = Static Sint32;
