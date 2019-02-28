@@ -211,7 +211,7 @@ let fun_types =
           ,true);]) ;
      "map_put", (map_put_spec [
           ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW",lb_flow_struct,(fun name ->
-               "LoadBanancedFlowc(" ^
+               "LoadBalancedFlowc(" ^
                name ^ "->src_ip, " ^
                name ^ "->dst_ip, " ^
                name ^ "->src_port, " ^
