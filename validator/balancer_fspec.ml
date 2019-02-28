@@ -221,38 +221,8 @@ let fun_types =
            (fun name ->
               "ip_addrc(" ^ name ^ "->addr)")
           ,true);]);
-     "map_erase", {ret_type = Static Void;
-                   arg_types = [Static (Ptr map_struct);
-                                Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                         "ip_addr", Ptr ip_addr_struct];
-                                Dynamic ["LoadBalancedFlow", Ptr (Ptr lb_flow_struct);
-                                         "ip_addr", Ptr (Ptr ip_addr_struct)];];
-                   extra_ptr_types = [];
-                   lemmas_before = [
-                     (fun {args;arg_types;_} ->
-                        match List.nth_exn arg_types 1 with
-                        | Ptr (Str ("LoadBalancedFlow", _)) ->
-                          "/*@ { close hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n" ^
-                          let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                        "/*@ { \n\
-                         assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
-                         assert vectorp<LoadBalancedFlowi>(_, _, _, ?dv_addrs); \n\
-                         assert map_vec_chain_coherent<LoadBalancedFlowi>(?the_dm, ?the_dv, ?the_dh);\n\
-                          assert LoadBalancedFlowp(" ^ arg1 ^ ", ?vvv);\n\
-                         kkeeper_erase_one(dv_addrs, the_dv, dm_addrs, map_get_fp(dm, vvv));\n\
-                         } @*/\n"
-                        | Ptr (Str ("ip_addr", _)) ->
-                          "/*@ { close hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
-                        | _ -> failwith "unexpected key type for map_erase")
-                   ];
-                   lemmas_after = [
-                     (fun {arg_types;_} ->
-                        match List.nth_exn arg_types 1 with
-                        | Ptr (Str ("LoadBalancedFlow", _)) ->
-                          "/*@ { open hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
-                        | Ptr (Str ("ip_addr", _)) ->
-                          "/*@ { open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
-                        | _ -> failwith "unexpected key type for map_erase")];};
+      "map_erase", (map_erase_spec ["LoadBalancedFlowi", "LoadBalancedFlow", lb_flow_struct, true;
+                                    "ip_addri", "ip_addr", ip_addr_struct, true]);
      "map_size", map_size_spec;
      "cht_find_preferred_available_backend", {
        ret_type = Static Sint32;
