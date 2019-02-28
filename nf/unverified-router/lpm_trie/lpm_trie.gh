@@ -1,0 +1,193 @@
+//@ #include <listex.gh>
+
+/*@
+    inductive lpm_key = key(list<int>, int);
+    inductive lpm_node = node(lpm_node, option<int>, lpm_node) | empty;
+    inductive lpm_trie = trie(lpm_node, int, int);
+
+    fixpoint key init_key(list<int> prefix, int p_length) {
+        return key(prefix, p_length);
+    }
+
+    fixpoint list<int> key_prefix(lpm_key key) {
+        switch(key) {
+            case key(prefix, p_length): return prefix;
+        }
+    }
+
+    fixpoint int key_p_length(lpm_key key) {
+        switch(key) {
+            case key(prefix, p_length): return p_length;
+        }
+    }
+
+    fixpoint lpm_trie empty_trie(int max) {
+        return trie(empty, 0, max);
+    }
+
+    fixpoint bool trie_is_empty(lpm_trie trie) {
+        switch(trie) {
+            case trie(empty, 0, m): return true;
+            case trie(root, n, m): return false;
+        }
+    }
+
+    fixpoint int trie_n_entries(lpm_trie trie) {
+        switch(trie) {
+            case trie(root, n, m): return n;
+        }
+    }
+
+    fixpoint int trie_max_entries(lpm_trie trie) {
+        switch(trie) {
+            case trie(root, n, m): return m;
+        }
+    }
+
+    fixpoint trie_node trie_root(lpm_trie trie) {
+        switch(trie) {
+            case trie(root, n, m): return root;
+        }
+    }
+
+    fixpoint option<int> lpm_trie_lookup(lpm_trie trie, list<int> prefix) {
+        switch(trie) {
+            case trie(empty, 0, m): return none;
+            case trie(root, n, m):
+                return lpm_trie_lookup_nodes(root, prefix);
+        }
+    }
+
+    fixpoint option<int> lpm_trie_lookup_nodes(lpm_node cur, list<int> prefix) {
+        switch(cur) {
+            case empty: return none;
+            case node(l_child, v, r_child):
+                switch(prefix) {
+                    case nil: return v;
+                    case cons(h, t):
+                        if(h == 0) {
+                            return lpm_trie_lookup_nodes(l_child, t);
+                        } else if(h == 1) {
+                            return lpm_trie_lookup_nodes(r_child, t);
+                        }
+                }
+        }
+    }
+
+    fixpoint lpm_trie lpm_trie_update(lpm_trie trie, list<int> prefix, int value) {
+        switch(trie) {
+            case trie(root, n, m):
+                return trie(lpm_trie_update_nodes(root, prefix, value),
+                            lpm_trie_update_size(trie, prefix), m);
+        }
+    }
+
+    fixpoint int lpm_trie_update_size(lpm_trie trie, list<int> prefix){
+        switch(lpm_trie_lookup(trie, prefix)) {
+            case none: return trie_n_entries(trie);
+            case some(v): return trie_n_entries(trie) + 1;
+        }
+    }
+
+    fixpoint lpm_node lpm_trie_update_nodes(lpm_node cur, list<int> prefix,
+                                            int val)
+    {
+        switch(prefix) {
+            case nil:
+                switch(cur) {
+                    case node(l_child, old_val, r_child):
+                        return node(l_child, some(val), r_child);
+                    case empty:
+                        return node(empty, some(val), empty);
+                }
+            case cons(h, t):
+                if(h == 0) {
+                    switch(cur) {
+                        case node(l_child, v, r_child):
+                            return node(lpm_trie_update_nodes(l_child, t, val),
+                                        v, r_child);
+                        case empty:
+                            return node(lpm_trie_update_nodes(empty, t, val),
+                                        none, empty);
+
+                    }
+                } else if(h == 1) {
+                    switch(cur) {
+                        case node(l_child, v, r_child):
+                            return node(l_child, v,
+                                        lpm_trie_update_nodes(r_child, t, val));
+                        case empty:
+                            return node(empty, none,
+                                        lpm_trie_update_nodes(empty, t, val));
+                    }
+                }
+        }
+    }
+
+    fixpoint lpm_trie lpm_trie_delete(lpm_trie trie, list<int> prefix){
+        switch(trie) {
+            case trie(empty, 0, m): return trie;
+            case trie(root, n, m):
+                switch(lpm_trie_lookup(trie, prefix)) {
+                    case none: return trie;
+                    case some(v): return trie(lpm_trie_delete_nodes(root, prefix),
+                                              n-1, m);
+                }
+        }
+    }
+
+    fixpoint lpm_node lpm_trie_delete_nodes(lpm_node cur, list<int> prefix){
+        switch(prefix) {
+            case nil:
+                switch(cur) {
+                    case empty: return empty;
+                    case node(empty, v, empty): return empty;
+                    case node(l_child, v, r_child):
+                        switch(v) {
+                            case none: return cur;
+                            case some(val): return node(l_child, none, r_child);
+                        }
+                }
+            case cons(h, t):
+                switch(cur) {
+                    //Never going to happen, since we know prefix is in the trie
+                    case empty: return empty;
+                    case node(l_child, some(v), r_child):
+                        // A node on the path that holds a value should not be
+                        // deleted
+                        if(h == 0) {
+                            return node(lpm_trie_delete_nodes(l_child, t),
+                                        some(v), r_child);
+                        } else if(h == 1) {
+                            return node(l_child, some(v),
+                                        lpm_trie_delete_nodes(r_child, t));
+                        }
+                    case node(l_child, none, r_child):
+                        switch(l_child) {
+                            case empty:
+                                // Since the node is on the path, it has to have
+                                // at least one child
+                                switch(lpm_trie_delete_nodes(r_child, t)) {
+                                    case empty: return empty;
+                                    case node(l1, v1, r1): return cur;
+                                }
+                            case node(ll_child, lv, lr_child):
+                                    switch(r_child) {
+                                        case empty:
+                                            switch(lpm_trie_delete_nodes(l_child, t)) {
+                                                case empty: return empty;
+                                                case node(l2, v2, r2): return cur;
+                                            }
+                                        case node(rl_child, rv, rr_child):
+                                            if(h == 0) {
+                                                return node(lpm_trie_delete_nodes(l_child, t), v, r_child);
+                                            } else if(h == 1) {
+                                                return node(l_child, v, lpm_trie_delete_nodes(r_child, t));
+                                            }
+                                    }
+                        }
+
+                }
+        }
+    }
+@*/
