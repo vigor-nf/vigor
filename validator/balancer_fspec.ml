@@ -209,118 +209,18 @@ let fun_types =
            (fun name ->
               "//@ open ip_addrp(" ^ name ^ ", _);\n")
           ,true);]) ;
-     "map_put", {ret_type = Static Void;
-                 arg_types = [Static (Ptr map_struct);
-                              Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);
-                                       "ip_addr", Ptr ip_addr_struct;
-                                       "uint32_t", Ptr Uint32];
-                              Static Sint32];
-                 extra_ptr_types = [];
-                 lemmas_before = [
-                   (fun {args;tmp_gen;arg_types;_} ->
-                      match List.nth_exn arg_types 1 with
-                      | Ptr (Str ("LoadBalancedFlow", _)) ->
-                        "\n//@ assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                        ", _));\n" ^
-                        "\n/*@ {\n\
-                         assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^
-                        (tmp_gen "dm") ^ ", ?" ^
-                        (tmp_gen "dv") ^ ", ?" ^
-                        (tmp_gen "dh") ^
-                        ");\n\
-                         mvc_coherent_dchain_non_out_of_space_map_nonfull<LoadBalancedFlowi>(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ");\n" ^
-                         "mvc_coherent_bounds<LoadBalancedFlowi>(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ");\n} @*/\n" ^
-                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                        "/*@ { \n\
-                         assert mapp<LoadBalancedFlowi>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                         assert vectorp<LoadBalancedFlowi>(_, _, _, ?dv_addrs); \n\
-                         assert map_vec_chain_coherent<LoadBalancedFlowi>(?the_dm, ?the_dv, ?the_dh);\n\
-                         LoadBalancedFlowi vvv = LoadBalancedFlowc(" ^ arg1 ^
-                        "->src_ip, " ^ arg1 ^
-                        "->dst_ip, " ^ arg1 ^
-                        "->src_port, " ^ arg1 ^
-                        "->dst_port, " ^ arg1 ^
-                        "->protocol); \n\
-                         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-                         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
-                        "); \n\
-                         } @*/\n" ^
-                        "/*@ { close hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
-                      | Ptr (Str ("ip_addr", _)) ->
-                        "\n//@ assert mapp<ip_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                        ", _));\n" ^
-                        "\n/*@ {\n\
-                         assert map_vec_chain_coherent<ip_addri>(" ^
-                        (tmp_gen "dm") ^ ", ?" ^
-                        (tmp_gen "dv") ^ ", ?" ^
-                        (tmp_gen "dh") ^
-                        ");\n\
-                         mvc_coherent_dchain_non_out_of_space_map_nonfull(" ^
-                        (tmp_gen "dm") ^ ", " ^
-                        (tmp_gen "dv") ^ ", " ^
-                        (tmp_gen "dh") ^ ");\n} @*/\n" ^
-                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                        "/*@ { \n\
-                         assert mapp<ip_addri>(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                         assert vectorp<ip_addri>(_, _, _, ?dv_addrs); \n\
-                         assert map_vec_chain_coherent<ip_addri>(?the_dm, ?the_dv, ?the_dh);\n\
-                         close ip_addrp(" ^ arg1 ^ ", ?vvv)" ^
-                        "; \n\
-                         mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-                         kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
-                        "); \n\
-                         } @*/\n" ^
-                        "/*@ { close hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
-                      | _ -> failwith "unexpected key type for map_put.");];
-                 lemmas_after = [
-                   (fun {args;tmp_gen;arg_types;_} ->
-                      match List.nth_exn arg_types 1 with
-                      | Ptr (Str ("LoadBalancedFlow", _)) ->
-                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                        "\n/*@ {\n\
-                         assert map_vec_chain_coherent<LoadBalancedFlowi>(" ^ (tmp_gen "dm") ^
-                        ", ?" ^ (tmp_gen "dv") ^
-                        ", ?" ^ (tmp_gen "dh") ^
-                        ");\n\
-                         LoadBalancedFlowi " ^ (tmp_gen "ea") ^ " = LoadBalancedFlowc(" ^ arg1 ^
-                        "->src_ip, " ^ arg1 ^
-                        "->dst_ip, " ^ arg1 ^
-                        "->src_port, " ^ arg1 ^
-                        "->dst_port, " ^ arg1 ^
-                        "->protocol);\n\
-                         mvc_coherent_put<LoadBalancedFlowi>(" ^ (tmp_gen "dm") ^
-                        ", " ^ (tmp_gen "dv") ^
-                        ", " ^ (tmp_gen "dh") ^
-                        ", " ^ (List.nth_exn args 2) ^
-                        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
-                        ");\n\
-                         } @*/\n" ^
-                        "/*@ { open hide_mapp<ip_addri>(_, _, _, _, _); } @*/\n"
-                      | Ptr (Str ("ip_addr", _)) ->
-                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                        "\n/*@ {\n\
-                         assert map_vec_chain_coherent<ip_addri>(" ^ (tmp_gen "dm") ^
-                        ", ?" ^ (tmp_gen "dv") ^
-                        ", ?" ^ (tmp_gen "dh") ^
-                        ");\n\
-                         ip_addri " ^ (tmp_gen "ea") ^ " = ip_addrc(" ^ arg1 ^
-                        "->addr);\n\
-                         mvc_coherent_put<ip_addri>(" ^ (tmp_gen "dm") ^
-                        ", " ^ (tmp_gen "dv") ^
-                        ", " ^ (tmp_gen "dh") ^
-                        ", " ^ (List.nth_exn args 2) ^
-                        ", time_for_allocated_index, " ^ (tmp_gen "ea") ^
-                        ");\n\
-                         } @*/\n" ^
-                        "/*@ { open hide_mapp<LoadBalancedFlowi>(_, _, _, _, _); } @*/\n"
-                      | _ -> failwith "unexpected key type for map_put.");
-                   (fun params -> "backend_known = true;\nbackend_index = " ^ (List.nth_exn params.args 2) ^ ";\n");];};
+     "map_put", (map_put_spec [
+          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW",lb_flow_struct,(fun name ->
+               "LoadBanancedFlowc(" ^
+               name ^ "->src_ip, " ^
+               name ^ "->dst_ip, " ^
+               name ^ "->src_port, " ^
+               name ^ "->dst_port, " ^
+               name ^ "->protocol)"),true);
+          ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR",ip_addr_struct,
+           (fun name ->
+              "ip_addrc(" ^ name ^ "->addr)")
+          ,true);]);
      "map_erase", {ret_type = Static Void;
                    arg_types = [Static (Ptr map_struct);
                                 Dynamic ["LoadBalancedFlow", (Ptr lb_flow_struct);

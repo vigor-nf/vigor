@@ -628,37 +628,37 @@ let map_put_spec map_specs =
                      "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
                    ))) ^
                 if coherent then
-                "\n//@ assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                ", _));\n" ^
-                "\n/*@ {\n\
-                 assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
-                (tmp_gen "dm") ^ ", ?" ^
-                (tmp_gen "dv") ^ ", ?" ^
-                (tmp_gen "dh") ^
-                ");\n\
-                 mvc_coherent_dchain_non_out_of_space_map_nonfull<" ^ ityp ^ ">(" ^
-                (tmp_gen "dm") ^ ", " ^
-                (tmp_gen "dv") ^ ", " ^
-                (tmp_gen "dh") ^ ");\n" ^
-                "mvc_coherent_bounds<" ^ ityp ^ ">(" ^
-                (tmp_gen "dm") ^ ", " ^
-                (tmp_gen "dv") ^ ", " ^
-                (tmp_gen "dh") ^ ");\n} @*/\n" ^
-                let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
-                "/*@ { \n\
-                 assert mapp<" ^ ityp ^
-                ">(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
-                 assert vectorp<" ^ ityp ^
-                ">(_, _, _, ?dv_addrs); \n\
-                 assert map_vec_chain_coherent<" ^ ityp ^
-                ">(?the_dm, ?the_dv, ?the_dh);\n\
-                " ^ ityp ^ " vvv = " ^ (ctor arg1) ^
-                "; \n\
-                 mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-                 kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
-                "); \n\
-                 } @*/\n"
-              else "")
+                  "\n//@ assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                  ", _));\n" ^
+                  "\n/*@ {\n\
+                   assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
+                  (tmp_gen "dm") ^ ", ?" ^
+                  (tmp_gen "dv") ^ ", ?" ^
+                  (tmp_gen "dh") ^
+                  ");\n\
+                   mvc_coherent_dchain_non_out_of_space_map_nonfull<" ^ ityp ^ ">(" ^
+                  (tmp_gen "dm") ^ ", " ^
+                  (tmp_gen "dv") ^ ", " ^
+                  (tmp_gen "dh") ^ ");\n" ^
+                  "mvc_coherent_bounds<" ^ ityp ^ ">(" ^
+                  (tmp_gen "dm") ^ ", " ^
+                  (tmp_gen "dv") ^ ", " ^
+                  (tmp_gen "dh") ^ ");\n} @*/\n" ^
+                  let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                  "/*@ { \n\
+                   assert mapp<" ^ ityp ^
+                  ">(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
+                   assert vectorp<" ^ ityp ^
+                  ">(_, _, _, ?dv_addrs); \n\
+                   assert map_vec_chain_coherent<" ^ ityp ^
+                  ">(?the_dm, ?the_dv, ?the_dh);\n\
+                  " ^ ityp ^ " vvv = " ^ (ctor arg1) ^
+                  "; \n\
+                   mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
+                   kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                  "); \n\
+                   } @*/\n"
+                else "")
             else
               None))
         with
