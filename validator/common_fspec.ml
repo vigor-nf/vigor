@@ -820,7 +820,7 @@ let dchain_allocate_new_index_spec dchain_specs =
              (tmp_gen "cur_ch") ^ ", *" ^
              (List.nth_exn args 1) ^ ");\n} @*/\n" ^
              "break;\n"))) ^
-        "}\n");
+        "default:\nassert false;\nbreak;\n}\n");
    ];}
 
 let dchain_rejuvenate_index_spec dchain_specs =
@@ -851,7 +851,7 @@ let dchain_rejuvenate_index_spec dchain_specs =
              ");\n} @*/\n" ^
              "break;\n"
            ))) ^
-        "}\n"
+        "default:\nassert false;\nbreak;\n}\n"
      );];
    lemmas_after = [
      (fun {args;ret_name;_} ->
@@ -871,7 +871,7 @@ let dchain_rejuvenate_index_spec dchain_specs =
              (List.nth_exn args 1) ^ ", " ^
              (List.nth_exn args 2) ^ ");\n }@*/" ^
              "break;\n"))) ^
-        "}\n");];}
+        "default:\nassert false;\nbreak;\n}\n");];}
 
 let dchain_free_index_spec dchain_specs =
   {ret_type = Static Sint32;
@@ -898,7 +898,7 @@ let dchain_free_index_spec dchain_specs =
              (tmp_gen "cur_ch") ^ ", allocated_index_0);\n" ^
              "break;\n"
            ))) ^
-        "}\n"
+        "default:\nassert false;\nbreak;\n}\n"
      );];
    lemmas_after = [];}
 
