@@ -89,6 +89,9 @@ struct
                   //@ assume(sizeof(struct ether_hdr) == 14);\n\
                   //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
                   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n"
+                 ^ "//@ struct Map* fm_ptr;\n"
+                 ^ "//@ struct DoubleChain* heap_ptr;\n"
+                 ^ "//@ struct Vector* fv_ptr;\n"
                  ^
                  "int vector_allocation_order = 0;\n\
                   int map_allocation_order = 0;\n\

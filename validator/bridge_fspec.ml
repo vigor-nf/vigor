@@ -161,6 +161,12 @@ struct
                   //@ option<void*> last_composed_packet = none;\n\
                   //@ list<uint8_t> last_sent_packet = nil;\n\
                   uint32_t sent_packet_type;\n"
+                 ^ "//@ struct Map* dyn_map_ptr;\n"
+                 ^ "//@ struct DoubleChain* dyn_heap_ptr;\n"
+                 ^ "//@ struct Vector* dyn_vals_ptr;\n"
+                 ^ "//@ struct Vector* dyn_keys_ptr;\n"
+                 ^ "//@ struct Map* st_map_ptr;\n"
+                 ^ "//@ struct Vector* st_vec_ptr;\n"
                  ^ "//@ list<pair<ether_addri, int> > initial_dyn_map;\n"
                  ^ "//@ dchain initial_dyn_heap;\n"
                  ^ "//@ list<pair<DynamicValuei, real> > initial_dyn_vals;\n"

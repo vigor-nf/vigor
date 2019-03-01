@@ -85,7 +85,7 @@ let fun_types =
           ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR", "last_ip_addr_searched_in_the_map",ip_addr_struct,
            (fun name ->
               "//@ open ip_addrp(" ^ name ^ ", _);\n")
-          ,true);]) ;
+          ,true);]);
      "map_put", (map_put_spec [
           ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW",lb_flow_struct,(fun name ->
                "LoadBalancedFlowc(" ^
