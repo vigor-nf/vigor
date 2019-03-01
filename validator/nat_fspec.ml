@@ -4,12 +4,6 @@ open Fspec_api
 open Ir
 open Common_fspec
 
-type map_key = Int | Ext
-
-let last_index_gotten = ref ""
-let last_index_key = ref Int
-let last_indexing_succ_ret_var = ref ""
-
 let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
                                          "dst_port", Uint16;
                                          "src_ip", Uint32;

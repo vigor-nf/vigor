@@ -4,21 +4,6 @@ open Fspec_api
 open Ir
 open Common_fspec
 
-type map_key = Int | Ext
-
-let capture_chain ch_name ptr_num {args;tmp_gen;_} =
-  "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
-  (List.nth_exn args ptr_num) ^ ");\n"
-
-let capture_a_chain name {tmp_gen;_} =
-  "//@ assert double_chainp(?" ^ (tmp_gen name) ^", _);\n"
-
-let capture_a_map t name {tmp_gen;_} =
-  "//@ assert mapp<" ^ t ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen name) ^ ", _));\n"
-
-let capture_a_vector t name {tmp_gen;_} =
-  "//@ assert vectorp<" ^ t ^ ">(_, _, ?" ^ (tmp_gen name) ^ ", _);\n"
-
 let lb_flow_struct = Ir.Str ( "LoadBalancedFlow", ["src_ip", Uint32;
                                                    "dst_ip", Uint32;
                                                    "src_port", Uint16;
@@ -29,15 +14,6 @@ let lb_backend_struct = Ir.Str ( "LoadBalancedBackend", ["nic", Uint16;
                                                          "ip", Uint32])
 
 let ip_addr_struct = Ir.Str("ip_addr", ["addr", Uint32])
-
-let copy_stub_mbuf_content var_name ptr =
-  ("struct stub_mbuf_content* tmp_ub_ptr" ^ var_name ^
-   " = (" ^ ptr ^ ")->buf_addr;\n") ^
-  deep_copy
-    {Ir.name=var_name;
-     Ir.value={v=Deref {v=Ir.Id ("tmp_ub_ptr" ^ var_name);
-                        t=Ptr stub_mbuf_content_struct};
-               t=stub_mbuf_content_struct}}
 
 (* FIXME: borrowed from ../nf/vigbalancer/lb_data_spec.ml*)
 let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "lb_flow_id_condition");

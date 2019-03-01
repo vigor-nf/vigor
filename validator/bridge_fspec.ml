@@ -4,76 +4,9 @@ open Fspec_api
 open Ir
 open Common_fspec
 
-type map_key = Int | Ext
-
-let capture_chain ch_name ptr_num {args;tmp_gen;_} =
-  "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
-  (List.nth_exn args ptr_num) ^ ");\n"
-
-let capture_a_chain name {tmp_gen;_} =
-  "//@ assert double_chainp(?" ^ (tmp_gen name) ^", _);\n"
-
-let capture_a_map t name {tmp_gen;_} =
-  "//@ assert mapp<" ^ t ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen name) ^ ", _));\n"
-
-let capture_a_vector t name {tmp_gen;_} =
-  "//@ assert vectorp<" ^ t ^ ">(_, _, ?" ^ (tmp_gen name) ^ ", _);\n"
-
-let hide_the_other_mapp {arg_types;tmp_gen;_} =
-  match List.nth_exn arg_types 1 with
-  | Ptr (Str ("ether_addr", _)) ->
-    "//@ assert mapp<StaticKeyi>(?" ^ (tmp_gen "stm_ptr") ^
-    ", _, _, _, ?" ^ (tmp_gen "stm") ^ ");\n\
-                                        //@ close hide_mapp<StaticKeyi>(" ^
-    (tmp_gen "stm_ptr") ^
-    ", StaticKeyp, _StaticKey_hash, _," ^
-    (tmp_gen "stm") ^ ");\n"
-  | Ptr (Str ("StaticKey", _)) ->
-    "//@ assert mapp<ether_addri>(?" ^ (tmp_gen "eam_ptr") ^
-    ", _, _, _, ?" ^ (tmp_gen "dym") ^ ");\n\
-                                        //@ close hide_mapp<ether_addri>(" ^
-    (tmp_gen "eam_ptr") ^
-    ", ether_addrp, _ether_addr_hash, _, " ^
-    (tmp_gen "dym") ^
-    ");\n"
-  | _ -> "#error unexpected key type"
-
-let reveal_the_other_mapp : lemma = fun {arg_types;tmp_gen;_} ->
-  match List.nth_exn arg_types 1 with
-  | Ptr (Str ("ether_addr", _)) ->
-    "//@ open hide_mapp<StaticKeyi>(" ^
-    (tmp_gen "stm_ptr") ^ ", StaticKeyp, _StaticKey_hash, _," ^
-    (tmp_gen "stm") ^ ");\n"
-  | Ptr (Str ("StaticKey", _)) ->
-    "//@ open hide_mapp<ether_addri>(" ^
-    (tmp_gen "eam_ptr") ^ ", ether_addrp, _ether_addr_hash, _," ^
-    (tmp_gen "dym") ^ ");"
-  | _ -> "#error unexpected key type"
-
 let static_key_struct = Ir.Str ( "StaticKey", ["addr", ether_addr_struct;
                                                "device", Uint16] )
 let dynamic_value_struct = Ir.Str ( "DynamicValue", ["device", Uint16] )
-let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
-                                             "s_addr", ether_addr_struct;
-                                             "ether_type", Uint16;])
-
-let copy_stub_mbuf_content var_name ptr =
-  ("struct stub_mbuf_content* tmp_ub_ptr" ^ var_name ^
-   " = (" ^ ptr ^ ")->buf_addr;\n") ^
-  deep_copy
-    {Ir.name=var_name;
-     Ir.value={v=Deref {v=Ir.Id ("tmp_ub_ptr" ^ var_name);
-                        t=Ptr stub_mbuf_content_struct};
-               t=stub_mbuf_content_struct}}
-
-(* VeriFast's C parser is quite limited, so simplify stuff... this is very brittle since it does no lookbehind to avoid accidents *)
-let rec simplify_c_string str =
-  let str0 = Str.global_replace (Str.regexp "\\*&") "" str in (* *&a  ==>  a *)
-  let str0 = Str.global_replace (Str.regexp "\\*(&\\([^)]+\\))") "\\1" str0 in (* * (&a)  ==>  a *)
-  let str0 = Str.global_replace (Str.regexp "&(\\([^)]+\\))->\\([^)]+\\)") "\\1.\\2" str0 in (* &a->b  ==>  a.b *)
-  let str0 = Str.global_replace (Str.regexp "(&(\\([^)]+\\)))->\\([^)]+\\)") "\\1.\\2" str0 in (* (&a)->b  ==>  a.b *)
-  let str0 = Str.global_replace (Str.regexp "(\\*\\([^)]+\\).\\([^)]+\\)") "\\1->\\2" str0 in (* ( *a ).b  ==>  a->b *)
-  if str = str0 then str else simplify_c_string str0 (* find a fixpoint *)
 
 (* FIXME: borrowed from ../nf/vigbridge/bridge_data_spec.ml*)
 let containers = ["dyn_map", Map ("ether_addr", "capacity", "");

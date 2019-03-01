@@ -4,27 +4,9 @@ open Fspec_api
 open Ir
 open Common_fspec
 
-type map_key = Int | Ext
-
-let capture_a_chain name {tmp_gen;_} =
-  "//@ assert double_chainp(?" ^ (tmp_gen name) ^", _);\n"
-
-let capture_a_vector t name {tmp_gen;_} =
-  "//@ assert vectorp<" ^ t ^ ">(_, _, ?" ^ (tmp_gen name) ^ ", _);\n"
-
 let ip_addr_struct = Ir.Str ( "ip_addr", ["addr", Uint32;])
 let dynamic_value_struct = Ir.Str ( "DynamicValue", ["bucket_size", Uint32;
                                                      "bucket_time", vigor_time_t;] )
-
-let copy_stub_mbuf_content var_name ptr =
-  ("struct stub_mbuf_content* tmp_ub_ptr" ^ var_name ^
-   " = (" ^ ptr ^ ")->buf_addr;\n") ^
-  deep_copy
-    {Ir.name=var_name;
-     Ir.value={v=Deref {v=Ir.Id ("tmp_ub_ptr" ^ var_name);
-                        t=Ptr stub_mbuf_content_struct};
-               t=stub_mbuf_content_struct}}
-
 (* FIXME: borrowed from ../nf/vigpolicer/policer_data_spec.ml *)
 let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
                   "dyn_keys", Vector ("ip_addr", "capacity", "");
