@@ -647,7 +647,7 @@ let hash_spec record_type =
   match record_type with
   | Ir.Str (name, _) ->
     (hash_name name , {ret_type = Static Uint32;
-                       arg_types = stt [Ptr ether_addr_struct];
+                       arg_types = stt [Ptr record_type];
                        extra_ptr_types = [];
                        lemmas_before = [];
                        lemmas_after = [
