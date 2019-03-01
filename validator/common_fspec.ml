@@ -3,6 +3,15 @@ open Str
 open Fspec_api
 open Ir
 
+(* FIXME: borrowed from ../codegen/data_spec.ml *)
+type container = Map of string * string * string
+               | Vector of string * string * string
+               | CHT of string * string
+               | DChain of string
+               | Int
+               | UInt
+               | UInt32
+               | EMap of string * string * string * string
 
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
@@ -513,7 +522,7 @@ let dchain_alloc_spec dchain_specs =
      (List.map dchain_specs ~f:(fun (cap,mvc_coherent_ityp) ->
         (tx_l ("index_range_of_empty(" ^ cap ^ ", 0);"))))}
 
-let loop_invariant_consume_spec types =
+let loop_invariant_consume_spec_impl types =
   {ret_type = Static Void;
    arg_types = stt types ;
    extra_ptr_types = [];
@@ -528,6 +537,84 @@ let loop_invariant_consume_spec types =
               )  )) ^ "); @*/");
    ];
    lemmas_after = [];}
+
+let concrete_containers containers =
+  List.filter containers ~f:(function
+      | _, EMap (_, _, _, _) -> false
+      | _ -> true)
+
+let loop_invariant_arg_types containers =
+  (List.map containers ~f:(fun (name,t) ->
+       match t with
+       | Map (_, _, _) -> (Ptr (Ptr map_struct))
+       | Vector (_, _, _) -> (Ptr (Ptr vector_struct))
+       | CHT (_, _) -> (Ptr (Ptr vector_struct))
+       | DChain _ -> (Ptr (Ptr dchain_struct))
+       | Int -> Sint32
+       | UInt -> Uint32
+       | UInt32 -> Uint32
+       | EMap (_, _, _, _) -> Void))@[Uint32; vigor_time_t]
+
+let loop_invariant_consume_spec containers =
+  loop_invariant_consume_spec_impl (loop_invariant_arg_types (concrete_containers containers))
+
+let ityp_name typ = typ ^ "i"
+
+let loop_invariant_produce_spec containers =
+  let linv_arg_types = loop_invariant_arg_types (concrete_containers containers) in
+  let linv_prod_arg_types =
+    ((List.map (concrete_containers containers) ~f:(fun (name,t) ->
+         match t with
+         | Map (_, _, _) -> (Ptr (Ptr map_struct))
+         | Vector (_, _, _) -> (Ptr (Ptr vector_struct))
+         | CHT (_, _) -> (Ptr (Ptr vector_struct))
+         | DChain _ -> (Ptr (Ptr dchain_struct))
+         | Int -> Sint32
+         | UInt -> Uint32
+         | UInt32 -> Uint32
+         | EMap (_, _, _, _) -> Void))@[Ptr Uint32; Ptr vigor_time_t])
+  in
+  {ret_type = Static Void;
+   arg_types = stt linv_prod_arg_types;
+   extra_ptr_types = [];
+   lemmas_before = [];
+   lemmas_after = [
+     (fun {args;_} ->
+        "/*@ open evproc_loop_invariant (" ^
+        (String.concat ~sep:", " (List.mapi linv_prod_arg_types ~f:(fun i argt ->
+             match argt with
+             | Ptr _ -> "*" ^ (List.nth_exn args i)
+             | _ -> (List.nth_exn args i)))) ^ "); @*/\n");
+     (fun {args;tmp_gen;_} ->
+        "/*@ {\n" ^
+        (String.concat ~sep:"" (List.mapi (concrete_containers containers) ~f:(fun i (name,t) ->
+             match t with
+             | Map (typ, _, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
+                                  ";\n assert mapp<" ^ (ityp_name typ) ^ ">(" ^
+                                  (tmp_gen (name ^ "_tmp")) ^ ", _, _, _, mapc(_, ?" ^
+                                  (tmp_gen ("initial_" ^ name)) ^ ", _));\n" ^
+                                  "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+             | Vector (typ, _, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
+                                     ";\n assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
+                                     (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
+                                     (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
+                                     "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+             | CHT (_, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
+                                ";\n assert mapp<uint32_t>(" ^
+                                (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
+                                (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
+                             "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+             | DChain _ -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
+                           ";\n assert double_chainp(?" ^ (tmp_gen ("initial_" ^ name)) ^ ", " ^
+                           (tmp_gen (name ^ "_tmp")) ^ ");\n" ^
+                           "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+             | Int
+             | UInt
+             | UInt32 -> name ^ " = " ^ (List.nth_exn args i) ^ ";\n"
+             | EMap (_, _, _, _) -> "#error unexpected abstract container\n"
+           ))) ^
+     "\n}@*/\n");
+   ];}
 
 let map_get_spec map_specs =
   let other_specs excl_ityp =

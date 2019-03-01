@@ -1,6 +1,6 @@
 //Capture the final state.
 assert map_vec_chain_coherent<FlowIdi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
-emap<FlowIdi> flow_emap = emap(flow_map, flow_vec, flow_chain);
+emap<FlowIdi> flow_emap = emap(initial_fm, initial_fv, initial_heap);
 emap<FlowIdi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
 
 #define EXP_TIME (10)

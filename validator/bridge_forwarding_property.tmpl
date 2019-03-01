@@ -6,10 +6,10 @@ assert vectorp<StaticKeyi>(_, StaticKeyp, ?final_stat_key_vec, _);
 assert vectorp<DynamicValuei>(_, DynamicValuep, ?final_dyn_val_vec, _);
 assert double_chainp(?final_chain,_);
 
-emap<ether_addri> dyn_emap = emap(initial_dyn_map, initial_dyn_key_vec, initial_chain);
-list<pair<DynamicValuei, real> > dyn_val_vec = initial_dyn_val_vec;
+emap<ether_addri> dyn_emap = emap(initial_dyn_map, initial_dyn_keys, initial_dyn_heap);
+list<pair<DynamicValuei, real> > dyn_val_vec = initial_dyn_vals;
 dchain stat_chain;//dummy
-emap<StaticKeyi> stat_emap = emap(initial_stat_map, initial_stat_key_vec, stat_chain);
+emap<StaticKeyi> stat_emap = emap(initial_st_map, initial_st_vec, stat_chain);
 vector<DynamicValuei> dyn_val_vector = vector(dyn_val_vec);
 
 emap<ether_addri> final_dyn_emap = emap(final_dyn_map, final_dyn_key_vec, final_chain);

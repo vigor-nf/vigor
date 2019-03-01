@@ -25,86 +25,21 @@ let copy_stub_mbuf_content var_name ptr =
                         t=Ptr stub_mbuf_content_struct};
                t=stub_mbuf_content_struct}}
 
-(* VeriFast's C parser is quite limited, so simplify stuff... this is very brittle since it does no lookbehind to avoid accidents *)
-let rec simplify_c_string str =
-  let str0 = Str.global_replace (Str.regexp "\\*&") "" str in (* *&a  ==>  a *)
-  let str0 = Str.global_replace (Str.regexp "\\*(&\\([^)]+\\))") "\\1" str0 in (* * (&a)  ==>  a *)
-  let str0 = Str.global_replace (Str.regexp "&(\\([^)]+\\))->\\([^)]+\\)") "\\1.\\2" str0 in (* &a->b  ==>  a.b *)
-  let str0 = Str.global_replace (Str.regexp "(&(\\([^)]+\\)))->\\([^)]+\\)") "\\1.\\2" str0 in (* (&a)->b  ==>  a.b *)
-  let str0 = Str.global_replace (Str.regexp "(\\*\\([^)]+\\).\\([^)]+\\)") "\\1->\\2" str0 in (* ( *a ).b  ==>  a->b *)
-  if str = str0 then str else simplify_c_string str0 (* find a fixpoint *)
+(* FIXME: borrowed from ../nf/vigpolicer/policer_data_spec.ml *)
+let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
+                  "dyn_keys", Vector ("ip_addr", "capacity", "");
+                  "dyn_heap", DChain "capacity";
+                  "dyn_vals", Vector ("DynamicValue", "capacity", "");
+                  "capacity", UInt32;
+                  "dev_count", UInt32;
+                  "", EMap ("ip_addr", "dyn_map", "dyn_keys", "dyn_heap");
+                 ]
 
 let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
-    ["loop_invariant_consume", {ret_type = Static Void;
-                                arg_types = stt
-                                    [Ptr (Ptr map_struct);
-                                     Ptr (Ptr vector_struct);
-                                     Ptr (Ptr dchain_struct);
-                                     Ptr (Ptr vector_struct);
-                                     Uint32;
-                                     Uint32;
-                                     Uint32;
-                                     vigor_time_t];
-                                extra_ptr_types = [];
-                                lemmas_before = [
-                                  (fun {args;_} ->
-                                     "/*@ close evproc_loop_invariant(*" ^
-                                     (List.nth_exn args 0) ^ ", *" ^
-                                     (List.nth_exn args 1) ^ ", *" ^
-                                     (List.nth_exn args 2) ^ ", *" ^
-                                     (List.nth_exn args 3) ^ ", " ^
-                                     (List.nth_exn args 4) ^ ", " ^
-                                     (List.nth_exn args 5) ^ ", " ^
-                                     (List.nth_exn args 6) ^ ", " ^
-                                     (List.nth_exn args 7) ^ "); @*/");];
-                                lemmas_after = [];};
-     "loop_invariant_produce", {ret_type = Static Void;
-                                arg_types = stt
-                                    [Ptr (Ptr map_struct);
-                                     Ptr (Ptr vector_struct);
-                                     Ptr (Ptr dchain_struct);
-                                     Ptr (Ptr vector_struct);
-                                     Uint32;
-                                     Uint32;
-                                     Ptr Uint32;
-                                     Ptr vigor_time_t];
-                                extra_ptr_types = [];
-                                lemmas_before = [];
-                                lemmas_after = [
-                                  (fun {args;_} ->
-                                     "/*@ open evproc_loop_invariant (*" ^
-                                     (List.nth_exn args 0) ^ ", *" ^
-                                     (List.nth_exn args 1) ^ ", *" ^
-                                     (List.nth_exn args 2) ^ ", *" ^
-                                     (List.nth_exn args 3) ^ ", " ^
-                                     (List.nth_exn args 4) ^ ", " ^
-                                     (List.nth_exn args 5) ^ ", *" ^
-                                     (List.nth_exn args 6) ^ ", *" ^
-                                     (List.nth_exn args 7) ^ "); @*/");
-                                  (fun {tmp_gen;_} ->
-                                     "\n/*@ {\n\
-                                      assert mapp<ip_addri>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
-                                     ", _));\n\
-                                      assert vectorp<ip_addri>(_, _, _, _);\n\
-                                      assert vectorp<DynamicValuei>(_, _, ?" ^ (tmp_gen "dv_init") ^
-                                     ", _);\n\
-                                      assert map_vec_chain_coherent<ip_addri>(" ^
-                                     (tmp_gen "dm") ^ ", ?" ^
-                                     (tmp_gen "dv") ^ ", ?" ^
-                                     (tmp_gen "dh") ^
-                                     ");\n\
-                                      mvc_coherent_same_len<ip_addri>(" ^ (tmp_gen "dm") ^
-                                     ", " ^ (tmp_gen "dv") ^
-                                     ", " ^ (tmp_gen "dh") ^
-                                     ");\n\
-                                      initial_dyn_map = " ^ (tmp_gen "dm") ^
-                                     ";\ninitial_dyn_val_vec = " ^ (tmp_gen "dv_init") ^
-                                     ";\ninitial_dyn_key_vec = " ^ (tmp_gen "dv") ^
-                                     ";\ninitial_chain = " ^ (tmp_gen "dh") ^
-                                     ";\n} @*/");
-                                ];};
+    ["loop_invariant_consume", (loop_invariant_consume_spec containers);
+     "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ip_addri"))]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["ip_addri", "LMA_IP_ADDR"]);
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["ip_addri", "LMA_IP_ADDR"]);
@@ -134,6 +69,8 @@ struct
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
+                  //@ int capacity;\n\
+                  //@ int dev_count;\n\
                   uint16_t received_on_port;\n\
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
@@ -144,9 +81,9 @@ struct
                   //@ list<uint8_t> last_sent_packet = nil;\n\
                   uint32_t sent_packet_type;\n"
                  ^ "//@ list<pair<ip_addri, int> > initial_dyn_map;\n"
-                 ^ "//@ dchain initial_chain;\n"
-                 ^ "//@ list<pair<DynamicValuei, real> > initial_dyn_val_vec;\n"
-                 ^ "//@ list<pair<ip_addri, real> > initial_dyn_key_vec;\n"
+                 ^ "//@ dchain initial_dyn_heap;\n"
+                 ^ "//@ list<pair<DynamicValuei, real> > initial_dyn_vals;\n"
+                 ^ "//@ list<pair<ip_addri, real> > initial_dyn_keys;\n"
                  ^ "//@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
                   //@ list<uint16_t> sent_on_ports = nil; \n"

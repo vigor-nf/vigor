@@ -17,6 +17,16 @@ let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
                                          "internal_device", Uint16;
                                          "protocol", Uint8;] )
 
+(* FIXME: borrowed from ../nf/vignat/nat_data_spec.ml *)
+let containers = ["fm", Map ("FlowId", "max_flows", "");
+                  "fv", Vector ("FlowId", "max_flows", "flow_consistency");
+                  "heap", DChain "max_flows";
+                  "max_flows", Int;
+                  "start_port", Int;
+                  "ext_ip", UInt32;
+                  "nat_device", UInt32;
+                  "", EMap ("FlowId", "fm", "fv", "heap")]
+
 let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
@@ -26,71 +36,8 @@ let fun_types =
      "vector_borrow", (vector_borrow_spec [("FlowIdi","FlowId","FlowIdp",noop,flow_id_struct,true)]);
      "vector_return", (vector_return_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
      "dchain_allocate", (dchain_alloc_spec [("65535",(Some "FlowIdi"))]);
-     "loop_invariant_consume", (loop_invariant_consume_spec [Ptr (Ptr map_struct);
-                                                             Ptr (Ptr vector_struct);
-                                                             Ptr (Ptr dchain_struct);
-                                                             Sint32;
-                                                             Sint32;
-                                                             Uint32;
-                                                             Uint32;
-                                                             Uint32;
-                                                             vigor_time_t]);
-     "loop_invariant_produce", {ret_type = Static Void;
-                                arg_types = stt [Ptr (Ptr map_struct);
-                                                 Ptr (Ptr vector_struct);
-                                                 Ptr (Ptr dchain_struct);
-                                                 Sint32;
-                                                 Sint32;
-                                                 Uint32;
-                                                 Uint32;
-                                                 Ptr Uint32;
-                                                 Ptr vigor_time_t];
-                                extra_ptr_types = [];
-                                lemmas_before = [];
-                                lemmas_after = [
-                                  (fun {args;_} ->
-                                     "/*@ open evproc_loop_invariant (*" ^
-                                     (List.nth_exn args 0) ^ ", *" ^
-                                     (List.nth_exn args 1) ^ ", *" ^
-                                     (List.nth_exn args 2) ^ ", " ^
-                                     (List.nth_exn args 3) ^ ", " ^
-                                     (List.nth_exn args 4) ^ ", " ^
-                                     (List.nth_exn args 5) ^ ", " ^
-                                     (List.nth_exn args 6) ^ ", *" ^
-                                     (List.nth_exn args 7) ^ ", *" ^
-                                     (List.nth_exn args 8) ^ "); @*/");
-                                  (fun params ->
-                                     "start_port = " ^ List.nth_exn params.args 4 ^ ";");
-                                  (fun {args;_} ->
-                                     "external_addr = " ^ List.nth_exn args 5 ^ ";");
-                                  (fun {tmp_gen;args;_} ->
-                                     "\n/*@ {\n\
-                                      assert mapp<FlowIdi>(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
-                                     ", _));\n\
-                                      assert map_vec_chain_coherent<FlowIdi>(" ^
-                                     (tmp_gen "fm") ^ ", ?" ^
-                                     (tmp_gen "fvk") ^ ", ?" ^
-                                     (tmp_gen "ch") ^
-                                     ");\n\
-                                      mvc_coherent_same_len<FlowIdi>(" ^ 
-                                     (tmp_gen "fm") ^
-                                     ", " ^ (tmp_gen "fvk") ^
-                                     ", " ^ (tmp_gen "ch") ^
-                                     ");\n" ^
-                                     "assert mapp<FlowIdi>(_ "^
-                                     ", _, _, _, mapc(_, ?" ^ (tmp_gen "initial_flow_map") ^
-                                     ", _));\n" ^
-                                     "assert vectorp<FlowIdi>(_" ^
-                                     ", _, ?" ^ (tmp_gen "initial_flow_vec") ^
-                                     ", _);\n" ^
-                                     "assert *" ^ (List.nth_exn args 2) ^ " |-> ?" ^ (tmp_gen "arg2bis") ^
-                                     ";\nassert double_chainp(?" ^ (tmp_gen "initial_flow_chain") ^
-                                     ", _);\n" ^
-                                     "flow_chain = " ^ (tmp_gen "initial_flow_chain") ^ ";\n\
-                                      flow_map = " ^ (tmp_gen "initial_flow_map") ^ ";\n\
-                                      flow_vec = " ^ (tmp_gen "initial_flow_vec") ^ ";\n" ^
-                                     "} @*/");
-                                ];};
+     "loop_invariant_consume", (loop_invariant_consume_spec containers);
+     "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "map_get", (map_get_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID","last_flow_searched_in_the_map",flow_id_struct,noop,true)]);
      "map_put", (map_put_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID",flow_id_struct,(fun str ->
          "FlowIdc(" ^ str ^
@@ -122,8 +69,10 @@ struct
                  "void to_verify()\n\
                   /*@ requires true; @*/ \n\
                   /*@ ensures true; @*/\n{\n\
-                  int start_port;\n\
-                  int external_addr;\n\
+                  //@ int max_flows;\n\
+                  //@ int start_port;\n\
+                  //@ int ext_ip;\n\
+                  //@ int nat_device;\n\
                   uint16_t received_on_port;\n\
                   int the_index_allocated = -1;\n\
                   int64_t time_for_allocated_index = 0;\n\
@@ -131,9 +80,9 @@ struct
                   //@ bool packet_is_complete = false;\n\
                   //@ option<void*> last_composed_packet = none;\n\
                   //@ list<uint8_t> last_sent_packet = nil;\n\
-                  //@ dchain flow_chain;\n\
-                  //@ list<pair<FlowIdi, int> > flow_map;\n\
-                  //@ list<pair<FlowIdi, real> > flow_vec;\n\
+                  //@ dchain initial_heap;\n\
+                  //@ list<pair<FlowIdi, int> > initial_fm;\n\
+                  //@ list<pair<FlowIdi, real> > initial_fv;\n\
                   //@ list<phdr> recv_headers = nil; \n\
                   //@ list<phdr> sent_headers = nil; \n\
                   //@ list<uint16_t> sent_on_ports = nil; \n\
