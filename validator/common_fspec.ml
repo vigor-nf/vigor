@@ -639,11 +639,11 @@ let map_get_spec map_specs =
                      "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
                    ))) ^
                 (if coherent then
-                   (* let (binding,expr) =
-                    *   self_dereference (List.nth_exn arg_exps 1) tmp_gen
-                    * in
-                    * binding ^ *)
-                   "\n//@ assert " ^ pred ^ "(" ^ (List.nth_exn args 1) ^
+                   let (binding,expr) =
+                     self_dereference (List.nth_exn arg_exps 1) tmp_gen
+                   in
+                   binding ^
+                   "\n//@ assert " ^ pred ^ "(" ^ (render_tterm expr) ^
                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
                    lsim_variable ^ " = " ^ (tmp_gen "fk") ^ ";\n" ^
                    capture_a_map ityp "dm" params ^
