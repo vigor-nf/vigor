@@ -90,13 +90,7 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
 let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
-    ["ether_addr_hash", {ret_type = Static Uint32;
-                         arg_types = stt [Ptr ether_addr_struct];
-                         extra_ptr_types = [];
-                         lemmas_before = [];
-                         lemmas_after = [
-                           (fun {args;_} ->
-                              "//@ open ether_addrp(" ^ (List.nth_exn args 0) ^ ", _);\n")];};
+    [(hash_spec ether_addr_struct);
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ether_addri"))]);

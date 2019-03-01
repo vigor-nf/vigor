@@ -59,11 +59,7 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "
 let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
-     ["LoadBalancedFlow_hash", {ret_type = Static Uint32;
-                                arg_types = stt [Ptr lb_flow_struct];
-                                extra_ptr_types = [];
-                                lemmas_before = [];
-                                lemmas_after = [];};
+     [hash_spec lb_flow_struct;
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
       "dchain_allocate", (dchain_alloc_spec [("65536", Some "LoadBalancedFlowi");

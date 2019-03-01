@@ -640,6 +640,22 @@ let construct_record var tt =
           var ^ "->" ^ name))) ^ ")"
   | _ -> "#error construction of non-structs is not supported"
 
+let hash_name name = name ^ "_hash"
+let pred_name name = name ^ "p"
+
+let hash_spec record_type =
+  match record_type with
+  | Ir.Str (name, _) ->
+    (hash_name name , {ret_type = Static Uint32;
+                       arg_types = stt [Ptr ether_addr_struct];
+                       extra_ptr_types = [];
+                       lemmas_before = [];
+                       lemmas_after = [
+                         (fun {args;_} ->
+                            "//@ open " ^ (pred_name name) ^
+                            "(" ^ (List.nth_exn args 0) ^ ", _);\n")];})
+  | _ -> failwith "Non struct record types are not supported"
+
 
 let map_get_spec map_specs =
   let other_specs excl_ityp =
