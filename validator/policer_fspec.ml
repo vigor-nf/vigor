@@ -46,7 +46,7 @@ let fun_types =
      "expire_items_single_map", (expire_items_single_map_spec ["ip_addri"]);
      "map_allocate", (map_alloc_spec [("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
      "map_get", (map_get_spec [("ip_addri","ip_addr","ip_addrp","LMA_IP_ADDR","last_ip_addr_searched_in_the_map",ip_addr_struct,noop,true)]);
-     "map_put", (map_put_spec [("ip_addri","ip_addr","ip_addrp","LMA_IP_ADDR",ip_addr_struct,(fun str -> "ip_addrc(" ^ str ^ "->addr)"),true)]);
+     "map_put", (map_put_spec [("ip_addri","ip_addr","ip_addrp","LMA_IP_ADDR",ip_addr_struct,true)]);
      "vector_allocate", (vector_alloc_spec [("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);]);
      "vector_borrow",      (vector_borrow_spec [("ip_addri","ip_addr","ip_addrp",noop,ip_addr_struct,true);

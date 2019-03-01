@@ -113,15 +113,8 @@ let fun_types =
              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
           ,false);]);
-     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR",ether_addr_struct,
-                                (fun str -> "ether_addrc(" ^ str ^ "->addr_bytes[0], " ^
-                                            str ^ "->addr_bytes[1], " ^
-                                            str ^ "->addr_bytes[2], " ^
-                                            str ^ "->addr_bytes[3], " ^
-                                            str ^ "->addr_bytes[4], " ^
-                                            str ^ "->addr_bytes[5])"),true);
-                               ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY",static_key_struct,
-                                (fun str -> "not needed"),false)]);
+     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR",ether_addr_struct,true);
+                               ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY",static_key_struct,false)]);
      "vector_allocate", (vector_alloc_spec [("ether_addri","ether_addr","ether_addrp","ether_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);
                                             ("StaticKeyi","StaticKey","StaticKeyp","StaticKey_allocate",true);]);

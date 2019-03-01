@@ -619,6 +619,28 @@ let loop_invariant_produce_spec containers =
      "\n}@*/\n");
    ];}
 
+let constructor_name typ = typ ^ "c"
+
+let construct_record var tt =
+  match tt with
+  | Ir.Str (name, fields) ->
+    (constructor_name name) ^ "(" ^ (String.concat ~sep:", " (List.map fields ~f:(fun (name,ft) ->
+        match ft with
+        | Array _ -> (* HACK: we know that the only arrays in use are the ether_addr ones that have exactly
+                        6 cells. so we hardcode it here.
+                        The right way to go about this is to add another type StaticArray that would keep track
+                        of the array size.*)
+          var ^ "->" ^ name ^ "[0], " ^
+          var ^ "->" ^ name ^ "[1], " ^
+          var ^ "->" ^ name ^ "[2], " ^
+          var ^ "->" ^ name ^ "[3], " ^
+          var ^ "->" ^ name ^ "[4], " ^
+          var ^ "->" ^ name ^ "[5]"
+        | _ ->
+          var ^ "->" ^ name))) ^ ")"
+  | _ -> "#error construction of non-structs is not supported"
+
+
 let map_get_spec map_specs =
   let other_specs excl_ityp =
     List.filter map_specs ~f:(fun (ityp,typ,pred,lma_literal,lsim_variable,entry_type,open_callback,coherent) ->
@@ -700,21 +722,21 @@ let map_get_spec map_specs =
 
 let map_put_spec map_specs =
   let other_specs excl_ityp =
-    List.filter map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,ctor,coherent) ->
+    List.filter map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,coherent) ->
         ityp <> excl_ityp)
   in
   {ret_type = Static Void;
    arg_types = [Static (Ptr map_struct);
-                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,ctor,coherent) ->
+                Dynamic (List.map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,coherent) ->
                   typ, Ptr entry_type));
                 Static Sint32];
    extra_ptr_types = [];
    lemmas_before = [
      (fun {args;tmp_gen;arg_types;_} ->
-        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,ctor,coherent) ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,coherent) ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
-                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,lma_literal,entry_type,ctor,coherent) ->
+                (String.concat ~sep:"" (List.map (other_specs ityp) ~f:(fun (ityp,typ,pred,lma_literal,entry_type,coherent) ->
                      "//@ close hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"
                    ))) ^
                 if coherent then
@@ -742,7 +764,7 @@ let map_put_spec map_specs =
                   ">(_, _, _, ?dv_addrs); \n\
                    assert map_vec_chain_coherent<" ^ ityp ^
                   ">(?the_dm, ?the_dv, ?the_dh);\n\
-                  " ^ ityp ^ " vvv = " ^ (ctor arg1) ^
+                  " ^ ityp ^ " vvv = " ^ (construct_record arg1 entry_type) ^
                   "; \n\
                    mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
                    kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
@@ -757,7 +779,7 @@ let map_put_spec map_specs =
               );];
    lemmas_after = [
      (fun {args;tmp_gen;arg_types;_} ->
-        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,ctor,coherent) ->
+        match (List.find_map map_specs ~f:(fun (ityp,typ,pred,lma_literal,entry_type,coherent) ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some ((if coherent then
                        let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
@@ -766,7 +788,7 @@ let map_put_spec map_specs =
                        ", ?" ^ (tmp_gen "dv") ^
                        ", ?" ^ (tmp_gen "dh") ^
                        ");\n\
-                       " ^ ityp ^ " " ^ (tmp_gen "ea") ^ " = " ^ (ctor arg1) ^ ";\n\
+                       " ^ ityp ^ " " ^ (tmp_gen "ea") ^ " = " ^ (construct_record arg1 entry_type) ^ ";\n\
                                                                                  mvc_coherent_put<" ^ ityp ^ ">(" ^ (tmp_gen "dm") ^
                        ", " ^ (tmp_gen "dv") ^
                        ", " ^ (tmp_gen "dh") ^
@@ -777,7 +799,7 @@ let map_put_spec map_specs =
                        "last_map_accessed = " ^ lma_literal ^ ";\n"
                      else "") ^
                     (String.concat ~sep:"" (List.map (other_specs ityp)
-                                              ~f:(fun (ityp,typ,pred,lma_literal,entry_type,open_callback,coherent) ->
+                                              ~f:(fun (ityp,typ,pred,lma_literal,entry_type,coherent) ->
                                                   "//@ open hide_mapp<" ^ ityp ^ ">(_, _, _, _, _);\n"))))
             else
               None))

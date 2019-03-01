@@ -39,14 +39,7 @@ let fun_types =
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "map_get", (map_get_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID","last_flow_searched_in_the_map",flow_id_struct,noop,true)]);
-     "map_put", (map_put_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID",flow_id_struct,(fun str ->
-         "FlowIdc(" ^ str ^
-         "->src_port, " ^ str ^
-         "->dst_port, " ^ str ^
-         "->src_ip, " ^ str ^
-         "->dst_ip, " ^ str ^
-         "->internal_device, " ^ str ^
-         "->protocol)"),true)]) ;
+     "map_put", (map_put_spec [("FlowIdi","FlowId","FlowIdp","LMA_FLOW_ID",flow_id_struct,true)]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["FlowIdi"]);
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["FlowIdi","LMA_FLOW_ID"]);
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["FlowIdi","LMA_FLOW_ID"]);

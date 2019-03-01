@@ -87,17 +87,8 @@ let fun_types =
               "//@ open ip_addrp(" ^ name ^ ", _);\n")
           ,true);]);
      "map_put", (map_put_spec [
-          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW",lb_flow_struct,(fun name ->
-               "LoadBalancedFlowc(" ^
-               name ^ "->src_ip, " ^
-               name ^ "->dst_ip, " ^
-               name ^ "->src_port, " ^
-               name ^ "->dst_port, " ^
-               name ^ "->protocol)"),true);
-          ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR",ip_addr_struct,
-           (fun name ->
-              "ip_addrc(" ^ name ^ "->addr)")
-          ,true);]);
+          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW",lb_flow_struct,true);
+          ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR",ip_addr_struct,true);]);
       "map_erase", (map_erase_spec ["LoadBalancedFlowi", "LoadBalancedFlow", lb_flow_struct, true;
                                     "ip_addri", "ip_addr", ip_addr_struct, true]);
      "map_size", map_size_spec;
