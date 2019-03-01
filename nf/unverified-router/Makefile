@@ -23,12 +23,14 @@ CFLAGS=-W -Wall -std=c11 -pedantic
 
 all: router 
 
-router: router.o 
-	gcc -o router router.o 
+router: router.o parse_utils.o
+	gcc -o router router.o parse_utils.o
 
 router.o: router.c lpm_trie/lpm_trie_mem.h
 	gcc -o router.o -c router.c $(CFLAGS)
 
+parse_utils.o: parse_utils.c parse_utils.h
+	gcc -o parse_utils.o -c parse_utils.c $(CFLAGS)
 
 
 # Include parent (in a convoluted way cause of DPDK)

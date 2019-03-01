@@ -1,47 +1,24 @@
 #include "lpm_trie/lpm_trie_mem.h"
+#include "parse_utils.h"
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
 
-#define IPV4_IP_SIZE 4
 #define CSV_LINE_SIZE 17
+#define MAX_ROUTES_ENTRIES 256
 
-int insert_all(FILE * f, struct lpm_trie * t);
+int * insert_all(FILE * f, struct lpm_trie * t);
 struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
 char * take(size_t starting, size_t n, const char * s, size_t length);
+void nf_core_process(struct lpm_trie * trie);
+struct lpm_trie * nf_core_init(void);
 
 int main( int argc, const char* argv[] ){
 	
 	
-	//bind NICs
+	struct lpm_trie * trie = nf_core_init();
 	
-	//create data structure
-	
-	size_t max_entries = 256;
-
-    struct lpm_trie *trie = lpm_trie_alloc(max_entries);
-    
-	//read routes from file	
-	
-	FILE *in_file  = fopen("routes", "r");
-	
-	if(!in_file){
-		printf("Error! Could not open file\n"); 
-        exit(-1);
-	}
-	
-	//insert all routes into data structure
-	
-	int res = insert_all(in_file, trie);
-	
-	if(res != 0){
-		exit(-1);
-	}
-    
-    //close file
-    fclose(in_file);
-    
-	//forward packets
+	nf_core_process(trie);
 	
 	
 	free(trie);
@@ -49,94 +26,65 @@ int main( int argc, const char* argv[] ){
 }
 
 /**
- * Transform a small string in an integer between 0-255
+ * Initialize the NF
  */
-uint8_t get_number(const char * s, size_t size){
+  struct lpm_trie * nf_core_init(void){
 	
-	int buffer = 0;
+	//bind NICs
 	
-	for(size_t i = 0; i < size; ++i){
-		
-		if(! isdigit(s[i])){
-			printf("Error while parsing routes, invalid ip !\n"); 
-			exit(-1);
-		}
-		
-		buffer += pow(10,size -i -1);
+	//create data structure
+	
+
+    struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+    
+	//read routes from file	
+	
+	FILE *in_file  = fopen("routes", "r");
+	
+	if(!in_file){
+		printf("Error! Could not open file\n"); 
+        abort();
 	}
-	if(buffer > 255){
-		
-		printf("Error while parsing routes, invalid ip !\n"); 
-		exit(-1);
-	}
 	
-	return (uint8_t)buffer;
+	//insert all routes into data structure and returns list of values (NIC port)
+	
+	int* res = insert_all(in_file, trie);
+	
+	if(!res){
+		abort();
+	}
+    
+    //close file
+    fclose(in_file);
+    
+	return trie;
 }
+
 
 /**
- * Transform a string that represents an ip address in a list of integers between 0-255
+ * Routes packets using a LPM Trie
  */
-uint8_t * parse_ip(char * ip, size_t size){
-
-	if(ip == NULL){
-		return NULL;
-	}
+void nf_core_process(struct lpm_trie * trie){
 	
-	uint8_t * res = calloc(IPV4_IP_SIZE, sizeof(uint8_t));
 	
-	if(! res){
-		return NULL;
-	}
-	
-	size_t count = 0;
-	size_t j = 0;
-	
-	for(size_t i = 0; i < size; ++i){
-		
-		if(ip[i] == '.'){
-				
-			res[j] = get_number(take(i - count -1, count, ip, size), count);
-			count = 0;
-			j++;
-		}
-		count++;
-		
-	}
-	
-	free(ip);
-	ip = NULL;
-	
-	return res;
 	
 }
 
-/**
- * Takes n elements of a string of size = length starting at index = starting
- */
-char * take(size_t starting, size_t n, const char * s, size_t length){
-	
-	char * res = calloc(n, sizeof(char));
-	if(!res || n + starting > length){
-		return NULL;
-	}
-	
-	for(size_t i = starting; i < n; ++i){
-		
-		res[i] = s[i];
-	}
-	
-	return res;
-}
 
 /**
  * insert all routes from the csv file to the lpm trie
  */
-int insert_all(FILE * f, struct lpm_trie * t){
+int * insert_all(FILE * f, struct lpm_trie * t){
 	
     size_t length = 0;
     char * line = NULL;
     size_t csvLength = 0;
     
+    int * res = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
+    if(!res){
+		printf("Could not allocate memory !\n");
+		return NULL;
+	}
 	
 	while ((csvLength = getline(&line, &length, f)) != -1) {
 		
@@ -144,7 +92,7 @@ int insert_all(FILE * f, struct lpm_trie * t){
 		
 		if(!key){
 			printf("Could not allocate memory !\n");
-			return -1;
+			return NULL;
 		}
     
 		uint8_t * ip = NULL;
@@ -160,16 +108,17 @@ int insert_all(FILE * f, struct lpm_trie * t){
 					
 					if(!ip){
 						printf("Error while parsing routes !\n"); 
-						return -1;
+						return NULL;
 					}
 					
 					j++;
 				}
 				else if(j == 1){
-					//mask = 
+					//mask = ...
 				}
 				else{
-					//port = 
+					//port = ...
+					//res[] = ... 
 				}
 			}
 			
@@ -213,5 +162,5 @@ int insert_all(FILE * f, struct lpm_trie * t){
 		line = NULL;
 	}
 	
-	return 0;
+	return res;
 }
