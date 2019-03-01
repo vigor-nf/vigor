@@ -558,10 +558,9 @@ let loop_invariant_arg_types containers =
 let loop_invariant_consume_spec containers =
   loop_invariant_consume_spec_impl (loop_invariant_arg_types (concrete_containers containers))
 
-let ityp_name typ = typ ^ "i"
+let ityp_name typ = if typ = "uint32_t" then "uint32_t" else typ ^ "i"
 
 let loop_invariant_produce_spec containers =
-  let linv_arg_types = loop_invariant_arg_types (concrete_containers containers) in
   let linv_prod_arg_types =
     ((List.map (concrete_containers containers) ~f:(fun (name,t) ->
          match t with
@@ -593,21 +592,25 @@ let loop_invariant_produce_spec containers =
                                   ";\n assert mapp<" ^ (ityp_name typ) ^ ">(" ^
                                   (tmp_gen (name ^ "_tmp")) ^ ", _, _, _, mapc(_, ?" ^
                                   (tmp_gen ("initial_" ^ name)) ^ ", _));\n" ^
-                                  "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+                                  "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                                  name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
              | Vector (typ, _, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
                                      ";\n assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
                                      (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
                                      (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
-                                     "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+                                     "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                                     name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
              | CHT (_, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
-                                ";\n assert mapp<uint32_t>(" ^
+                                ";\n assert vectorp<uint32_t>(" ^
                                 (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
                                 (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
-                             "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+                             "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                             name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
              | DChain _ -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
                            ";\n assert double_chainp(?" ^ (tmp_gen ("initial_" ^ name)) ^ ", " ^
                            (tmp_gen (name ^ "_tmp")) ^ ");\n" ^
-                           "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n"
+                           "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                           name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
              | Int
              | UInt
              | UInt32 -> name ^ " = " ^ (List.nth_exn args i) ^ ";\n"

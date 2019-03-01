@@ -75,6 +75,7 @@ let rec simplify_c_string str =
   let str0 = Str.global_replace (Str.regexp "(\\*\\([^)]+\\).\\([^)]+\\)") "\\1->\\2" str0 in (* ( *a ).b  ==>  a->b *)
   if str = str0 then str else simplify_c_string str0 (* find a fixpoint *)
 
+(* FIXME: borrowed from ../nf/vigbridge/bridge_data_spec.ml*)
 let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "dyn_keys", Vector ("ether_addr", "capacity", "");
                   "dyn_vals", Vector ("DynamicValue", "capacity", "dyn_val_condition");

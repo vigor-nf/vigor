@@ -5,9 +5,9 @@
 //Capture the final state.
 assert map_vec_chain_coherent<LoadBalancedFlowi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
 assert map_vec_chain_coherent<ip_addri>(?final_backend_ip_map, ?final_ip_veca, ?final_active_backends);
-assert vectorp<uint32_t>(fidbid_veca_ptr, u_integer, ?final_fidbid_veca, _);
+assert vectorp<uint32_t>(flow_id_to_backend_id_ptr, u_integer, ?final_fidbid_veca, _);
 assert vectorp<uint32_t>(cht_ptr, u_integer, ?final_cht, _);
-assert vectorp<LoadBalancedBackendi>(backends_veca_ptr, LoadBalancedBackendp, ?final_backends_veca, _);
+assert vectorp<LoadBalancedBackendi>(backends_ptr, LoadBalancedBackendp, ?final_backends_veca, _);
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \
      case hd1(x): assert nil == sent_on_ports; \
@@ -15,15 +15,16 @@ assert vectorp<LoadBalancedBackendi>(backends_veca_ptr, LoadBalancedBackendp, ?f
      case hd3(x): assert nil == sent_on_ports
 #define NIL_DROP case nil: assert nil == sent_on_ports
 
-emap<LoadBalancedFlowi> flow_emap = emap(flow_map, flow_vec, flow_chain);
-emap<ip_addri> backend_ip_emap = emap(backend_ip_map, ip_veca, active_backends);
-vector<uint32_t> fidbid_vec = vector(fidbid_veca);
-vector<LoadBalancedBackendi> backends_vec = vector(backends_veca);
+emap<LoadBalancedFlowi> flow_emap = emap(initial_flow_to_flow_id, initial_flow_heap, initial_flow_chain);
+emap<ip_addri> backend_ip_emap = emap(initial_ip_to_backend_id, initial_backend_ips, initial_active_backends);
+vector<uint32_t> fidbid_vec = vector(initial_flow_id_to_backend_id);
+vector<LoadBalancedBackendi> backends_vec = vector(initial_backends);
 
 emap<LoadBalancedFlowi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
 emap<ip_addri> final_backend_ip_emap = emap(final_backend_ip_map, final_ip_veca, final_active_backends);
 vector<uint32_t> final_fidbid_vec = vector(final_fidbid_veca);
 vector<LoadBalancedBackendi> final_backends_vec = vector(final_backends_veca);
+list<pair<uint32_t, real> > cht = initial_cht;
 
 // Consider only normal moments, remote from the start of the epoch
 if (EXP_TIME < now && BACKEND_EXP_TIME < now) {
