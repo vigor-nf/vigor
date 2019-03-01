@@ -40,27 +40,25 @@ let fun_types =
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
       "dchain_allocate", (dchain_alloc_spec [("65536", Some "LoadBalancedFlowi");
                                              ("20", Some "ip_addri")]);
-      "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW";
-                                                                    "ip_addri", "LMA_IP_ADDR"]);
-      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW";
-                                                                "ip_addri", "LMA_IP_ADDR"]);
+      "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_map_related_specs containers));
+      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_map_related_specs containers));
 
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
-     "dchain_free_index", (dchain_free_index_spec ["LoadBalancedFlowi", "LMA_LB_FLOW", "last_flow_searched_in_the_map";
-                                                   "ip_addri", "LMA_IP_ADDR", "last_ip_addr_searched_in_the_map"]) ;
+     "dchain_free_index", (dchain_free_index_spec ["LoadBalancedFlowi", lma_literal_name "LoadBalancedFlow", "last_flow_searched_in_the_map";
+                                                   "ip_addri", lma_literal_name "ip_addr", "last_ip_addr_searched_in_the_map"]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
      "map_allocate", (map_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlowp","LoadBalancedFlow_eq","LoadBalancedFlow_hash","_LoadBalancedFlow_hash");
                                       ("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
       "map_get", (map_get_spec [
-          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW", "last_flow_searched_in_the_map",lb_flow_struct,(fun name ->
+          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", lma_literal_name "LoadBalancedFlow", "last_flow_searched_in_the_map",lb_flow_struct,(fun name ->
                "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n"),true);
-          ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR", "last_ip_addr_searched_in_the_map",ip_addr_struct,
+          ("ip_addri","ip_addr","ip_addrp", lma_literal_name "ip_addr", "last_ip_addr_searched_in_the_map",ip_addr_struct,
            (fun name ->
               "//@ open ip_addrp(" ^ name ^ ", _);\n")
           ,true);]);
      "map_put", (map_put_spec [
-          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", "LMA_LB_FLOW",lb_flow_struct,true);
-          ("ip_addri","ip_addr","ip_addrp", "LMA_IP_ADDR",ip_addr_struct,true);]);
+          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", lma_literal_name "LoadBalancedFlow",lb_flow_struct,true);
+          ("ip_addri","ip_addr","ip_addrp", lma_literal_name "ip_addr",ip_addr_struct,true);]);
       "map_erase", (map_erase_spec ["LoadBalancedFlowi", "LoadBalancedFlow", lb_flow_struct, true;
                                     "ip_addri", "ip_addr", ip_addr_struct, true]);
      "map_size", map_size_spec;
@@ -88,70 +86,7 @@ let fun_types =
 
 module Iface : Fspec_api.Spec =
 struct
-  let preamble = "\
-#include \"lib/expirator.h\"\n\
-#include \"lib/stubs/time_stub_control.h\"\n\
-#include \"lib/containers/map.h\"\n\
-#include \"lib/containers/double-chain.h\"\n\
-#include \"vigbalancer/lb_loop.h\"\n\
-#include \"vigbalancer/lb_balancer.h\"\n" ^
-                 (In_channel.read_all "preamble.tmpl") ^
-                 (In_channel.read_all "preamble_hide.tmpl") ^
-                 "enum LMA_enum {LMA_LB_FLOW, LMA_IP_ADDR, LMA_INVALID};\n" ^
-                 "void to_verify()\n\
-                  /*@ requires true; @*/ \n\
-                  /*@ ensures true; @*/\n{\n\
-                  //@ modulo_hack();\n\
-                  //@ int backend_capacity;\n\
-                  //@ int flow_capacity;\n\
-                  //@ int cht_height;\n\
-                  uint16_t received_on_port;\n\
-                  int the_index_allocated = -1;\n\
-                  int64_t time_for_allocated_index = 0;\n\
-                  bool a_packet_received = false;\n\
-                  //@ bool packet_is_complete = false;\n\
-                  //@ option<void*> last_composed_packet = none;\n\
-                  //@ list<uint8_t> last_sent_packet = nil;\n\
-                  uint32_t pkt_sent_type;\n\
-                  bool backend_known = false;\n\
-                  int32_t backend_index = -1;\n"
-                 ^ "//@ struct Map* flow_to_flow_id_ptr;\n\
-                    //@ struct Vector* flow_heap_ptr;\n\
-                    //@ struct DoubleChain* flow_chain_ptr;\n\
-                    //@ struct Vector* flow_id_to_backend_id_ptr;\n\
-                    //@ struct Map* ip_to_backend_id_ptr;\n\
-                    //@ struct Vector* backend_ips_ptr;\n\
-                    //@ struct Vector* backends_ptr;\n\
-                    //@ struct DoubleChain* active_backends_ptr;\n\
-                    //@ struct Vector* cht_ptr;\n"
-                 ^ "//@ list<pair<LoadBalancedFlowi, uint32_t> > initial_flow_to_flow_id;\n"
-                 ^ "//@ list<pair<LoadBalancedFlowi, real> > initial_flow_heap;\n"
-                 ^ "//@ dchain initial_flow_chain;\n"
-                 ^ "//@ list<pair<uint32_t, real> > initial_flow_id_to_backend_id;\n"
-                 ^ "//@ list<pair<ip_addri, real> > initial_backend_ips;\n"
-                 ^ "//@ list<pair<LoadBalancedBackendi, real> > initial_backends;\n"
-                 ^ "//@ list<pair<ip_addri, uint32_t> > initial_ip_to_backend_id;\n"
-                 ^ "//@ dchain initial_active_backends;\n"
-                 ^ "//@ list<pair<uint32_t, real> > initial_cht;\n"
-                 ^ (* NOTE: looks like verifast pads the last uint8 of Flow with 3 bytes to 4-byte-align it... also TODO having to assume this is silly *)
-                 "/*@ assume(sizeof(struct LoadBalancedFlow) == 16); @*/\n"
-                 ^ "/*@ assume(sizeof(struct LoadBalancedBackend) == 12); @*/\n"
-                 ^ "//@ LoadBalancedFlowi last_flow_searched_in_the_map;\n\
-                    //@ ip_addri last_ip_addr_searched_in_the_map;\n\
-                    //@ list<phdr> recv_headers = nil; \n\
-                    //@ list<phdr> sent_headers = nil; \n\
-                    //@ list<uint16_t> sent_on_ports = nil; \n\
-                    //@ assume(sizeof(struct ip_addr) == 4);\n\
-                    //@ assume(sizeof(struct ether_hdr) == 14);\n\
-                    //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
-                    //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n\
-                 "
-                 ^
-                 "int vector_allocation_order = 0;\n\
-                  int map_allocation_order = 0;\n\
-                  int dchain_allocation_order = 0;\n\
-                  int expire_items_single_map_order = 0;\n\
-                  enum LMA_enum last_map_accessed = LMA_INVALID;\n"
+  let preamble = gen_preamble "vigbalancer/lb_loop.h" containers
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

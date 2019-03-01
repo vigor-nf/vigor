@@ -953,6 +953,11 @@ let expire_items_single_map_spec ityps =
      "expire_items_single_map_order += 1;");
    ];}
 
+type dchain_map_related_spec = {
+  ityp : string;
+  lma_literal : string;
+}
+
 let dchain_allocate_new_index_spec dchain_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
@@ -982,7 +987,7 @@ let dchain_allocate_new_index_spec dchain_specs =
         (List.nth_exn params.args 1) ^ ";\n");
      (fun {args;tmp_gen;ret_name;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal) ->
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun {ityp;lma_literal} ->
              " case " ^ lma_literal ^ ":\n" ^
              "/*@ if (" ^ ret_name ^
              " != 0) {\n\
@@ -1010,7 +1015,7 @@ let dchain_rejuvenate_index_spec dchain_specs =
      capture_chain "cur_ch" 0;
      (fun {args;tmp_gen;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal) ->
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun {ityp;lma_literal} ->
              " case " ^ lma_literal ^ ":\n" ^
              "/*@ {\n\
               assert map_vec_chain_coherent<" ^
@@ -1035,7 +1040,7 @@ let dchain_rejuvenate_index_spec dchain_specs =
    lemmas_after = [
      (fun {args;ret_name;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal) ->
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun {ityp;lma_literal} ->
              " case " ^ lma_literal ^ ":\n" ^
              "/*@ if (" ^ ret_name ^
              " != 0) { \n" ^
@@ -1116,3 +1121,77 @@ let cht_fill_cht_spec =
    extra_ptr_types = [];
    lemmas_before = [];
    lemmas_after = []}
+
+let lma_literal_name typ = "LMA_" ^ (StringLabels.uppercase_ascii typ)
+
+let gen_lma_literals containers =
+  (List.filter_map containers ~f:(fun (_, cnt_t) ->
+       match cnt_t with
+       | Map (name, _, _) -> Some (lma_literal_name name)
+       | _ -> None))
+
+let gen_dchain_map_related_specs containers =
+  (List.filter_map containers ~f:(fun (_, ctyp) ->
+       match ctyp with
+       | EMap (typ, _, _, _) -> Some {ityp=(ityp_name typ);lma_literal=(lma_literal_name typ)}
+       | _ -> None
+     ))
+
+let gen_preamble nf_loop containers =
+  let lma_literals = gen_lma_literals containers in
+  "\
+#include \"lib/expirator.h\"\n\
+#include \"lib/stubs/time_stub_control.h\"\n\
+#include \"lib/containers/map.h\"\n\
+#include \"lib/containers/double-chain.h\"\n\
+#include \"" ^ nf_loop ^ "\"\n" ^
+  (In_channel.read_all "preamble.tmpl") ^
+  (In_channel.read_all "preamble_hide.tmpl") ^
+  "enum LMA_enum {" ^ (String.concat ~sep:", " lma_literals) ^
+  ", LMA_INVALID};\n" ^
+  "void to_verify()\n\
+   /*@ requires true; @*/ \n\
+   /*@ ensures true; @*/\n{\n\
+   uint16_t received_on_port;\n\
+   int the_index_allocated = -1;\n\
+   int64_t time_for_allocated_index = 0;\n\
+   bool a_packet_received = false;\n" ^
+  (String.concat ~sep:"" (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
+       match ctyp with
+       | Map (typ, _, _) ->
+         "//@ list<pair<" ^ (ityp_name typ) ^ ", int> > initial_" ^ name ^ ";\n" ^
+         "//@ struct Map* " ^ name ^ "_ptr;\n"
+       | Vector (typ, _, _) ->
+         "//@ list<pair<" ^ (ityp_name typ) ^ ", real> > initial_" ^ name ^ ";\n" ^
+         "//@ struct Vector* " ^ name ^ "_ptr;\n"
+       | CHT (_, _) ->
+         "//@ list<pair<uint32_t, real> > initial_" ^ name ^ ";\n" ^
+         "//@ struct Vector* " ^ name ^ "_ptr;\n"
+       | DChain _ ->
+         "//@ dchain initial_" ^ name ^ ";\n" ^
+         "//@ struct DoubleChain* " ^ name ^ "_ptr;\n"
+       | Int
+       | UInt
+       | UInt32 -> "//@ int " ^ name ^ ";\n"
+       | EMap (_, _, _, _) -> "#error only concrete containers at this point"
+     ))) ^
+  "//@ option<void*> last_composed_packet = none;\n\
+   //@ bool packet_is_complete = false;\n\
+   //@ list<uint8_t> last_sent_packet = nil;\n\
+   //@ list<phdr> recv_headers = nil; \n\
+   //@ list<phdr> sent_headers = nil; \n\
+   //@ list<uint16_t> sent_on_ports = nil; \n\
+   //@ assume(sizeof(struct ether_hdr) == 14);\n\
+   //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
+   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n"
+  ^
+  "int vector_allocation_order = 0;\n\
+   int map_allocation_order = 0;\n\
+   int dchain_allocation_order = 0;\n\
+   int expire_items_single_map_order = 0;\n\
+   enum LMA_enum last_map_accessed = " ^ (List.hd_exn lma_literals) ^ ";\n" ^
+  (String.concat ~sep:"" (List.map containers ~f:(fun (_,ctyp) ->
+       match ctyp with
+       | EMap (typ, _, _, _) -> "//@ " ^ (ityp_name typ) ^ " last_" ^ typ ^ "_searched_in_the_map;\n"
+       | _ -> ""
+     )))

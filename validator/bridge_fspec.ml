@@ -27,21 +27,21 @@ let fun_types =
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ether_addri"))]);
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec ["ether_addri", "LMA_ETHER_ADDR"]);
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec ["ether_addri", "LMA_ETHER_ADDR"]);
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_map_related_specs containers));
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_map_related_specs containers));
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");
                                       ("StaticKeyi","StaticKeyp","StaticKey_eq","StaticKey_hash","_StaticKey_hash")]) ;
      "map_get", (map_get_spec [
-         ("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR","last_ether_addr_searched_in_the_map",ether_addr_struct,(fun name ->
+         ("ether_addri","ether_addr","ether_addrp",lma_literal_name "ether_addr","last_ether_addr_searched_in_the_map",ether_addr_struct,(fun name ->
               "//@ open [_]ether_addrp(" ^ name ^ ", _);\n"),true);
-         ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY","last_st_key_searched_in_the_map",static_key_struct,
+         ("StaticKeyi","StaticKey","StaticKeyp",lma_literal_name "StaticKey","last_StaticKey_searched_in_the_map",static_key_struct,
           (fun name ->
              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
           ,false);]);
-     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp","LMA_ETHER_ADDR",ether_addr_struct,true);
-                               ("StaticKeyi","StaticKey","StaticKeyp","LMA_ST_KEY",static_key_struct,false)]);
+     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp",lma_literal_name "ether_addr",ether_addr_struct,true);
+                               ("StaticKeyi","StaticKey","StaticKeyp",lma_literal_name "StaticKey",static_key_struct,false)]);
      "vector_allocate", (vector_alloc_spec [("ether_addri","ether_addr","ether_addrp","ether_addr_allocate",true);
                                             ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);
                                             ("StaticKeyi","StaticKey","StaticKeyp","StaticKey_allocate",true);]);
@@ -57,63 +57,7 @@ let fun_types =
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
 struct
-  let preamble = "\
-#include \"lib/expirator.h\"\n\
-#include \"lib/stubs/time_stub_control.h\"\n\
-#include \"lib/containers/map.h\"\n\
-#include \"lib/containers/double-chain.h\"\n\
-#include \"vigbridge/bridge_loop.h\"\n" ^
-                 (In_channel.read_all "preamble.tmpl") ^
-                 (In_channel.read_all "preamble_hide.tmpl") ^
-                 "enum LMA_enum {LMA_ETHER_ADDR, LMA_ST_KEY, LMA_INVALID};\n" ^
-                 "void to_verify()\n\
-                  /*@ requires true; @*/ \n\
-                  /*@ ensures true; @*/\n{\n\
-                  //@ int capacity;\n\
-                  //@ int stat_capacity;\n\
-                  //@ int dev_count;\n\
-                  uint16_t received_on_port;\n\
-                  int the_index_allocated = -1;\n\
-                  int64_t time_for_allocated_index = 0;\n\
-                  bool a_packet_received = false;\n\
-                  bool is_ipv4 = false;\n\
-                  //@ bool packet_is_complete = false;\n\
-                  //@ option<void*> last_composed_packet = none;\n\
-                  //@ list<uint8_t> last_sent_packet = nil;\n\
-                  uint32_t sent_packet_type;\n"
-                 ^ "//@ struct Map* dyn_map_ptr;\n"
-                 ^ "//@ struct DoubleChain* dyn_heap_ptr;\n"
-                 ^ "//@ struct Vector* dyn_vals_ptr;\n"
-                 ^ "//@ struct Vector* dyn_keys_ptr;\n"
-                 ^ "//@ struct Map* st_map_ptr;\n"
-                 ^ "//@ struct Vector* st_vec_ptr;\n"
-                 ^ "//@ list<pair<ether_addri, int> > initial_dyn_map;\n"
-                 ^ "//@ dchain initial_dyn_heap;\n"
-                 ^ "//@ list<pair<DynamicValuei, real> > initial_dyn_vals;\n"
-                 ^ "//@ list<pair<ether_addri, real> > initial_dyn_keys;\n"
-                 ^ "//@ list<pair<StaticKeyi, int> > initial_st_map;\n"
-                 ^ "//@ list<pair<StaticKeyi, real> > initial_st_vec;\n" ^
-                 "//@ list<phdr> recv_headers = nil; \n\
-                  //@ list<phdr> sent_headers = nil; \n\
-                  //@ list<uint16_t> sent_on_ports = nil; \n"
-                 ^
-                 "/*@ //TODO: this hack should be \
-                  converted to a system \n\
-                  assume(sizeof(struct ether_addr) == 6);\n@*/\n\
-                  //@ assume(sizeof(struct ether_hdr) == 14);\n\
-                  /*@ assume(sizeof(struct DynamicValue) == 2);\n@*/\n\
-                  /*@\
-                  assume(sizeof(struct StaticKey) == 8);\n@*/\n"
-                 ^
-                 "/*@ assume(ether_addr_eq != StaticKey_eq); @*/\n"
-                 ^
-                 "int vector_allocation_order = 0;\n\
-                  int map_allocation_order = 0;\n\
-                  int dchain_allocation_order = 0;\n\
-                  int expire_items_single_map_order = 0;\n\
-                  enum LMA_enum last_map_accessed = LMA_INVALID;\n\
-                  ether_addri last_ether_addr_searched_in_the_map;\n\
-                  StaticKeyi last_st_key_searched_in_the_map;\n"
+  let preamble = gen_preamble "vigbridge/bridge_loop.h" containers
   let fun_types = fun_types
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
