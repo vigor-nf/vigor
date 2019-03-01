@@ -967,3 +967,24 @@ let map_size_spec =
    extra_ptr_types = [];
    lemmas_before = [];
    lemmas_after = [];}
+
+let cht_find_preferred_available_backend_spec =
+  {ret_type = Static Sint32;
+   arg_types = stt [Uint64;
+                    Ptr vector_struct;
+                    Ptr dchain_struct;
+                    Uint32;
+                    Uint32;
+                    Ptr Sint32];
+   extra_ptr_types = [];
+   lemmas_before = [];
+   lemmas_after = [];}
+
+let cht_fill_cht_spec =
+  {ret_type = Static Void;
+   arg_types = [Static (Ptr vector_struct);
+                Static Sint32;
+                Static Sint32];
+   extra_ptr_types = [];
+   lemmas_before = [];
+   lemmas_after = []}

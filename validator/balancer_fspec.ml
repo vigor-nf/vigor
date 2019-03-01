@@ -52,10 +52,10 @@ let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
      ["LoadBalancedFlow_hash", {ret_type = Static Uint32;
-                               arg_types = stt [Ptr lb_flow_struct];
-                               extra_ptr_types = [];
-                               lemmas_before = [];
-                               lemmas_after = [];};
+                                arg_types = stt [Ptr lb_flow_struct];
+                                extra_ptr_types = [];
+                                lemmas_before = [];
+                                lemmas_after = [];};
      "loop_invariant_consume", {ret_type = Static Void;
                                 arg_types = stt
                                     [Ptr (Ptr map_struct);
@@ -224,29 +224,13 @@ let fun_types =
       "map_erase", (map_erase_spec ["LoadBalancedFlowi", "LoadBalancedFlow", lb_flow_struct, true;
                                     "ip_addri", "ip_addr", ip_addr_struct, true]);
      "map_size", map_size_spec;
-     "cht_find_preferred_available_backend", {
-       ret_type = Static Sint32;
-       arg_types = stt [Uint64;
-                        Ptr vector_struct;
-                        Ptr dchain_struct;
-                        Uint32;
-                        Uint32;
-                        Ptr Sint32];
-       extra_ptr_types = [];
-       lemmas_before = [];
-       lemmas_after = [];};
+     "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
      "vector_allocate", (vector_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp","LoadBalancedFlow_allocate",true);
                                             ("uint32_t","uint32_t","u_integer","null_init",false);
                                             ("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
                                             ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp","LoadBalancedBackend_allocate",false);
                                             ("uint32_t","uint32_t","u_integer","null_init",false);]);
-     "cht_fill_cht",        {ret_type = Static Void;
-                             arg_types = [Static (Ptr vector_struct);
-                                          Static Sint32;
-                                          Static Sint32];
-                             extra_ptr_types = [];
-                             lemmas_before = [];
-                             lemmas_after = []};
+     "cht_fill_cht", cht_fill_cht_spec;
       "vector_borrow", (vector_borrow_spec [
           ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",(fun name ->
                "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n"),lb_flow_struct,true);
