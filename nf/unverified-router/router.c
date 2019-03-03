@@ -9,7 +9,6 @@
 
 int * insert_all(FILE * f, struct lpm_trie * t);
 struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
-char * take(size_t starting, size_t n, const char * s, size_t length);
 void nf_core_process(struct lpm_trie * trie);
 struct lpm_trie * nf_core_init(void);
 
@@ -78,7 +77,8 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 	
     size_t length = 0;
     char * line = NULL;
-    size_t csvLength = 0;
+    int csvLength = 0;
+    size_t entries_count = 0;
     
     int * res = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
     if(!res){
@@ -99,12 +99,13 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 		uint32_t mask = 0;
 		int port = 0;
 		int j = 0;
+		size_t count = 0;
 		
 		for(size_t i = 0; i < length; ++i){
 		
 			if(line[i] == ','){
 				if( j == 0){
-					ip = parse_ip(take(0,i,line, csvLength), i);
+					ip = parse_ip(take(0,i,line, length), i);
 					
 					if(!ip){
 						printf("Error while parsing routes !\n"); 
@@ -112,16 +113,42 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 					}
 					
 					j++;
+					count = 0;
 				}
 				else if(j == 1){
-					//mask = ...
+					char * mask_part = take(i - count, count, line, length);
+					if(!mask_part){
+						printf("Error while parsing routes !\n"); 
+						return NULL;
+					}
+					mask =  get_number(mask_part, count);
+					if( mask > 32){
+						printf("Error while parsing routes !\n"); 
+						return NULL;
+					}
+					count = 0;
 				}
-				else{
-					//port = ...
-					//res[] = ... 
+				
+			}else if(i == length -1){
+				
+				if(entries_count >= MAX_ROUTES_ENTRIES){
+					printf("Error too much entries in routes file !\n"); 
+					return NULL;
 				}
+				
+				count++;
+				char * port_part = take(i - count + 1, count, line, length);
+				if(!port_part){
+					printf("Error while parsing routes !\n"); 
+					return NULL;				}
+				port = get_number(port_part, count);
+				res[entries_count] = port;
+				entries_count++;
+				
 			}
-			
+			else{
+				count++;
+			}
 		}
     
     
@@ -163,4 +190,6 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 	}
 	
 	return res;
+	
+
 }
