@@ -42,17 +42,18 @@ let fun_types =
           ,false);]);
      "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp",lma_literal_name "ether_addr",ether_addr_struct,true);
                                ("StaticKeyi","StaticKey","StaticKeyp",lma_literal_name "StaticKey",static_key_struct,false)]);
-     "vector_allocate", (vector_alloc_spec [("ether_addri","ether_addr","ether_addrp","ether_addr_allocate",true);
-                                            ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);
-                                            ("StaticKeyi","StaticKey","StaticKeyp","StaticKey_allocate",true);]);
-     "vector_borrow", (vector_borrow_spec [
-         ("ether_addri","ether_addr","ether_addrp",(fun name ->
-              "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n"),ether_addr_struct,true);
-         ("DynamicValuei","DynamicValue","DynamicValuep",noop,dynamic_value_struct,false);
-         ("StaticKeyi","StaticKey","StaticKeyp",noop,static_key_struct,true);]) ;
-     "vector_return", (vector_return_spec [("ether_addri","ether_addr","ether_addrp",ether_addr_struct,true);
-                                           ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);
-                                           ("StaticKeyi","StaticKey","StaticKeyp",static_key_struct,true);]);])
+     "vector_allocate", (vector_alloc_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
+         "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
+        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};
+        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct;open_callback=noop};]);
+     "vector_borrow", (vector_borrow_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
+         "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
+        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};
+        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct;open_callback=noop};]) ;
+     "vector_return", (vector_return_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
+         "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
+        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};
+        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct;open_callback=noop};]);])
 
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =

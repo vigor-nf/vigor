@@ -26,9 +26,9 @@ let fun_types =
     (common_fun_types @
     [
      "map_allocate", (map_alloc_spec [("FlowIdi","FlowIdp","FlowId_eq","FlowId_hash","_FlowId_hash")]);
-     "vector_allocate", (vector_alloc_spec [("FlowIdi", "FlowId", "FlowIdp", "FlowId_allocate", true)]);
-     "vector_borrow", (vector_borrow_spec [("FlowIdi","FlowId","FlowIdp",noop,flow_id_struct,true)]);
-     "vector_return", (vector_return_spec [("FlowIdi","FlowId","FlowIdp",flow_id_struct,true)]);
+     "vector_allocate", (vector_alloc_spec [{typ="FlowId";has_keeper=true;entry_type=flow_id_struct;open_callback=noop}]);
+     "vector_borrow", (vector_borrow_spec [{typ="FlowId";has_keeper=true;entry_type=flow_id_struct;open_callback=noop}]);
+     "vector_return", (vector_return_spec [{typ="FlowId";has_keeper=true;entry_type=flow_id_struct;open_callback=noop}]);
      "dchain_allocate", (dchain_alloc_spec [("65535",(Some "FlowIdi"))]);
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);

@@ -63,26 +63,34 @@ let fun_types =
                                     "ip_addri", "ip_addr", ip_addr_struct, true]);
      "map_size", map_size_spec;
      "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
-     "vector_allocate", (vector_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp","LoadBalancedFlow_allocate",true);
-                                            ("uint32_t","uint32_t","u_integer","null_init",false);
-                                            ("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
-                                            ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp","LoadBalancedBackend_allocate",false);
-                                            ("uint32_t","uint32_t","u_integer","null_init",false);]);
-     "cht_fill_cht", cht_fill_cht_spec;
-      "vector_borrow", (vector_borrow_spec [
-          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",(fun name ->
-               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n"),lb_flow_struct,true);
-          ("uint32_t","uint32_t","u_integer",noop,Uint32,false);
-          ("ip_addri","ip_addr","ip_addrp",noop,ip_addr_struct,true);
-          ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp",(fun name ->
+      "vector_allocate", (vector_alloc_spec [
+          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n")};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};
+          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
+          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct;open_callback=(fun name ->
                "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
-               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n"),lb_backend_struct,false);
-                                           ("uint32_t","uint32_t","u_integer",noop,Uint32,false);]);
-     "vector_return", (vector_return_spec [("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp",lb_flow_struct,true);
-                                           ("uint32_t","uint32_t","u_integer",Uint32,false);
-                                           ("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
-                                           ("LoadBalancedBackendi","LoadBalancedBackend","LoadBalancedBackendp",lb_backend_struct,false);
-                                           ("uint32_t","uint32_t","u_integer",Uint32,false);]);])
+               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n")};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};]);
+      "cht_fill_cht", cht_fill_cht_spec;
+      "vector_borrow", (vector_borrow_spec [
+          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n")};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};
+          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
+          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct;open_callback=(fun name ->
+               "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
+               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n")};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};]);
+     "vector_return", (vector_return_spec [
+          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n")};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};
+          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
+          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct;open_callback=(fun name ->
+               "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
+               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n")};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};]);])
 
 module Iface : Fspec_api.Spec =
 struct

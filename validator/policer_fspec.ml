@@ -29,12 +29,12 @@ let fun_types =
      "map_allocate", (map_alloc_spec [("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
      "map_get", (map_get_spec [("ip_addri","ip_addr","ip_addrp",lma_literal_name "ip_addr","last_ip_addr_searched_in_the_map",ip_addr_struct,noop,true)]);
      "map_put", (map_put_spec [("ip_addri","ip_addr","ip_addrp",lma_literal_name "ip_addr",ip_addr_struct,true)]);
-     "vector_allocate", (vector_alloc_spec [("ip_addri","ip_addr","ip_addrp","ip_addr_allocate",true);
-                                            ("DynamicValuei","DynamicValue","DynamicValuep","DynamicValue_allocate",false);]);
-     "vector_borrow",      (vector_borrow_spec [("ip_addri","ip_addr","ip_addrp",noop,ip_addr_struct,true);
-                                                ("DynamicValuei","DynamicValue","DynamicValuep",noop,dynamic_value_struct,false);]);
-     "vector_return",      (vector_return_spec [("ip_addri","ip_addr","ip_addrp",ip_addr_struct,true);
-                                                ("DynamicValuei","DynamicValue","DynamicValuep",dynamic_value_struct,false);]);])
+     "vector_allocate", (vector_alloc_spec [{typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
+                                            {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop}]);
+     "vector_borrow",      (vector_borrow_spec [{typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
+                                                {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop}]);
+     "vector_return",      (vector_return_spec [{typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
+                                                {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop}]);])
 
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =

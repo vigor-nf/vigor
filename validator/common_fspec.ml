@@ -326,8 +326,20 @@ let map_alloc_spec map_specs =
      (fun _ ->
         "map_allocation_order += 1;");];}
 
+type vector_params = {
+  typ : string;
+  has_keeper : bool;
+  entry_type : ttype;
+  open_callback : string -> string;
+}
+
 let c_type typ =
   if typ = "uint32_t" then typ else "struct " ^ typ
+
+let ityp_name typ = if typ = "uint32_t" then "uint32_t" else typ ^ "i"
+let hash_name name = name ^ "_hash"
+let pred_name name = if name = "uint32_t" then "u_integer" else name ^ "p"
+let alloc_fun_name typ = if typ = "uint32_t" then "null_init" else typ ^ "_allocate"
 
 let vector_alloc_spec vector_specs =
   {ret_type = Static Sint32;
@@ -341,11 +353,11 @@ let vector_alloc_spec vector_specs =
        (
         "\n\
         switch(vector_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;_} ->
              " case " ^ (string_of_int i) ^ ":\n\
               produce_function_pointer_chunk \
-              vector_init_elem<" ^ ityp ^ ">(" ^ alloc_fun ^
-             ")(" ^ pred ^
+              vector_init_elem<" ^ ityp_name typ ^ ">(" ^ alloc_fun_name typ ^
+             ")(" ^ (pred_name typ) ^
              ", sizeof(" ^ (c_type typ) ^
              "))(a) \
               {\
@@ -359,7 +371,7 @@ let vector_alloc_spec vector_specs =
      (fun {args;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;_} ->
              " case " ^ (string_of_int i) ^ ":\n\
                //@assume(sizeof(" ^ (c_type typ) ^ ") == " ^
              (List.nth_exn args 0) ^
@@ -374,16 +386,16 @@ let vector_alloc_spec vector_specs =
      (fun {tmp_gen;ret_name;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i (ityp, typ, pred, alloc_fun, has_keeper) ->
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;has_keeper;_} ->
              " case " ^ (string_of_int i) ^ ":\n" ^
              (if has_keeper then
                 "/*@ if (" ^ ret_name ^
                 ") {\n\
-                 assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                 assert mapp<" ^ ityp_name typ ^ ">(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
                 ", ?" ^ (tmp_gen "map") ^
                 ", ?" ^ (tmp_gen "addr_map") ^
                 "));\n\
-                 assert vectorp<" ^ ityp ^ ">(_, _, ?" ^ (tmp_gen "dks") ^
+                 assert vectorp<" ^ ityp_name typ ^ ">(_, _, ?" ^ (tmp_gen "dks") ^
                 ", ?" ^ (tmp_gen "dkaddrs") ^
                 ");\n\
                  empty_kkeeper(" ^
@@ -405,27 +417,29 @@ let vector_alloc_spec vector_specs =
         "vector_allocation_order += 1;")];}
 
 let vector_borrow_spec entry_specs =
-  let other_types excl_ityp =
-    List.filter entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
-        ityp <> excl_ityp)
+  let other_types excl_typ =
+    List.filter entry_specs ~f:(fun {typ;_} ->
+        typ <> excl_typ)
   in
   {ret_type = Static Void;
    arg_types = [Static (Ptr vector_struct);
                 Static Sint32;
-                Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
+                Dynamic (List.map entry_specs ~f:(fun {typ;entry_type;_} ->
                   (typ, Ptr (Ptr entry_type))));];
    extra_ptr_types = ["borrowed_cell",
-                      Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
+                      Dynamic (List.map entry_specs ~f:(fun {typ;entry_type;_} ->
                         (typ, Ptr entry_type)));];
    lemmas_before = [
      (fun {arg_types;args;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;has_keeper;_} ->
              if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
-               Some ((String.concat ~sep:"" (List.map (other_types ityp)
-                                               ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
-                          "//@ close hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+               let ityp = ityp_name typ in
+               Some ((String.concat ~sep:""
+                        (List.map (other_types typ)
+                           ~f:(fun {typ;_} ->
+                               "//@ close hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
                         ))) ^"//@ assert vectorp<" ^ ityp ^ ">(" ^ (List.nth_exn args 0) ^
-                     ", " ^ pred ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^ (tmp_gen "veca") ^
+                     ", " ^ pred_name typ ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^ (tmp_gen "veca") ^
                      ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn args 0) ^ ");\n" ^
                      (if has_keeper then
                         "/*@ {\n\
@@ -445,10 +459,11 @@ let vector_borrow_spec entry_specs =
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
      (fun {arg_types;args;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;open_callback;_} ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
-              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,open_callback,entry_type,has_keeper) ->
-                         "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n")) ^
+              Some (String.concat ~sep:""
+                      (List.map (other_types typ) ~f:(fun {typ;_} ->
+                           "//@ open hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n")) ^
                     (open_callback (List.nth_exn args 2)))
             else
               None))
@@ -457,22 +472,22 @@ let vector_borrow_spec entry_specs =
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];}
 
 let vector_return_spec entry_specs =
-  let other_types excl_ityp =
-    List.filter entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
-        ityp <> excl_ityp)
+  let other_types excl_typ =
+    List.filter entry_specs ~f:(fun {typ;_} ->
+        typ <> excl_typ)
   in
   {ret_type = Static Void;
    arg_types = [Static (Ptr vector_struct);
                 Static Sint32;
-                Dynamic (List.map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+                Dynamic (List.map entry_specs ~f:(fun {typ;entry_type;_} ->
                     (typ, Ptr entry_type)));];
    extra_ptr_types = [];
    lemmas_before = [
      (fun {arg_types;args;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
-              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
-                         "//@ close hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+              Some (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun {typ;_} ->
+                         "//@ close hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
                        )))
             else
               None))
@@ -481,10 +496,10 @@ let vector_return_spec entry_specs =
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];
    lemmas_after = [
      (fun {arg_types;args;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
-              Some (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun (ityp,typ,pred,entry_type,has_keeper) ->
-                         "//@ open hide_vector<" ^ ityp ^ ">(_, _, _, _);\n"
+              Some (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun {typ;_} ->
+                         "//@ open hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
                        )))
             else
               None))
@@ -557,8 +572,6 @@ let loop_invariant_arg_types containers =
 
 let loop_invariant_consume_spec containers =
   loop_invariant_consume_spec_impl (loop_invariant_arg_types (concrete_containers containers))
-
-let ityp_name typ = if typ = "uint32_t" then "uint32_t" else typ ^ "i"
 
 let loop_invariant_produce_spec containers =
   let linv_prod_arg_types =
@@ -639,9 +652,6 @@ let construct_record var tt =
         | _ ->
           var ^ "->" ^ name))) ^ ")"
   | _ -> "#error construction of non-structs is not supported"
-
-let hash_name name = name ^ "_hash"
-let pred_name name = name ^ "p"
 
 let hash_spec record_type =
   match record_type with
