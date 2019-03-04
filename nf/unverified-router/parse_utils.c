@@ -1,30 +1,43 @@
 
 #include "parse_utils.h"
-#define MAX_OCTET_VALUE 255
+
 
 /**
  * Transform a small string in an integer between 0-255
  */
 uint8_t get_number(const char * s, size_t size){
 	
+	if(size > MAX_OCTET_DIGITS){
+		goto err;
+	}
+	
 	int buffer = 0;
+	int exponents[MAX_OCTET_DIGITS];
+	exponents[0] = 100;
+	exponents[1] = 10;
+	exponents[2] = 1;
+	
 	
 	for(size_t i = 0; i < size; i++){
 		
 		if(!isdigit(s[i])){
-			printf("Error while parsing routes, invalid ip !\n"); 
-			exit(-1);
+			goto err;
 		}
 
-		buffer += (s[i] - '0') * fast_exp(10,size -i -1);
+		buffer += (s[i] - '0') * exponents[i + MAX_OCTET_DIGITS - size];
 		
 	}
 	if(buffer > MAX_OCTET_VALUE){
-		printf("Error while parsing routes, invalid ip !\n"); 
-		exit(-1);
+		goto err;
 	}
 	
 	return (uint8_t)buffer;
+	
+	
+	err:
+		printf("Error while parsing routes, invalid ip !\n"); 
+		abort();
+		
 }
 
 /**

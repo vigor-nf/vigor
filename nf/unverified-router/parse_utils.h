@@ -5,9 +5,12 @@
 #include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "math_utils.h"
+#include <stdlib.h>
 
 #define IPV4_IP_SIZE 4
+#define MIN_ENTRY_SIZE 12
+#define MAX_OCTET_VALUE 255
+#define MAX_OCTET_DIGITS 3
 
 /**
  * Transform a small string in an integer between 0-255

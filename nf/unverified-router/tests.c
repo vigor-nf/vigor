@@ -1,9 +1,33 @@
 
-#include "parse_utils.h"
-#include "math_utils.h"
+//#include "parse_utils.h" not needed since included in router.h
+//#include "math_utils.h"
 #include <assert.h>
+#include "router.h"
+
+
+void test_math();
+void test_parse_utils();
+void test_insert_in_trie();
 
 int main(){
+	
+	//test math_utils.c
+	//testMath();			we don't use it anymore
+	
+	
+	//test parse_utils.c
+	
+	test_parse_utils();
+	
+	//test trie initialization
+	test_insert_in_trie();
+	
+	
+	return 0;
+}
+
+
+void test_math(){
 	
 	//test math_utils.c/fast_exp
 	int res = fast_exp(2,10);
@@ -11,6 +35,10 @@ int main(){
 	
 	assert(res == 1024);
 	assert(res2 == 1);
+}
+
+
+void test_parse_utils(){
 	
 	
 	//test parse_utils.c/get_number
@@ -60,5 +88,29 @@ int main(){
 	
 	free(ip);
 	
-	return 0;
 }
+
+
+void test_insert_in_trie(){
+	
+	
+	FILE * routes = fopen("routes", "r");
+	
+	
+    struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+    
+  
+    int * ports = insert_all(routes, trie);
+  
+    
+    assert(ports[0] == 0);		//ports that were read from the file
+    assert(ports[1] == 1);
+    
+	fclose(routes);
+
+	free(trie);
+}
+
+
+
+

@@ -21,18 +21,18 @@ CFLAGS=-W -Wall -std=c11 -pedantic
 
 #all: $(AUTO_GEN_FILES) $(APP)
 
-all: router tests
+all: tests 
 
-router: router.o parse_utils.o math_utils.o lpm_trie/lpm_trie.o lpm_trie/lib/double-chain-impl.o lpm_trie/lib/double-chain.o
-	gcc -o router router.o parse_utils.o math_utils.o lpm_trie/lpm_trie.o lpm_trie/lib/double-chain-impl.o lpm_trie/lib/double-chain.o
+#router: router.o parse_utils.o math_utils.o lpm_trie/lpm_trie.o lpm_trie/lib/double-chain-impl.o lpm_trie/lib/double-chain.o
+#	gcc -o router router.o parse_utils.o math_utils.o lpm_trie/lpm_trie.o lpm_trie/lib/double-chain-impl.o lpm_trie/lib/double-chain.o
 	
-tests: tests.o parse_utils.o math_utils.o
-	gcc -o tests tests.o parse_utils.o math_utils.o
+tests: tests.o parse_utils.o math_utils.o router.o lpm_trie/lpm_trie.o lpm_trie/lib/double-chain-impl.o lpm_trie/lib/double-chain.o
+	gcc -o tests tests.o parse_utils.o math_utils.o router.o lpm_trie/lpm_trie.o lpm_trie/lib/double-chain-impl.o lpm_trie/lib/double-chain.o
 	
-tests.o: tests.c parse_utils.h math_utils.h
+tests.o: tests.c parse_utils.h math_utils.h router.h
 	gcc -o tests.o -c tests.c $(CFLAGS)
 
-router.o: router.c lpm_trie/lpm_trie_mem.h parse_utils.h
+router.o: router.c lpm_trie/lpm_trie_mem.h parse_utils.h router.h
 	gcc -o router.o -c router.c $(CFLAGS)
 
 parse_utils.o: parse_utils.c parse_utils.h math_utils.h
