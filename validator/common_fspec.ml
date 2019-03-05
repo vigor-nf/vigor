@@ -1252,6 +1252,9 @@ let gen_vector_params containers records =
 let fun_types containers records =
   String.Map.of_alist_exn
     (common_fun_types @
+     (List.filter_map (String.Map.data records) ~f:(fun record -> match record with
+          | Str (_, _) -> Some (hash_spec record)
+          | _ -> None )) @
     ["loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
