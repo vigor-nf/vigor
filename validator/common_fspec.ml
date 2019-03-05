@@ -430,11 +430,14 @@ let vector_alloc_spec vector_specs =
 
 let open_callback entry_type arg =
   match entry_type with
-  | Str (name, fields) -> "//@ open [_]" ^ pred_name name ^ "(" ^ arg ^ ", _);\n" ^
+  | Str (name, fields) -> "//@ open [_]" ^ pred_name name ^ "(" ^ render_tterm arg ^ ", _);\n" ^
                           (String.concat ~sep:"" (List.map fields ~f:(fun (name,ttype) ->
                                match ttype with
                                | Str (str_name, _) ->
-                                 "//@ open [_]" ^ pred_name str_name ^ "(" ^ arg ^ "." ^ name ^ ", _);\n"
+                                 "//@ open [_]" ^ pred_name str_name ^ "(" ^
+                                 render_tterm (simplify_tterm {v=Addr {v=Str_idx ({v=Deref arg;t=Unknown},name);
+                                                                       t=ttype};
+                                                               t=Unknown}) ^ ", _);\n"
                                | _ -> "")) )
   | Uint32 -> ""
   | _ -> "#error open callback is not implemented"
@@ -481,13 +484,13 @@ let vector_borrow_spec entry_specs =
         | Some x -> x
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
-     (fun {arg_types;args;tmp_gen;_} ->
+     (fun {arg_types;arg_exps;tmp_gen;_} ->
         match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ) ~f:(fun {typ;_} ->
                            "//@ open hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n")) ^
-                    (open_callback entry_type ("*" ^ List.nth_exn args 2)))
+                    (open_callback entry_type {v=Deref (List.nth_exn arg_exps 2);t=Unknown}))
             else
               None))
         with
@@ -725,7 +728,7 @@ let map_get_spec (map_specs : map_spec list) =
 
      );];
    lemmas_after = [
-     (fun {ret_name;tmp_gen;arg_types;args;_} ->
+     (fun {ret_name;tmp_gen;arg_types;arg_exps;_} ->
         match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some ((if coherent then
@@ -750,7 +753,7 @@ let map_get_spec (map_specs : map_spec list) =
                        (tmp_gen "fk") ^ ");\n} @*/\n" ^
                        "last_map_accessed = " ^ lma_literal_name typ ^ ";\n"
                      else "") ^
-                    (open_callback entry_type (List.nth_exn args 1)) ^
+                    (open_callback entry_type (List.nth_exn arg_exps 1)) ^
                     (String.concat ~sep:"" (List.map (other_specs typ)
                                               ~f:(fun {typ;_} ->
                                                   "//@ open hide_mapp<" ^ ityp_name typ ^ ">(_, _, _, _, _);\n"
