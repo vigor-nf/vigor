@@ -31,35 +31,23 @@ let fun_types =
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", (map_alloc_spec [
-         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
-              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n")};
-         {typ="StaticKey";coherent=false;entry_type=static_key_struct;open_callback=(fun name ->
-              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
-              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")}]) ;
+         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct};
+         {typ="StaticKey";coherent=false;entry_type=static_key_struct}]) ;
      "map_get", (map_get_spec [
-         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
-              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n")};
-         {typ="StaticKey";coherent=false;entry_type=static_key_struct;open_callback=(fun name ->
-              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
-              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")}]);
+         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct};
+         {typ="StaticKey";coherent=false;entry_type=static_key_struct}]);
      "map_put", (map_put_spec [
-         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
-              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n")};
-         {typ="StaticKey";coherent=false;entry_type=static_key_struct;open_callback=(fun name ->
-              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
-              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")}]);
-     "vector_allocate", (vector_alloc_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
-         "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
-        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};
-        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct;open_callback=noop};]);
-     "vector_borrow", (vector_borrow_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
-         "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
-        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};
-        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct;open_callback=noop};]) ;
-     "vector_return", (vector_return_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
-         "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
-        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};
-        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct;open_callback=noop};]);])
+         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct};
+         {typ="StaticKey";coherent=false;entry_type=static_key_struct}]);
+     "vector_allocate", (vector_alloc_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct};
+        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct};
+        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct};]);
+     "vector_borrow", (vector_borrow_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct};
+        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct};
+        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct};]) ;
+     "vector_return", (vector_return_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct};
+        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct};
+        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct};]);])
 
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =

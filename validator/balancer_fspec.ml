@@ -36,62 +36,45 @@ let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
      [hash_spec lb_flow_struct;
-     "loop_invariant_consume", (loop_invariant_consume_spec containers);
-     "loop_invariant_produce", (loop_invariant_produce_spec containers);
+      "loop_invariant_consume", (loop_invariant_consume_spec containers);
+      "loop_invariant_produce", (loop_invariant_produce_spec containers);
       "dchain_allocate", (dchain_alloc_spec (gen_dchain_specs containers));
       "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_specs containers));
       "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
-     "dchain_is_index_allocated", dchain_is_index_allocated_spec;
-     "dchain_free_index", (dchain_free_index_spec (gen_dchain_specs containers)) ;
-     "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
+      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
+      "dchain_free_index", (dchain_free_index_spec (gen_dchain_specs containers)) ;
+      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
       "map_allocate", (map_alloc_spec
-                         [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-                              "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
-                          {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
-                               "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
+                         [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
+                          {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
       "map_get", (map_get_spec
-                    [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-                         "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
-                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
-                          "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
-     "map_put", (map_put_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-                         "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
-                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
-                          "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
-      "map_erase", (map_erase_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-                         "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
-                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
-                          "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
-     "map_size", map_size_spec;
-     "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
+                    [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
+                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
+      "map_put", (map_put_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
+                                {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
+      "map_erase", (map_erase_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
+                                    {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
+      "map_size", map_size_spec;
+      "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
       "vector_allocate", (vector_alloc_spec [
-          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n")};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};
-          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
-          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct;open_callback=(fun name ->
-               "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
-               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n")};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};]);
+          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32};
+          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct};
+          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32};]);
       "cht_fill_cht", cht_fill_cht_spec;
       "vector_borrow", (vector_borrow_spec [
-          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n")};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};
-          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
-          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct;open_callback=(fun name ->
-               "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
-               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n")};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};]);
-     "vector_return", (vector_return_spec [
-          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct;open_callback=(fun name ->
-               "//@ open [_]LoadBalancedFlowp(*" ^ name ^ ", _);\n")};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};
-          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct;open_callback=noop};
-          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct;open_callback=(fun name ->
-               "//@ open [_]LoadBalancedBackendp(*" ^ name ^ ", _);\n" ^
-               "//@ open [_]ether_addrp(" ^ name ^ "->mac, _);\n")};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32;open_callback=noop};]);])
+          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32};
+          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct};
+          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32};]);
+      "vector_return", (vector_return_spec [
+          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32};
+          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct};
+          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct};
+          {typ="uint32_t";has_keeper=false;entry_type=Uint32};]);])
 
 module Iface : Fspec_api.Spec =
 struct
