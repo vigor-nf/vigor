@@ -30,18 +30,24 @@ let fun_types =
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_map_related_specs containers));
      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_map_related_specs containers));
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
-     "map_allocate", (map_alloc_spec [("ether_addri","ether_addrp","ether_addr_eq","ether_addr_hash","_ether_addr_hash");
-                                      ("StaticKeyi","StaticKeyp","StaticKey_eq","StaticKey_hash","_StaticKey_hash")]) ;
+     "map_allocate", (map_alloc_spec [
+         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
+              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n")};
+         {typ="StaticKey";coherent=false;entry_type=static_key_struct;open_callback=(fun name ->
+              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
+              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")}]) ;
      "map_get", (map_get_spec [
-         ("ether_addri","ether_addr","ether_addrp",lma_literal_name "ether_addr","last_ether_addr_searched_in_the_map",ether_addr_struct,(fun name ->
-              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n"),true);
-         ("StaticKeyi","StaticKey","StaticKeyp",lma_literal_name "StaticKey","last_StaticKey_searched_in_the_map",static_key_struct,
-          (fun name ->
-             "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
-             "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")
-          ,false);]);
-     "map_put", (map_put_spec [("ether_addri","ether_addr","ether_addrp",lma_literal_name "ether_addr",ether_addr_struct,true);
-                               ("StaticKeyi","StaticKey","StaticKeyp",lma_literal_name "StaticKey",static_key_struct,false)]);
+         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
+              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n")};
+         {typ="StaticKey";coherent=false;entry_type=static_key_struct;open_callback=(fun name ->
+              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
+              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")}]);
+     "map_put", (map_put_spec [
+         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
+              "//@ open [_]ether_addrp(" ^ name ^ ", _);\n")};
+         {typ="StaticKey";coherent=false;entry_type=static_key_struct;open_callback=(fun name ->
+              "//@ open StaticKeyp(" ^ name ^ ", _);\n" ^
+              "//@ open ether_addrp(" ^ name ^ ".addr, _);\n")}]);
      "vector_allocate", (vector_alloc_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct;open_callback=(fun name ->
          "//@ open [_]ether_addrp(*" ^ name ^ ", _);\n")};
         {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct;open_callback=noop};

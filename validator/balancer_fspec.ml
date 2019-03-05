@@ -47,20 +47,24 @@ let fun_types =
      "dchain_free_index", (dchain_free_index_spec ["LoadBalancedFlowi", lma_literal_name "LoadBalancedFlow", "last_flow_searched_in_the_map";
                                                    "ip_addri", lma_literal_name "ip_addr", "last_ip_addr_searched_in_the_map"]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
-     "map_allocate", (map_alloc_spec [("LoadBalancedFlowi","LoadBalancedFlowp","LoadBalancedFlow_eq","LoadBalancedFlow_hash","_LoadBalancedFlow_hash");
-                                      ("ip_addri","ip_addrp","ip_addr_eq","ip_addr_hash","_ip_addr_hash")]);
-      "map_get", (map_get_spec [
-          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", lma_literal_name "LoadBalancedFlow", "last_flow_searched_in_the_map",lb_flow_struct,(fun name ->
-               "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n"),true);
-          ("ip_addri","ip_addr","ip_addrp", lma_literal_name "ip_addr", "last_ip_addr_searched_in_the_map",ip_addr_struct,
-           (fun name ->
-              "//@ open ip_addrp(" ^ name ^ ", _);\n")
-          ,true);]);
-     "map_put", (map_put_spec [
-          ("LoadBalancedFlowi","LoadBalancedFlow","LoadBalancedFlowp", lma_literal_name "LoadBalancedFlow",lb_flow_struct,true);
-          ("ip_addri","ip_addr","ip_addrp", lma_literal_name "ip_addr",ip_addr_struct,true);]);
-      "map_erase", (map_erase_spec ["LoadBalancedFlowi", "LoadBalancedFlow", lb_flow_struct, true;
-                                    "ip_addri", "ip_addr", ip_addr_struct, true]);
+      "map_allocate", (map_alloc_spec
+                         [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+                              "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
+                          {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
+                               "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
+      "map_get", (map_get_spec
+                    [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+                         "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
+                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
+                          "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
+     "map_put", (map_put_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+                         "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
+                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
+                          "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
+      "map_erase", (map_erase_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->
+                         "//@ open [_]LoadBalancedFlowp(" ^ name ^ ", _);\n")};
+                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct;open_callback=(fun name ->
+                          "//@ open ip_addrp(" ^ name ^ ", _);\n")}]);
      "map_size", map_size_spec;
      "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
       "vector_allocate", (vector_alloc_spec [
