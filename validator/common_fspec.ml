@@ -438,7 +438,7 @@ let open_callback entry_type arg =
                                  render_tterm (simplify_tterm {v=Addr {v=Str_idx ({v=Deref arg;t=Unknown},name);
                                                                        t=ttype};
                                                                t=Unknown}) ^ ", _);\n"
-                               | _ -> "")) )
+                               | _ -> "")))
   | Uint32 -> ""
   | _ -> "#error open callback is not implemented"
 
@@ -910,10 +910,10 @@ let map_erase_spec (map_specs : map_spec list) =
         | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));];}
 
 
-let expire_items_single_map_spec ityps =
-  let other_types excl_ityp =
-    List.filter ityps ~f:(fun ityp ->
-        ityp <> excl_ityp)
+let expire_items_single_map_spec typs =
+  let other_types excl_typ =
+    List.filter typs ~f:(fun typ ->
+        typ <> excl_typ)
   in
   {ret_type = Static Sint32;
    arg_types = stt [Ptr dchain_struct;
@@ -924,10 +924,10 @@ let expire_items_single_map_spec ityps =
    lemmas_before = [
      (fun _ ->
         "switch(expire_items_single_map_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi ityps ~f:(fun i ityp ->
+        (String.concat ~sep:"" (List.mapi typs ~f:(fun i typ ->
              " case " ^ (string_of_int i) ^ ":\n" ^
-             (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun other_ityp ->
-                  "//@ close hide_mapp<" ^ other_ityp ^ ">(_, _, _, _, _);\n"
+             (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun other_typ ->
+                  "//@ close hide_mapp<" ^ ityp_name other_typ ^ ">(_, _, _, _, _);\n"
                 ))) ^
               "break;\n"
            )) ) ^
@@ -964,7 +964,8 @@ let expire_items_single_map_spec ityps =
    lemmas_after = [
      (fun {tmp_gen;_} ->
         "switch(expire_items_single_map_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi ityps ~f:(fun i ityp ->
+        (String.concat ~sep:"" (List.mapi typs ~f:(fun i typ ->
+             let ityp = ityp_name typ in
              " case " ^ (string_of_int i) ^ ":\n" ^
              "/*@ {\n\
               assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
@@ -978,8 +979,8 @@ let expire_items_single_map_spec ityps =
              (tmp_gen "fm") ^ ", " ^
              (tmp_gen "fvk") ^ ", " ^
              (tmp_gen "ch") ^ ");\n} @*/\n" ^
-             (String.concat ~sep:"" (List.map (other_types ityp) ~f:(fun other_ityp ->
-                  "//@ open hide_mapp<" ^ other_ityp ^ ">(_, _, _, _, _);\n"
+             (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun other_typ ->
+                  "//@ open hide_mapp<" ^ ityp_name other_typ ^ ">(_, _, _, _, _);\n"
                 ))) ^
               "break;\n"
            )) ) ^
@@ -1160,7 +1161,7 @@ let gen_lma_literals containers =
        | Map (name, _, _) -> Some (lma_literal_name name)
        | _ -> None))
 
-let gen_dchain_specs containers =
+let gen_dchain_params containers =
   List.filter_map containers ~f:(fun (_, ctyp) ->
        match ctyp with
          | EMap (typ, _, _, chain) -> Some typ
@@ -1224,3 +1225,26 @@ let gen_preamble nf_loop containers =
        | EMap (typ, _, _, _) -> "//@ " ^ (ityp_name typ) ^ " " ^ (lsim_variable_name typ) ^ ";\n"
        | _ -> ""
      )))
+
+let gen_map_params containers records =
+  let is_map_coherent map = List.exists containers ~f:(fun (_,ctyp) ->
+      match ctyp with
+      | EMap (_, emap_map, _, _) -> map = emap_map
+      | _ -> false)
+  in
+  List.filter_map containers ~f:(fun (name,ctyp) ->
+      match ctyp with
+      | Map (typ, _, _) -> Some {typ;coherent=is_map_coherent name;entry_type=String.Map.find_exn records typ}
+      | _ -> None)
+
+let gen_vector_params containers records =
+  let has_keeper vec = List.exists containers ~f:(fun (_,ctyp) ->
+      match ctyp with
+      | EMap (_, _, emap_vec, _) -> vec = emap_vec
+      | _ -> false)
+  in
+  List.filter_map containers ~f:(fun (name,ctyp) ->
+      match ctyp with
+      | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;entry_type=String.Map.find_exn records typ}
+      | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32}
+      | _ -> None)

@@ -32,49 +32,34 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "
                   "", EMap ("ip_addr", "ip_to_backend_id", "backend_ips", "active_backends");
                  ]
 
+let records = String.Map.of_alist_exn
+    ["LoadBalancedFlow", lb_flow_struct;
+     "ip_addr", ip_addr_struct;
+     "uint32_t", Uint32;
+     "LoadBalancedBackend", lb_backend_struct]
+
 let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
      [hash_spec lb_flow_struct;
       "loop_invariant_consume", (loop_invariant_consume_spec containers);
       "loop_invariant_produce", (loop_invariant_produce_spec containers);
-      "dchain_allocate", (dchain_alloc_spec (gen_dchain_specs containers));
-      "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_specs containers));
-      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
+      "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
+      "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_params containers));
+      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_params containers));
       "dchain_is_index_allocated", dchain_is_index_allocated_spec;
-      "dchain_free_index", (dchain_free_index_spec (gen_dchain_specs containers)) ;
-      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
-      "map_allocate", (map_alloc_spec
-                         [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
-                          {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
-      "map_get", (map_get_spec
-                    [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
-                     {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
-      "map_put", (map_put_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
-                                {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
-      "map_erase", (map_erase_spec [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct};
-                                    {typ="ip_addr";coherent=true;entry_type=ip_addr_struct}]);
+      "dchain_free_index", (dchain_free_index_spec (gen_dchain_params containers)) ;
+      "expire_items_single_map", (expire_items_single_map_spec (gen_dchain_params containers));
+      "map_allocate", (map_alloc_spec (gen_map_params containers records));
+      "map_get", (map_get_spec (gen_map_params containers records));
+      "map_put", (map_put_spec (gen_map_params containers records));
+      "map_erase", (map_erase_spec (gen_map_params containers records));
       "map_size", map_size_spec;
       "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
-      "vector_allocate", (vector_alloc_spec [
-          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32};
-          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct};
-          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32};]);
+      "vector_allocate", (vector_alloc_spec (gen_vector_params containers records));
       "cht_fill_cht", cht_fill_cht_spec;
-      "vector_borrow", (vector_borrow_spec [
-          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32};
-          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct};
-          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32};]);
-      "vector_return", (vector_return_spec [
-          {typ="LoadBalancedFlow";has_keeper=true;entry_type=lb_flow_struct};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32};
-          {typ="ip_addr";has_keeper=true;entry_type=ip_addr_struct};
-          {typ="LoadBalancedBackend";has_keeper=false;entry_type=lb_backend_struct};
-          {typ="uint32_t";has_keeper=false;entry_type=Uint32};]);])
+      "vector_borrow", (vector_borrow_spec (gen_vector_params containers records));
+      "vector_return", (vector_return_spec (gen_vector_params containers records));])
 
 module Iface : Fspec_api.Spec =
 struct

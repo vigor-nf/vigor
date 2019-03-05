@@ -20,34 +20,27 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "dev_count", UInt32;
                   "", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
+let records = String.Map.of_alist_exn
+    ["ether_addr", ether_addr_struct;
+     "DynamicValue", dynamic_value_struct;
+     "StaticKey", static_key_struct]
+
 let fun_types =
   String.Map.of_alist_exn
     (common_fun_types @
     [(hash_spec ether_addr_struct);
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
-     "dchain_allocate", (dchain_alloc_spec (gen_dchain_specs containers));
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_specs containers));
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
-     "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
-     "map_allocate", (map_alloc_spec [
-         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct};
-         {typ="StaticKey";coherent=false;entry_type=static_key_struct}]) ;
-     "map_get", (map_get_spec [
-         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct};
-         {typ="StaticKey";coherent=false;entry_type=static_key_struct}]);
-     "map_put", (map_put_spec [
-         {typ="ether_addr";coherent=true;entry_type=ether_addr_struct};
-         {typ="StaticKey";coherent=false;entry_type=static_key_struct}]);
-     "vector_allocate", (vector_alloc_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct};
-        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct};
-        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct};]);
-     "vector_borrow", (vector_borrow_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct};
-        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct};
-        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct};]) ;
-     "vector_return", (vector_return_spec [{typ="ether_addr";has_keeper=true;entry_type=ether_addr_struct};
-        {typ="DynamicValue";has_keeper=false;entry_type=dynamic_value_struct};
-        {typ="StaticKey";has_keeper=true;entry_type=static_key_struct};]);])
+     "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_params containers));
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_params containers));
+     "expire_items_single_map", (expire_items_single_map_spec (gen_dchain_params containers));
+     "map_allocate", (map_alloc_spec (gen_map_params containers records)) ;
+     "map_get", (map_get_spec (gen_map_params containers records));
+     "map_put", (map_put_spec (gen_map_params containers records));
+     "vector_allocate", (vector_alloc_spec (gen_vector_params containers records));
+     "vector_borrow", (vector_borrow_spec (gen_vector_params containers records)) ;
+     "vector_return", (vector_return_spec (gen_vector_params containers records));])
 
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
