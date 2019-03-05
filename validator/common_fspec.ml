@@ -434,7 +434,7 @@ let open_callback entry_type arg =
                           (String.concat ~sep:"" (List.map fields ~f:(fun (name,ttype) ->
                                match ttype with
                                | Str (str_name, _) ->
-                                 "//@ open [_]" ^ pred_name str_name ^ "(" ^ arg ^ ")." ^ name ^ ", _);\n"
+                                 "//@ open [_]" ^ pred_name str_name ^ "(" ^ arg ^ "." ^ name ^ ", _);\n"
                                | _ -> "")) )
   | Uint32 -> ""
   | _ -> "#error open callback is not implemented"
