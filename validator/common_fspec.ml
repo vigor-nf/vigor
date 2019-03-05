@@ -1248,3 +1248,26 @@ let gen_vector_params containers records =
       | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;entry_type=String.Map.find_exn records typ}
       | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32}
       | _ -> None)
+
+let fun_types containers records =
+  String.Map.of_alist_exn
+    (common_fun_types @
+    ["loop_invariant_consume", (loop_invariant_consume_spec containers);
+     "loop_invariant_produce", (loop_invariant_produce_spec containers);
+     "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_params containers));
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_params containers));
+     "dchain_free_index", (dchain_free_index_spec (gen_dchain_params containers)) ;
+     "dchain_is_index_allocated", dchain_is_index_allocated_spec;
+     "expire_items_single_map", (expire_items_single_map_spec (gen_dchain_params containers));
+     "map_allocate", (map_alloc_spec (gen_map_params containers records));
+     "map_get", (map_get_spec (gen_map_params containers records));
+     "map_put", (map_put_spec (gen_map_params containers records));
+     "map_erase", (map_erase_spec (gen_map_params containers records));
+     "map_size", map_size_spec;
+     "cht_fill_cht", cht_fill_cht_spec;
+     "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
+     "vector_allocate", (vector_alloc_spec (gen_vector_params containers records));
+     "vector_borrow",      (vector_borrow_spec (gen_vector_params containers records));
+     "vector_return",      (vector_return_spec (gen_vector_params containers records));])
+

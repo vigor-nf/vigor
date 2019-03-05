@@ -25,28 +25,11 @@ let records = String.Map.of_alist_exn
      "DynamicValue", dynamic_value_struct;
      "StaticKey", static_key_struct]
 
-let fun_types =
-  String.Map.of_alist_exn
-    (common_fun_types @
-    [(hash_spec ether_addr_struct);
-     "loop_invariant_consume", (loop_invariant_consume_spec containers);
-     "loop_invariant_produce", (loop_invariant_produce_spec containers);
-     "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_params containers));
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_params containers));
-     "expire_items_single_map", (expire_items_single_map_spec (gen_dchain_params containers));
-     "map_allocate", (map_alloc_spec (gen_map_params containers records)) ;
-     "map_get", (map_get_spec (gen_map_params containers records));
-     "map_put", (map_put_spec (gen_map_params containers records));
-     "vector_allocate", (vector_alloc_spec (gen_vector_params containers records));
-     "vector_borrow", (vector_borrow_spec (gen_vector_params containers records)) ;
-     "vector_return", (vector_return_spec (gen_vector_params containers records));])
-
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
 struct
   let preamble = gen_preamble "vigbridge/bridge_loop.h" containers
-  let fun_types = fun_types
+  let fun_types = fun_types containers records
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"
   let eventproc_iteration_begin = "loop_invariant_produce"
