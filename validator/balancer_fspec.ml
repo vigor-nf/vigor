@@ -38,14 +38,11 @@ let fun_types =
      [hash_spec lb_flow_struct;
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
-      "dchain_allocate", (dchain_alloc_spec [("65536", Some "LoadBalancedFlowi");
-                                             ("20", Some "ip_addri")]);
-      "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_map_related_specs containers));
-      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_map_related_specs containers));
-
+      "dchain_allocate", (dchain_alloc_spec (gen_dchain_specs containers));
+      "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_specs containers));
+      "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
-     "dchain_free_index", (dchain_free_index_spec ["LoadBalancedFlowi", lma_literal_name "LoadBalancedFlow", "last_flow_searched_in_the_map";
-                                                   "ip_addri", lma_literal_name "ip_addr", "last_ip_addr_searched_in_the_map"]) ;
+     "dchain_free_index", (dchain_free_index_spec (gen_dchain_specs containers)) ;
      "expire_items_single_map", (expire_items_single_map_spec ["LoadBalancedFlowi";"ip_addri"]);
       "map_allocate", (map_alloc_spec
                          [{typ="LoadBalancedFlow";coherent=true;entry_type=lb_flow_struct;open_callback=(fun name ->

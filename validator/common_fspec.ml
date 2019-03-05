@@ -527,29 +527,23 @@ let dchain_alloc_spec dchain_specs =
    extra_ptr_types = [];
    lemmas_before = [];
    lemmas_after =
-     (fun {ret_name;_} ->
+     [(fun {ret_name;args;_} ->
         "switch(dchain_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi dchain_specs ~f:(fun i (cap,mvc_coherent_ityp) ->
+        (String.concat ~sep:"" (List.mapi dchain_specs ~f:(fun i typ ->
              " case " ^ (string_of_int i) ^ ":\n" ^
-             "//@ index_range_of_empty(" ^ cap ^ ", 0);\n" ^
-             (match mvc_coherent_ityp with
-              | Some ityp -> 
-                "/*@ if (" ^ ret_name ^ " != 0) {\n\
-                                     assert vectorp<" ^ ityp ^
-                ">(_, _, ?allocated_vector, _);\n\
-                 empty_map_vec_dchain_coherent\
-                 <" ^ ityp ^ ">(allocated_vector);\n} @*/\n"
-              | None -> ""
-             ) ^
+             "//@ index_range_of_empty(" ^ (List.nth_exn args 0) ^ ", 0);\n" ^
+             "/*@ if (" ^ ret_name ^
+             " != 0) {\n\
+              assert vectorp<" ^ ityp_name typ ^
+             ">(_, _, ?allocated_vector, _);\n\
+              empty_map_vec_dchain_coherent\
+              <" ^ ityp_name typ ^ ">(allocated_vector);\n} @*/\n" ^
              "break;\n"
            ))) ^
         "default:\n\
          assert false;\n\
          }\n" ^
-     "dchain_allocation_order += 1;")
-     ::
-     (List.map dchain_specs ~f:(fun (cap,mvc_coherent_ityp) ->
-        (tx_l ("index_range_of_empty(" ^ cap ^ ", 0);"))))}
+     "dchain_allocation_order += 1;")]}
 
 let loop_invariant_consume_spec_impl types =
   {ret_type = Static Void;
@@ -983,11 +977,6 @@ let expire_items_single_map_spec ityps =
      "expire_items_single_map_order += 1;");
    ];}
 
-type dchain_map_related_spec = {
-  ityp : string;
-  lma_literal : string;
-}
-
 let dchain_allocate_new_index_spec dchain_specs =
   {ret_type = Static Sint32;
    arg_types = stt [Ptr dchain_struct; Ptr Sint32; vigor_time_t;];
@@ -1017,17 +1006,17 @@ let dchain_allocate_new_index_spec dchain_specs =
         (List.nth_exn params.args 1) ^ ";\n");
      (fun {args;tmp_gen;ret_name;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun {ityp;lma_literal} ->
-             " case " ^ lma_literal ^ ":\n" ^
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun typ ->
+             " case " ^ lma_literal_name typ ^ ":\n" ^
              "/*@ if (" ^ ret_name ^
              " != 0) {\n\
               assert map_vec_chain_coherent<" ^
-             ityp ^ ">(?" ^
+             ityp_name typ ^ ">(?" ^
              (tmp_gen "cur_map") ^ ", ?" ^
              (tmp_gen "cur_vec") ^ ", " ^
              (tmp_gen "cur_ch") ^
              ");\n\
-              mvc_coherent_alloc_is_halfowned<" ^ ityp ^
+              mvc_coherent_alloc_is_halfowned<" ^ ityp_name typ ^
              ">(" ^
              (tmp_gen "cur_map") ^ ", " ^
              (tmp_gen "cur_vec") ^ ", " ^
@@ -1045,11 +1034,11 @@ let dchain_rejuvenate_index_spec dchain_specs =
      capture_chain "cur_ch" 0;
      (fun {args;tmp_gen;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun {ityp;lma_literal} ->
-             " case " ^ lma_literal ^ ":\n" ^
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun typ ->
+             " case " ^ lma_literal_name typ ^ ":\n" ^
              "/*@ {\n\
               assert map_vec_chain_coherent<" ^
-             ityp ^ ">(?" ^
+             ityp_name typ ^ ">(?" ^
              (tmp_gen "cur_map") ^ ", ?" ^
              (tmp_gen "cur_vec") ^ ", " ^
              (tmp_gen "cur_ch") ^
@@ -1070,12 +1059,13 @@ let dchain_rejuvenate_index_spec dchain_specs =
    lemmas_after = [
      (fun {args;ret_name;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun {ityp;lma_literal} ->
-             " case " ^ lma_literal ^ ":\n" ^
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun typ ->
+             " case " ^ lma_literal_name typ ^ ":\n" ^
              "/*@ if (" ^ ret_name ^
              " != 0) { \n" ^
-             "assert map_vec_chain_coherent<" ^ ityp ^ ">\
-                                                        (?cur_map,?cur_vec,?cur_ch);\n" ^
+             "assert map_vec_chain_coherent<" ^ ityp_name typ ^
+             ">\
+              (?cur_map,?cur_vec,?cur_ch);\n" ^
              "mvc_rejuvenate_preserves_coherent(cur_map,\
               cur_vec, cur_ch, " ^
              (List.nth_exn args 1) ^ ", "
@@ -1095,16 +1085,16 @@ let dchain_free_index_spec dchain_specs =
      capture_chain "cur_ch" 0;
      (fun {args;tmp_gen;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun (ityp,lma_literal,lsim_variable) ->
-             " case " ^ lma_literal ^ ":\n" ^
-             "//@ assert map_vec_chain_coherent<" ^ ityp ^ ">(?" ^
+        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun typ ->
+             " case " ^ lma_literal_name typ ^ ":\n" ^
+             "//@ assert map_vec_chain_coherent<" ^ ityp_name typ ^ ">(?" ^
              (tmp_gen "map") ^ ", ?" ^
              (tmp_gen "vec") ^ ", " ^
              (tmp_gen "cur_ch") ^ ");\n" ^
              "//@ mvc_coherent_erase(" ^
              (tmp_gen "map") ^ ", " ^
              (tmp_gen "vec") ^ ", " ^
-             (tmp_gen "cur_ch") ^ ", " ^ lsim_variable ^ ");\n" ^
+             (tmp_gen "cur_ch") ^ ", " ^ lsim_variable_name typ ^ ");\n" ^
              "//@ remove_index_keeps_high_bounded(" ^
              (tmp_gen "cur_ch") ^ ", " ^
              (List.nth_exn args 1) ^ ");\n" ^
@@ -1158,12 +1148,11 @@ let gen_lma_literals containers =
        | Map (name, _, _) -> Some (lma_literal_name name)
        | _ -> None))
 
-let gen_dchain_map_related_specs containers =
-  (List.filter_map containers ~f:(fun (_, ctyp) ->
+let gen_dchain_specs containers =
+  List.filter_map containers ~f:(fun (_, ctyp) ->
        match ctyp with
-       | EMap (typ, _, _, _) -> Some {ityp=(ityp_name typ);lma_literal=(lma_literal_name typ)}
-       | _ -> None
-     ))
+         | EMap (typ, _, _, chain) -> Some typ
+         | _ -> None)
 
 let gen_preamble nf_loop containers =
   let lma_literals = gen_lma_literals containers in

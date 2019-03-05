@@ -32,14 +32,14 @@ let fun_types =
      "vector_allocate", (vector_alloc_spec [{typ="FlowId";has_keeper=true;entry_type=flow_id_struct;open_callback=noop}]);
      "vector_borrow", (vector_borrow_spec [{typ="FlowId";has_keeper=true;entry_type=flow_id_struct;open_callback=noop}]);
      "vector_return", (vector_return_spec [{typ="FlowId";has_keeper=true;entry_type=flow_id_struct;open_callback=noop}]);
-     "dchain_allocate", (dchain_alloc_spec [("65535",(Some "FlowIdi"))]);
+     "dchain_allocate", (dchain_alloc_spec (gen_dchain_specs containers));
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "map_get", (map_get_spec [{typ="flowid";coherent=true;entry_type=flow_id_struct;open_callback=noop}]);
      "map_put", (map_put_spec [{typ="flowid";coherent=true;entry_type=flow_id_struct;open_callback=noop}]) ;
      "expire_items_single_map", (expire_items_single_map_spec ["FlowIdi"]);
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_map_related_specs containers));
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_map_related_specs containers));
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_specs containers));
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
     ])
 

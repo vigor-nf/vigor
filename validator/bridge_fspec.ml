@@ -26,9 +26,9 @@ let fun_types =
     [(hash_spec ether_addr_struct);
      "loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
-     "dchain_allocate", (dchain_alloc_spec [("65536",(Some "ether_addri"))]);
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_map_related_specs containers));
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_map_related_specs containers));
+     "dchain_allocate", (dchain_alloc_spec (gen_dchain_specs containers));
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_specs containers));
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_specs containers));
      "expire_items_single_map", (expire_items_single_map_spec ["ether_addri"; "StaticKeyi"]);
      "map_allocate", (map_alloc_spec [
          {typ="ether_addr";coherent=true;entry_type=ether_addr_struct;open_callback=(fun name ->
