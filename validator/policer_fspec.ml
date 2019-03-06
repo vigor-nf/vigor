@@ -18,7 +18,8 @@ let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
                  ]
 
 let records = String.Map.of_alist_exn
-                ["ip_addr", ip_addr_struct]
+                ["ip_addr", ip_addr_struct;
+                 "DynamicValue", dynamic_value_struct]
 
 (* TODO: make external_ip symbolic *)
 module Iface : Fspec_api.Spec =
