@@ -6,22 +6,12 @@
 
 static
 uint64_t loop(uint64_t k, uint64_t capacity)
-//@ requires 0 < capacity &*& 2*capacity < INT_MAX;
-/*@ ensures 0 <= result &*& result < capacity &*&
-  result == loop_fp(k, capacity); @*/
+//@ requires 0 < capacity &*& capacity < INT_MAX;
+/*@ ensures 0 <= result &*& result < capacity &*& result == k%capacity; @*/
 {
   uint64_t g = k%capacity;
-  //@ div_mod(g, k, capacity);
-  //@ assert(2*capacity< INT_MAX);
-
-  //FIXME: this step is unnecessary and expensive.
-  // It was semantically justified for negitive numbers.
-  // However, once we switched to unsigned hashes, it is just an expensive
-  // identity function. Remove it.
-
-  uint64_t res = (g + capacity)%capacity;
-  //@ div_mod_gt_0(res, g + capacity, capacity);
-  return res;
+  //@ div_mod_gt_0(g, k, capacity);
+  return g;
 }
 
 void
