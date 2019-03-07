@@ -2,7 +2,7 @@
 
 #include "router.h"
 
-int * insert_all(FILE * f, struct lpm_trie * t);
+
 struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
 void nf_core_process(struct lpm_trie * trie);
 struct lpm_trie * nf_core_init(void);
@@ -22,17 +22,15 @@ int main(){		router doesn't necessarily needs to be executable (can be called fr
 	return 0;
 }*/
 
+
+
+
 /**
  * Initialize the NF
  */
   struct lpm_trie * nf_core_init(void){
 	
-	//bind NICs
 	
-	//create data structure
-	
-
-    struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
     
 	//read routes from file	
 	
@@ -43,14 +41,27 @@ int main(){		router doesn't necessarily needs to be executable (can be called fr
         abort();
 	}
 	
-	//insert all routes into data structure and returns list of values (NIC port)
 	
-	int* res = insert_all(in_file, trie);
 	
-	if(!res){
+	int * ports = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
+	
+	if(!ports){
 		fclose(in_file);
 		abort();
 	}
+	
+	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
+	struct lpm_trie *trie = insert_all(in_file, ports);
+	
+	if(!trie){
+		fclose(in_file);
+		abort();
+	}
+	
+	
+	//bind NICs
+	
+	
     
     //close file
     fclose(in_file);
@@ -72,27 +83,23 @@ void nf_core_process(struct lpm_trie * trie){
 /**
  * insert all routes from the csv file to the lpm trie
  */
-int * insert_all(FILE * f, struct lpm_trie * t){
+struct lpm_trie * insert_all(FILE * f, int * ports){
+	
+	struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+	
+	if(!trie){
+		printf("Could not initialize trie !\n");
+		return NULL;
+	}
 	
     size_t length = 0;
     char * line = NULL;
     int csvLength = 0;
     size_t entries_count = 0;
-    
-    int * res = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
-    if(!res){
-		printf("Could not allocate memory !\n");
-		return NULL;
-	}
+
  
 	while ((csvLength = getline(&line, &length, f)) >= MIN_ENTRY_SIZE) {
 		
-		struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
-	
-		if(!key){
-			printf("Could not allocate memory !\n");
-			return NULL;
-		}
     
 		uint8_t * ip = NULL;
 		uint32_t mask = 0;
@@ -148,7 +155,7 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 	
 				port = get_number(port_part, count);
 
-				res[entries_count] = port;
+				ports[entries_count] = port;
 				entries_count++;
 				
 			}
@@ -156,28 +163,24 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 				count++;
 			}
 		}
- 
-    
-		key->prefixlen = mask;
-		memcpy(key->data, ip, IPV4_IP_SIZE);
 		
-		int res = trie_update_elem(t, key, port);
+		printf("The mask is : %u \n", mask);
+		printf("The ip is : %u", ip[0]);
+		printf(".%u", ip[1]);
+		printf(".%u", ip[2]);
+		printf(".%u \n", ip[3]);
+		printf("Port is : %d\n", port);
 		
+		fflush(stdout);
+   
+		struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
+		
+		int res = trie_update_elem(trie, key, port);
       
-      /*
-	int value_1 = 1;
-    int res = trie_update_elem(t, key_1, value_1);
-    if(res)
-        //error
-
-    struct lpm_trie_node *node_1 = pointer_from_int(t->root, t);
-    res = memcmp(node_1->data, key_1->data, LPM_DATA_SIZE);
-    if(res)
-        //error
-  
-  
-        */
-      
+		if(res){
+			printf("error during update. error is : %d\n",res); fflush(stdout);
+			return NULL;
+		}
       
 		if(ip){
 			free(ip);
@@ -195,7 +198,7 @@ int * insert_all(FILE * f, struct lpm_trie * t){
 		line = NULL;
 	}
 	
-	return res;
+	return trie;
 	
 
 }

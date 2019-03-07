@@ -14,6 +14,6 @@
 /**
  * insert all routes from the csv file to the lpm trie
  */
-int * insert_all(FILE * f, struct lpm_trie * t);
+struct lpm_trie * insert_all(FILE * f, int * ports);
 
 #endif
