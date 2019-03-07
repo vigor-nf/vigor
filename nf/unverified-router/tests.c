@@ -8,6 +8,8 @@
 void test_math();
 void test_parse_utils();
 void test_insert_in_trie();
+void test_lookup();
+int test_update_elem();
 
 int main(){
 	
@@ -18,6 +20,10 @@ int main(){
 	//test parse_utils.c
 	
 	test_parse_utils();
+	
+	//test the lookup
+	test_lookup();
+	
 	
 	//test trie initialization
 	test_insert_in_trie();
@@ -90,25 +96,118 @@ void test_parse_utils(){
 	
 }
 
+struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
+{
+    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+    key->prefixlen = prefixlen;
+    memcpy(key->data, data, LPM_DATA_SIZE);
+    return key;
+}
+
+struct lpm_trie_node *pointer_from_int(int index, struct lpm_trie *trie)
+{
+    return trie->node_mem_blocks + index;
+}
+
+void test_lookup(){
+	
+	//setup Trie
+	
+	struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+	
+	uint8_t data_1[4] = {192, 168, 0, 0};
+    struct lpm_trie_key *key_1 = lpm_trie_key_alloc(16, data_1);
+    uint8_t data_2[4] = {192, 168, 0, 0};
+    struct lpm_trie_key *key_2 = lpm_trie_key_alloc(24, data_2);
+	
+    
+    int res1 = trie_update_elem(trie, key_1, 1);
+	int res2 = trie_update_elem(trie, key_2, 2);
+	
+	if(res1 || res2){
+		assert(0);
+	}
+    
+    uint8_t data[4] = {192, 168, 0, 12};
+    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+	key->prefixlen = 32;
+    memcpy(key->data, data, 4 * sizeof(uint8_t));
+	
+	//Test
+	
+	int res_1 = trie_lookup_elem(trie, key);
+    
+    printf("Result is : %d\n", res_1);
+    
+    assert(res_1 == 2);
+    
+    free(trie);
+    free(key_1);
+    free(key_2);
+}
+
+
 
 void test_insert_in_trie(){
 	
 	
 	FILE * routes = fopen("routes", "r");
 	
+	int * ports = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
 	
-    struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
-    
+	if(!ports){
+		assert(0);
+	}
+	  
+    struct lpm_trie *trie = insert_all(routes, ports);
   
-    int * ports = insert_all(routes, trie);
   
+	if(!trie){
+		assert(0);
+	}
     
     assert(ports[0] == 0);		//ports that were read from the file
     assert(ports[1] == 1);
     
+    uint8_t data[4] = {192, 168, 0, 12};
+     
+    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+	key->prefixlen = 32;
+    memcpy(key->data, data, 4 * sizeof(uint8_t));
+    
+    
+    uint8_t data_2[4] = {192, 168, 1, 12};
+     
+    struct lpm_trie_key *key_2 = malloc(sizeof(struct lpm_trie_key));
+	key_2->prefixlen = 32;
+    memcpy(key_2->data, data_2, 4 * sizeof(uint8_t));
+    
+    
+    uint8_t data_3[4] = {192, 168, 1, 9};
+     
+    struct lpm_trie_key *key_3 = malloc(sizeof(struct lpm_trie_key));
+	key_3->prefixlen = 32;
+    memcpy(key_3->data, data_3, 4 * sizeof(uint8_t));
+
+
+    int res_1 = trie_lookup_elem(trie, key);
+    
+    int res_2 = trie_lookup_elem(trie, key_2);
+    
+    int res_3 = trie_lookup_elem(trie, key_3);
+    
+    printf("Result is : %d\n", res_1);
+    printf("Result is : %d\n", res_2);
+    printf("Result is : %d\n", res_3);
+    
+    assert(res_1 == 1);
+    assert(res_2 == 2);
+    assert(res_3 == 3);
+    
 	fclose(routes);
 
 	free(trie);
+	free(key);
 }
 
 
