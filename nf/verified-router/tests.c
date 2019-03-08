@@ -17,6 +17,10 @@ int main(){
 	test_insert_in_trie();
 	printf("test_insert_in_trie ended up well!\n");
 	
+	
+	test_lookup();
+	printf("test_lookup ended up well!\n");
+	
 	return 0;
 }
 
@@ -80,24 +84,63 @@ void test_insert_in_trie(){
 	FILE * routes = fopen("routes", "r");
 	
 	
-    struct lpm_trie *trie = lpm_trie_alloc(MAX_ENTRY_SIZE);
-  
-    int *ports = insert_all(routes, trie);
+    struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+    
+    insert_all(routes, trie);
   
     
-    assert(ports[0] == 0);		//ports that were read from the file
-    assert(ports[1] == 1);
-    assert(ports[2] == 2);
+    assert(ports[0] == 1);		//ports that were read from the file
+    assert(ports[1] == 2);
+    assert(ports[2] == 3);
     
 	fclose(routes);
 	
-	uint8_t data1[4] = {192, 168, 1, 9};
+	uint8_t data1[4] = {192, 168, 5, 12};
 	struct lpm_trie_key *key1 = lpm_trie_key_alloc(32, data1);
 	
 	int res1 = trie_lookup_elem(trie, key1);
 	printf("%d\n", res1);
 
 	free(trie);
+}
+
+void test_lookup(){
+	
+	//setup Trie
+	
+	struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+	
+	uint8_t data_1[4] = {192, 168, 0, 0};
+    struct lpm_trie_key *key_1 = lpm_trie_key_alloc(16, data_1);
+    uint8_t data_2[4] = {192, 168, 0, 0};
+    struct lpm_trie_key *key_2 = lpm_trie_key_alloc(24, data_2);
+    uint8_t data_3[4] = {192, 168, 5, 12};
+    struct lpm_trie_key *key_3 = lpm_trie_key_alloc(32, data_3);
+    
+    int res1 = trie_update_elem(trie, key_1, 1);
+    int res2 = trie_update_elem(trie, key_2, 2);
+	int res3 = trie_update_elem(trie, key_3, 3);
+	
+	if(res1 || res2 || res3){
+		assert(0);
+	}
+    
+    uint8_t data[4] = {192, 168, 5, 12};
+    struct lpm_trie_key *key = lpm_trie_key_alloc(32, data);
+
+	
+	//Test
+	
+	int res_1 = trie_lookup_elem(trie, key);
+    
+    printf("Result is : %d\n", res_1);
+    
+    assert(res_1 == 3);
+    
+    free(trie);
+    free(key_1);
+    free(key_2);
+    free(key_3);
 }
 
 
