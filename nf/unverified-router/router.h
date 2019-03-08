@@ -4,7 +4,7 @@
 
 #define MAX_ROUTES_ENTRIES 256
 
-#include "lpm_trie/lpm_trie_mem.h"
+#include "lib/containers/lpm_trie_mem.h"
 #include "parse_utils.h"
 #include <stdio.h>
 //#include <math.h>
@@ -16,7 +16,7 @@
 #include <rte_ethdev.h>
 #include <rte_mbuf.h>
 #include <cmdline_parse_etheraddr.h>
-#include "nf_time.h"
+#include "lib/nf_time.h"
 
 
 /**

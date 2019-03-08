@@ -57,7 +57,10 @@ APP = router
 # sources
 SRCS-y := router.c parse_utils.c lpm_trie/lpm_trie.c lpm_trie/lib/double-chain.c lpm_trie/lib/double-chain-impl.c \
           ../nf_main.c \
-          ../lib/nf_time.c 
+          ../lib/nf_time.c \
+          ../lib/containers/double-chain-impl.c \
+          ../lib/containers/double-chain.c \
+          ../lib/containers/lpm_trie.c \
     
 
 # gcc flags
