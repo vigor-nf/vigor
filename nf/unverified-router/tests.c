@@ -1,6 +1,4 @@
 
-//#include "parse_utils.h" not needed since included in router.h
-//#include "math_utils.h"
 #include <assert.h>
 #include "router.h"
 
@@ -188,6 +186,12 @@ void test_insert_in_trie(){
     struct lpm_trie_key *key_3 = malloc(sizeof(struct lpm_trie_key));
 	key_3->prefixlen = 32;
     memcpy(key_3->data, data_3, 4 * sizeof(uint8_t));
+    
+    uint8_t data_4[4] = {192, 168, 5, 12};
+     
+    struct lpm_trie_key *key_4 = malloc(sizeof(struct lpm_trie_key));
+	key_4->prefixlen = 32;
+    memcpy(key_4->data, data_4, 4 * sizeof(uint8_t));
 
 
     int res_1 = trie_lookup_elem(trie, key);
@@ -196,13 +200,17 @@ void test_insert_in_trie(){
     
     int res_3 = trie_lookup_elem(trie, key_3);
     
+    int res_4 = trie_lookup_elem(trie, key_4);
+    
     printf("Result is : %d\n", res_1);
     printf("Result is : %d\n", res_2);
     printf("Result is : %d\n", res_3);
+    printf("Result is : %d\n", res_4);
     
     assert(res_1 == 1);
     assert(res_2 == 2);
     assert(res_3 == 3);
+    assert(res_4 == 4);
     
 	fclose(routes);
 

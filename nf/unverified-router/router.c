@@ -4,33 +4,15 @@
 
 
 struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
-void nf_core_process(struct lpm_trie * trie);
-struct lpm_trie * nf_core_init(void);
-
-/*
-int main(){		router doesn't necessarily needs to be executable (can be called from an other file e.g: tests.c)
-	
-	
-	struct lpm_trie * trie = nf_core_init();
-	
-	nf_core_process(trie);
-	
-	
-	free(trie);
-	trie = NULL;
-	
-	return 0;
-}*/
 
 
+struct lpm_trie *trie = NULL;		//the Trie that will be used by the nf (global variable)
 
 
 /**
  * Initialize the NF
  */
-  struct lpm_trie * nf_core_init(void){
-	
-	
+  void nf_core_init(void){
     
 	//read routes from file	
 	
@@ -51,32 +33,46 @@ int main(){		router doesn't necessarily needs to be executable (can be called fr
 	}
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
-	struct lpm_trie *trie = insert_all(in_file, ports);
+	trie = insert_all(in_file, ports);
 	
 	if(!trie){
 		fclose(in_file);
 		abort();
 	}
 	
-	
-	//bind NICs
-	
-	
-    
     //close file
     fclose(in_file);
     
-	return trie;
 }
+
 
 
 /**
  * Routes packets using a LPM Trie
  */
-void nf_core_process(struct lpm_trie * trie){
+uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
+	
+	 
+	struct ether_hdr * eth_hdr = rte_pktmbuf_mtod(m, struct ether_hdr *);
+	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
+
+	
+    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+    
+    if(!key){
+		printf("Couldn't allocate memory !");
+		abort();
+	}
+    
+	key->prefixlen = 32 //get prefix length
+    memcpy(key->data, ip_hdr->dst_addr, IPV4_IP_SIZE * sizeof(uint8_t));
 	
 	
+	uint16_t res = trie_lookup_elem(trie, key);
 	
+	free(key);
+	
+	return res;
 }
 
 
