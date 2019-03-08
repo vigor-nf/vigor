@@ -1,5 +1,5 @@
 #include "parse_utils.h"
-#include "lpm/lpm_trie/lpm_trie_mem.h"
+#include "lib/containers/lpm_trie_mem.h"
 #include <stdio.h>
 #include <linux/limits.h>
 #include <sys/types.h>
@@ -13,9 +13,7 @@
 #include "lib/nf_log.h"
 
 #include "lib/containers/double-chain.h"
-#include "lib/containers/map.h"
-#include "lib/containers/vector.h"
-#include "lib/expirator.h"
+
 
 struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
 void insert_all(FILE * f, struct lpm_trie *routing_table);
