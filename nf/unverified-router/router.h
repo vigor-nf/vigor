@@ -22,7 +22,7 @@
 /**
  * insert all routes from the csv file to the lpm trie
  */
-struct lpm_trie * insert_all(FILE * f, int * ports);
+void insert_all(FILE * f);
 
 
 /**

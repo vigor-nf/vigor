@@ -150,22 +150,15 @@ void test_insert_in_trie(){
 	
 	
 	FILE * routes = fopen("routes", "r");
-	
-	int * ports = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
-	
-	if(!ports){
-		assert(0);
-	}
+
 	  
-    struct lpm_trie *trie = insert_all(routes, ports);
+    insert_all(routes);
   
   
 	if(!trie){
 		assert(0);
 	}
     
-    assert(ports[0] == 0);		//ports that were read from the file
-    assert(ports[1] == 1);
     
     uint8_t data[4] = {192, 168, 0, 12};
      

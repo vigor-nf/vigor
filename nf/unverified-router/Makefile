@@ -1,6 +1,7 @@
 
+#test version
 
-#INC_DIR = ../lib
+ifeq ("0","1")
 
 #compilation flags
 CFLAGS=-W -Wall -std=c11 -pedantic 
@@ -34,7 +35,6 @@ lpm_trie/lib/double-chain.o: lpm_trie/lib/double-chain.c lpm_trie/lib/double-cha
 lpm_trie/lib/double-chain-impl.o: lpm_trie/lib/double-chain-impl.c
 	gcc -o lpm_trie/lib/double-chain-impl.o -c lpm_trie/lib/double-chain-impl.c $(CFLAGS)
 	
-	
 nf_time.o: nf_time.c nf_time.h
 	gcc -o nf_time.o -c nf_time.c $(CFLAGS)
 
@@ -44,3 +44,29 @@ include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 
 
 
+endif
+
+
+#version like unverified-nat
+
+include $(RTE_SDK)/mk/rte.vars.mk
+
+# binary name
+APP = router
+
+# sources
+SRCS-y := router.c parse_utils.c lpm_trie/lpm_trie.c lpm_trie/lib/double-chain.c lpm_trie/lib/double-chain-impl.c \
+          ../nf_main.c \
+          ../lib/nf_time.c 
+    
+
+# gcc flags
+CFLAGS += -O3
+CFLAGS += -I.. -I../..
+CFLAGS += -std=gnu99
+
+# disable warnings triggered by DPDK
+CFLAGS += -Wno-implicit-function-declaration
+CFLAGS += -Wno-nested-externs
+
+include $(RTE_SDK)/mk/rte.extapp.mk

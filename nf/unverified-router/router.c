@@ -24,16 +24,8 @@ struct lpm_trie *trie = NULL;		//the Trie that will be used by the nf (global va
 	}
 	
 	
-	
-	int * ports = calloc(MAX_ROUTES_ENTRIES, sizeof(int));
-	
-	if(!ports){
-		fclose(in_file);
-		abort();
-	}
-	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
-	trie = insert_all(in_file, ports);
+	insert_all(in_file);
 	
 	if(!trie){
 		fclose(in_file);
@@ -79,19 +71,18 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 /**
  * insert all routes from the csv file to the lpm trie
  */
-struct lpm_trie * insert_all(FILE * f, int * ports){
+void insert_all(FILE * f){
 	
-	struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+	trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
 	if(!trie){
 		printf("Could not initialize trie !\n");
-		return NULL;
+		abort();
 	}
 	
     size_t length = 0;
     char * line = NULL;
     int csvLength = 0;
-    size_t entries_count = 0;
 
  
 	while ((csvLength = getline(&line, &length, f)) >= MIN_ENTRY_SIZE) {
@@ -102,6 +93,7 @@ struct lpm_trie * insert_all(FILE * f, int * ports){
 		int port = 0;
 		int j = 0;
 		size_t count = 0;
+		size_t entries_count = 0;
 		
 		for(size_t i = 0; i < csvLength; ++i){
 
@@ -112,7 +104,7 @@ struct lpm_trie * insert_all(FILE * f, int * ports){
 
 					if(!ip){
 						printf("Error while parsing routes !\n"); 
-						return NULL;
+						abort();
 					}
 					
 					j++;
@@ -124,41 +116,41 @@ struct lpm_trie * insert_all(FILE * f, int * ports){
 					
 					if(!mask_part){
 						printf("Error while parsing routes !\n"); 
-						return NULL;
+						abort();
 					}
 					mask =  get_number(mask_part, count);
 					
 					if( mask > 32){
 						printf("Error while parsing routes !\n"); 
-						return NULL;
+						abort();
 					}
 					count = 0;
 				}
 				
 			}else if(i == csvLength -1){
-				
-				if(entries_count >= MAX_ROUTES_ENTRIES){
-					printf("Error too much entries in routes file !\n"); 
-					return NULL;
-				}
 
 				char * port_part = take(i - count , count, line, csvLength);
 				
 				if(!port_part){
 					printf("Error while parsing routes !\n"); 
-					return NULL;				
+					abort();				
 				}
 	
 				port = get_number(port_part, count);
-
-				ports[entries_count] = port;
-				entries_count++;
 				
 			}
 			else{
 				count++;
 			}
 		}
+		
+		entries_count++;
+		
+		if(entries_count >= MAX_ROUTES_ENTRIES){
+					printf("Error too much entries in routes file !\n"); 
+					abort();
+		}
+		
 		
 		printf("The mask is : %u \n", mask);
 		printf("The ip is : %u", ip[0]);
@@ -175,13 +167,14 @@ struct lpm_trie * insert_all(FILE * f, int * ports){
       
 		if(res){
 			printf("error during update. error is : %d\n",res); fflush(stdout);
-			return NULL;
+			abort();
 		}
       
 		if(ip){
 			free(ip);
 			ip = NULL;
 		}
+		
     }
 
 	
@@ -193,8 +186,5 @@ struct lpm_trie * insert_all(FILE * f, int * ports){
 		free(line);
 		line = NULL;
 	}
-	
-	return trie;
-	
 
 }
