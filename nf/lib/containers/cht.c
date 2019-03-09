@@ -14,13 +14,22 @@ uint64_t loop(uint64_t k, uint64_t capacity)
   return g;
 }
 
+/*@ 
+    lemma void mul_nonzero(int a, int b)
+        requires a > 0 &*& b > 0;
+        ensures a * b > 0;
+    {
+        mul_nonnegative(a - 1, b);
+        assert (a-1)*b < a*b;
+    }
+@*/
+
 void
 cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
 /*@ requires vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
              0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*&
-             MAX_CHT_HEIGHT*backend_capacity < INT_MAX &*&
-             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
              0 < backend_capacity &*& backend_capacity < cht_height &*&
+             sizeof(int)*MAX_CHT_HEIGHT*backend_capacity < INT_MAX &*&
              length(old_values) == cht_height*backend_capacity &*&
              true == forall(old_values, is_one); @*/
 /*@ ensures vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
@@ -38,8 +47,10 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
   
   //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
   //@ mul_bounds(sizeof(int)*cht_height, sizeof(int)*MAX_CHT_HEIGHT, backend_capacity, backend_capacity);
-  //@ assert((int)sizeof(int)*cht_height*(backend_capacity + 1) < INT_MAX);//TODO
-  //@ assert(0 < (int)sizeof(int)*cht_height*(backend_capacity + 1));//TODO
+  //@ mul_nonzero(sizeof(int)*cht_height, backend_capacity);
+  
+  //@ assert(0 < sizeof(int)*cht_height*backend_capacity);
+  //@ assert(sizeof(int)*cht_height*backend_capacity < INT_MAX);
 
   // Generate the permutations of 0..(cht_height - 1) for each backend
   int* permutations = malloc(sizeof(int)*(int)(cht_height*backend_capacity));
@@ -91,7 +102,6 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
                   true == forall(map(fst, take(i*backend_capacity + j, new_vals)), (ge)(0)); @*/
     {
       uint32_t* value;
-      //@ mul_bounds(bknd, backend_capacity - 1, cht_height, MAX_CHT_HEIGHT);
       //@ mul_bounds(bknd, backend_capacity - 1, cht_height, cht_height);
       uint32_t row = bknd*cht_height;
       uint32_t index = row + perm_pos;
