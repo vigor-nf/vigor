@@ -87,11 +87,7 @@ void test_insert_in_trie(){
     struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
     
     insert_all(routes, trie);
-  
-    
-    assert(ports[0] == 1);		//ports that were read from the file
-    assert(ports[1] == 2);
-    assert(ports[2] == 3);
+ 
     
 	fclose(routes);
 	

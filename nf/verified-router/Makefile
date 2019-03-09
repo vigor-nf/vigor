@@ -16,7 +16,7 @@ tests: tests.o parse_utils.o router_main.o lib/containers/lpm_trie.o lib/contain
 tests.o: tests.c parse_utils.h router_main.h
 	gcc -o tests.o -c tests.c $(CFLAGS)
 
-router_main.o: router_main.c lpm/lpm_trie/lpm_trie_mem.h parse_utils.h router_main.h
+router_main.o: router_main.c lib/containers/lpm_trie_mem.h parse_utils.h router_main.h
 	gcc -o router_main.o -c router_main.c $(CFLAGS)
 
 parse_utils.o: parse_utils.c parse_utils.h

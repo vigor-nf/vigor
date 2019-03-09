@@ -9,10 +9,10 @@
 #include <rte_mbuf.h>
 #include <cmdline_parse_etheraddr.h>
 #include "lib/nf_forward.h"
-#include "lib/nf_util.h"
-#include "lib/nf_log.h"
+//#include "lib/nf_util.h"
+//#include "lib/nf_log.h"
 
-#include "lib/containers/double-chain.h"
+//#include "lib/containers/double-chain.h"
 
 
 struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);

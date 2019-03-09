@@ -84,13 +84,6 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	}
 	
 	assert(ipv4_header != NULL);
-
-	/* Useful to check for UDP/TCP??
-	if(!nf_has_tcpudp_header(ipv4_header) || packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)){
-		NF_DEBUG("Not TCP/UDP, dropping packet");
-		return dst_device;
-	}
-	*/
 	
 	uint8_t ipv4[LPM_DATA_SIZE];
 	
