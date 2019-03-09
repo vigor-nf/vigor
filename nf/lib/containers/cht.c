@@ -37,17 +37,17 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
  
   
   //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
-  //@ mul_bounds(sizeof(int)*cht_height, sizeof(int)*MAX_CHT_HEIGHT, backend_capacity + 1, backend_capacity + 1);
+  //@ mul_bounds(sizeof(int)*cht_height, sizeof(int)*MAX_CHT_HEIGHT, backend_capacity, backend_capacity);
   //@ assert((int)sizeof(int)*cht_height*(backend_capacity + 1) < INT_MAX);//TODO
   //@ assert(0 < (int)sizeof(int)*cht_height*(backend_capacity + 1));//TODO
 
   // Generate the permutations of 0..(cht_height - 1) for each backend
-  int* permutations = malloc(sizeof(int)*(int)(cht_height*(backend_capacity + 1)));
+  int* permutations = malloc(sizeof(int)*(int)(cht_height*backend_capacity));
   //@ assume(permutations != 0);//TODO: report failure
   for (uint32_t i = 0; i < backend_capacity; ++i)
   /*@ invariant 0 <= i &*& i <= backend_capacity &*&
                 vectorp<uint32_t>(cht, u_integer, old_values, addrs) &*&
-                ints(permutations, cht_height*(backend_capacity + 1), _); @*/
+                ints(permutations, cht_height*backend_capacity, _); @*/
   {
     uint32_t offset_absolut = i*31;
     uint64_t offset = loop(offset_absolut, cht_height);
@@ -56,19 +56,20 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
     for (uint32_t j = 0; j < cht_height; ++j)
     /*@ invariant 0 <= j &*& j <= cht_height &*&
                   vectorp<uint32_t>(cht, u_integer, old_values, addrs) &*&
-                  ints(permutations, cht_height*(backend_capacity + 1), _); @*/
+                  ints(permutations, cht_height*backend_capacity, _); @*/
     {
       //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
       //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
       //@ mul_bounds(shift, MAX_CHT_HEIGHT, j, MAX_CHT_HEIGHT);
       uint64_t permut = loop(offset + shift*j, cht_height);
-      //@ mul_bounds(i, backend_capacity, cht_height, cht_height);
+      //@ mul_bounds(i, backend_capacity - 1, cht_height, cht_height);
+
       permutations[i*cht_height + j] = (int)permut;
     }
   }
   // Fill the priority lists for each hash in [0, cht_height)
   for (uint32_t i = 0; i < cht_height; ++i)
-  /*@ invariant ints(permutations, cht_height*(backend_capacity + 1), _) &*&
+  /*@ invariant ints(permutations, cht_height*backend_capacity, _) &*&
                 vectorp<uint32_t>(cht, u_integer, ?vals, addrs) &*&
                 0 <= i &*& i <= cht_height &*&
                 length(vals) == cht_height*backend_capacity &*&
@@ -79,7 +80,7 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
     uint32_t bknd = 0;
     uint32_t perm_pos = 0;
     for (uint32_t j = 0; j < backend_capacity; ++j)
-    /*@ invariant ints(permutations, cht_height*(backend_capacity + 1), _) &*&
+    /*@ invariant ints(permutations, cht_height*backend_capacity, _) &*&
                   vectorp<uint32_t>(cht, u_integer, ?new_vals, addrs) &*&
                   bknd < backend_capacity &*&
                   perm_pos < cht_height &*&
@@ -90,12 +91,12 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
                   true == forall(map(fst, take(i*backend_capacity + j, new_vals)), (ge)(0)); @*/
     {
       uint32_t* value;
-      //@ mul_bounds(bknd, backend_capacity, cht_height, MAX_CHT_HEIGHT);
-      //@ mul_bounds(bknd, backend_capacity, cht_height, cht_height);
+      //@ mul_bounds(bknd, backend_capacity - 1, cht_height, MAX_CHT_HEIGHT);
+      //@ mul_bounds(bknd, backend_capacity - 1, cht_height, cht_height);
       uint32_t row = bknd*cht_height;
       uint32_t index = row + perm_pos;
       while (permutations[index] != (int)i)
-      /*@ invariant ints(permutations, cht_height*(backend_capacity + 1), _) &*&
+      /*@ invariant ints(permutations, cht_height*backend_capacity, _) &*&
                     vectorp<uint32_t>(cht, u_integer, new_vals, addrs) &*&
                     bknd < backend_capacity &*&
                     perm_pos < cht_height; @*/
