@@ -62,7 +62,7 @@ cht_fill_cht(struct Vector* cht, uint32_t cht_height, uint32_t backend_capacity)
   {
     uint32_t offset_absolut = i*31;
     uint64_t offset = loop(offset_absolut, cht_height);
-    uint64_t base_shift = loop(i, cht_height);
+    uint64_t base_shift = loop(i, cht_height - 1);
     uint64_t shift = base_shift + 1;
     for (uint32_t j = 0; j < cht_height; ++j)
     /*@ invariant 0 <= j &*& j <= cht_height &*&
