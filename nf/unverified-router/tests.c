@@ -4,8 +4,6 @@
 
 
 
-//#define vigor_time_t uint64_t
-
 void test_math();
 void test_parse_utils();
 void test_insert_in_trie();

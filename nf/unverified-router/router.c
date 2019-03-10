@@ -2,6 +2,7 @@
 
 #include "router.h"
 
+struct lpm_trie * lpm_trie;
 
 
 /**

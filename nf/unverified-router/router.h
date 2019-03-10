@@ -4,19 +4,10 @@
 
 #define MAX_ROUTES_ENTRIES 256
 
-#ifdef NORMAL
+
 #include "containers/lpm_trie_mem.h"
 #include "nf_time.h"
 #warning "REAL ROUTER"
-#endif
-
-#ifdef TEST
-#include "../lib/containers/lpm_trie_mem.h"
-#include "../lib/nf_time.h"
-#warning "TEST MODE"
-#endif
-
-
 #include "parse_utils.h"
 #include <stdio.h>
 #include <ctype.h>
