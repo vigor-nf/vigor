@@ -3,11 +3,6 @@
 #include "router.h"
 
 
-struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
-
-
-struct lpm_trie *trie = NULL;		//the Trie that will be used by the nf (global variable)
-
 
 /**
  * Initialize the NF
@@ -27,7 +22,7 @@ struct lpm_trie *trie = NULL;		//the Trie that will be used by the nf (global va
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
 	
-	if(!trie){
+	if(!lpm_trie){
 		fclose(in_file);
 		abort();
 	}
@@ -60,7 +55,7 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
     memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
 	
 	
-	uint16_t res = trie_lookup_elem(trie, key);
+	uint16_t res = trie_lookup_elem(lpm_trie, key);
 	
 	free(key);
 	
@@ -73,9 +68,9 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
  */
 void insert_all(FILE * f){
 	
-	trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
-	if(!trie){
+	if(!lpm_trie){
 		printf("Could not initialize trie !\n");
 		abort();
 	}
@@ -163,7 +158,7 @@ void insert_all(FILE * f){
    
 		struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
 		
-		int res = trie_update_elem(trie, key, port);
+		int res = trie_update_elem(lpm_trie, key, port);
       
 		if(res){
 			printf("error during update. error is : %d\n",res); fflush(stdout);
