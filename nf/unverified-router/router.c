@@ -47,7 +47,7 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	 
 	struct ether_hdr * eth_hdr = rte_pktmbuf_mtod(mbuf, struct ether_hdr *);
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
-
+	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
     struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
     
@@ -57,7 +57,7 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	}
     
 	key->prefixlen = 32 ;//get prefix length
-    memcpy(key->data, ip_hdr.dst_addr, IPV4_IP_SIZE * sizeof(uint8_t));
+    memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
 	
 	
 	uint16_t res = trie_lookup_elem(trie, key);
