@@ -5,7 +5,7 @@
 #define MAX_ROUTES_ENTRIES 256
 
 
-#include "containers/lpm_trie_mem.h"
+
 #include "nf_time.h"
 #warning "REAL ROUTER"
 #include "parse_utils.h"
@@ -20,9 +20,24 @@
 #include <cmdline_parse_etheraddr.h>
 #include <rte_ip.h>
 
+#ifdef TRIE
 
+#include "containers/lpm_trie_mem.h"
 //the Trie that will be used by the nf (global variable)
-extern struct lpm_trie * lpm_trie;		
+extern struct lpm_trie * lpm_trie;	
+
+#else
+
+#include "dir-24-8/dir-24-8-basic.h"
+//the DIR-24-8 that will be used by the nf (global variable)
+extern struct tbl * lpm_tbl;
+
+#endif
+
+
+
+
+
 
 /**
  * insert all routes from the csv file to the lpm trie

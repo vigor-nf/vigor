@@ -2,6 +2,9 @@
 
 include $(RTE_SDK)/mk/rte.vars.mk
 
+#select the lookup algorithm (TRIE, DIR)
+ALGO = TRIE
+
 # binary name
 APP = router
 
@@ -22,6 +25,7 @@ CFLAGS += -std=c99
 # disable warnings triggered by DPDK
 CFLAGS += -Wno-implicit-function-declaration
 CFLAGS += -Wno-nested-externs
+CFLAGS += -D$(ALGO)
 
 include $(RTE_SDK)/mk/rte.extapp.mk
 
