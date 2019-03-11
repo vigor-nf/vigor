@@ -3,7 +3,7 @@
 include $(RTE_SDK)/mk/rte.vars.mk
 
 #select the lookup algorithm (TRIE, DIR)
-ALGO = TRIE
+ALGO = DIR
 
 #select test mode or normal mode
 MODE = TEST

@@ -58,7 +58,10 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
 	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
-    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+    
+#ifdef TRIE	
+
+	struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
     
     if(!key){
 		printf("Couldn't allocate memory !");
@@ -67,17 +70,17 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
     
 	key->prefixlen = 32 ;//get prefix length
     memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
-	
-#ifdef TRIE	
+    
 	uint16_t res = trie_lookup_elem(lpm_trie, key);
+	free(key);
+	
 #else
 
-	uint16_t res = 	//TODO lookup with dpdk's dir 24-8
+	uint32_t res = 0;
+	rte_lpm_lookup (lpm_dir, ip_addr, &res); 
 	
 #endif
 
-	free(key);
-	
 	return res;
 }
 
@@ -88,18 +91,40 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 void insert_all(FILE * f){
 	
 	#ifdef TRIE
+	
 	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
-	
-	#else
-	
-	lpm_dir =  rte_lpm_create (const char *name, int socket_id, const struct rte_lpm_config *config);
-	
-	#endif
 	
 	if(!lpm_trie){
 		printf("Could not initialize trie !\n");
 		abort();
 	}
+	
+	#else
+	
+	const char * name = "main_lpm_table";
+	
+	const struct rte_lpm_config * config = malloc(sizeof(struct rte_lpm_config));
+	
+	if(!config){
+		printf("Could not initialize dir-24-8 config file !\n");
+		abort();
+	}
+	
+	config->max_rules = MAX_ROUTES_ENTRIES;
+	config->number_tbl8s = MAX_TBL_8;
+	config->flags = 0;	//unused parameter according to dpdk's doc
+	
+	lpm_dir =  rte_lpm_create (name, 0, config);
+	
+	if(!lpm_dir){
+		printf("Could not initialize dir-24-8 !\n");
+		abort();
+	}
+	
+	
+	#endif
+	
+	
 	
     size_t length = 0;
     char * line = NULL;
@@ -183,13 +208,26 @@ void insert_all(FILE * f){
 		fflush(stdout);
    
    
-		struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
-   
-   
 		#ifdef TRIE
+		
+			struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
 			int res = trie_update_elem(lpm_trie, key, port);
+			
 		#else
-			int res = tbl_update_elem(lpm_tbl, (struct key*)key, port);
+		
+			uint32_t ip_address * = malloc(sizeof(uint32_t));
+			
+			if(!ip_address){
+				printf("Could not allocate memory !");
+				abort();
+			}
+			
+			memcpy(ip_address, ip, sizeof(uint32_t));
+			
+			int res = rte_lpm_add(lpm_dir, *ip_address, mask, port);
+			
+			free(ip_address);
+			
 		#endif
 		
       

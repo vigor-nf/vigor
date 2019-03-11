@@ -3,7 +3,7 @@
 #define _router_h
 
 #define MAX_ROUTES_ENTRIES 256
-
+#define MAX_TBL_8 	64	//number of 8bits tables for the dir-24-8 algorithm
 
 #ifdef TEST_M
 
