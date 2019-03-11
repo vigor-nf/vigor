@@ -3,6 +3,7 @@
 #include "router.h"
 
 
+
 void test_math();
 void test_parse_utils();
 void test_insert_in_trie();
@@ -155,7 +156,7 @@ void test_insert_in_trie(){
     insert_all(routes);
   
   
-	if(!trie){
+	if(!lpm_trie){
 		assert(0);
 	}
     
@@ -187,13 +188,13 @@ void test_insert_in_trie(){
     memcpy(key_4->data, data_4, 4 * sizeof(uint8_t));
 
 
-    int res_1 = trie_lookup_elem(trie, key);
+    int res_1 = trie_lookup_elem(lpm_trie, key);
     
-    int res_2 = trie_lookup_elem(trie, key_2);
+    int res_2 = trie_lookup_elem(lpm_trie, key_2);
     
-    int res_3 = trie_lookup_elem(trie, key_3);
+    int res_3 = trie_lookup_elem(lpm_trie, key_3);
     
-    int res_4 = trie_lookup_elem(trie, key_4);
+    int res_4 = trie_lookup_elem(lpm_trie, key_4);
     
     printf("Result is : %d\n", res_1);
     printf("Result is : %d\n", res_2);
@@ -207,7 +208,7 @@ void test_insert_in_trie(){
     
 	fclose(routes);
 
-	free(trie);
+	free(lpm_trie);
 	free(key);
 }
 

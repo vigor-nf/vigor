@@ -1,10 +1,19 @@
 #include "router.h"
 
+#ifdef TRIE
+struct lpm_trie * lpm_trie;
+#else
+struct tbl * lpm_tbl;
+#endif
 
-struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
+struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
+{
+    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+    key->prefixlen = prefixlen;
+    memcpy(key->data, data, LPM_DATA_SIZE);
+    return key;
+}
 
-
-struct lpm_trie *trie = NULL;		//the Trie that will be used by the nf (global variable)
 
 
 /**
@@ -25,7 +34,7 @@ struct lpm_trie *trie = NULL;		//the Trie that will be used by the nf (global va
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
 	
-	if(!trie){
+	if(!lpm_trie){
 		fclose(in_file);
 		abort();
 	}
@@ -57,9 +66,12 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	key->prefixlen = 32 ;//get prefix length
     memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
 	
-	
-	uint16_t res = trie_lookup_elem(trie, key);
-	
+#ifdef TRIE	
+	uint16_t res = trie_lookup_elem(lpm_trie, key);
+#else
+	uint16_t res = tbl_lookup_elem(lpm_tbl, key);
+#endif
+
 	free(key);
 	
 	return res;
@@ -71,9 +83,14 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
  */
 void insert_all(FILE * f){
 	
-	trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
+	#ifdef TRIE
+	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
-	if(!trie){
+	#else
+	lpm_tbl = tbl_allocate(MAX_ROUTES_ENTRIES);
+	#endif
+	
+	if(!lpm_trie){
 		printf("Could not initialize trie !\n");
 		abort();
 	}
@@ -159,9 +176,16 @@ void insert_all(FILE * f){
 		
 		fflush(stdout);
    
+   
 		struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
+   
+   
+		#ifdef TRIE
+			int res = trie_update_elem(lpm_trie, key, port);
+		#else
+			int res = tbl_update_elem(lpm_tbl, (struct key*)key, port);
+		#endif
 		
-		int res = trie_update_elem(trie, key, port);
       
 		if(res){
 			printf("error during update. error is : %d\n",res); fflush(stdout);

@@ -4,10 +4,23 @@
 
 #define MAX_ROUTES_ENTRIES 256
 
+
+#ifdef TEST_M
+
+#include "lib/nf_time.h"
 #include "lib/containers/lpm_trie_mem.h"
+
+#else
+
+#include "nf_time.h"
+#include "containers/lpm_trie_mem.h"
+
+#endif
+
+
+
 #include "parse_utils.h"
 #include <stdio.h>
-//#include <math.h>
 #include <ctype.h>
 #include <linux/limits.h>
 #include <sys/types.h>
@@ -17,7 +30,24 @@
 #include <rte_mbuf.h>
 #include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
-#include "lib/nf_time.h"
+#include <rte_ip.h>
+
+#ifdef TRIE
+
+//the Trie that will be used by the nf (global variable)
+extern struct lpm_trie * lpm_trie;	
+
+#else
+
+#include "dir-24-8/dir-24-8-basic.h"
+//the DIR-24-8 that will be used by the nf (global variable)
+extern struct tbl * lpm_tbl;
+
+#endif
+
+
+
+
 
 
 /**

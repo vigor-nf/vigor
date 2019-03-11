@@ -1,5 +1,5 @@
 #include "lpm_trie_mem.h"
-#include "lib/double-chain.h"
+#include "double-chain.h"
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
