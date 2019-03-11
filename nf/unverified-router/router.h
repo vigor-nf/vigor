@@ -15,6 +15,7 @@
 #include <rte_common.h>
 #include <rte_ethdev.h>
 #include <rte_mbuf.h>
+#include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
 #include "lib/nf_time.h"
 
