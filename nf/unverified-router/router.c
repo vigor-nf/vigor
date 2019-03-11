@@ -5,7 +5,9 @@
 #ifdef TRIE
 struct lpm_trie * lpm_trie;
 #else
-struct tbl * lpm_tbl;
+
+struct rte_lpm * lpm_dir;
+
 #endif
 
 struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
@@ -71,7 +73,9 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 #ifdef TRIE	
 	uint16_t res = trie_lookup_elem(lpm_trie, key);
 #else
-	uint16_t res = tbl_lookup_elem(lpm_tbl, key);
+
+	uint16_t res = 	//TODO lookup with dpdk's dir 24-8
+	
 #endif
 
 	free(key);
@@ -89,7 +93,9 @@ void insert_all(FILE * f){
 	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
 	#else
-	lpm_tbl = tbl_allocate(MAX_ROUTES_ENTRIES);
+	
+	lpm_dir =  rte_lpm_create (const char *name, int socket_id, const struct rte_lpm_config *config);
+	
 	#endif
 	
 	if(!lpm_trie){

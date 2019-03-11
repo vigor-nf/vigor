@@ -18,7 +18,7 @@
 #endif
 
 
-
+#include <rte_lpm.h>
 #include "parse_utils.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -38,9 +38,8 @@ extern struct lpm_trie * lpm_trie;
 
 #else
 
-#include "dir-24-8/dir-24-8-basic.h"
 //the DIR-24-8 that will be used by the nf (global variable)
-extern struct tbl * lpm_tbl;
+extern struct rte_lpm * lpm_dir;			
 
 #endif
 
