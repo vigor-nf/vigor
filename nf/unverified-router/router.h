@@ -5,9 +5,20 @@
 #define MAX_ROUTES_ENTRIES 256
 
 
+#ifdef TEST_M
+
+#include "lib/nf_time.h"
+#include "lib/containers/lpm_trie_mem.h"
+
+#else
 
 #include "nf_time.h"
-#warning "REAL ROUTER"
+#include "containers/lpm_trie_mem.h"
+
+#endif
+
+
+
 #include "parse_utils.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -22,7 +33,6 @@
 
 #ifdef TRIE
 
-#include "containers/lpm_trie_mem.h"
 //the Trie that will be used by the nf (global variable)
 extern struct lpm_trie * lpm_trie;	
 

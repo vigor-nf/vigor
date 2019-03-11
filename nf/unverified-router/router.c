@@ -85,7 +85,7 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
  */
 void insert_all(FILE * f){
 	
-	#ifdef
+	#ifdef TRIE
 	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
 	#else
