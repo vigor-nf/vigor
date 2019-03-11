@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include <string.h>
 
-#define MALLOC_MEM_SIZE 20000000
+#define MALLOC_MEM_SIZE 80000000
 
 extern void *malloc(size_t size);
 extern void *realloc(void *ptr, size_t new_size);
@@ -21,7 +21,9 @@ void *malloc(size_t size)
 	static char malloc_mem[MALLOC_MEM_SIZE];
 	static size_t malloc_index;
 
-	assert(malloc_index + size < MALLOC_MEM_SIZE);
+	if (malloc_index + size >= MALLOC_MEM_SIZE) {
+		abort();
+	}
 
 	void *ret = &malloc_mem[malloc_index];
 	malloc_index += size;
