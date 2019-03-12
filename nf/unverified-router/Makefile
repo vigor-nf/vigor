@@ -5,8 +5,8 @@ include $(RTE_SDK)/mk/rte.vars.mk
 #select the lookup algorithm (TRIE, DIR)
 ALGO = DIR
 
-#select test mode or normal mode
-MODE = NORMAL
+#select TEST mode or NORMAL mode
+MODE = TEST
 
 # binary name
 APP = router
@@ -27,7 +27,7 @@ SRCS-y := router.c router_config.c parse_utils.c \
 else
 
 # sources  test mode
-SRCS-y := router.c parse_utils.c \
+SRCS-y := router.c router_config.c parse_utils.c \
           tests.c \
           ../lib/nf_util.c \
            ../lib/packet-io.c \
@@ -35,8 +35,6 @@ SRCS-y := router.c parse_utils.c \
           ../lib/containers/double-chain-impl.c \
           ../lib/containers/double-chain.c \
           ../lib/containers/lpm_trie.c \
-
-CFLAGS += -DTEST_M
 
 
 endif
