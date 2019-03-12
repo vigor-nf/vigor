@@ -1,12 +1,16 @@
 #include "router.h"
 
 #ifdef TRIE
+
 struct lpm_trie * lpm_trie;
+
 #else
 
 struct rte_lpm * lpm_dir;
 
 #endif
+
+
 
 struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 {
@@ -36,10 +40,21 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
 	
+	#ifdef TRIE
+	
 	if(!lpm_trie){
 		fclose(in_file);
 		abort();
 	}
+	
+	#else
+	
+	if(!lpm_dir){
+		fclose(in_file);
+		abort();
+	}
+	
+	#endif
 	
     //close file
     fclose(in_file);
@@ -103,7 +118,7 @@ void insert_all(FILE * f){
 	
 	const char * name = "main_lpm_table";
 	
-	const struct rte_lpm_config * config = malloc(sizeof(struct rte_lpm_config));
+	struct rte_lpm_config * config = malloc(sizeof(struct rte_lpm_config));
 	
 	if(!config){
 		printf("Could not initialize dir-24-8 config file !\n");
@@ -215,7 +230,7 @@ void insert_all(FILE * f){
 			
 		#else
 		
-			uint32_t ip_address * = malloc(sizeof(uint32_t));
+			uint32_t  * ip_address= malloc(sizeof(uint32_t));
 			
 			if(!ip_address){
 				printf("Could not allocate memory !");

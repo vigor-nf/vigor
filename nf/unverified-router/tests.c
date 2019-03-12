@@ -27,19 +27,9 @@ int main(){
 	//test trie initialization
 	test_insert_in_trie();
 	
+
 	
 	return 0;
-}
-
-
-void test_math(){
-	
-	//test math_utils.c/fast_exp
-	int res = fast_exp(2,10);
-	int res2 = fast_exp(2,0);
-	
-	assert(res == 1024);
-	assert(res2 == 1);
 }
 
 
@@ -95,13 +85,6 @@ void test_parse_utils(){
 	
 }
 
-struct lpm_trie_key *lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
-{
-    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
-    key->prefixlen = prefixlen;
-    memcpy(key->data, data, LPM_DATA_SIZE);
-    return key;
-}
 
 struct lpm_trie_node *pointer_from_int(int index, struct lpm_trie *trie)
 {
@@ -155,11 +138,16 @@ void test_insert_in_trie(){
 	  
     insert_all(routes);
   
-  
+	
+	#ifdef TRIE
+	
 	if(!lpm_trie){
 		assert(0);
 	}
     
+    #else
+    
+    #endif
     
     uint8_t data[4] = {192, 168, 0, 12};
      
@@ -187,6 +175,7 @@ void test_insert_in_trie(){
 	key_4->prefixlen = 32;
     memcpy(key_4->data, data_4, 4 * sizeof(uint8_t));
 
+	#ifdef TRIE
 
     int res_1 = trie_lookup_elem(lpm_trie, key);
     
@@ -196,19 +185,36 @@ void test_insert_in_trie(){
     
     int res_4 = trie_lookup_elem(lpm_trie, key_4);
     
+    
     printf("Result is : %d\n", res_1);
     printf("Result is : %d\n", res_2);
     printf("Result is : %d\n", res_3);
     printf("Result is : %d\n", res_4);
     
+     
     assert(res_1 == 1);
     assert(res_2 == 2);
     assert(res_3 == 3);
     assert(res_4 == 4);
     
+    
+    #else
+    
+    
+    #endif
+    
+    
+   
+    
 	fclose(routes);
 
+	#ifdef TRIE
 	free(lpm_trie);
+	
+	#else
+	
+	#endif
+	
 	free(key);
 }
 

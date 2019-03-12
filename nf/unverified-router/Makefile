@@ -11,7 +11,8 @@ MODE = TEST
 # binary name
 APP = router
 
-ifneq (TEST, $(MODE))
+ifneq (TEST,$(MODE))
+
 
 # sources  normal mode
 SRCS-y := router.c parse_utils.c \
@@ -32,6 +33,7 @@ SRCS-y := router.c parse_utils.c \
           ../lib/containers/lpm_trie.c \
 
 CFLAGS += -DTEST_M
+
 
 endif
 

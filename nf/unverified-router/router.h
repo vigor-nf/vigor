@@ -5,19 +5,9 @@
 #define MAX_ROUTES_ENTRIES 256
 #define MAX_TBL_8 	64	//number of 8bits tables for the dir-24-8 algorithm
 
-#ifdef TEST_M
 
 #include "lib/nf_time.h"
 #include "lib/containers/lpm_trie_mem.h"
-
-#else
-
-#include "nf_time.h"
-#include "containers/lpm_trie_mem.h"
-
-#endif
-
-
 #include <rte_lpm.h>
 #include "parse_utils.h"
 #include <stdio.h>
@@ -46,6 +36,10 @@ extern struct rte_lpm * lpm_dir;
 
 
 
+/**
+ * Helper function to initialize the key for a trie
+ */
+struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
 
 
 
