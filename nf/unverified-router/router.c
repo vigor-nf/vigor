@@ -1,5 +1,7 @@
 #include "router.h"
 
+struct router_config config;
+
 #ifdef TRIE
 
 struct lpm_trie * lpm_trie;
@@ -128,19 +130,20 @@ void insert_all(FILE * f){
 	config->max_rules = MAX_ROUTES_ENTRIES;
 	config->number_tbl8s = MAX_TBL_8;
 	config->flags = 0;	//unused parameter according to dpdk's doc
-	
-	lpm_dir =  rte_lpm_create (name, 0, config);
-	
+
+	lpm_dir =  rte_lpm_create(name, 0, config);
+		
 	if(!lpm_dir){
 		printf("Could not initialize dir-24-8 !\n");
 		abort();
 	}
 	
+	free(config);
 	
 	#endif
 	
 	
-	
+	 
     size_t length = 0;
     char * line = NULL;
     int csvLength = 0;
@@ -268,4 +271,19 @@ void insert_all(FILE * f){
 		line = NULL;
 	}
 
+}
+
+
+//Needed by nf_main.c
+
+void nf_config_init(int argc, char** argv) {
+  router_config_init(&config, argc, argv);
+}
+
+void nf_config_cmdline_print_usage(void) {
+  router_config_cmdline_print_usage();
+}
+
+void nf_print_config() {
+  router_print_config(&config);
 }

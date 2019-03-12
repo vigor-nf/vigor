@@ -6,7 +6,7 @@ include $(RTE_SDK)/mk/rte.vars.mk
 ALGO = DIR
 
 #select test mode or normal mode
-MODE = TEST
+MODE = NORMAL
 
 # binary name
 APP = router
@@ -15,8 +15,10 @@ ifneq (TEST,$(MODE))
 
 
 # sources  normal mode
-SRCS-y := router.c parse_utils.c \
+SRCS-y := router.c router_config.c parse_utils.c \
           ../nf_main.c \
+          ../lib/nf_util.c \
+          ../lib/packet-io.c \
           ../lib/nf_time.c \
           ../lib/containers/double-chain-impl.c \
           ../lib/containers/double-chain.c \
@@ -27,6 +29,8 @@ else
 # sources  test mode
 SRCS-y := router.c parse_utils.c \
           tests.c \
+          ../lib/nf_util.c \
+           ../lib/packet-io.c \
           ../lib/nf_time.c \
           ../lib/containers/double-chain-impl.c \
           ../lib/containers/double-chain.c \

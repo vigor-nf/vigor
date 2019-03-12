@@ -35,6 +35,7 @@ int main(){
 
 void test_parse_utils(){
 	
+	printf("Test parse utils \n");
 	
 	//test parse_utils.c/get_number
 	const char * s = "234";
@@ -93,6 +94,8 @@ struct lpm_trie_node *pointer_from_int(int index, struct lpm_trie *trie)
 
 void test_lookup(){
 	
+	printf("Test lookup for trie \n");
+	
 	//setup Trie
 	
 	struct lpm_trie *trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
@@ -132,6 +135,7 @@ void test_lookup(){
 
 void test_insert_in_trie(){
 	
+	printf("Test insert all\n");
 	
 	FILE * routes = fopen("routes", "r");
 
@@ -147,7 +151,13 @@ void test_insert_in_trie(){
     
     #else
     
+    if(!lpm_dir){
+		assert(0);
+	}
+    
     #endif
+    
+   
     
     uint8_t data[4] = {192, 168, 0, 12};
      
@@ -185,6 +195,7 @@ void test_insert_in_trie(){
     
     int res_4 = trie_lookup_elem(lpm_trie, key_4);
     
+    printf("Result for TRIE");
     
     printf("Result is : %d\n", res_1);
     printf("Result is : %d\n", res_2);
@@ -200,6 +211,31 @@ void test_insert_in_trie(){
     
     #else
     
+	uint32_t res_1;
+    rte_lpm_lookup (lpm_dir, *key->data, &res_1); 
+    
+	uint32_t res_2;
+    rte_lpm_lookup (lpm_dir, * key_2->data, &res_2); 
+    
+    uint32_t res_3;
+    rte_lpm_lookup (lpm_dir, * key_3->data, &res_3); 
+    
+    uint32_t res_4;
+    rte_lpm_lookup (lpm_dir, * key_4->data, &res_4); 
+    
+    printf("Result for DIR-24-8");
+    
+    printf("Result is : %d\n", res_1);
+    printf("Result is : %d\n", res_2);
+    printf("Result is : %d\n", res_3);
+    printf("Result is : %d\n", res_4);
+    
+     
+    assert(res_1 == 1);
+    assert(res_2 == 2);
+    assert(res_3 == 3);
+    assert(res_4 == 4);
+    
     
     #endif
     
@@ -212,7 +248,7 @@ void test_insert_in_trie(){
 	free(lpm_trie);
 	
 	#else
-	
+	rte_lpm_free(lpm_dir);
 	#endif
 	
 	free(key);

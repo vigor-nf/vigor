@@ -20,7 +20,8 @@
 #include <rte_mbuf.h>
 #include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
-#include <rte_ip.h>
+#include "router_config.h"
+
 
 #ifdef TRIE
 
