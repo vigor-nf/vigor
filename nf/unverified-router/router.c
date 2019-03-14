@@ -1,10 +1,18 @@
 #include "router.h"
 
+struct router_config config;
+
 #ifdef TRIE
+
 struct lpm_trie * lpm_trie;
+
 #else
-struct tbl * lpm_tbl;
+
+struct rte_lpm * lpm_dir;
+
 #endif
+
+
 
 struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 {
@@ -34,10 +42,21 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
 	
+	#ifdef TRIE
+	
 	if(!lpm_trie){
 		fclose(in_file);
 		abort();
 	}
+	
+	#else
+	
+	if(!lpm_dir){
+		fclose(in_file);
+		abort();
+	}
+	
+	#endif
 	
     //close file
     fclose(in_file);
@@ -56,7 +75,10 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
 	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
-    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
+    
+#ifdef TRIE	
+
+	struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
     
     if(!key){
 		printf("Couldn't allocate memory !");
@@ -65,15 +87,17 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
     
 	key->prefixlen = 32 ;//get prefix length
     memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
-	
-#ifdef TRIE	
+    
 	uint16_t res = trie_lookup_elem(lpm_trie, key);
-#else
-	uint16_t res = tbl_lookup_elem(lpm_tbl, key);
-#endif
-
 	free(key);
 	
+#else
+
+	uint32_t res = 0;
+	rte_lpm_lookup (lpm_dir, ip_addr, &res); 
+	
+#endif
+
 	return res;
 }
 
@@ -84,17 +108,56 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 void insert_all(FILE * f){
 	
 	#ifdef TRIE
-	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
-	#else
-	lpm_tbl = tbl_allocate(MAX_ROUTES_ENTRIES);
-	#endif
+	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
 	
 	if(!lpm_trie){
 		printf("Could not initialize trie !\n");
 		abort();
 	}
 	
+	#else
+	
+	/*const char * name = "main_lpm_table";
+	
+	
+	struct rte_lpm_config config;
+	
+	
+	config.max_rules = MAX_ROUTES_ENTRIES;
+	config.number_tbl8s = MAX_TBL_8;
+	config.flags = 0;	//unused parameter according to dpdk's doc
+
+	lpm_dir = rte_lpm_create(name, SOCKET_ID_ANY, &config);
+	//lpm_dir = rte_lpm_create_v20(name, SOCKET_ID_ANY, MAX_ROUTES_ENTRIES, 0);
+		
+	if(!lpm_dir){
+		printf("Could not initialize dir-24-8 !\n");
+		abort();
+	}
+	*/
+	
+
+	struct rte_lpm_config config_ipv4;
+	unsigned i;
+	int ret;
+	char s[64];
+
+	/* create the LPM table */
+	config_ipv4.max_rules = MAX_ROUTES_ENTRIES;
+	config_ipv4.number_tbl8s = 256;
+	config_ipv4.flags = 0;
+	snprintf(s, sizeof(s), "IPV4_L3FWD_LPM_%d", 0);
+	
+	lpm_dir = rte_lpm_create(s, SOCKET_ID_ANY, &config_ipv4);
+	
+	if (lpm_dir == NULL)
+		rte_exit(EXIT_FAILURE,"Unable to create the l3fwd LPM table on socket\n");
+	
+	#endif
+	
+	
+	 
     size_t length = 0;
     char * line = NULL;
     int csvLength = 0;
@@ -177,13 +240,26 @@ void insert_all(FILE * f){
 		fflush(stdout);
    
    
-		struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
-   
-   
 		#ifdef TRIE
+		
+			struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
 			int res = trie_update_elem(lpm_trie, key, port);
+			
 		#else
-			int res = tbl_update_elem(lpm_tbl, (struct key*)key, port);
+		
+			uint32_t  * ip_address= malloc(sizeof(uint32_t));
+			
+			if(!ip_address){
+				printf("Could not allocate memory !");
+				abort();
+			}
+			
+			memcpy(ip_address, ip, sizeof(uint32_t));
+			
+			int res = rte_lpm_add(lpm_dir, *ip_address, mask, port);
+			
+			free(ip_address);
+			
 		#endif
 		
       
@@ -209,4 +285,19 @@ void insert_all(FILE * f){
 		line = NULL;
 	}
 
+}
+
+
+//Needed by nf_main.c
+
+void nf_config_init(int argc, char** argv) {
+  router_config_init(&config, argc, argv);
+}
+
+void nf_config_cmdline_print_usage(void) {
+  router_config_cmdline_print_usage();
+}
+
+void nf_print_config() {
+  router_print_config(&config);
 }

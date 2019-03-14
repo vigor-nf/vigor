@@ -3,22 +3,12 @@
 #define _router_h
 
 #define MAX_ROUTES_ENTRIES 256
+#define MAX_TBL_8 	64	//number of 8bits tables for the dir-24-8 algorithm
 
-
-#ifdef TEST_M
 
 #include "lib/nf_time.h"
 #include "lib/containers/lpm_trie_mem.h"
-
-#else
-
-#include "nf_time.h"
-#include "containers/lpm_trie_mem.h"
-
-#endif
-
-
-
+#include <rte_lpm.h>
 #include "parse_utils.h"
 #include <stdio.h>
 #include <ctype.h>
@@ -30,7 +20,8 @@
 #include <rte_mbuf.h>
 #include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
-#include <rte_ip.h>
+#include "router_config.h"
+
 
 #ifdef TRIE
 
@@ -39,14 +30,17 @@ extern struct lpm_trie * lpm_trie;
 
 #else
 
-#include "dir-24-8/dir-24-8-basic.h"
 //the DIR-24-8 that will be used by the nf (global variable)
-extern struct tbl * lpm_tbl;
+extern struct rte_lpm * lpm_dir;			
 
 #endif
 
 
 
+/**
+ * Helper function to initialize the key for a trie
+ */
+struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data);
 
 
 
