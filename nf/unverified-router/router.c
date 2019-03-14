@@ -118,27 +118,41 @@ void insert_all(FILE * f){
 	
 	#else
 	
-	const char * name = "main_lpm_table";
+	/*const char * name = "main_lpm_table";
 	
-	struct rte_lpm_config * config = malloc(sizeof(struct rte_lpm_config));
 	
-	if(!config){
-		printf("Could not initialize dir-24-8 config file !\n");
-		abort();
-	}
+	struct rte_lpm_config config;
 	
-	config->max_rules = MAX_ROUTES_ENTRIES;
-	config->number_tbl8s = MAX_TBL_8;
-	config->flags = 0;	//unused parameter according to dpdk's doc
+	
+	config.max_rules = MAX_ROUTES_ENTRIES;
+	config.number_tbl8s = MAX_TBL_8;
+	config.flags = 0;	//unused parameter according to dpdk's doc
 
-	lpm_dir =  rte_lpm_create(name, 0, config);
+	lpm_dir = rte_lpm_create(name, SOCKET_ID_ANY, &config);
+	//lpm_dir = rte_lpm_create_v20(name, SOCKET_ID_ANY, MAX_ROUTES_ENTRIES, 0);
 		
 	if(!lpm_dir){
 		printf("Could not initialize dir-24-8 !\n");
 		abort();
 	}
+	*/
 	
-	free(config);
+
+	struct rte_lpm_config config_ipv4;
+	unsigned i;
+	int ret;
+	char s[64];
+
+	/* create the LPM table */
+	config_ipv4.max_rules = MAX_ROUTES_ENTRIES;
+	config_ipv4.number_tbl8s = 256;
+	config_ipv4.flags = 0;
+	snprintf(s, sizeof(s), "IPV4_L3FWD_LPM_%d", 0);
+	
+	lpm_dir = rte_lpm_create(s, SOCKET_ID_ANY, &config_ipv4);
+	
+	if (lpm_dir == NULL)
+		rte_exit(EXIT_FAILURE,"Unable to create the l3fwd LPM table on socket\n");
 	
 	#endif
 	
