@@ -52,7 +52,6 @@ int test_update_elem()
     struct tbl *tbl = tbl_allocate(256);
     if(!tbl)
         return -1;
-    uint16_t *tbl_24 = tbl->tbl_24;
 
     uint8_t data_1[4] = {10, 54, 0, 0};
     struct key *key_1 = allocate_key(data_1, 16);
@@ -84,7 +83,7 @@ int test_update_elem()
         goto out;
     printf("##### Inserted first entry #####\n");
 
-    size_t index = tbl_24_extract_first_index(key_1->data, key_1->prefixlen);
+    size_t index = tbl_24_extract_first_index(key_1->data);
     print_tbl_24_entry(tbl, index);
 
     index = tbl_24_extract_last_index(key_1);
@@ -96,7 +95,7 @@ int test_update_elem()
         goto out;
     printf("##### Inserted second entry #####\n");
 
-    index = tbl_24_extract_first_index(key_2->data, key_2->prefixlen);
+    index = tbl_24_extract_first_index(key_2->data);
     print_tbl_24_entry(tbl, index);
     index = 191;
     print_tbl_long_entry(tbl, index);
@@ -111,7 +110,7 @@ int test_update_elem()
         goto out;
     printf("##### Inserted third key #####\n");
 
-    index = tbl_24_extract_first_index(key_3->data, key_3->prefixlen);
+    index = tbl_24_extract_first_index(key_3->data);
     print_tbl_24_entry(tbl, index);
     index = 0;
     print_tbl_long_entry(tbl, index);
@@ -173,13 +172,13 @@ int test_delete_elem()
 
     uint16_t tbl_24_entry_1 = val_1;
     tbl_24_entry_1 = tbl_24_entry_put_plen(tbl_24_entry_1, key_1->prefixlen);
-    size_t tbl_24_first_1 = tbl_24_extract_first_index(key_1->data, key_1->prefixlen);
+    size_t tbl_24_first_1 = tbl_24_extract_first_index(key_1->data);
     size_t tbl_24_last_1 = tbl_24_extract_last_index(key_1);
 
     uint16_t tbl_24_entry_2 = 0;
     tbl_24_entry_2 = tbl_24_entry_put_plen(tbl_24_entry_2, key_2->prefixlen);
     tbl_24_entry_2 = tbl_24_entry_set_flag(tbl_24_entry_2);
-    size_t tbl_24_first_2 = tbl_24_extract_first_index(key_2->data, key_2->prefixlen);
+    size_t tbl_24_first_2 = tbl_24_extract_first_index(key_2->data);
     uint16_t tbl_long_entry_2 = val_2;
     tbl_long_entry_2 = tbl_long_entry_put_plen(tbl_long_entry_2,
                                                 key_2->prefixlen);
@@ -283,13 +282,13 @@ int test_lookup_elem()
 
     uint16_t tbl_24_entry_1 = val_1;
     tbl_24_entry_1 = tbl_24_entry_put_plen(tbl_24_entry_1, key_1->prefixlen);
-    size_t tbl_24_first_1 = tbl_24_extract_first_index(key_1->data, key_1->prefixlen);
+    size_t tbl_24_first_1 = tbl_24_extract_first_index(key_1->data);
     size_t tbl_24_last_1 = tbl_24_extract_last_index(key_1);
 
     uint16_t tbl_24_entry_2 = 0;
     tbl_24_entry_2 = tbl_24_entry_put_plen(tbl_24_entry_2, key_2->prefixlen);
     tbl_24_entry_2 = tbl_24_entry_set_flag(tbl_24_entry_2);
-    size_t tbl_24_first_2 = tbl_24_extract_first_index(key_2->data, key_2->prefixlen);
+    size_t tbl_24_first_2 = tbl_24_extract_first_index(key_2->data);
     uint16_t tbl_long_entry_2 = val_2;
     tbl_long_entry_2 = tbl_long_entry_put_plen(tbl_long_entry_2,
                                                 key_2->prefixlen);
@@ -347,21 +346,21 @@ int test_lookup_elem()
 
     //Table is filled, we can lookup entries
     printf("##### looking up first key #####\n");
-    res = tbl_lookup_elem(tbl, key_4);// 10
+    res = tbl_lookup_elem(tbl, data_4);// 10
     if(res < 0)
         goto out;
     printf("value found: %d\n", res);
     printf("##### looked up first key #####\n");
 
     printf("##### looking up second key #####\n");
-    res = tbl_lookup_elem(tbl, key_5);// 12
+    res = tbl_lookup_elem(tbl, data_5);// 12
     if(res < 0)
         goto out;
     printf("value found: %d\n", res);
     printf("##### looked up second key #####\n");
 
     printf("##### looking up third key #####\n");
-    res = tbl_lookup_elem(tbl, key_6);// 11
+    res = tbl_lookup_elem(tbl, data_6);// 11
     if(res < 0)
         goto out;
     printf("value found: %d\n", res);
@@ -380,22 +379,135 @@ out:
 int unit_tests(){
 	
 	
-	uint8_t d[4] = {128, 23, 75, 5};// 1000 0000 0001 0111 0100 1011 0000 0101
-	struct key* k = allocate_key(d, 16);
+	struct tbl *table = tbl_allocate(TBL_24_MAX_ENTRIES);
+	if(table == 0){abort();}
 	
-	size_t first = tbl_24_extract_first_index(k->data, k->prefixlen);
-	//assert(first == 0x801700); // 1000 0000 0001 0111 0000 0000
-	size_t last = tbl_24_extract_last_index(k);
-	assert(last == 0b00000000100000000001011111111111); // 1000 0000 0001 0111 1111 1111
-	printf("first : %zx\nlast :  %zx\n", first, last);
+	uint8_t data[4] = {128,23,5,75};
+	struct key *k1 = allocate_key(data, 16);
+	
+	tbl_update_elem(table, k1, 3);
+	
+	uint8_t data2[4] = {128,23,0,0};
+	int res = tbl_lookup_elem(table, data2);
+	assert(res == 3);
+	printf("128.23.0.0 -> %d\n", res);
 	
 	
+	uint8_t data3[4] = {129,23,5,75};
+	struct key *k2 = allocate_key(data3, 26);
+	
+	tbl_update_elem(table, k2, 53);
+	res = tbl_lookup_elem(table, data3);
+	assert(res == 53);
+	printf("129.23.5.75 -> %d\n", res);
+	
+	//test with min index
+	uint8_t data4[4] = {129,23,5,64};
+	res = tbl_lookup_elem(table, data4);
+	assert(res == 53);
+	printf("129.23.5.64 -> %d\n", res);
+	
+	//test with max index
+	uint8_t data5[4] = {129,23,5,127};
+	res = tbl_lookup_elem(table, data5);
+	assert(res == 53);
+	printf("129.23.5.126 -> %d\n", res);
+	
+	//Now put a smaller mask
+	uint8_t data6[4] = {129,23,5,150};
+	struct key* k3 = allocate_key(data6, 24);
+	
+	tbl_update_elem(table, k3, 36);
+	
+	//test with min index
+	uint8_t data7[4] = {129,23,5,0};
+	res = tbl_lookup_elem(table, data7);
+	assert(res == 36);
+	printf("129.23.5.0 -> %d\n", res);
+	
+	//test with max index
+	uint8_t data8[4] = {129,23,5,255};
+	res = tbl_lookup_elem(table, data8);
+	assert(res == 36);
+	printf("129.23.5.255 -> %d\n", res);
+	
+	//previous entry (data3) should still be at 53 since the rule was more precise
+	res = tbl_lookup_elem(table, data3);
+	assert(res == 53);
+	printf("129.23.5.75 -> %d\n", res);
 	
 	return 0;
 }
 
+void mask_tests(){
+	uint8_t prefixlen = 0;
+	size_t res = build_mask_from_prefixlen(prefixlen);
+	assert(res == 0);
+	
+	prefixlen = 32;
+	res = build_mask_from_prefixlen(prefixlen);
+	assert(res == 0xFFFFFFFF);
+	
+	prefixlen = 17;
+	res = build_mask_from_prefixlen(prefixlen);
+	assert(res == 0xFFFF8000);
+	
+	printf("mask_tests OK!\n");
+	
+}
+
+void t24_then_26_mask_rules_test(){
+	struct tbl *table = tbl_allocate(TBL_24_MAX_ENTRIES);
+	if(table == 0){abort();}
+	
+	uint8_t data[4] = {192,168,5,68};
+	
+	//Add a general rule
+	struct key* k = allocate_key(data, 24);
+	tbl_update_elem(table, k, 53);
+	
+	//Test with min index
+	uint8_t min_24[4] = {192,168,5,0};
+	int res = tbl_lookup_elem(table, min_24);
+	assert(res == 53);
+	
+	//Test with max index
+	uint8_t max_24[4] = {192,168,5,255};
+	res = tbl_lookup_elem(table, max_24);
+	assert(res == 53);
+	
+	//Now we add a more precise rule
+	free(k);
+	k = allocate_key(data, 26);
+	tbl_update_elem(table, k, 36);
+	
+	//Test with min index
+	uint8_t min_26[4] = {192,168,5,64};
+	res = tbl_lookup_elem(table, min_26);
+	assert(res == 36);
+	
+	//Test with max index
+	uint8_t max_26[4] = {192,168,5,127};
+	res = tbl_lookup_elem(table, max_26);
+	assert(res == 36);
+	
+	//Min and max of mask 24 should not have been touched
+	res = tbl_lookup_elem(table, min_24);
+	assert(res == 53);
+	res = tbl_lookup_elem(table, max_24);
+	assert(res == 53);
+	
+	printf("yay\n");
+}
+
+
 int main()
 {
+	
+	mask_tests();
+	unit_tests();
+	t24_then_26_mask_rules_test();
+	/*
 	printf("########## Beginning of unit_tests ##########\n");
 	int res = unit_tests();
 	printf("########## end of unit_tests ##########\n");
@@ -416,5 +528,5 @@ int main()
     res = test_lookup_elem();
     if(res)
         printf("Something went wrong: %d\n", res);
-    printf("########## End of test_lookup_elem ##########\n");
+    printf("########## End of test_lookup_elem ##########\n");*/
 }

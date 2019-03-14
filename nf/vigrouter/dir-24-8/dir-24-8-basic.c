@@ -1,74 +1,76 @@
-/*
- *	http://tiny-tera.stanford.edu/~nickm/papers/Infocom98_lookup.pdf 
- */
-
 #include "dir-24-8-basic.h"
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stddef.h>
 
-/**
- * Computes and applies a 32bits mask on data, of size prefixlen
- */
-size_t apply_mask_32(uint8_t* data, size_t prefixlen)
+size_t build_mask_from_prefixlen(uint8_t prefixlen)
+    //requires 32 >= prefixlen;
+    // ensures result == mask_from_prefixlen(prefixlen, 0);
 {
 	if(prefixlen > 32){abort();}
-	
-	size_t converted_data = uint8_to_size(data);
-	
 	size_t mask = 0;
 	
-	if(prefixlen > 0){
-		for(int i = 0; i < prefixlen; i++){
-			mask <<= 1;
-			mask |= 1;
+	int i = 0;
+	
+	for(;;)
+	// invariant 0 <= i &*& i <= prefixlen;
+	{
+		if(i == prefixlen){
+			break;
 		}
+		
+		mask <<= 1;
+		mask |= 1;
+		
+		i++;
 	}
-	mask <<= (TBL_PLEN_MAX - prefixlen);
 	
-	return (mask & converted_data);
-}
-
-
-/**
- * Converts uint8[4] into size_t
- */
-size_t uint8_to_size(uint8_t* data)
-{
-	size_t result = data[0];
-	result <<= 8;
-	result |= data[1];
-	result <<= 8;
-	result |= data[2];
-	result <<= 8;
-	result |= data[3];
+	mask <<= (32 - prefixlen);
 	
-	return result; 
+	return mask;
 }
 
 /**
- * Extract 24 MSB from data and convert them to 32bits value,
- * depending on the prefixlen
- * Used to get the index to go to in the table24
-* */
-size_t tbl_24_extract_first_index(uint8_t* data, uint8_t prefixlen)
-{   
-    size_t masked = apply_mask_32(data, prefixlen);
-    return (masked >> 8);
-}
-/**
- * Computes the index to look for in the table24, if prefixlen<24 it returns
- * the last index covered by the prefixlen
+ * Extract the 24 MSB of an uint8_t array and returns then in size_t
  */
-size_t tbl_24_extract_last_index(struct key *k)
+size_t tbl_24_extract_first_index(uint8_t *data)
+    //@ requires data[0..4];
+    //@ ensures true;
 {
-    size_t prefixlen = k->prefixlen;
+    size_t index = data[0];
+    index <<= 8;
+    index |= data[1];
+    index <<= 8;
+    index |= data[2];
 
-    size_t index = tbl_24_extract_first_index(k->data, prefixlen);
+    return index;
+}
 
-	//Expand prefix because < 24
+/**
+ * Apply a mask of prefixlen to a 32bits address that had been cut to the 24 MSB 
+ */
+size_t correct_first_index_with_mask(size_t first_index, uint8_t prefixlen)
+{
+	//No need for a mask
+	if(prefixlen >= 24){
+		return first_index;
+	}
+	
+	size_t mask = build_mask_from_prefixlen(prefixlen);
+	
+	return (first_index & (mask >> 8));
+}
+
+/**
+ * Computes the last index reached by the IP/mask pair contained in key
+ */
+size_t tbl_24_extract_last_index(struct key *key)
+    //@ requires key(key, ?ipv4) &*& 4 == length(ipv4);
+    //@ ensures key(key, ipv4) &*& 4 == length(ipv4);
+{
+    //Auto open
+    uint8_t *data = key->data;
+    size_t prefixlen = key->prefixlen;
+
+    size_t index = tbl_24_extract_first_index(data);
+
     if(prefixlen < TBL_24_PLEN_MAX){
         size_t fill = 1;
         for(int i = 1; i < TBL_24_PLEN_MAX - prefixlen; i++){
@@ -81,14 +83,11 @@ size_t tbl_24_extract_last_index(struct key *k)
     return index;
 }
 
-/** OK FOR ME
- * Converts 24bits index into 4*uint8_t array
- */
-uint8_t* tbl_24_make_data_from_index(size_t index)
+uint8_t *tbl_24_make_data_from_index(size_t index)
 {
     uint8_t* data = calloc(4, sizeof(uint8_t));
     if(data == 0){abort();}
-
+    
     data[0] = index >> 16;
     data[1] = (index << 8) >> 16;
     data[2] = (index << 16) >> 16;
@@ -121,9 +120,6 @@ uint8_t *tbl_24_is_last_index(size_t index, struct tbl *tbl)
     }
 }
 
-/**
- *	Get the entry's flag
- */
 int tbl_24_entry_flag(uint16_t entry)
 {
     return (entry & TBL_24_FLAG_MASK) >> 15;
@@ -135,8 +131,9 @@ uint16_t tbl_24_find_replacement(struct key *key, struct tbl *tbl)
         return 0;
 
     uint16_t *tbl_24 = tbl->tbl_24;
+    uint8_t *data = key->data;
 
-    size_t first = tbl_24_extract_first_index(key->data, key->prefixlen);
+    size_t first = tbl_24_extract_first_index(data);
     size_t current = first - 1;
     uint8_t *current_data;
 
@@ -145,7 +142,7 @@ uint16_t tbl_24_find_replacement(struct key *key, struct tbl *tbl)
                 tbl_24_entry_flag(tbl_24[current]))){
 
         if(tbl_24_is_last_index(current, tbl)){
-            current = tbl_24_extract_first_index(current_data, 32) - 1;
+            current = tbl_24_extract_first_index(current_data) - 1;
         } else if(tbl_24_entry_flag(tbl_24[current])){
             current --;
         }
@@ -158,9 +155,6 @@ uint16_t tbl_24_find_replacement(struct key *key, struct tbl *tbl)
     return tbl_24[current];
 }
 
-/**
- * Sets entry flag to 1 --> enable the lookup in tblLong
- */
 uint16_t tbl_24_entry_set_flag(uint16_t entry)
 {
     return entry | TBL_24_FLAG_MASK;
@@ -256,8 +250,6 @@ uint16_t tbl_long_entry_put_plen(uint16_t entry, uint8_t prefixlen)
 }
 
 struct tbl *tbl_allocate(size_t max_entries)
-	//@ requires true;
-	//@ ensures HEHEHEHEHE;
 {
     struct tbl *tbl = (struct tbl *) malloc(sizeof(struct tbl));
     if(!tbl)
@@ -283,15 +275,13 @@ struct tbl *tbl_allocate(size_t max_entries)
     tbl->tbl_long_index = 0;
     tbl->n_entries = 0;
     tbl->max_entries = max_entries;
-    
-    //@ close tblL;
-    //@ close tbl24;
 
     return tbl;
 }
 
 void tbl_free(struct tbl *tbl)
-	//@ ensures true;
+    //@ requires true;
+    //@ ensures true;
 {
     free(tbl->tbl_24);
     free(tbl->tbl_long);
@@ -319,7 +309,9 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
     //If prefixlen is smaller than 24, simply store the value in tbl_24, in
     //entries indexed from data[0].data[1].data[2] up to data[0].data[1].255
     if(prefixlen < 24){
-        size_t first_index = tbl_24_extract_first_index(data, prefixlen);
+        size_t first_index = tbl_24_extract_first_index(data);
+        //Simon: Apply subnet mask
+        first_index = correct_first_index_with_mask(first_index, prefixlen);
         size_t last_index = tbl_24_extract_last_index(_key);
 
         //fill all entries between first index and last index with value if
@@ -340,7 +332,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         //flag set to 1, use the stored value as base index, otherwise get a new
         //index and store it in the tbl_24
         size_t base_index;
-        size_t tbl_24_index = tbl_24_extract_first_index(data, prefixlen);
+        size_t tbl_24_index = tbl_24_extract_first_index(data);
         if(tbl_24_entry_flag(tbl_24[tbl_24_index])){
             base_index = tbl_24_entry_val(tbl_24[tbl_24_index]);
         } else {
@@ -356,6 +348,10 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
 
         //The last byte in data is used as the starting offset for tbl_long
         //indexes
+        
+        //Simon: Apply the subnet mask to the last byte
+        data[3] = data[3] & (build_mask_from_prefixlen(prefixlen) & 0xFF);
+        
         size_t first_index = tbl_long_extract_first_index(data, base_index);
         size_t last_index = tbl_long_extract_last_index(_key, base_index);
 
@@ -388,7 +384,7 @@ int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
         return -1;
     }
 
-    size_t tbl_24_index = tbl_24_extract_first_index(data, prefixlen);
+    size_t tbl_24_index = tbl_24_extract_first_index(data);
 
     if(tbl_24_entry_flag(tbl_24[tbl_24_index])) {
         //tbl_24 contains a base index for tbl_long
@@ -422,7 +418,7 @@ int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
 
         uint16_t replacement = tbl_24_find_replacement(_key, _tbl);
 
-        for(int i = tbl_24_extract_first_index(data, prefixlen);
+        for(int i = tbl_24_extract_first_index(data);
             i <= tbl_24_extract_last_index(_key); i++){
             if(tbl_24_entry_plen(tbl_24[i]) == prefixlen){
                 tbl_24[i] = replacement;
@@ -434,23 +430,22 @@ int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
     return 0;
 }
 
-int tbl_lookup_elem(struct tbl *_tbl, struct key *_key)
+
+int tbl_lookup_elem(struct tbl *_tbl, uint8_t* data)
 {
-    if(!_tbl || !_key){
+    if(!_tbl || !data){
         return -1;
     }
 
-    uint8_t prefixlen = _key->prefixlen;
-    uint8_t *data = _key->data;
     uint16_t *tbl_24 = _tbl->tbl_24;
     uint16_t *tbl_long = _tbl->tbl_long;
 
-    if(!tbl_24 || !tbl_long || !data || prefixlen > TBL_PLEN_MAX){
+    if(!tbl_24 || !tbl_long || !data){
         return -1;
     }
 
     //get index corresponding to key for tbl_24
-    size_t index = tbl_24_extract_first_index(data, prefixlen);
+    size_t index = tbl_24_extract_first_index(data);
 
     uint16_t entry = tbl_24[index];
     if(tbl_24_entry_flag(entry)){
@@ -464,3 +459,4 @@ int tbl_lookup_elem(struct tbl *_tbl, struct key *_key)
         return tbl_24_entry_val(tbl_24[index]);
     }
 }
+
