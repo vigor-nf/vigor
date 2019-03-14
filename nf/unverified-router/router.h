@@ -23,6 +23,7 @@
 #include "router_config.h"
 
 
+
 #ifdef TRIE
 
 //the Trie that will be used by the nf (global variable)

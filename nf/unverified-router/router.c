@@ -31,7 +31,7 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
     
 	//read routes from file	
 	
-	FILE *in_file  = fopen("routes", "r");
+	FILE *in_file  = fopen("../routes", "r");
 	
 	if(!in_file){
 		printf("Error! Could not open file\n"); 
@@ -118,41 +118,23 @@ void insert_all(FILE * f){
 	
 	#else
 	
-	/*const char * name = "main_lpm_table";
-	
-	
-	struct rte_lpm_config config;
-	
-	
-	config.max_rules = MAX_ROUTES_ENTRIES;
-	config.number_tbl8s = MAX_TBL_8;
-	config.flags = 0;	//unused parameter according to dpdk's doc
-
-	lpm_dir = rte_lpm_create(name, SOCKET_ID_ANY, &config);
-	//lpm_dir = rte_lpm_create_v20(name, SOCKET_ID_ANY, MAX_ROUTES_ENTRIES, 0);
-		
-	if(!lpm_dir){
-		printf("Could not initialize dir-24-8 !\n");
-		abort();
-	}
-	*/
-	
+	//inspired by dpdk's l3fwd example
 
 	struct rte_lpm_config config_ipv4;
-	unsigned i;
-	int ret;
+
 	char s[64];
 
 	/* create the LPM table */
 	config_ipv4.max_rules = MAX_ROUTES_ENTRIES;
 	config_ipv4.number_tbl8s = 256;
 	config_ipv4.flags = 0;
-	snprintf(s, sizeof(s), "IPV4_L3FWD_LPM_%d", 0);
+	snprintf(s, sizeof(s), "IPV4_ROUTER_LPM_%d", 0);
 	
 	lpm_dir = rte_lpm_create(s, SOCKET_ID_ANY, &config_ipv4);
+
 	
 	if (lpm_dir == NULL)
-		rte_exit(EXIT_FAILURE,"Unable to create the l3fwd LPM table on socket\n");
+		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
 	
 	#endif
 	
@@ -229,15 +211,6 @@ void insert_all(FILE * f){
 					abort();
 		}
 		
-		
-		printf("The mask is : %u \n", mask);
-		printf("The ip is : %u", ip[0]);
-		printf(".%u", ip[1]);
-		printf(".%u", ip[2]);
-		printf(".%u \n", ip[3]);
-		printf("Port is : %d\n", port);
-		
-		fflush(stdout);
    
    
 		#ifdef TRIE
@@ -275,10 +248,7 @@ void insert_all(FILE * f){
 		
     }
 
-	
-	
-	
-        
+	     
        
     if(line){
 		free(line);
