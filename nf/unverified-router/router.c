@@ -31,7 +31,7 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
     
 	//read routes from file	
 	
-	FILE *in_file  = fopen("../routes", "r");
+	FILE *in_file  = fopen("routes", "r");
 	
 	if(!in_file){
 		printf("Error! Could not open file\n"); 
@@ -75,7 +75,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
 	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
-    int res = -1;
+    int res = FLOOD_FRAME;
     
 #ifdef TRIE	
 
@@ -99,7 +99,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
 	if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
 		
-		res = -1;	//force -1 in case of lookup miss
+		res = FLOOD_FRAME;	// in case of lookup miss
 	}
 	
 #endif
