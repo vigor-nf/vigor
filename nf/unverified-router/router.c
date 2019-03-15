@@ -95,7 +95,6 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	free(key);
 	
 #else
-
 	
 	if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
 		
