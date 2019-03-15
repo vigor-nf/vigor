@@ -38,6 +38,7 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
         abort();
 	}
 	
+	struct router_config config;
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
@@ -154,8 +155,8 @@ void insert_all(FILE * f){
 		
     
 		uint8_t * ip = NULL;
-		uint32_t mask = 0;
-		int port = 0;
+		uint8_t mask = 0;
+		uint8_t port = 0;
 		int j = 0;
 		size_t count = 0;
 		size_t entries_count = 0;
@@ -237,8 +238,12 @@ void insert_all(FILE * f){
 			int res = rte_lpm_add(lpm_dir, *ip_address, mask, port);
 			
 			free(ip_address);
+					
 			
 		#endif
+		
+		
+		
 		
       
 		if(res){

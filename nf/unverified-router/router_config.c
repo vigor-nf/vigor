@@ -92,11 +92,9 @@ void router_config_cmdline_print_usage(void)
 
 void router_print_config(struct router_config* config)
 {
-  /*NF_INFO("\n--- Bridge Config ---\n");
+  NF_INFO("\n--- Router Config ---\n");
 
-  NF_INFO("Expiration time: %" PRIu64 "ns", config->expiration_time);
-  NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
-  NF_INFO("Static configuration file: %s", config->static_config_fname);
+	
 
-  NF_INFO("\n--- ------ ------ ---\n");*/
+  NF_INFO("\n--- ------ ------ ---\n");
 }
