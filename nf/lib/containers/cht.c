@@ -3,6 +3,7 @@
 #include <stdlib.h>
 
 //@ #include "prime.gh"
+//@ #include "permutlist.gh"
 
 static uint64_t loop(uint64_t k, uint64_t capacity)
 //@ requires 0 < capacity &*& capacity < INT_MAX;
@@ -15,31 +16,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
 
 /*@
 
-    predicate sub_permut(list<int> xs, int max_val) =
-                xs == nil ?
-                        true
-                :
-                        true == forall(xs, (lt)(max_val)) &*&
-                        true == forall(xs, (ge)(0)) &*&
-                        true == no_dups(xs);
 
-
-        fixpoint list<t> sub_list<t>(list<t> xs, int size) {
-                switch(xs) {
-                        case nil: return nil;
-                        case cons(x0, xs0): return (size <= 0 ? nil : cons(x0, sub_list(xs0, size - 1)) );
-                }
-        }
-
-        lemma void sub_list_zerosize<t>(list<t> xs)
-                requires true;
-                ensures sub_list(xs, 0) == nil;
-        {
-                switch(xs) {
-                        case nil: assert (sub_list(xs, 0) == nil);
-                        case cons(x0, xs0): assert (sub_list(xs, 0) == nil);
-                }
-        }
 @*/
 
 void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
@@ -53,14 +30,6 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             true == valid_cht(values, backend_capacity, cht_height) &*&
             prime(cht_height); @*/
 {
-    // Make sure cht_height is prime.
-    // for (int i = 2; i*i <= cht_height; ++i)
-    ///*@ invariant true; @*/
-    //{
-    //  assert(i*(cht_height/i) != cht_height);
-    //}
-
-    // assert(backend_capacity < cht_height);
 
     //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
     //@ mul_bounds(sizeof(int)*cht_height, sizeof(int)*MAX_CHT_HEIGHT, backend_capacity, backend_capacity);
@@ -72,19 +41,27 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     // Generate the permutations of 0..(cht_height - 1) for each backend
     int *permutations = malloc(sizeof(int) * (int)(cht_height * backend_capacity));
     //@ assume(permutations != 0);//TODO: report failure
+
+    //@ open ints(permutations, cht_height*backend_capacity, ?p0);
+    //@ close ints(permutations, cht_height*backend_capacity, p0);
+    //@ close foreach(list_split_every_n(p0, zero, cht_height), permutation);
     for (uint32_t i = 0; i < backend_capacity; ++i)
     /*@ invariant 0 <= i &*& i <= backend_capacity &*&
-                  vectorp<uint32_t>(cht, u_integer, old_values, addrs) &*&
-                  ints(permutations, cht_height*backend_capacity, _); @*/
+                  ints(permutations, cht_height*backend_capacity, ?p) &*&
+                  foreach(list_split_every_n(p, nat_of_int(i), cht_height), permutation); @*/
     {
         uint32_t offset_absolut = i * 31;
         uint64_t offset = loop(offset_absolut, cht_height);
         uint64_t base_shift = loop(i, cht_height - 1);
         uint64_t shift = base_shift + 1;
+        //@ open ints(permutations, cht_height*backend_capacity, ?p0_in);
+        //@ close ints(permutations, cht_height*backend_capacity, p0_in);
+        //@ list_isolate_chunk_zerosize(p0_in, i * cht_height);
+        //@ close sub_permutation(list_isolate_chunk(p0_in, i * cht_height, i * cht_height), cht_height);
         for (uint32_t j = 0; j < cht_height; ++j)
         /*@ invariant 0 <= j &*& j <= cht_height &*&
-                      vectorp<uint32_t>(cht, u_integer, old_values, addrs) &*&
-                      ints(permutations, cht_height*backend_capacity, _); @*/
+                      ints(permutations, cht_height*backend_capacity, ?p_in) &*&
+                      sub_permutation(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j), cht_height); @*/
         {
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);

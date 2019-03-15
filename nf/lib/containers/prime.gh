@@ -24,7 +24,7 @@ fixpoint bool is_prime_div(int x, nat divisor) {
     switch(divisor) {
         case zero: return false;
         case succ(divisor_pred):
-            return 	divisor_pred == zero 
+            return divisor_pred == zero 
                 ? false
                 : divisor_pred == succ(zero) 
                     ? !divide(x, int_of_nat(divisor))
@@ -41,7 +41,7 @@ fixpoint bool are_coprime_div(int x, int y, nat divisor) {
     switch(divisor) {
         case zero: return false;
         case succ(divisor_pred):
-            return 	divisor_pred == zero
+            return divisor_pred == zero
                 ? false
                 : divisor_pred == succ(zero)
                     ? !common_divide(x, y, int_of_nat(divisor))

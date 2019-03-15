@@ -1,0 +1,67 @@
+#ifndef _PERMUTLIST_GH_INCLUDED_
+#define _PERMUTLIST_GH_INCLUDED_
+
+#include <nat.gh>
+#include "stdex.gh"
+
+predicate sub_permutation(list<int> xs, int max_val) =
+    xs == nil
+    ? true
+    : max_val > 0 &*&
+        true == forall(xs, (lt)(max_val)) &*&
+        true == forall(xs, (ge)(0)) &*&
+        true == no_dups(xs);
+
+predicate permutation(list<int> xs) = sub_permutation(xs, length(xs));
+
+fixpoint bool is_permutation(list<int> xs) {
+    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
+}
+
+fixpoint list<t> list_take_n_first<t>(list<t> xs, int n) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return (n <= 0 ? nil : cons(x0, list_take_n_first(xs0, n - 1)) );
+    }
+}
+
+fixpoint list<t> list_drop_n_first<t>(list<t> xs, int n) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return (n <= 0 ? xs : list_drop_n_first(xs0, n - 1));
+    }
+}
+
+fixpoint list<t> list_isolate_chunk<t>(list<t> xs, int begin, int end) {
+    return list_take_n_first(list_drop_n_first(xs, begin), end - begin);
+}
+
+fixpoint list< list<t> > list_split_every_n<t>(list<t> xs, nat nb_split, int n) {
+    switch(nb_split) {
+        case zero: return nil;
+        case succ(nb_split_pred): 
+            return cons(list_take_n_first(xs, n), list_split_every_n(list_drop_n_first(xs, n), nb_split_pred, n));
+    }
+}
+
+lemma void list_take_n_first_zerosize<t>(list<t> xs)
+    requires true;
+    ensures list_take_n_first(xs, 0) == nil;
+{
+    switch(xs) {
+        case nil: assert (list_take_n_first(xs, 0) == nil);
+        case cons(x0, xs0): assert (list_take_n_first(xs, 0) == nil);
+    }
+}
+
+lemma void list_isolate_chunk_zerosize<t>(list<t> xs, int n)
+    requires true;
+    ensures list_isolate_chunk(xs, n, n) == nil;
+{
+    list<t> drop_xs = list_drop_n_first(xs, n);
+    list_take_n_first_zerosize(drop_xs);
+}
+
+
+
+#endif //_PERMUTLIST_GH_INCLUDED_
