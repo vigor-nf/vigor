@@ -75,6 +75,7 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
 	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
+    uint32_t res = 0;
     
 #ifdef TRIE	
 
@@ -88,13 +89,24 @@ uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	key->prefixlen = 32 ;//get prefix length
     memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
     
-	uint16_t res = trie_lookup_elem(lpm_trie, key);
+	int result = trie_lookup_elem(lpm_trie, key);
+	
+	if(result < 0){	//lookup returns -1 on lookup miss
+		res = 0;	//default route
+	}
+	else{	//lookup hit
+		res = result;
+	}
+	
 	free(key);
 	
 #else
 
-	uint32_t res = 0;
-	rte_lpm_lookup (lpm_dir, ip_addr, &res); 
+	
+	if(rte_lpm_lookup (lpm_dir, ip_addr, &res)){	//lookup returns 0 on lookup hit
+		
+		res = 0;	//force destination device to be 0 since value is not guaranteed on lookup miss
+	}
 	
 #endif
 
