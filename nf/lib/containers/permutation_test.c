@@ -2,6 +2,7 @@
 #include <assert.h>
 #include "cht.h"
 
+//@ #include <nat.gh>
 //@ #include "modulo.gh"
 
 typedef unsigned int uint32_t;
@@ -9,23 +10,55 @@ typedef unsigned long long uint64_t;
 
 /*@
 
-	predicate prime(int x) = prime_div(x, 2);
+	predicate prime(int x) = is_prime(x) == true;
 	
-	predicate prime_div(int x, int div) =
-		div >= x ? //TODO: not the best bound (sqrt(x))
-			true
-		:
-			false == ((x/div)*div != x) &*&
-			prime_div(x, div + 1);
+	predicate coprime(int x, int y) = are_coprime(x, y) == true;
 	
-	predicate coprime(int x, int y) = coprime_div(x, y, 2);
+	fixpoint int min(int x, int y) {
+		return x < y ? x : y;
+ 	} 
 	
-	predicate coprime_div(int x, int y, int div) =
-		div >= x ? //TODO: not the best bound (min(sqrt(x), sqrt(y)))
-			true
-		:
-			false == ( ((x/div)*div != x) && ((y/div)*div != y) ) &*&
-			coprime_div(x, y, div + 1);
+	fixpoint bool divide(int quotient, int divisor) {
+		return (quotient/divisor)*divisor == quotient; 
+	}
+	
+	fixpoint bool common_divide(int quotient1, int quotient2, int divisor) {
+		return divide(quotient1, divisor) && divide(quotient2, divisor);
+ 	} 
+	
+	fixpoint bool is_prime_div(int x, nat divisor) {
+		switch(divisor) {
+			case zero: return false;
+			case succ(divisor_pred):
+				return 	divisor_pred == zero 
+					? false
+					: divisor_pred == succ(zero) 
+						? !divide(x, int_of_nat(divisor))
+						: !divide(x, int_of_nat(divisor)) && is_prime_div(x, divisor_pred);
+		}
+	
+	}
+	
+	fixpoint bool is_prime(int x) {
+		return is_prime_div(x, nat_of_int(x));
+	}
+	
+	fixpoint bool are_coprime_div(int x, int y, nat divisor) {
+		switch(divisor) {
+			case zero: return false;
+			case succ(divisor_pred):
+				return 	divisor_pred == zero
+					? false
+					: divisor_pred == succ(zero)
+						? !common_divide(x, y, int_of_nat(divisor))
+						: !common_divide(x, y, int_of_nat(divisor)) && are_coprime_div(x, y, divisor_pred);
+		}
+	
+	}
+	
+	fixpoint bool are_coprime(int x, int y) {
+		return are_coprime_div(x, y, nat_of_int(min(x,y)));
+	}
 	
 	predicate sub_permut(list<int> xs, int max_val) =
 		xs == nil ?
@@ -48,10 +81,8 @@ typedef unsigned long long uint64_t;
 		ensures sub_list(xs, 0) == nil;
 	{
 		switch(xs) {
-			case nil:
-				assert (sub_list(xs, 0) == nil);
-			case cons(x0, xs0):
-				assert (sub_list(xs, 0) == nil);
+			case nil: assert (sub_list(xs, 0) == nil);
+			case cons(x0, xs0): assert (sub_list(xs, 0) == nil);
 		}
 	}
 				
@@ -63,7 +94,8 @@ typedef unsigned long long uint64_t;
 		div_rem_nonneg(k, m);
 	}
 	
-	/*lemma void modulo_mul_coprime(int k, int s, int m)
+	// Assumption !
+	lemma void modulo_mul_coprime(int k, int s, int m)
 		requires
 			0 < k &*& k < m &*&
 			0 < s &*& s < m &*&
@@ -72,22 +104,19 @@ typedef unsigned long long uint64_t;
 		ensures
 			(k * s) % m != 0 &*& coprime(s, m);
 	{
-		div_rem_nonneg(k, m);
-		assert (k != k / m * m);
-	}*/
-	
-	lemma void mul_diff(int a, int b, int s) 
-		requires a != b &*& s > 0;
-		ensures s * a != s * b;
-	{
-		assume (s * a != s * b);//TODO
+		assume ((k * s) % m != 0);
 	}
 	
-	lemma void mul_nonzero(int a, int b)
-		requires a > 0 &*& b > 0;
-		ensures a * b > 0;
+	// Assumption !
+	lemma void modulo_mul_split(int a, int b, int m)
+		requires
+			0 <= a &*& 0 <= b &*& 
+			0 < m &*& 
+			(b - a) % m != 0;
+		ensures
+			b % m != a % m;
 	{
-		mul_nonnegative(a - 1, b);
+		assume (b % m != a % m);
 	}
 	
 	lemma void modulo_permutation(int a, int b, int s, int m) 
@@ -98,20 +127,16 @@ typedef unsigned long long uint64_t;
 			0 < m &*& 
 			b > a &*& coprime(s, m);
 		ensures
-			((s * a) % m) != ((s * b) % m) &*& coprime(s, m) ;
+			(s * a) % m != (s * b) % m  &*& coprime(s, m) ;
 	{
 		less_than_modulo(b - a, m);
-		div_rem_nonneg(b - a, m);
-		mul_nonnegative(s, b - a);
-		
-		assert ((b - a) != (b - a) / m * m);
-		
-		mul_diff((b - a), (b - a) / m * m, s);
-		mul_nonzero(s, b - a);
-				
-		div_rem_nonneg(s * (b - a), m);
-		assert (s * (b - a) != ( (s * (b - a)) / m) * m);
+		modulo_mul_coprime(b - a, s, m);
 		assert ((s * (b - a)) % m != 0 );
+		assert ((s * b - s * a) % m != 0 );
+		mul_nonnegative(s, a);
+		mul_nonnegative(s, b);
+		modulo_mul_split(s * a, s * b, m);
+		assert ( (s * b) % m != (s * a) % m );
 	} 
 
 @*/
