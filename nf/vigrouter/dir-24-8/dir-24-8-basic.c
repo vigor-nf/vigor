@@ -1,45 +1,76 @@
 #include "dir-24-8-basic.h"
+//@ #include <nat.gh>
+//@ #include <bitops.gh>
+// #include lpm_dir_24_8.gh'
 
 size_t build_mask_from_prefixlen(uint8_t prefixlen)
-    //requires 32 >= prefixlen;
-    // ensures result == mask_from_prefixlen(prefixlen, 0);
+    //@ requires prefixlen <= 32;
+    //@ ensures true;
 {
 	if(prefixlen > 32){abort();}
-	size_t mask = 0;
+	uint32_t mask = 0;
 	
-	int i = 0;
 	
-	for(;;)
-	// invariant 0 <= i &*& i <= prefixlen;
+	for(int i = 0; ;i++)
+	//@ invariant 0 <= i &*& i <= prefixlen &*& mask == (pow_nat(2, nat_of_int(i))-1);
 	{
 		if(i == prefixlen){
 			break;
 		}
-		
+		//@ shiftleft_def(mask, nat_of_int(1));
+		//@ shiftleft_limits(mask, nat_of_int(31), nat_of_int(1));
 		mask <<= 1;
+		//@ bitor_limits(mask, 1, nat_of_int(32));
 		mask |= 1;
 		
-		i++;
 	}
 	
+	//@ shiftleft_limits(mask, nat_of_int(prefixlen), nat_of_int(32 - prefixlen));
 	mask <<= (32 - prefixlen);
 	
 	return mask;
 }
 
+size_t shift_left_eight(uint32_t x)
+    //@ requires true;
+    //@ ensures true;
+{
+    //size_t res = x;
+    
+    //res = res << 8;
+    // shiftleft_limits(x, nat_of_int(32), nat_of_int(8));
+    return x << 8;
+}
+
+size_t uint_or(size_t x, size_t y)
+    //@ requires true;
+    //@ ensures true;
+{
+    // bitor_limits(x, y, nat_of_int(32));
+    size_t res = x | y;
+    return res;
+}
+
+
 /**
  * Extract the 24 MSB of an uint8_t array and returns then in size_t
  */
 size_t tbl_24_extract_first_index(uint8_t *data)
-    //@ requires data[0..4];
-    //@ ensures true;
+    //@ requires data[0..4] |-> ?ipv4;
+    //@ ensures data[0..4] |-> ipv4;
 {
-    size_t index = data[0];
-    index <<= 8;
-    index |= data[1];
-    index <<= 8;
-    index |= data[2];
-
+    size_t index = 0;
+    
+    index = uint_or(index, (size_t)data[0]);
+    
+    index = shift_left_eight(index);
+    
+    index = uint_or(index, (size_t)data[1]);
+    
+    index = shift_left_eight(index);
+    
+    index = uint_or(index, (size_t)data[2]);
+    
     return index;
 }
 
@@ -50,7 +81,7 @@ size_t correct_first_index_with_mask(size_t first_index, uint8_t prefixlen)
 {
 	//No need for a mask
 	if(prefixlen >= 24){
-		return first_index;
+	    return first_index;
 	}
 	
 	size_t mask = build_mask_from_prefixlen(prefixlen);
@@ -62,8 +93,8 @@ size_t correct_first_index_with_mask(size_t first_index, uint8_t prefixlen)
  * Computes the last index reached by the IP/mask pair contained in key
  */
 size_t tbl_24_extract_last_index(struct key *key)
-    //@ requires key(key, ?ipv4) &*& 4 == length(ipv4);
-    //@ ensures key(key, ipv4) &*& 4 == length(ipv4);
+    // requires key(key, ?ipv4);
+    // ensures key(key, ipv4);
 {
     //Auto open
     uint8_t *data = key->data;
@@ -122,7 +153,8 @@ uint8_t *tbl_24_is_last_index(size_t index, struct tbl *tbl)
 
 int tbl_24_entry_flag(uint16_t entry)
 {
-    return (entry & TBL_24_FLAG_MASK) >> 15;
+    uint16_t res = (entry & TBL_24_FLAG_MASK) >> 15;
+    return (int)res;
 }
 
 uint16_t tbl_24_find_replacement(struct key *key, struct tbl *tbl)
@@ -249,26 +281,58 @@ uint16_t tbl_long_entry_put_plen(uint16_t entry, uint8_t prefixlen)
     return entry | ((prefixlen & (TBL_LONG_PLEN_MASK >> 8)) << 8);
 }
 
-struct tbl *tbl_allocate(size_t max_entries)
-{
-    struct tbl *tbl = (struct tbl *) malloc(sizeof(struct tbl));
-    if(!tbl)
-        return NULL;
+/*@
+fixpoint bool is_zero(uint16_t x){
+    return x == 0 ? true : false;
+}
+@*/
 
-    uint16_t *tbl_24 = (uint16_t *) calloc(TBL_24_MAX_ENTRIES,
-                                            sizeof(uint16_t));
-    if(!tbl_24){
-        free(tbl);
-        return NULL;
+void fill_with_zeros(uint16_t* array, size_t size)
+    // requires array[0..size] |-> ?data;
+    // ensures true == forall(data, is_zero) &*& array[0..size] |-> data;
+{
+    
+    for(size_t i = 0; ; i++)
+    // requires array[0..i] |-> ?zeros &*& array[i..size] |-> ?whatever &*& true == forall(zeros, is_zero);
+    // ensures array[0..old_i] |-> zeros &*& array[old_i..size] |-> whatever &*& true == forall(zeros, is_zero);
+    {
+        if(i == size){
+            break;
+        }
+        
+        array[i] = 0;
+    }
+}
+
+//Is it useful to let a max_entries param??
+struct tbl *tbl_allocate(size_t max_entries)
+    //@ requires true;
+    /*@ ensures result == 0 ? true : table(result, ?tbl_24, ?tbl_long);
+    @*/
+{
+    struct tbl *tbl = malloc(sizeof(struct tbl));
+    if(!tbl){
+    	abort();
     }
 
-    uint16_t *tbl_long = (uint16_t *) calloc(TBL_LONG_MAX_ENTRIES,
-                                                sizeof(uint16_t));
+    size_t tbl_24_size = TBL_24_MAX_ENTRIES * sizeof(uint16_t);
+    uint16_t *tbl_24 = malloc(tbl_24_size);
+    if(!tbl_24){
+        free(tbl);
+        return 0;
+    }
+    
+    size_t tbl_long_size = TBL_LONG_MAX_ENTRIES * sizeof(uint16_t);
+    uint16_t *tbl_long = malloc(tbl_long_size);
     if(!tbl_long){
         free(tbl_24);
         free(tbl);
-        return NULL;
+        return 0;
     }
+    
+    //Set every element of the array to zero
+    memset(tbl_24, 0, tbl_24_size);
+    memset(tbl_long, 0, tbl_long_size);
 
     tbl->tbl_24 = tbl_24;
     tbl->tbl_long = tbl_long;
@@ -280,7 +344,7 @@ struct tbl *tbl_allocate(size_t max_entries)
 }
 
 void tbl_free(struct tbl *tbl)
-    //@ requires true;
+    //@ requires table(tbl, _, _);
     //@ ensures true;
 {
     free(tbl->tbl_24);

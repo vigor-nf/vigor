@@ -8,13 +8,13 @@
 
 #define TBL_24_FLAG_MASK 1 << 15
 #define TBL_24_PLEN_MASK 0x7F00
-#define TBL_24_MAX_ENTRIES 2 << 24
+#define TBL_24_MAX_ENTRIES 16777216//= 2^24
 #define TBL_24_VAL_MASK 0x00FF
 #define TBL_24_PLEN_MAX 24
 
 #define TBL_LONG_OFFSET_MAX 256
 #define TBL_LONG_FACTOR 256
-#define TBL_LONG_MAX_ENTRIES 2 << 16
+#define TBL_LONG_MAX_ENTRIES 65536 //= 2^16
 #define TBL_LONG_PLEN_MASK 0xFF00
 #define TBL_LONG_VAL_MASK 0x00FF
 
@@ -35,7 +35,21 @@ struct key{
     uint8_t prefixlen;
 };
 
-/*@	
+/*@
+fixpoint list<pair<uint16_t, uint16_t> > list_to_indexValue(list<uint16_t> data, size_t current_index){
+    switch(data){
+    	case nil: return nil;
+    	case cons(value, cs0): return cons(pair(current_index, value), list_to_indexValue(cs0, current_index+1));
+    }
+}
+
+predicate table(struct tbl* t; list<uint16_t> tbl_24, list<uint16_t> tbl_long) = 
+	malloc_block_tbl(t)
+	&*& t->tbl_24 |-> ?t_24 &*& t->tbl_long |-> ?t_l &*& t->max_entries |-> ?max_entries &*& t->n_entries |-> ?n_entries
+	&*& t_24 != 0 &*& t_l != 0 &*& n_entries >= 0 &*& max_entries > 0
+	&*& t_24[0..TBL_24_MAX_ENTRIES] |-> tbl_24 &*& length(tbl_24) == TBL_24_MAX_ENTRIES
+	&*& t_l[0..TBL_LONG_MAX_ENTRIES] |-> tbl_long;
+
 predicate key(struct key* k; list<uint8_t> ipv4) = 
 	malloc_block_key(k) &*& k->data |-> ?data &*& k->prefixlen |-> ?prefixlen &*& malloc_block_pointers(data, 4) &*& data[0..4] |-> ipv4;
 @*/

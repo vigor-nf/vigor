@@ -507,6 +507,7 @@ int main()
 	mask_tests();
 	unit_tests();
 	t24_then_26_mask_rules_test();
+	printf("%d\n",sizeof(size_t));
 	/*
 	printf("########## Beginning of unit_tests ##########\n");
 	int res = unit_tests();
