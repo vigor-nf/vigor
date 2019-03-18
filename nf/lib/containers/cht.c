@@ -15,20 +15,28 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
 }
 
 /*@
+    fixpoint bool is_modulo_permutation(int offset, int shift, int j, int cht_height, pair<int, int> index_elem_pair) {
+        return snd(index_elem_pair) == ((offset + shift * fst(index_elem_pair)) % cht_height);
+    }
 
-
+    lemma void mul_nonzero(int a, int b)
+        requires a > 0 &*& b > 0;
+        ensures a * b > 0;
+    {
+        mul_nonnegative(a - 1, b);
+        assert (a-1)*b < a*b;
+    }
 @*/
 
 void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
 /*@ requires vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
-             0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& prime(cht_height) &*&
+             0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& true == is_prime(cht_height) &*&
              0 < backend_capacity &*& backend_capacity < cht_height &*&
              sizeof(int)*MAX_CHT_HEIGHT*backend_capacity < INT_MAX &*&
              length(old_values) == cht_height*backend_capacity &*&
              true == forall(old_values, is_one); @*/
 /*@ ensures vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
-            true == valid_cht(values, backend_capacity, cht_height) &*&
-            prime(cht_height); @*/
+            true == valid_cht(values, backend_capacity, cht_height); @*/
 {
 
     //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
@@ -61,15 +69,21 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         for (uint32_t j = 0; j < cht_height; ++j)
         /*@ invariant 0 <= j &*& j <= cht_height &*&
                       ints(permutations, cht_height*backend_capacity, ?p_in) &*&
-                      sub_permutation(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j), cht_height); @*/
+                      sub_permutation(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
+                      true == forall(zip_with_index(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, j, cht_height)); @*/
         {
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
             //@ mul_bounds(shift, MAX_CHT_HEIGHT, j, MAX_CHT_HEIGHT);
-            uint64_t permut = loop(offset + shift * j, cht_height);
             //@ mul_bounds(i, backend_capacity - 1, cht_height, cht_height);
 
+            uint64_t permut = loop(offset + shift * j, cht_height);
             permutations[i * cht_height + j] = (int)permut;
+
+            //@ list<int> cur_permut = list_isolate_chunk(p_in, i * cht_height, i * cht_height + j);
+            //@ list< pair<int, int> > cur_permut_index = zip_with_index(cur_permut);
+            //@ assert true == is_modulo_permutation(offset, shift, j, cht_height, pair(j, permutations[i * cht_height + j]));
+
         }
     }
     // Fill the priority lists for each hash in [0, cht_height)

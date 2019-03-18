@@ -4,6 +4,8 @@
 #include <nat.gh>
 #include "stdex.gh"
 
+predicate permutation(list<int> xs) = sub_permutation(xs, length(xs));
+
 predicate sub_permutation(list<int> xs, int max_val) =
     xs == nil
     ? true
@@ -11,8 +13,6 @@ predicate sub_permutation(list<int> xs, int max_val) =
         true == forall(xs, (lt)(max_val)) &*&
         true == forall(xs, (ge)(0)) &*&
         true == no_dups(xs);
-
-predicate permutation(list<int> xs) = sub_permutation(xs, length(xs));
 
 fixpoint bool is_permutation(list<int> xs) {
     return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
@@ -43,6 +43,28 @@ fixpoint list< list<t> > list_split_every_n<t>(list<t> xs, nat nb_split, int n) 
             return cons(list_take_n_first(xs, n), list_split_every_n(list_drop_n_first(xs, n), nb_split_pred, n));
     }
 }
+
+fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return cons( pair(index, x0), zip_with_index_recursive(xs0, index + 1) );
+    }
+}
+
+fixpoint list< pair<int, t> > zip_with_index<t>(list<t> xs) {
+    return zip_with_index_recursive(xs, 0);
+}
+
+lemma void append_to_permutation(list<int> xs, int newHead)
+    requires    sub_permutation(xs, ?max_val) &*& 
+                0 <= newHead &*& newHead < max_val &*&
+                false == mem(newHead, xs); 
+    ensures     sub_permutation(cons(newHead, xs), max_val);
+{
+    open sub_permutation(xs, max_val);
+    close sub_permutation(cons(newHead, xs), max_val);
+}
+
 
 lemma void list_take_n_first_zerosize<t>(list<t> xs)
     requires true;
