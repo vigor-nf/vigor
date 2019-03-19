@@ -22,9 +22,19 @@
  * http://tiny-tera.stanford.edu/~nickm/papers/Infocom98_lookup.pdf
  * */
 
+struct entry{
+	struct rule *current_rule;
+};
+
+struct rule{
+	uint8_t prefixlen;
+	uint16_t value;
+	struct rule *next;
+};
+
 struct tbl{
-    uint16_t *tbl_24;
-    uint16_t *tbl_long;
+    struct entry **tbl_24;
+    struct entry **tbl_long;
     size_t tbl_long_index;
     size_t n_entries;
     size_t max_entries;
@@ -36,18 +46,11 @@ struct key{
 };
 
 /*@
-fixpoint list<pair<uint16_t, uint16_t> > list_to_indexValue(list<uint16_t> data, size_t current_index){
-    switch(data){
-    	case nil: return nil;
-    	case cons(value, cs0): return cons(pair(current_index, value), list_to_indexValue(cs0, current_index+1));
-    }
-}
-
 predicate table(struct tbl* t; list<uint16_t> tbl_24, list<uint16_t> tbl_long) = 
 	malloc_block_tbl(t)
 	&*& t->tbl_24 |-> ?t_24 &*& t->tbl_long |-> ?t_l &*& t->max_entries |-> ?max_entries &*& t->n_entries |-> ?n_entries
 	&*& t_24 != 0 &*& t_l != 0 &*& n_entries >= 0 &*& max_entries > 0
-	&*& t_24[0..TBL_24_MAX_ENTRIES] |-> tbl_24 &*& length(tbl_24) == TBL_24_MAX_ENTRIES
+	&*& t_24[0..TBL_24_MAX_ENTRIES] |-> tbl_24
 	&*& t_l[0..TBL_LONG_MAX_ENTRIES] |-> tbl_long;
 
 predicate key(struct key* k; list<uint8_t> ipv4) = 

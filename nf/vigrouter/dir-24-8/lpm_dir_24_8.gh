@@ -1,9 +1,12 @@
 //@ #include <bitops.gh>
 /*@
 	inductive lpm_key = key(list<int>, int);
-	inductive lpm_entry_24 = next_hop(int) | index_long(int) | empty;
-	inductive lpm_entry_long = next_hop(int) | empty;
-	inductive dir_24_8 = tables(list<lpm_entry_24>, list<lpm_entry_long>);
+	inductive lpm_rule_24 = next_hop(int, int) | index_long(int, int) | empty;
+	inductive lpm_rule_long = next_hop(int, int) | empty;
+
+	//next_hop(int, int) and index_long(int, int) -> ....(prefixlen, value)
+
+	inductive dir_24_8 = tables(list<list<lpm_rule_24> >, list<list<lpm_rule_long> >);
 
 
 	fixpoint key init_key(list<int> ipv4, int prefixlen){
@@ -22,15 +25,15 @@
 		}
 	}
 // LOOKUP FUNCTIONS
-	fixpoint lpm_entry_24 lookup_tbl_24(int index, dir_24_8 dir){
+	fixpoint lpm_rule_24 lookup_tbl_24(int index, dir_24_8 dir){
 		switch(dir){
-		    case(tables(tbl_24, tbl_long)): return nth(index, tbl_24);
+		    case(tables(tbl_24, tbl_long)): return nth(0,nth(index, tbl_24));
 		}
 	}
 
-	fixpoint lpm_entry_long lookup_tbl_long(int index, dir_24_8 dir){
+	fixpoint lpm_rule_long lookup_tbl_long(int index, dir_24_8 dir){
 		switch(dir){
-		    case(tables(tbl_24, tbl_long)): return nth(index, tbl_long);
+		    case(tables(tbl_24, tbl_long)): return nth(0, nth(index, tbl_long));
 		}
 	}
 
@@ -38,10 +41,10 @@
 		switch(dir){
 			case tables(tbl_24, tbl_long): 
 				switch(lookup_tbl_24(index24_from_ipv4(ipv4), dir)){
-					case next_hop(next_24): return some(next_24);
-					case index_long(index):
+					case next_hop(_, next_24): return some(next_24);
+					case index_long(_, index):
 						switch(lookup_tlb_long(indexlong_from_ipv4(ipv4, index))){
-							case next_hop(next_long): return some(next_long);
+							case next_hop(_, next_long): return some(next_long);
 							case empty: return none;
 						}
 					case empty: return none;
