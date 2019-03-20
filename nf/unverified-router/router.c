@@ -38,6 +38,7 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
         abort();
 	}
 	
+	struct router_config config;
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
@@ -68,33 +69,38 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 /**
  * Routes packets using a LPM Trie
  */
-uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
-	 
-	struct ether_hdr * eth_hdr = rte_pktmbuf_mtod(mbuf, struct ether_hdr *);
+	//retrieve the ip
+	struct ether_hdr* eth_hdr = nf_then_get_ether_header(mbuf_pkt(mbuf));
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
 	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
+    int res = FLOOD_FRAME;
     
 #ifdef TRIE	
 
 	struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
     
-    if(!key){
+    if(unlikely(!key)){
 		printf("Couldn't allocate memory !");
 		abort();
 	}
     
-	key->prefixlen = 32 ;//get prefix length
+	key->prefixlen = 32 ;
     memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
     
-	uint16_t res = trie_lookup_elem(lpm_trie, key);
+	int res = trie_lookup_elem(lpm_trie, key);
+	
+	
 	free(key);
 	
 #else
-
-	uint32_t res = 0;
-	rte_lpm_lookup (lpm_dir, ip_addr, &res); 
+	
+	if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
+		
+		res = FLOOD_FRAME;	// in case of lookup miss
+	}
 	
 #endif
 
@@ -118,41 +124,23 @@ void insert_all(FILE * f){
 	
 	#else
 	
-	/*const char * name = "main_lpm_table";
-	
-	
-	struct rte_lpm_config config;
-	
-	
-	config.max_rules = MAX_ROUTES_ENTRIES;
-	config.number_tbl8s = MAX_TBL_8;
-	config.flags = 0;	//unused parameter according to dpdk's doc
-
-	lpm_dir = rte_lpm_create(name, SOCKET_ID_ANY, &config);
-	//lpm_dir = rte_lpm_create_v20(name, SOCKET_ID_ANY, MAX_ROUTES_ENTRIES, 0);
-		
-	if(!lpm_dir){
-		printf("Could not initialize dir-24-8 !\n");
-		abort();
-	}
-	*/
-	
+	//inspired by dpdk's l3fwd example
 
 	struct rte_lpm_config config_ipv4;
-	unsigned i;
-	int ret;
+
 	char s[64];
 
 	/* create the LPM table */
 	config_ipv4.max_rules = MAX_ROUTES_ENTRIES;
 	config_ipv4.number_tbl8s = 256;
 	config_ipv4.flags = 0;
-	snprintf(s, sizeof(s), "IPV4_L3FWD_LPM_%d", 0);
+	snprintf(s, sizeof(s), "IPV4_ROUTER_LPM_%d", 0);
 	
 	lpm_dir = rte_lpm_create(s, SOCKET_ID_ANY, &config_ipv4);
+
 	
 	if (lpm_dir == NULL)
-		rte_exit(EXIT_FAILURE,"Unable to create the l3fwd LPM table on socket\n");
+		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
 	
 	#endif
 	
@@ -167,8 +155,8 @@ void insert_all(FILE * f){
 		
     
 		uint8_t * ip = NULL;
-		uint32_t mask = 0;
-		int port = 0;
+		uint8_t mask = 0;
+		uint8_t port = 0;
 		int j = 0;
 		size_t count = 0;
 		size_t entries_count = 0;
@@ -229,15 +217,6 @@ void insert_all(FILE * f){
 					abort();
 		}
 		
-		
-		printf("The mask is : %u \n", mask);
-		printf("The ip is : %u", ip[0]);
-		printf(".%u", ip[1]);
-		printf(".%u", ip[2]);
-		printf(".%u \n", ip[3]);
-		printf("Port is : %d\n", port);
-		
-		fflush(stdout);
    
    
 		#ifdef TRIE
@@ -259,8 +238,12 @@ void insert_all(FILE * f){
 			int res = rte_lpm_add(lpm_dir, *ip_address, mask, port);
 			
 			free(ip_address);
+					
 			
 		#endif
+		
+		
+		
 		
       
 		if(res){
@@ -275,10 +258,7 @@ void insert_all(FILE * f){
 		
     }
 
-	
-	
-	
-        
+	     
        
     if(line){
 		free(line);

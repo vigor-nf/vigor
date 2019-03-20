@@ -21,6 +21,9 @@
 #include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
 #include "router_config.h"
+#include "lib/nf_forward.h"
+#include "lib/nf_util.h"
+
 
 
 #ifdef TRIE
@@ -53,7 +56,7 @@ void insert_all(FILE * f);
 /**
  * Routes packets using a LPM Trie
  */
-uint16_t nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now);
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now);
 
 
 /**
