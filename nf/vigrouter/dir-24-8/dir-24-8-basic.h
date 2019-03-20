@@ -60,11 +60,12 @@ predicate key(struct key* k; list<uint8_t> ipv4) =
 //In header only for tests
 size_t tbl_24_extract_first_index(uint8_t *data);
 size_t tbl_24_extract_last_index(struct key *key);
-uint16_t tbl_24_entry_put_plen(uint16_t entry, uint8_t prefixlen);
-uint16_t tbl_long_entry_put_plen(uint16_t entry, uint8_t prefixlen);
 uint16_t tbl_24_entry_set_flag(uint16_t entry);
 size_t correct_first_index_with_mask(size_t first_index, uint8_t prefixlen);
 size_t build_mask_from_prefixlen(uint8_t prefixlen);
+void fill_with_zeros(struct entry** array, size_t size);
+void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t value);
+void linked_list_deletion(struct entry* _entry, uint8_t prefixlen);
 
 struct tbl *tbl_allocate(size_t max_entries);
 

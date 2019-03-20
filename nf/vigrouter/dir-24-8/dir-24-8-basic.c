@@ -127,61 +127,11 @@ uint8_t *tbl_24_make_data_from_index(size_t index)
     return data;
 }
 
-
-uint8_t *tbl_24_is_last_index(size_t index, struct tbl *_tbl)
-{
-    struct entry **tbl_24 = _tbl->tbl_24;
-    size_t prefixlen = tbl_24[index]->prefixlen;
-
-    size_t mask = 1;
-    for(int i = 1; i < TBL_24_PLEN_MAX - prefixlen; i++){
-        mask <<= 1;
-        mask |= 1;
-    }
-
-    size_t res = index & mask;//Has to be only ones
-    if(res == (2 << (TBL_24_PLEN_MAX - prefixlen)) - 1){
-        return tbl_24_make_data_from_index(index);
-    } else {
-        return 0;
-    }
-}
-
 int tbl_24_entry_flag(uint16_t _entry)
 {
     uint16_t res = (_entry & TBL_24_FLAG_MASK) >> 15;
     return (int)res;
 }
-
-/*struct entry* tbl_24_find_replacement(struct key *_key, struct tbl *_tbl)
-{
-    if(_key->prefixlen < 1)
-        return 0;
-
-    struct entry **tbl_24 = _tbl->tbl_24;
-    uint8_t *data = _key->data;
-
-    size_t first = tbl_24_extract_first_index(data);
-    size_t current = first - 1;
-    uint8_t *current_data;
-
-    while(current >= 0 &&
-            ((current_data = tbl_24_is_last_index(current, _tbl)) ||
-                tbl_24_entry_flag(tbl_24[current]->value))){
-
-        if(tbl_24_is_last_index(current, _tbl)){
-            current = tbl_24_extract_first_index(current_data) - 1;
-        } else if(tbl_24_entry_flag(tbl_24[current]->value)){
-            current --;
-        }
-    }
-
-    if(current < 0){
-        return 0;
-    }
-
-    return tbl_24[current];
-}*/
 
 uint16_t tbl_24_entry_set_flag(uint16_t _entry)
 {
@@ -206,51 +156,6 @@ size_t tbl_long_extract_last_index(struct key *key, size_t base_index)
     offset |= fill;
 
     return base_index * TBL_LONG_FACTOR + offset;
-}
-
-
-uint8_t *tbl_long_is_last_index(size_t index, struct tbl *_tbl,
-                                size_t base_index)
-{
-    struct entry **tbl_long = _tbl->tbl_long;
-    size_t prefixlen = tbl_long[index]->prefixlen;
-
-    size_t mask = 1;
-    for(int i = 1; i < TBL_PLEN_MAX - prefixlen; i++){
-        mask <<= 1;
-        mask |= 1;
-    }
-
-    size_t res = index & mask;//Has to be only ones
-    if(res == (2 << (TBL_PLEN_MAX - prefixlen)) - 1){
-        return tbl_24_make_data_from_index(index);
-    } else {
-        return NULL;
-    }
-}
-
-uint16_t tbl_long_find_replacement(struct key *_key, struct tbl *_tbl,
-                                    size_t base_index)
-{
-    if(_key->prefixlen < 25)
-        return 0;
-
-    struct entry **tbl_long = _tbl->tbl_long;
-    uint8_t *data = _key->data;
-
-    uint8_t *current_data;
-    size_t current = tbl_long_extract_first_index(data, base_index) -1;
-    while(current >= base_index * TBL_LONG_FACTOR &&
-            (current_data = tbl_long_is_last_index(current, _tbl, base_index))){
-                current =
-                    tbl_long_extract_first_index(current_data, base_index) - 1;
-            }
-
-    if(current < base_index * TBL_LONG_FACTOR){
-        return 0;
-    } else {
-        return tbl_long[current];
-    }
 }
 
 /*@
@@ -283,7 +188,7 @@ struct tbl *tbl_allocate(size_t max_entries)
     @*/
 {
     struct tbl *_tbl = malloc(sizeof(struct tbl));
-    if(!tbl){
+    if(!_tbl){
     	abort();
     }
 
@@ -320,7 +225,8 @@ void tbl_free(struct tbl *_tbl)
     //@ requires table(tbl, _, _);
     //@ ensures true;
 {
-	//MUST FREE THE RULES
+	free_rules(_tbl->tbl_24);
+	free_rules(_tbl->tbl_long);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);
@@ -333,7 +239,7 @@ void tbl_free(struct tbl *_tbl)
 void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t value)
 {
 	struct rule* new_rule = malloc(sizeof(struct rule));
-	if(rule == 0){abort();}
+	if(new_rule == 0){abort();}
 	
 	new_rule->prefixlen = prefixlen;
 	new_rule->value = value;
@@ -355,8 +261,14 @@ void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t val
 			free(new_rule);
 		}else{
 			//Add the new rule
-			new_rule->next = current->next;
-			current->next = new_rule;
+			if(current == _entry->current_rule){
+				//New rule comes at head
+				new_rule->next = current;
+				_entry->current_rule = new_rule;
+			}else{
+				new_rule->next = current->next;
+				current->next = new_rule;
+			}
 		}
 	}
 }
@@ -366,7 +278,7 @@ void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t val
  */
 void linked_list_deletion(struct entry* _entry, uint8_t prefixlen){
 	
-	if(_entry->current_rule = 0){
+	if(_entry->current_rule == 0){
 		//List is empty, nothing to do
 	}else{
 		struct rule* previous = 0;
@@ -391,6 +303,24 @@ void linked_list_deletion(struct entry* _entry, uint8_t prefixlen){
 		}
 		
 	}
+}
+
+/**
+ * Returns the pointer to the rule if found, 0 otherwise
+ */
+struct rule* linked_list_contains(struct entry* _entry, uint8_t prefixlen)
+{
+	struct rule* current = _entry->current_rule;
+	
+	while(current != 0){
+		
+		if(current->prefixlen == prefixlen){
+			break;
+		}
+		current = current->next;
+	}
+	
+	return current;
 }
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
@@ -425,7 +355,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
 			linked_list_insertion(tbl_24[i], prefixlen, value);
         }
     } else {
-//CONTINUE FROM HERE
         //If the prefixlen is not smaller than 24, we have to store the value
         //in tbl_long.
 
@@ -434,17 +363,14 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         //index and store it in the tbl_24
         size_t base_index;
         size_t tbl_24_index = tbl_24_extract_first_index(data);
-        if(tbl_24_entry_flag(tbl_24[tbl_24_index]->value)){
-            base_index = tbl_24_entry_val(tbl_24[tbl_24_index]->value);
+        if(tbl_24[tbl_24_index]->current_rule != 0 && tbl_24_entry_flag(tbl_24[tbl_24_index]->current_rule->value)){
+            base_index = tbl_24[tbl_24_index]->current_rule->value;
         } else {
             //generate next index and store it in tbl_24
             base_index = _tbl->tbl_long_index;
             _tbl->tbl_long_index ++;
-            tbl_24[tbl_24_index] = base_index;
-            tbl_24[tbl_24_index] = tbl_24_entry_set_flag(tbl_24[tbl_24_index]);
-            //record the prefix length associated with the entry
-            tbl_24[tbl_24_index] = tbl_24_entry_put_plen(tbl_24[tbl_24_index],
-                                                            prefixlen);
+            
+            linked_list_insertion(tbl_24[tbl_24_index], prefixlen, tbl_24_entry_set_flag(base_index));
         }
 
         //The last byte in data is used as the starting offset for tbl_long
@@ -459,11 +385,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         //Store value in tbl_long entries indexed from value*256+offset up to
         //value*256+255
         for(int i = first_index; i <= last_index; i++){
-            if(tbl_long_entry_plen(tbl_long[i]) <= prefixlen){
-                tbl_long[i] = value;
-                //record length of the prefix associated with the entry
-                tbl_long[i] = tbl_long_entry_put_plen(tbl_long[i], prefixlen);
-            }
+        linked_list_insertion(tbl_long[i], prefixlen, value);
         }
     }
 
@@ -478,52 +400,47 @@ int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
 
     uint8_t prefixlen = _key->prefixlen;
     uint8_t *data = _key->data;
-    uint16_t *tbl_24 = _tbl->tbl_24;
-    uint16_t *tbl_long = _tbl->tbl_long;
+    struct entry **tbl_24 = _tbl->tbl_24;
+    struct entry **tbl_long = _tbl->tbl_long;
 
     if(!tbl_24 || !tbl_long || !data || prefixlen > TBL_PLEN_MAX){
         return -1;
     }
 
     size_t tbl_24_index = tbl_24_extract_first_index(data);
+    
+    struct rule* concerned_rule = linked_list_contains(tbl_24[tbl_24_index], prefixlen);
+    
+    if(concerned_rule == 0){
+		//No matching rule, nothing to do
+		return 0;
+	}
 
-    if(tbl_24_entry_flag(tbl_24[tbl_24_index]->value)) {
+    if(tbl_24_entry_flag(concerned_rule->value)) {
         //tbl_24 contains a base index for tbl_long
-        size_t base_index = tbl_24_entry_val(tbl_24[tbl_24_index]->value);
+        size_t base_index = concerned_rule->value;
 
         //remove all entries in tbl_long that match the key in argument and have
         //the same prefix length as the key in argument
-        uint16_t replacement = tbl_long_find_replacement(_key, _tbl, base_index);
 
         size_t first_index = tbl_long_extract_first_index(data, base_index);
         size_t last_index = tbl_long_extract_last_index(_key, base_index);
 
         for(int i = first_index; i <= last_index; i++){
-            if(tbl_long_entry_plen(tbl_long[i]) == prefixlen){
-                tbl_long[i] = replacement;
-            }
+            linked_list_deletion(tbl_long[i], prefixlen);
         }
 
         //then, remove the entry from tbl_24
-        if(replacement != 0){
-            size_t rep_plen = tbl_long_entry_plen(replacement);
-            tbl_24[tbl_24_index] = tbl_24_entry_put_plen(tbl_24[tbl_24_index],
-                                                            rep_plen);
-        } else {
-            tbl_24[tbl_24_index] = 0;
-        }
+        linked_list_deletion(tbl_24[tbl_24_index], prefixlen);
+        
     } else {
         //tbl_24 contains the next hop, just remove entries from the tbl_24 that
         //match the key given in argument and have the same prefix lentgh as the
         //key in argument
 
-        uint16_t replacement = tbl_24_find_replacement(_key, _tbl);
-
         for(int i = tbl_24_extract_first_index(data);
             i <= tbl_24_extract_last_index(_key); i++){
-            if(tbl_24[i]->prefixlen == prefixlen){
-                tbl_24[i] = replacement;
-            }
+            linked_list_deletion(tbl_24[i], prefixlen);
         }
     }
 
@@ -561,10 +478,9 @@ int tbl_lookup_elem(struct tbl *_tbl, uint8_t* data)
         //the value found in tbl_24 is a base index for an entry in tbl_long,
         //go look at the index corresponding to the key and this base index
         size_t index_long = tbl_long_extract_first_index(data, tbl_24_entry_value);
-        return tbl_long_entry_val(tbl_long[index_long]->value);
+        return tbl_long[index_long]->current_rule->value;
     } else {
         //the value found in tbl_24 is the next hop, just return it
         return tbl_24_entry_value;
     }
 }
-
