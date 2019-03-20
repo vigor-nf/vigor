@@ -145,10 +145,37 @@ void t24_then_26_mask_rules_test(){
 	printf("yay\n");
 }
 
+void linked_list_test(){
+	struct entry *_entry = malloc(sizeof(struct entry));
+	
+	linked_list_insertion(_entry, 16, 4);
+	linked_list_insertion(_entry, 26, 1);
+	linked_list_insertion(_entry, 23, 2);
+	
+	assert(_entry->current_rule->value == 1);
+	assert(_entry->current_rule->next->value == 2);
+	assert(_entry->current_rule->next->next->value == 4);
+	assert(_entry->current_rule->next->next->next == 0);
+	
+	linked_list_deletion(_entry, 26);
+	assert(_entry->current_rule->value == 2);
+	assert(_entry->current_rule->next->value == 4);
+	assert(_entry->current_rule->next->next == 0);
+	
+	linked_list_insertion(_entry, 3, 5);
+	assert(_entry->current_rule->value == 2);
+	assert(_entry->current_rule->next->value == 4);
+	assert(_entry->current_rule->next->next->value == 5);
+	assert(_entry->current_rule->next->next->next == 0);
+	
+	
+	printf("linked_list_test OK!\n");
+}
+
 
 int main()
 {
-	
+	linked_list_test();
 	mask_tests();
 	unit_tests();
 	t24_then_26_mask_rules_test();

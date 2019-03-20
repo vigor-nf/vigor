@@ -181,7 +181,6 @@ void fill_with_zeros(struct entry** array, size_t size)
         new_entry = malloc(sizeof(struct entry));
         if(new_entry == 0){abort();}
         new_entry->current_rule = 0;
-                
         array[i] = new_entry;
     }
 }
@@ -196,8 +195,6 @@ struct tbl *tbl_allocate(size_t max_entries)
     if(!_tbl){
     	return 0;
     }
-    
-    
 
     struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES); //array of pointers on structs
     if(!tbl_24){
@@ -271,25 +268,28 @@ void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t val
 		_entry->current_rule = new_rule;
 	}else{
 		struct rule* current = _entry->current_rule;
+		struct rule* previous = 0;
 		
-		while(current->next != 0 && current->prefixlen > prefixlen){
+		while(current != 0 && current->prefixlen > prefixlen){
+			previous = current;
 			current = current->next;
 		}
 		
-		if(current->prefixlen == prefixlen){
+		if(current == _entry->current_rule){
+			//New rule comes at head
+			new_rule->next = current;
+			_entry->current_rule = new_rule;
+		}else if(current == 0){
+			//New rule comes at tail
+			previous->next = new_rule;
+		}else if(prefixlen == current->prefixlen){
 			//If same prefixlen, just update the value
 			current->value = value;
 			free(new_rule);
 		}else{
-			//Add the new rule
-			if(current == _entry->current_rule){
-				//New rule comes at head
-				new_rule->next = current;
-				_entry->current_rule = new_rule;
-			}else{
-				new_rule->next = current->next;
-				current->next = new_rule;
-			}
+			//Normal insertion
+			new_rule->next = current;
+			previous->next = new_rule;
 		}
 	}
 }

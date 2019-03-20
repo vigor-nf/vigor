@@ -64,4 +64,10 @@
 	}
 
 // ADD ROUTE FUNCTIONS
+
+	fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_key rule){
+		switch(){
+		}
+	}
+
 @*/
