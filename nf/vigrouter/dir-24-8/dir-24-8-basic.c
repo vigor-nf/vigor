@@ -168,6 +168,7 @@ void fill_with_zeros(struct entry** array, size_t size)
     // requires array[0..size] |-> ?data;
     // ensures true == forall(data, is_zero) &*& array[0..size] |-> data;
 {
+	struct entry* new_entry;
     
     for(int i = 0; ; i++)
     // requires array[0..i] |-> ?zeros &*& array[i..size] |-> ?whatever &*& true == forall(zeros, is_zero);
@@ -177,7 +178,11 @@ void fill_with_zeros(struct entry** array, size_t size)
             break;
         }
         
-        array[i]->current_rule = 0;
+        new_entry = malloc(sizeof(struct entry));
+        if(new_entry == 0){abort();}
+        new_entry->current_rule = 0;
+                
+        array[i] = new_entry;
     }
 }
 
@@ -186,21 +191,21 @@ struct tbl *tbl_allocate(size_t max_entries)
     //@ requires true;
     /*@ ensures result == 0 ? true : table(result, ?tbl_24, ?tbl_long);
     @*/
-{
+{	
     struct tbl *_tbl = malloc(sizeof(struct tbl));
     if(!_tbl){
-    	abort();
+    	return 0;
     }
+    
+    
 
-    size_t tbl_24_size = TBL_24_MAX_ENTRIES * sizeof(struct entry);
-    struct entry **tbl_24 = (struct entry **) malloc(tbl_24_size); //array of pointers on structs
+    struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES); //array of pointers on structs
     if(!tbl_24){
         free(_tbl);
         return 0;
     }
     
-    size_t tbl_long_size = TBL_LONG_MAX_ENTRIES * sizeof(struct entry);
-    struct entry **tbl_long = (struct entry **) malloc(tbl_long_size);
+    struct entry **tbl_long = (struct entry **) malloc(TBL_LONG_MAX_ENTRIES);
     if(!tbl_long){
         free(tbl_24);
         free(_tbl);
@@ -209,8 +214,9 @@ struct tbl *tbl_allocate(size_t max_entries)
     
     //Set every element of the array to zero
     fill_with_zeros(tbl_24, TBL_24_MAX_ENTRIES);
+    printf("HELLOOOO");fflush(stdout);
     fill_with_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
-
+    printf("HELLOOOO");fflush(stdout);
 
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
@@ -221,12 +227,27 @@ struct tbl *tbl_allocate(size_t max_entries)
     return _tbl;
 }
 
+void free_entries(struct entry **entries, size_t size){
+	for(int i = 0; i < size; i++){
+		free_rules(entries[i]->current_rule);
+		free(entries[i]);
+	}
+}
+
+void free_rules(struct rule* head)
+{
+	if(head != 0){
+		free_rules(head->next);
+		free(head);
+	}
+}
+
 void tbl_free(struct tbl *_tbl)
     //@ requires table(tbl, _, _);
     //@ ensures true;
 {
-	free_rules(_tbl->tbl_24);
-	free_rules(_tbl->tbl_long);
+	free_entries(_tbl->tbl_24, TBL_24_MAX_ENTRIES);
+	free_entries(_tbl->tbl_long, TBL_LONG_MAX_ENTRIES);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);

@@ -59,7 +59,9 @@
 		}
 	}
 
-	fixpoint int indexlong_from_ipv4
+	fixpoint int indexlong_from_ipv4(list<int> ipv4, int index){
+		return index * 256 + nth(3, ipv4);
+	}
 
 // ADD ROUTE FUNCTIONS
 @*/

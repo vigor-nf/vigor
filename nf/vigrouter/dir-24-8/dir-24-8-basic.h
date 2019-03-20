@@ -66,6 +66,9 @@ size_t build_mask_from_prefixlen(uint8_t prefixlen);
 void fill_with_zeros(struct entry** array, size_t size);
 void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t value);
 void linked_list_deletion(struct entry* _entry, uint8_t prefixlen);
+void free_entries(struct entry **entries, size_t size);
+void free_rules(struct rule* head);
+
 
 struct tbl *tbl_allocate(size_t max_entries);
 
