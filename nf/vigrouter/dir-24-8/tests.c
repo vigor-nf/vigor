@@ -78,6 +78,7 @@ int unit_tests(){
 	
 	//previous entry (data3) should still be at 53 since the rule was more precise
 	res = tbl_lookup_elem(table, data3);
+	printf("\nresult of lookup is %d\n",res);
 	assert(res == 53);
 	printf("129.23.5.75 -> %d\n", res);
 	

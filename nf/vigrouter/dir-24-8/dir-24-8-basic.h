@@ -17,6 +17,7 @@
 #define TBL_LONG_MAX_ENTRIES 65536 //= 2^16
 #define TBL_LONG_PLEN_MASK 0xFF00
 #define TBL_LONG_VAL_MASK 0x00FF
+#define TBL_LONG_REMOVE_FLAG_MASK 0x7FFF
 
 /*
  * http://tiny-tera.stanford.edu/~nickm/papers/Infocom98_lookup.pdf
