@@ -217,7 +217,7 @@ struct tbl *tbl_allocate(size_t max_entries)
 
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
-    _tbl->tbl_long_index = 0;
+    _tbl->tbl_long_bitmap = create_bitmap(TBL_LONG_FACTOR);
     _tbl->n_entries = 0;
     _tbl->max_entries = max_entries;
 
@@ -245,6 +245,7 @@ void tbl_free(struct tbl *_tbl)
 {
 	free_entries(_tbl->tbl_24, TBL_24_MAX_ENTRIES);
 	free_entries(_tbl->tbl_long, TBL_LONG_MAX_ENTRIES);
+	free_bitmap(_tbl->tbl_long_bitmap);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);
@@ -344,6 +345,22 @@ struct rule* linked_list_contains(struct entry* _entry, uint8_t prefixlen)
 	return current;
 }
 
+/**
+ * Returns true if the entry has a precise rule (prefixlen >= 24)
+ */
+bool linked_list_contains_precise(struct entry* _entry)
+{
+	struct rule* current = _entry->current_rule;
+	
+	while(current != 0){
+		if(current->prefixlen >= 24){
+			return true;
+		}
+	}
+	
+	return false;
+}
+
 int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
 {
     if(!_tbl || !_key){
@@ -387,9 +404,12 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         if(tbl_24[tbl_24_index]->current_rule != 0 && tbl_24_entry_flag(tbl_24[tbl_24_index]->current_rule->value)){
             base_index = tbl_24[tbl_24_index]->current_rule->value & TBL_LONG_REMOVE_FLAG_MASK;
         } else {
+			if(is_bitmap_full(_tbl->tbl_long_bitmap)){
+				printf("No more available index for tbl_long! Delete useless long rules to make place.\n");fflush(stdout);
+				return -1;
+			}
             //generate next index and store it in tbl_24
-            base_index = _tbl->tbl_long_index;
-            _tbl->tbl_long_index ++;
+            base_index = take_first_free_index(_tbl->tbl_long_bitmap);
             
             linked_list_insertion(tbl_24[tbl_24_index], prefixlen, tbl_24_entry_set_flag(base_index));
         }
@@ -406,7 +426,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         //Store value in tbl_long entries indexed from value*256+offset up to
         //value*256+255
         for(int i = first_index; i <= last_index; i++){
-        linked_list_insertion(tbl_long[i], prefixlen, value);
+			linked_list_insertion(tbl_long[i], prefixlen, value);
         }
     }
 
@@ -453,6 +473,11 @@ int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
 
         //then, remove the entry from tbl_24
         linked_list_deletion(tbl_24[tbl_24_index], prefixlen);
+        
+        //Check whether the used tbl_long index is still needed and free it if not
+        if(!linked_list_contains_precise(tbl_24[tbl_24_index])){
+			free_bitmap_index(_tbl->tbl_long_bitmap, base_index);
+		}
         
     } else {
         //tbl_24 contains the next hop, just remove entries from the tbl_24 that

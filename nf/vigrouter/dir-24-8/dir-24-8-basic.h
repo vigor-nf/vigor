@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+#include "bitmap.h"
 
 #define TBL_PLEN_MAX 32
 
@@ -36,7 +37,7 @@ struct rule{
 struct tbl{
     struct entry **tbl_24;
     struct entry **tbl_long;
-    size_t tbl_long_index;
+    struct bitmap* tbl_long_bitmap;
     size_t n_entries;
     size_t max_entries;
 };
@@ -67,6 +68,8 @@ size_t build_mask_from_prefixlen(uint8_t prefixlen);
 void fill_with_zeros(struct entry** array, size_t size);
 void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t value);
 void linked_list_deletion(struct entry* _entry, uint8_t prefixlen);
+bool linked_list_contains_precise(struct entry* _entry);
+struct rule* linked_list_contains(struct entry* _entry, uint8_t prefixlen);
 void free_entries(struct entry **entries, size_t size);
 void free_rules(struct rule* head);
 

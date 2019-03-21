@@ -6,7 +6,7 @@
 
 	//next_hop(int, int) and index_long(int, int) -> ....(prefixlen, value)
 
-	inductive dir_24_8 = tables(list<list<lpm_rule_24> >, list<list<lpm_rule_long> >);
+	inductive dir_24_8 = tables(list<list<lpm_rule_24> >, list<list<lpm_rule_long> >, list<bool>);
 
 
 	fixpoint key init_key(list<int> ipv4, int prefixlen){

@@ -24,17 +24,16 @@ int unit_tests(){
 	
 	struct tbl *table = tbl_allocate(TBL_24_MAX_ENTRIES);
 	if(table == 0){abort();}
-	
+
 	uint8_t data[4] = {128,23,5,75};
 	struct key *k1 = allocate_key(data, 16);
-	
+
 	tbl_update_elem(table, k1, 3);
 	
 	uint8_t data2[4] = {128,23,0,0};
 	int res = tbl_lookup_elem(table, data2);
 	assert(res == 3);
 	printf("128.23.0.0 -> %d\n", res);
-	
 	
 	uint8_t data3[4] = {129,23,5,75};
 	struct key *k2 = allocate_key(data3, 26);
@@ -79,6 +78,11 @@ int unit_tests(){
 	printf("\nresult of lookup is %d\n",res);
 	assert(res == 53);
 	printf("129.23.5.75 -> %d\n", res);
+	
+	tbl_free(table);
+	free(k1);
+	free(k2);
+	free(k3);
 	
 	return 0;
 }
@@ -141,7 +145,10 @@ void t24_then_26_mask_rules_test(){
 	res = tbl_lookup_elem(table, max_24);
 	assert(res == 53);
 	
-	printf("yay\n");
+	tbl_free(table);
+	free(k);
+	
+	printf("t24_then_26_mask_rules_test OK!\n");
 }
 
 void linked_list_test(){
@@ -167,8 +174,45 @@ void linked_list_test(){
 	assert(_entry->current_rule->next->next->value == 5);
 	assert(_entry->current_rule->next->next->next == 0);
 	
+	free_rules(_entry->current_rule);
+	free(_entry);
 	
 	printf("linked_list_test OK!\n");
+}
+
+void bitmap_test(){
+	struct bitmap* bmap = create_bitmap(256);
+	
+	assert(bmap->size == 256);
+	
+	//Verify everything is 0
+	for(size_t i = 0; i < 256; i++){
+		assert(0 == bmap->map[i]);
+	}
+	
+	for(size_t i = 0; i < 256; i++){
+		size_t index = take_first_free_index(bmap);
+		//printf("%d %d\n",i, index);fflush(stdout);
+		assert(i == index);
+	}
+	
+	assert(is_bitmap_full(bmap));
+	
+	assert(bmap->size == take_first_free_index(bmap));
+	
+	//free an outbounded index
+	free_bitmap_index(bmap, 300);
+	assert(is_bitmap_full(bmap));
+	
+	//free valid indexes and take them back
+	free_bitmap_index(bmap, 36);
+	free_bitmap_index(bmap, 18);
+	assert(18 == take_first_free_index(bmap));
+	assert(36 == take_first_free_index(bmap));
+	
+	free_bitmap(bmap);
+	
+	printf("Bitmap OK !\n");
 }
 
 
@@ -176,6 +220,7 @@ int main()
 {
 	linked_list_test();
 	mask_tests();
-	unit_tests();
+	bitmap_test();
 	t24_then_26_mask_rules_test();
+	unit_tests();
 }
