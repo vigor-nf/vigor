@@ -1,5 +1,5 @@
 CFLAGS = -std=c11
-CFLAGS += -Wall
+CFLAGS += -Wall -g
 
 all: tests
 

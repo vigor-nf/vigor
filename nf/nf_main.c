@@ -163,6 +163,9 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
 static void
 lcore_main(void)
 {
+	
+
+	
   // TODO is this check useful?
   for (uint16_t device = 0; device < rte_eth_dev_count(); device++) {
     if (rte_eth_dev_socket_id(device) > 0 && rte_eth_dev_socket_id(device) != (int) rte_socket_id()) {
@@ -178,14 +181,18 @@ lcore_main(void)
 
     struct rte_mbuf* mbuf;
     if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
+		
       uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
       nf_return_all_chunks(mbuf_pkt(mbuf));
 
       if (dst_device == VIGOR_DEVICE) {
+		   
         nf_free_packet(mbuf);
       } else if (dst_device == FLOOD_FRAME) {
+		 
         flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
       } else {
+		
         nf_send_packet(mbuf, dst_device);
       }
     }

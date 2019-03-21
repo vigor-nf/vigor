@@ -101,6 +101,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 		
 		res = FLOOD_FRAME;	// in case of lookup miss
 	}
+	printf("DESTINATION IS : %d\n", res);
 	
 #endif
 

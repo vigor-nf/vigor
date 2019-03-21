@@ -129,7 +129,7 @@ uint8_t *tbl_24_make_data_from_index(size_t index)
 
 int tbl_24_entry_flag(uint16_t _entry)
 {
-    uint16_t res = (_entry & TBL_24_FLAG_MASK) >> 15;
+    uint16_t res = _entry >> 15;
     return (int)res;
 }
 
@@ -196,13 +196,13 @@ struct tbl *tbl_allocate(size_t max_entries)
     	return 0;
     }
 
-    struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES); //array of pointers on structs
+    struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES * sizeof(struct entry *)); //array of pointers on structs
     if(!tbl_24){
         free(_tbl);
         return 0;
     }
     
-    struct entry **tbl_long = (struct entry **) malloc(TBL_LONG_MAX_ENTRIES);
+    struct entry **tbl_long = (struct entry **) malloc(TBL_LONG_MAX_ENTRIES * sizeof(struct entry *));
     if(!tbl_long){
         free(tbl_24);
         free(_tbl);
@@ -211,9 +211,9 @@ struct tbl *tbl_allocate(size_t max_entries)
     
     //Set every element of the array to zero
     fill_with_zeros(tbl_24, TBL_24_MAX_ENTRIES);
-    printf("HELLOOOO");fflush(stdout);
+
     fill_with_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
-    printf("HELLOOOO");fflush(stdout);
+
 
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
@@ -498,7 +498,7 @@ int tbl_lookup_elem(struct tbl *_tbl, uint8_t* data)
 	if(tbl_24_entry_flag(tbl_24_entry_value)){
         //the value found in tbl_24 is a base index for an entry in tbl_long,
         //go look at the index corresponding to the key and this base index
-        size_t index_long = tbl_long_extract_first_index(data, tbl_24_entry_value);
+        size_t index_long = tbl_long_extract_first_index(data, tbl_24_entry_value & TBL_LONG_REMOVE_FLAG_MASK);
         return tbl_long[index_long]->current_rule->value;
     } else {
         //the value found in tbl_24 is the next hop, just return it

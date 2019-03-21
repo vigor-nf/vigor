@@ -22,8 +22,6 @@ struct key *allocate_key(uint8_t *data, uint8_t prefixlen)
 
 int unit_tests(){
 	
-	
-	
 	struct tbl *table = tbl_allocate(TBL_24_MAX_ENTRIES);
 	if(table == 0){abort();}
 	
@@ -56,7 +54,7 @@ int unit_tests(){
 	uint8_t data5[4] = {129,23,5,127};
 	res = tbl_lookup_elem(table, data5);
 	assert(res == 53);
-	printf("129.23.5.126 -> %d\n", res);
+	printf("129.23.5.12 -> %d\n", res);
 	
 	//Now put a smaller mask
 	uint8_t data6[4] = {129,23,5,150};
@@ -78,6 +76,7 @@ int unit_tests(){
 	
 	//previous entry (data3) should still be at 53 since the rule was more precise
 	res = tbl_lookup_elem(table, data3);
+	printf("\nresult of lookup is %d\n",res);
 	assert(res == 53);
 	printf("129.23.5.75 -> %d\n", res);
 	
