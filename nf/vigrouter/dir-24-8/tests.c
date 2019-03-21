@@ -33,7 +33,7 @@ int unit_tests(){
 	uint8_t data2[4] = {128,23,0,0};
 	int res = tbl_lookup_elem(table, data2);
 	assert(res == 3);
-	printf("128.23.0.0 -> %d\n", res);
+	printf("128.23.0.0 -> %d\n", res);fflush(stdout);
 	
 	uint8_t data3[4] = {129,23,5,75};
 	struct key *k2 = allocate_key(data3, 26);
@@ -41,19 +41,19 @@ int unit_tests(){
 	tbl_update_elem(table, k2, 53);
 	res = tbl_lookup_elem(table, data3);
 	assert(res == 53);
-	printf("129.23.5.75 -> %d\n", res);
+	printf("129.23.5.75 -> %d\n", res);fflush(stdout);
 	
 	//test with min index
 	uint8_t data4[4] = {129,23,5,64};
 	res = tbl_lookup_elem(table, data4);
 	assert(res == 53);
-	printf("129.23.5.64 -> %d\n", res);
+	printf("129.23.5.64 -> %d\n", res);fflush(stdout);
 	
 	//test with max index
 	uint8_t data5[4] = {129,23,5,127};
 	res = tbl_lookup_elem(table, data5);
 	assert(res == 53);
-	printf("129.23.5.12 -> %d\n", res);
+	printf("129.23.5.12 -> %d\n", res);fflush(stdout);
 	
 	//Now put a smaller mask
 	uint8_t data6[4] = {129,23,5,150};
@@ -65,19 +65,19 @@ int unit_tests(){
 	uint8_t data7[4] = {129,23,5,0};
 	res = tbl_lookup_elem(table, data7);
 	assert(res == 36);
-	printf("129.23.5.0 -> %d\n", res);
+	printf("129.23.5.0 -> %d\n", res);fflush(stdout);
 	
 	//test with max index
 	uint8_t data8[4] = {129,23,5,255};
 	res = tbl_lookup_elem(table, data8);
 	assert(res == 36);
-	printf("129.23.5.255 -> %d\n", res);
+	printf("129.23.5.255 -> %d\n", res);fflush(stdout);
 	
 	//previous entry (data3) should still be at 53 since the rule was more precise
 	res = tbl_lookup_elem(table, data3);
-	printf("\nresult of lookup is %d\n",res);
+	printf("\nresult of lookup is %d\n",res);fflush(stdout);
 	assert(res == 53);
-	printf("129.23.5.75 -> %d\n", res);
+	printf("129.23.5.75 -> %d\n", res);fflush(stdout);
 	
 	tbl_free(table);
 	free(k1);
@@ -100,7 +100,7 @@ void mask_tests(){
 	res = build_mask_from_prefixlen(prefixlen);
 	assert(res == 0xFFFF8000);
 	
-	printf("mask_tests OK!\n");
+	printf("mask_tests OK!\n");fflush(stdout);
 	
 }
 
@@ -109,11 +109,10 @@ void t24_then_26_mask_rules_test(){
 	if(table == 0){abort();}
 	
 	uint8_t data[4] = {192,168,5,68};
-	
 	//Add a general rule
 	struct key* k = allocate_key(data, 24);
 	tbl_update_elem(table, k, 53);
-	
+
 	//Test with min index
 	uint8_t min_24[4] = {192,168,5,0};
 	int res = tbl_lookup_elem(table, min_24);
@@ -148,7 +147,7 @@ void t24_then_26_mask_rules_test(){
 	tbl_free(table);
 	free(k);
 	
-	printf("t24_then_26_mask_rules_test OK!\n");
+	printf("t24_then_26_mask_rules_test OK!\n");fflush(stdout);
 }
 
 void linked_list_test(){
@@ -177,7 +176,7 @@ void linked_list_test(){
 	free_rules(_entry->current_rule);
 	free(_entry);
 	
-	printf("linked_list_test OK!\n");
+	printf("linked_list_test OK!\n");fflush(stdout);
 }
 
 void bitmap_test(){
@@ -212,7 +211,7 @@ void bitmap_test(){
 	
 	free_bitmap(bmap);
 	
-	printf("Bitmap OK !\n");
+	printf("Bitmap OK !\n");fflush(stdout);
 }
 
 

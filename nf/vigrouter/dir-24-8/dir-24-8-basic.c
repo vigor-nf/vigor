@@ -195,26 +195,26 @@ struct tbl *tbl_allocate(size_t max_entries)
     if(!_tbl){
     	return 0;
     }
-
+    
     struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES * sizeof(struct entry *)); //array of pointers on structs
+
     if(!tbl_24){
         free(_tbl);
         return 0;
     }
-    
+
     struct entry **tbl_long = (struct entry **) malloc(TBL_LONG_MAX_ENTRIES * sizeof(struct entry *));
     if(!tbl_long){
         free(tbl_24);
         free(_tbl);
         return 0;
     }
-    
     //Set every element of the array to zero
     fill_with_zeros(tbl_24, TBL_24_MAX_ENTRIES);
 
     fill_with_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
 
-
+    
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
     _tbl->tbl_long_bitmap = create_bitmap(TBL_LONG_FACTOR);

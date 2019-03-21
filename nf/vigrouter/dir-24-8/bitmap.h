@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 /**
  * If index is free map[index] == 0, 1 otherwise

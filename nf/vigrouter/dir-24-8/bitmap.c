@@ -18,6 +18,7 @@ size_t double_ceil(double x){
 }
 
 struct bitmap* create_bitmap(size_t size){
+	
 	struct bitmap* bmap = malloc(sizeof(struct bitmap));
 	
 	if(bmap == 0){abort();}
