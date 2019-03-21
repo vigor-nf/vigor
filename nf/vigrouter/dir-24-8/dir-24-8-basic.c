@@ -385,7 +385,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         size_t base_index;
         size_t tbl_24_index = tbl_24_extract_first_index(data);
         if(tbl_24[tbl_24_index]->current_rule != 0 && tbl_24_entry_flag(tbl_24[tbl_24_index]->current_rule->value)){
-            base_index = tbl_24[tbl_24_index]->current_rule->value;
+            base_index = tbl_24[tbl_24_index]->current_rule->value & TBL_LONG_REMOVE_FLAG_MASK;
         } else {
             //generate next index and store it in tbl_24
             base_index = _tbl->tbl_long_index;
