@@ -3,10 +3,10 @@ CFLAGS += -Wall -g
 
 all: tests
 
-tests: tests.o dir-24-8-basic.o bitmap.o
+tests: tests.o dir-24-8-basic.o indexmap.o
 
-tests.o: tests.c dir-24-8-basic.h bitmap.h
+tests.o: tests.c dir-24-8-basic.h indexmap.h
 
-dir-24-8-basic.o: dir-24-8-basic.c dir-24-8-basic.h bitmap.h
+dir-24-8-basic.o: dir-24-8-basic.c dir-24-8-basic.h indexmap.h
 
-bitmap.o: bitmap.c bitmap.h
+indexmap.o: indexmap.c indexmap.h

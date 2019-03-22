@@ -192,19 +192,18 @@ struct tbl *tbl_allocate(size_t max_entries)
     @*/
 {	
     struct tbl *_tbl = malloc(sizeof(struct tbl));
-    if(!_tbl){
+    if(_tbl == 0){
     	return 0;
     }
     
     struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES * sizeof(struct entry *)); //array of pointers on structs
-
-    if(!tbl_24){
+    if(tbl_24 == 0){
         free(_tbl);
         return 0;
     }
-
+    
     struct entry **tbl_long = (struct entry **) malloc(TBL_LONG_MAX_ENTRIES * sizeof(struct entry *));
-    if(!tbl_long){
+    if(tbl_long == 0){
         free(tbl_24);
         free(_tbl);
         return 0;
@@ -213,11 +212,12 @@ struct tbl *tbl_allocate(size_t max_entries)
     fill_with_zeros(tbl_24, TBL_24_MAX_ENTRIES);
 
     fill_with_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
-
+    
+    struct indexmap* imap = create_indexmap(TBL_LONG_FACTOR);
     
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
-    _tbl->tbl_long_bitmap = create_bitmap(TBL_LONG_FACTOR);
+    _tbl->tbl_long_indexmap = imap;
     _tbl->n_entries = 0;
     _tbl->max_entries = max_entries;
 
@@ -245,7 +245,7 @@ void tbl_free(struct tbl *_tbl)
 {
 	free_entries(_tbl->tbl_24, TBL_24_MAX_ENTRIES);
 	free_entries(_tbl->tbl_long, TBL_LONG_MAX_ENTRIES);
-	free_bitmap(_tbl->tbl_long_bitmap);
+	free_indexmap(_tbl->tbl_long_indexmap);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);
@@ -404,12 +404,12 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         if(tbl_24[tbl_24_index]->current_rule != 0 && tbl_24_entry_flag(tbl_24[tbl_24_index]->current_rule->value)){
             base_index = tbl_24[tbl_24_index]->current_rule->value & TBL_LONG_REMOVE_FLAG_MASK;
         } else {
-			if(is_bitmap_full(_tbl->tbl_long_bitmap)){
+			if(is_indexmap_full(_tbl->tbl_long_indexmap)){
 				printf("No more available index for tbl_long! Delete useless long rules to make place.\n");fflush(stdout);
 				return -1;
 			}
             //generate next index and store it in tbl_24
-            base_index = take_first_free_index(_tbl->tbl_long_bitmap);
+            base_index = take_first_free_index(_tbl->tbl_long_indexmap);
             
             linked_list_insertion(tbl_24[tbl_24_index], prefixlen, tbl_24_entry_set_flag(base_index));
         }
@@ -476,7 +476,7 @@ int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
         
         //Check whether the used tbl_long index is still needed and free it if not
         if(!linked_list_contains_precise(tbl_24[tbl_24_index])){
-			free_bitmap_index(_tbl->tbl_long_bitmap, base_index);
+			free_indexmap_index(_tbl->tbl_long_indexmap, base_index);
 		}
         
     } else {

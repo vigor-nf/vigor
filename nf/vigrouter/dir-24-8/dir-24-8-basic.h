@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include "bitmap.h"
+#include "indexmap.h"
 
 #define TBL_PLEN_MAX 32
 
@@ -37,7 +37,7 @@ struct rule{
 struct tbl{
     struct entry **tbl_24;
     struct entry **tbl_long;
-    struct bitmap* tbl_long_bitmap;
+    struct indexmap* tbl_long_indexmap;
     size_t n_entries;
     size_t max_entries;
 };
