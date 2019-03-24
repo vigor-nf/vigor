@@ -15,7 +15,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
 }
 
 /*@
-    fixpoint bool is_modulo_permutation(int offset, int shift, int j, int cht_height, pair<int, int> index_elem_pair) {
+    fixpoint bool is_modulo_permutation(int offset, int shift, int cht_height, pair<int, int> index_elem_pair) {
         return snd(index_elem_pair) == ((offset + shift * fst(index_elem_pair)) % cht_height);
     }
 
@@ -25,6 +25,117 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     {
         mul_nonnegative(a - 1, b);
         assert (a-1)*b < a*b;
+    }
+
+    fixpoint bool gt(int x, int y) { return x < y; }
+
+    lemma void modulo_permutation_list_inner(list< pair<int,int> > xs, pair<int,int> index_val, int offset, int shift, int cht_height)
+        requires 
+            true == forall(xs, (is_modulo_permutation)(offset, shift, cht_height)) &*&
+            true == is_modulo_permutation(offset, shift, cht_height, index_val) &*&
+            true == forall(map(fst, xs), (lt)(cht_height)) &*&
+            true == forall(map(fst, xs), (ge)(0)) &*&
+            true == forall(map(snd, xs), (lt)(cht_height)) &*&
+            true == forall(map(snd, xs), (ge)(0)) &*&
+            true == !mem(fst(index_val), map(fst, xs) ) &*&
+            0 <= fst(index_val) &*& fst(index_val) < cht_height &*&
+            0 <= offset &*& offset < cht_height &*&
+            0 <= shift &*& shift < cht_height &*&
+            0 < cht_height &*& true == are_coprime(shift, cht_height);
+        ensures
+            !mem(snd(index_val), map(snd, xs));
+        {
+            switch(xs) {
+                case nil: 
+                    assert (true == !mem(snd(index_val), map(snd, xs)));
+
+                case cons(x0, xs0):
+                    int ref_index = fst(index_val);
+                    int head_index = fst(x0);
+
+                    // Prove that the reference is different than the head
+                    modulo_permutation(shift, cht_height, ref_index, head_index);
+                    mul_nonnegative(shift, ref_index);
+                    div_mod_gt_0((shift * ref_index) % cht_height, shift * ref_index, cht_height);
+                    mul_nonnegative(shift, head_index);
+                    div_mod_gt_0((shift * head_index) % cht_height, shift * head_index, cht_height);
+                    modulo_add_constant(offset, cht_height, shift * ref_index, shift * head_index);
+
+                    // Recursive call
+                    modulo_permutation_list_inner(xs0, index_val, offset, shift, cht_height);
+            }
+        }
+
+    lemma void modulo_permutation_list(list< pair<int,int> > xs, int offset, int shift, int cht_height)
+        requires
+            true == forall(xs, (is_modulo_permutation)(offset, shift, cht_height)) &*&
+            true == forall(map(fst, xs), (lt)(cht_height)) &*&
+            true == forall(map(fst, xs), (ge)(0)) &*&
+            true == forall(map(snd, xs), (lt)(cht_height)) &*&
+            true == forall(map(snd, xs), (ge)(0)) &*&
+            true == no_dups(map(fst, xs)) &*&
+            0 <= offset &*& offset < cht_height &*&
+            0 <= shift &*& shift < cht_height &*&
+            0 < cht_height &*& true == are_coprime(shift, cht_height);
+        ensures
+            true == no_dups(map(snd, xs));
+    {
+        switch(xs) {
+        	case nil: 
+                assert map(snd, xs) == nil;
+                assert (true == no_dups(map(snd, xs)));
+        	case cons(x0, xs0):
+                modulo_permutation_list(xs0, offset, shift, cht_height);
+		        modulo_permutation_list_inner(xs0, x0, offset, shift, cht_height);
+        }
+    }
+
+    lemma void lt_transitive(list<int> xs, int bound, int up_bound)
+        requires bound <= up_bound &*& true == forall(xs, (lt)(bound));
+        ensures true == forall(xs, (lt)(up_bound));
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0):
+                lt_transitive(xs0, bound, up_bound);
+        }
+    }
+
+    lemma void forall_lt_upper(list<int> xs, int up_bound, int x)
+        requires true == forall(xs, (lt)(up_bound)) &*& up_bound <= x ;
+        ensures !mem(x, xs);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): forall_lt_upper(xs0, up_bound, x);
+        }
+    }
+
+    lemma void no_dups_gt(list<int> xs, int up_bound, int x)
+        requires true == no_dups(xs) &*& true == forall(xs, (lt)(up_bound)) &*& up_bound <= x ;
+        ensures true == no_dups(cons(x, xs));
+    {
+        forall_lt_upper(xs, up_bound, x);
+    }
+
+    lemma void modulo_permutation_bounds(list< pair<int, int> > xs, int offset, int shift, int cht_height)
+        requires
+            true == forall(xs, (is_modulo_permutation)(offset, shift, cht_height)) &*&
+            true == forall(map(fst, xs), (ge)(0)) &*&
+            0 <= offset &*& offset < cht_height &*&
+            0 <= shift &*& shift < cht_height &*&
+            0 < cht_height;
+        ensures
+            true == forall(map(snd, xs), (lt)(cht_height)) &*&
+            true == forall(map(snd, xs), (ge)(0));
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0):
+                mul_nonnegative(shift, fst(x0));
+                div_mod_gt_0( (offset + shift * fst(x0)) % cht_height, offset + shift * fst(x0), cht_height);
+                modulo_permutation_bounds(xs0, offset, shift, cht_height);
+        }
     }
 @*/
 
@@ -62,6 +173,8 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         uint64_t offset = loop(offset_absolut, cht_height);
         uint64_t base_shift = loop(i, cht_height - 1);
         uint64_t shift = base_shift + 1;
+        //@ prime_is_coprime_with_anything(cht_height, shift);
+
         //@ open ints(permutations, cht_height*backend_capacity, ?p0_in);
         //@ close ints(permutations, cht_height*backend_capacity, p0_in);
         //@ list_isolate_chunk_zerosize(p0_in, i * cht_height);
@@ -70,7 +183,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         /*@ invariant 0 <= j &*& j <= cht_height &*&
                       ints(permutations, cht_height*backend_capacity, ?p_in) &*&
                       sub_permutation(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
-                      true == forall(zip_with_index(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, j, cht_height)); @*/
+                      true == forall(zip_with_index(list_isolate_chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, cht_height)); @*/
         {
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
@@ -80,11 +193,52 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             uint64_t permut = loop(offset + shift * j, cht_height);
             permutations[i * cht_height + j] = (int)permut;
 
-            //@ list<int> cur_permut = list_isolate_chunk(p_in, i * cht_height, i * cht_height + j);
-            //@ list< pair<int, int> > cur_permut_index = zip_with_index(cur_permut);
-            //@ assert true == is_modulo_permutation(offset, shift, j, cht_height, pair(j, permutations[i * cht_height + j]));
+            //@ pair<int,int> new_elem = pair(j, permut);
 
+            //@ list<int> chunk = list_isolate_chunk(p_in, i * cht_height, i * cht_height + j);
+            //@ list<int> chunk_append = list_append(chunk, snd(new_elem));
+            //@ list< pair<int, int> > chunk_append_ziped = zip_with_index(chunk_append);
+
+            //@ list< pair<int, int> > chunk_ziped = zip_with_index(chunk);
+            //@ list< pair<int, int> > chunk_ziped_append = list_append(chunk_ziped, new_elem);
+
+            // Length of chunk
+            //@ isolate_chunk_length(p_in, i * cht_height, i * cht_height + j);
+            //@ append_length(chunk, snd(new_elem));
+
+            // Append rule for zip_with_index
+            //@ append_to_zip(chunk, snd(new_elem));
+            //@ assert (chunk_append_ziped == chunk_ziped_append);
+
+            // Preservation of fixpoint
+            //@ append_preserves_fixpoint(chunk_ziped, new_elem, (is_modulo_permutation)(offset, shift, cht_height));
+            //@ assert (true == forall(chunk_ziped_append, (is_modulo_permutation)(offset, shift, cht_height)));
+            //@ assert (true == forall(chunk_append_ziped, (is_modulo_permutation)(offset, shift, cht_height)));
+
+            // Arithmetic bounds
+            //@ zip_with_index_bounds(chunk_append);
+            //@ lt_transitive(map(fst, chunk_append_ziped), length(chunk_append), cht_height);
+            //@ modulo_permutation_bounds(chunk_append_ziped, offset, shift, cht_height);
+
+            // No duplicates guarantee
+            //@ zip_no_dups(chunk_append);
+            //@ modulo_permutation_list(chunk_append_ziped, offset, shift, cht_height);
+            
+            // Update sub-permutation
+            //@ open sub_permutation(chunk, cht_height);
+            //@ append_preserves_bounds(chunk, snd(new_elem), 0, cht_height);
+            //@ unzip(chunk_append);
+            //@ close sub_permutation(chunk_append, cht_height);
+
+            //@ assume (list_isolate_chunk(update(((i*cht_height) + j), permut, p_in), i * cht_height, i * cht_height + j + 1) == chunk_append);
         }
+
+        //@ mul_nonnegative(i, cht_height);
+        //@ mul_bounds(cht_height, cht_height, i + 1, backend_capacity);
+        //@ isolate_chunk_length(p, i * cht_height, (i + 1) * cht_height);
+
+        ////@ close permutation(list_isolate_chunk(p, i * cht_height, i * cht_height + cht_height));
+        
     }
     // Fill the priority lists for each hash in [0, cht_height)
     for (uint32_t i = 0; i < cht_height; ++i)

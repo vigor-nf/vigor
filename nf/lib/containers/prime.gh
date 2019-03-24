@@ -53,9 +53,9 @@ fixpoint bool are_coprime(int x, int y) {
 // Assumption !
 lemma void prime_is_coprime_with_anything(int prime, int n)
     requires    true == is_prime(prime) &*& 0 < n;
-    ensures     true == are_coprime(prime, n);
+    ensures     true == are_coprime(n, prime);
 {
-    assume (true == are_coprime(prime, n));
+    assume (true == are_coprime(n, prime));
 }
 
 lemma void modulo_less_than(int k, int m)
@@ -67,7 +67,7 @@ lemma void modulo_less_than(int k, int m)
 }
 
 // Assumption !
-lemma void modulo_add_constant(int a, int b, int offset, int mod)
+lemma void modulo_add_constant(int offset, int mod, int a, int b)
     requires 0 <= a &*& 0 <= b &*& 0 <= offset &*& 0 <= mod &*&
              a % mod != b % mod;
     ensures  (a + offset) % mod != (b + offset) % mod;
@@ -100,24 +100,33 @@ lemma void modulo_mul_split(int a, int b, int m)
     assume (b % m != a % m);
 }
 
-lemma void modulo_permutation(int a, int b, int s, int m) 
+lemma void modulo_permutation(int mul, int mod, int a, int b) 
     requires 
-        0 <= a &*& a < m &*&
-        0 <= b &*& b < m &*&
-        0 < s &*& s < m &*&
-        0 < m &*& 
-        b > a &*& true == are_coprime(s, m);
+        0 <= a &*& a < mod &*&
+        0 <= b &*& b < mod &*&
+        0 < mul &*& mul < mod &*&
+        0 < mod &*& a != b &*& 
+        true == are_coprime(mul, mod);
     ensures
-        (s * a) % m != (s * b) % m;
+        (mul * a) % mod != (mul * b) % mod;
 {
-    modulo_less_than(b - a, m);
-    modulo_mul_coprime(b - a, s, m);
-    assert ((s * (b - a)) % m != 0 );
-    assert ((s * b - s * a) % m != 0 );
-    mul_nonnegative(s, a);
-    mul_nonnegative(s, b);
-    modulo_mul_split(s * a, s * b, m);
-    assert ( (s * b) % m != (s * a) % m );
-} 
+    if (b > a) {
+        modulo_less_than(b - a, mod);
+        modulo_mul_coprime(b - a, mul, mod);
+        assert ((mul * (b - a)) % mod != 0 );
+        mul_nonnegative(mul, a);
+        mul_nonnegative(mul, b);
+        modulo_mul_split(mul * a, mul * b, mod);
+        assert ( (mul * b) % mod != (mul * a) % mod);
+    } else {
+        modulo_less_than(a - b, mod);
+        modulo_mul_coprime(a - b, mul, mod);
+        assert ((mul * (a - b)) % mod != 0 );
+        mul_nonnegative(mul, a);
+        mul_nonnegative(mul, b);
+        modulo_mul_split(mul * b, mul * a, mod);
+        assert ( (mul * b) % mod != (mul * a) % mod);
+    }
+}
 
 #endif //_PRIME_GH_INCLUDED_

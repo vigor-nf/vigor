@@ -18,6 +18,13 @@ fixpoint bool is_permutation(list<int> xs) {
     return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
 
+fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
+    switch(xs) {
+        case nil: return cons(x_tail, nil);
+        case cons(x0, xs0): return cons(x0, list_append(xs0, x_tail));
+    }
+}
+
 fixpoint list<t> list_take_n_first<t>(list<t> xs, int n) {
     switch(xs) {
         case nil: return nil;
@@ -55,6 +62,168 @@ fixpoint list< pair<int, t> > zip_with_index<t>(list<t> xs) {
     return zip_with_index_recursive(xs, 0);
 }
 
+fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return cons( pair(x0, head(ys)) , zip(xs0, tail(ys)) );
+    }
+}
+
+fixpoint list<int> first_n_integers_recursive(nat max, int index) {
+    switch(max) {
+        case zero: return nil;
+        case succ(max_pred): return cons(index, first_n_integers_recursive(max_pred, index + 1));
+    }
+}
+
+fixpoint list<int> first_n_integers(int n) {
+    return first_n_integers_recursive(nat_of_int(n), 0);
+}
+
+fixpoint bool eq<t>(pair<t,t> p) { return fst(p) == snd(p); }
+
+lemma void unzip<t>(list<t> xs)
+    requires    true;
+    ensures     xs == map(snd, zip_with_index(xs));
+{
+    assume (xs == map(snd, zip_with_index(xs)));
+    // TODO
+}
+
+lemma void take_n_first_length<t>(list<t> xs, int n)
+    requires    0 <= n &*& n <= length(xs);
+    ensures     length(list_take_n_first(xs,n)) == n;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (n > 0) {
+                take_n_first_length(xs0, n - 1);
+            }
+    }
+}
+
+lemma void drop_n_first_length<t>(list<t> xs, int n)
+    requires    0 <= n &*& n <= length(xs);
+    ensures     length(list_drop_n_first(xs,n)) == length(xs) - n;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (n > 0) {
+                drop_n_first_length(xs0, n - 1);
+            }
+    }
+}
+
+lemma void isolate_chunk_length<t>(list<t> xs, int begin, int end)
+    requires    0 <= begin &*& begin <= end &*& end <= length(xs);
+    ensures     length(list_isolate_chunk(xs, begin, end)) == end - begin;
+{
+    drop_n_first_length(xs, begin);
+    take_n_first_length(list_drop_n_first(xs, begin), end - begin);
+}
+
+lemma void append_length<t>(list<t> xs, t x)
+    requires    true;
+    ensures     length(list_append(xs, x)) == length(xs) + 1;
+{
+    switch(xs) {
+        case nil: 
+        case cons(x0, xs0): append_length(xs0, x);
+    }
+}
+
+lemma void append_preserves_fixpoint<t>(list<t> xs, t x, fixpoint (t,bool) f)
+    requires 
+        true == forall(xs, (f)) &*&
+        true == f(x);
+    ensures
+        true == forall(list_append(xs, x), (f));
+{
+    switch(xs) {
+        case nil:
+            assert (list_append(xs, x) == cons(x, nil));
+            assert (true == f(x));
+        case cons(x0, xs0):
+            append_preserves_fixpoint(xs0, x, f);
+    }
+}
+
+lemma void append_preserves_bounds(list<int> xs, int x, int low_bound, int up_bound)
+    requires
+        true == forall(xs, (lt)(up_bound)) &*&
+        true == forall(xs, (ge)(low_bound)) &*&
+        low_bound <= x &*& x < up_bound;
+    ensures
+        true == forall(list_append(xs, x), (lt)(up_bound)) &*&
+        true == forall(list_append(xs, x), (ge)(low_bound));
+{
+    switch(xs) {
+        case nil:
+            assert (list_append(xs, x) == cons(x, nil));
+            assert (low_bound <= x && x < up_bound);
+        case cons(x0, xs0):
+            assert (low_bound <= x0 && x0 < up_bound);
+            append_preserves_bounds(xs0, x, low_bound, up_bound);
+    }
+}
+
+lemma void append_to_zip<t>(list<t> xs, t x) 
+    requires true;
+    ensures list_append(zip_with_index(xs), pair(length(xs),x)) == zip_with_index(list_append(xs, x));
+{
+    switch(xs) {
+        case nil:
+            assert (list_append(xs, x) == cons(x, nil));
+            list<t> l = list_append(xs, x);
+            assert (zip_with_index(l) == cons(pair(0, x), nil) );
+            
+            list< pair<int, t> > z = zip_with_index(xs);
+            assert (list_append(z, pair(0, x)) == cons( pair(0, x), nil));
+
+        case cons(x0, xs0):
+            assume (list_append(zip_with_index(xs), pair(length(xs),x)) == zip_with_index(list_append(xs, x)));
+            //TODO
+    }
+} 
+
+lemma void zip_with_index_bounds<t>(list<t> xs) 
+    requires true;
+    ensures 
+        true == forall( map(fst, zip_with_index(xs)), (lt)(length(xs)) ) &*&
+        true == forall( map(fst, zip_with_index(xs)), (ge)(0) );
+{
+    assume ( true == forall( map(fst, zip_with_index(xs)), (lt)(length(xs)) ));
+    assume ( true == forall( map(fst, zip_with_index(xs)), (ge)(0) ));
+    //TODO
+}
+
+lemma void zip_no_dups_helper<t>(list<t> xs, int index)
+    requires true;
+    ensures xs == nil ? true : fst(head(zip_with_index_recursive(xs, index))) == index;
+{
+    switch(xs) {
+        case nil: true;
+        case cons(x0, xs0): assert(fst(head(zip_with_index_recursive(xs, index))) == index);
+    }
+}
+
+lemma void zip_no_dups_rec<t>(list< pair<int, t> > xs_ziped, list<t> xs, int index)
+    requires xs_ziped == zip_with_index_recursive(xs, index);
+    ensures true == no_dups(map(fst, xs_ziped));
+{
+    assume (true == no_dups(map(fst, xs_ziped))); //TODO
+}
+
+lemma void zip_no_dups<t>(list<t> xs)
+    requires true;
+    ensures true == no_dups(map(fst, zip_with_index(xs)));
+{
+    list< pair<int, t> > xs_ziped = zip_with_index_recursive(xs, 0);
+    zip_no_dups_rec(xs_ziped, xs, 0);
+}
+
 lemma void append_to_permutation(list<int> xs, int newHead)
     requires    sub_permutation(xs, ?max_val) &*& 
                 0 <= newHead &*& newHead < max_val &*&
@@ -83,7 +252,5 @@ lemma void list_isolate_chunk_zerosize<t>(list<t> xs, int n)
     list<t> drop_xs = list_drop_n_first(xs, n);
     list_take_n_first_zerosize(drop_xs);
 }
-
-
 
 #endif //_PERMUTLIST_GH_INCLUDED_
