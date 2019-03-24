@@ -14,6 +14,10 @@ predicate sub_permutation(list<int> xs, int max_val) =
         true == forall(xs, (ge)(0)) &*&
         true == no_dups(xs);
 
+fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
+    return forall(xs, (lt)(max_val) && true == forall(xs, (ge)(0)) && no_dups(xs);
+}
+
 fixpoint bool is_permutation(list<int> xs) {
     return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
