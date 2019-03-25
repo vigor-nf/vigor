@@ -138,6 +138,10 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    fixpoint bool is_cst<t>(t ref, t x) {
+        return ref == x;
+    }
+
 @*/
 
 void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
@@ -247,6 +251,52 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //@ close ints(permutations, cht_height*backend_capacity, p0);
     //@ list< list<int> > perms = list_split_every_n(p0, nat_of_int(backend_capacity), cht_height);
     //@ assume (true == forall(perms, is_permutation));
+
+    int *next = malloc(sizeof(int) * (int)(cht_height));
+    //@ assume(next != 0);//TODO: report failure
+    //@ open ints(next, cht_height, ?n0);
+    //@ close ints(next, cht_height, n0);
+    //@ list_take_n_first_zerosize(n0);
+    for (uint32_t i = 0 ; i < cht_height ; ++i)
+        /*@ invariant
+                0 <= i &*& i <= cht_height &*&
+                ints(next, cht_height, ?n) &*&
+                true == forall(take(i, n), (is_cst)(0));
+        @*/
+    {
+        next[i] = 0; 
+        //@ list<int> updated_n = update(i, 0, n);
+        //@ take_update_unrelevant(i, i, 0, n);
+        //@ ints_to_nth(updated_n, n, i, 0);
+        //@ append_take(updated_n, i, (is_cst)(0));
+    }
+
+    //@ open ints(next, cht_height, ?n);
+    //@ close ints(next, cht_height, n);
+    //@ take_full(n);
+    //@ assert (true == forall(n, (is_cst)(0)));
+    
+    for (uint32_t i = 0 ; i < cht_height ; ++i)
+    /*@invariant true; @*/
+    {
+        for (uint32_t j = 0 ; j < backend_capacity ; ++j)
+        /*@invariant true; @*/
+        {
+            uint32_t *value;
+
+            uint32_t index = i * cht_height + j;
+            int bucket_id = permutations[index];
+            int priority = next[bucket_id];
+
+            vector_borrow(cht, (int)(backend_capacity * bucket_id + priority), (void **)&value);
+            *value = j;
+            vector_return(cht, (int)(backend_capacity * bucket_id + priority), (void *)value);
+
+            next[bucket_id] += 1;
+        }
+    }
+    free(next);
+
 
     // Fill the priority lists for each hash in [0, cht_height)
     for (uint32_t i = 0; i < cht_height; ++i)

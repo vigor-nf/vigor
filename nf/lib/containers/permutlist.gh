@@ -93,11 +93,41 @@ fixpoint bool l_contains<t>(list<t> xs, t x) {
     }
 }
 
+lemma void take_full<t>(list<t> xs)
+    requires    true;
+    ensures     take(length(xs), xs) == xs;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): take_full(xs0);
+    }
+}
+
+lemma void ints_to_nth(list<int> xs, list<int> xs_orig, int i, int val)
+    requires    xs == update(i, val, xs_orig);
+    ensures     nth(i, xs) == val;
+{
+    assume (nth(i, xs) == val);
+    // TODO
+}
+
+lemma void append_take<t>(list<t> xs, int i, fixpoint (t,bool) f)
+    requires 
+        0 <= i &*& i < length(xs) &*&
+        true == forall(take(i, xs), f) &*& true == f(nth(i, xs));
+    ensures 
+        true == forall(take(i + 1, xs), f);
+{
+    assume (true == forall(take(i + 1, xs), f));
+    // TODO
+}
+
 lemma void permutation_contains(list<int> xs)
     requires    true == is_permutation(xs);
     ensures     true == forall(xs, (l_contains)(xs));
 {
     assume (true == forall(xs, (l_contains)(xs)));
+    // TODO
 } 
 
 lemma void unzip<t>(list<t> xs)
