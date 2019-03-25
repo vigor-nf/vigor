@@ -5,6 +5,7 @@
 #include "lib/containers/vector.h"
 
 //@ #include "prime.gh"
+//@ #include "permutlist.gh" 
 
 // MAX_CHT_HEIGHT*MAX_CHT_HEIGHT < MAX_INT
 #define MAX_CHT_HEIGHT 40000
@@ -17,9 +18,7 @@
            MAX_CHT_HEIGHT*backend_capacity < INT_MAX &&
            sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &&
            backend_capacity < INT_MAX &&
-           true == forall(map(fst, values), (lt)(backend_capacity)) &&
-           true == forall(map(fst, values), (ge)(0)) &&
-           true == forall(values, is_one);
+           true == forall(list_split_every_n(map(fst, values), nat_of_int(cht_height), backend_capacity), is_permutation);
   }
 
   fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter);

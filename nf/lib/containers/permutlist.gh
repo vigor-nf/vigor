@@ -15,7 +15,7 @@ predicate sub_permutation(list<int> xs, int max_val) =
         true == no_dups(xs);
 
 fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
-    return forall(xs, (lt)(max_val) && true == forall(xs, (ge)(0)) && no_dups(xs);
+    return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
 
 fixpoint bool is_permutation(list<int> xs) {
@@ -85,6 +85,20 @@ fixpoint list<int> first_n_integers(int n) {
 }
 
 fixpoint bool eq<t>(pair<t,t> p) { return fst(p) == snd(p); }
+
+fixpoint bool l_contains<t>(list<t> xs, t x) {
+    switch(xs) {
+        case nil: return false;
+        case cons(x0, xs0) : return x0 == x || l_contains(xs0, x); 
+    }
+}
+
+lemma void permutation_contains(list<int> xs)
+    requires    true == is_permutation(xs);
+    ensures     true == forall(xs, (l_contains)(xs));
+{
+    assume (true == forall(xs, (l_contains)(xs)));
+} 
 
 lemma void unzip<t>(list<t> xs)
     requires    true;
