@@ -4,16 +4,6 @@
 #include <nat.gh>
 #include "stdex.gh"
 
-predicate permutation(list<int> xs) = sub_permutation(xs, length(xs));
-
-predicate sub_permutation(list<int> xs, int max_val) =
-    xs == nil
-    ? true
-    : max_val > 0 &*&
-        true == forall(xs, (lt)(max_val)) &*&
-        true == forall(xs, (ge)(0)) &*&
-        true == no_dups(xs);
-
 fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
     return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
@@ -29,29 +19,16 @@ fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
     }
 }
 
-fixpoint list<t> list_take_n_first<t>(list<t> xs, int n) {
-    switch(xs) {
-        case nil: return nil;
-        case cons(x0, xs0): return (n <= 0 ? nil : cons(x0, list_take_n_first(xs0, n - 1)) );
-    }
-}
 
-fixpoint list<t> list_drop_n_first<t>(list<t> xs, int n) {
-    switch(xs) {
-        case nil: return nil;
-        case cons(x0, xs0): return (n <= 0 ? xs : list_drop_n_first(xs0, n - 1));
-    }
-}
-
-fixpoint list<t> list_isolate_chunk<t>(list<t> xs, int begin, int end) {
-    return list_take_n_first(list_drop_n_first(xs, begin), end - begin);
+fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
+    return take(end - begin, drop(begin, xs));
 }
 
 fixpoint list< list<t> > list_split_every_n<t>(list<t> xs, nat nb_split, int n) {
     switch(nb_split) {
         case zero: return nil;
         case succ(nb_split_pred): 
-            return cons(list_take_n_first(xs, n), list_split_every_n(list_drop_n_first(xs, n), nb_split_pred, n));
+            return cons(take(n, xs), list_split_every_n(drop(n, xs), nb_split_pred, n));
     }
 }
 
@@ -138,38 +115,12 @@ lemma void unzip<t>(list<t> xs)
     // TODO
 }
 
-lemma void take_n_first_length<t>(list<t> xs, int n)
-    requires    0 <= n &*& n <= length(xs);
-    ensures     length(list_take_n_first(xs,n)) == n;
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): 
-            if (n > 0) {
-                take_n_first_length(xs0, n - 1);
-            }
-    }
-}
-
-lemma void drop_n_first_length<t>(list<t> xs, int n)
-    requires    0 <= n &*& n <= length(xs);
-    ensures     length(list_drop_n_first(xs,n)) == length(xs) - n;
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): 
-            if (n > 0) {
-                drop_n_first_length(xs0, n - 1);
-            }
-    }
-}
-
 lemma void isolate_chunk_length<t>(list<t> xs, int begin, int end)
     requires    0 <= begin &*& begin <= end &*& end <= length(xs);
-    ensures     length(list_isolate_chunk(xs, begin, end)) == end - begin;
+    ensures     length(chunk(xs, begin, end)) == end - begin;
 {
-    drop_n_first_length(xs, begin);
-    take_n_first_length(list_drop_n_first(xs, begin), end - begin);
+    length_take(begin, xs);
+    length_drop(end - begin, drop(begin, xs));
 }
 
 lemma void append_length<t>(list<t> xs, t x)
@@ -272,33 +223,12 @@ lemma void zip_no_dups<t>(list<t> xs)
     zip_no_dups_rec(xs_ziped, xs, 0);
 }
 
-lemma void append_to_permutation(list<int> xs, int newHead)
-    requires    sub_permutation(xs, ?max_val) &*& 
-                0 <= newHead &*& newHead < max_val &*&
-                false == mem(newHead, xs); 
-    ensures     sub_permutation(cons(newHead, xs), max_val);
-{
-    open sub_permutation(xs, max_val);
-    close sub_permutation(cons(newHead, xs), max_val);
-}
-
-
-lemma void list_take_n_first_zerosize<t>(list<t> xs)
+lemma void chunk_zerosize<t>(list<t> xs, int n)
     requires true;
-    ensures list_take_n_first(xs, 0) == nil;
+    ensures chunk(xs, n, n) == nil;
 {
-    switch(xs) {
-        case nil: assert (list_take_n_first(xs, 0) == nil);
-        case cons(x0, xs0): assert (list_take_n_first(xs, 0) == nil);
-    }
-}
-
-lemma void list_isolate_chunk_zerosize<t>(list<t> xs, int n)
-    requires true;
-    ensures list_isolate_chunk(xs, n, n) == nil;
-{
-    list<t> drop_xs = list_drop_n_first(xs, n);
-    list_take_n_first_zerosize(drop_xs);
+    list<t> drop_xs = drop(n, xs);
+    take_0(drop_xs);
 }
 
 #endif //_PERMUTLIST_GH_INCLUDED_
