@@ -284,7 +284,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         {
             uint32_t *value;
 
-            uint32_t index = i * cht_height + j;
+            uint32_t index = j * cht_height + i;
             int bucket_id = permutations[index];
             int priority = next[bucket_id];
 
