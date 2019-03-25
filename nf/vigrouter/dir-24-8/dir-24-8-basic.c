@@ -164,27 +164,6 @@ fixpoint bool is_zero(uint16_t x){
 }
 @*/
 
-void fill_with_zeros(struct entry** array, size_t size)
-    // requires array[0..size] |-> ?data;
-    // ensures true == forall(data, is_zero) &*& array[0..size] |-> data;
-{
-	struct entry* new_entry;
-    
-    for(int i = 0; ; i++)
-    // requires array[0..i] |-> ?zeros &*& array[i..size] |-> ?whatever &*& true == forall(zeros, is_zero);
-    // ensures array[0..old_i] |-> zeros &*& array[old_i..size] |-> whatever &*& true == forall(zeros, is_zero);
-    {
-        if(i == size){
-            break;
-        }
-        
-        new_entry = malloc(sizeof(struct entry));
-        if(new_entry == 0){abort();}
-        new_entry->current_rule = 0;
-        array[i] = new_entry;
-    }
-}
-
 //Is it useful to let a max_entries param??
 struct tbl *tbl_allocate(size_t max_entries)
     //@ requires true;
@@ -196,169 +175,39 @@ struct tbl *tbl_allocate(size_t max_entries)
     	return 0;
     }
     
-    struct entry **tbl_24 = (struct entry **) malloc(TBL_24_MAX_ENTRIES * sizeof(struct entry *)); //array of pointers on structs
+    uint16_t *tbl_24 = (uint16_t *) malloc(TBL_24_MAX_ENTRIES * sizeof(uint16_t)); //array of pointers on structs
     if(tbl_24 == 0){
         free(_tbl);
         return 0;
     }
     
-    struct entry **tbl_long = (struct entry **) malloc(TBL_LONG_MAX_ENTRIES * sizeof(struct entry *));
+    uint16_t *tbl_long = (uint16_t *) malloc(TBL_LONG_MAX_ENTRIES * sizeof(uint16_t));
     if(tbl_long == 0){
         free(tbl_24);
         free(_tbl);
         return 0;
     }
     //Set every element of the array to zero
-    fill_with_zeros(tbl_24, TBL_24_MAX_ENTRIES);
-
-    fill_with_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
-    
-    struct indexmap* imap = create_indexmap(TBL_LONG_FACTOR);
-    
+    memset(tbl_24, 0, TBL_24_MAX_ENTRIES);
+    memset(tbl_long, 0, TBL_LONG_MAX_ENTRIES);
+        
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
-    _tbl->tbl_long_indexmap = imap;
+    _tbl->tbl_long_index = 0;
     _tbl->n_entries = 0;
     _tbl->max_entries = max_entries;
 
     return _tbl;
 }
 
-void free_entries(struct entry **entries, size_t size){
-	for(int i = 0; i < size; i++){
-		free_rules(entries[i]->current_rule);
-		free(entries[i]);
-	}
-}
-
-void free_rules(struct rule* head)
-{
-	if(head != 0){
-		free_rules(head->next);
-		free(head);
-	}
-}
 
 void tbl_free(struct tbl *_tbl)
     //@ requires table(tbl, _, _);
     //@ ensures true;
 {
-	free_entries(_tbl->tbl_24, TBL_24_MAX_ENTRIES);
-	free_entries(_tbl->tbl_long, TBL_LONG_MAX_ENTRIES);
-	free_indexmap(_tbl->tbl_long_indexmap);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);
-}
-
-/**
- * Inserts a new rule in the linked list, no duplicate, rule with the longer prefixlen is at head
- * if same prefixlen->update value
- */
-void linked_list_insertion(struct entry* _entry, uint8_t prefixlen, uint16_t value)
-{
-	struct rule* new_rule = malloc(sizeof(struct rule));
-	if(new_rule == 0){abort();}
-	
-	new_rule->prefixlen = prefixlen;
-	new_rule->value = value;
-	new_rule->next = 0;
-	
-	if(_entry->current_rule == 0){
-		//New rule is head
-		_entry->current_rule = new_rule;
-	}else{
-		struct rule* current = _entry->current_rule;
-		struct rule* previous = 0;
-		
-		while(current != 0 && current->prefixlen > prefixlen){
-			previous = current;
-			current = current->next;
-		}
-		
-		if(current == _entry->current_rule){
-			//New rule comes at head
-			new_rule->next = current;
-			_entry->current_rule = new_rule;
-		}else if(current == 0){
-			//New rule comes at tail
-			previous->next = new_rule;
-		}else if(prefixlen == current->prefixlen){
-			//If same prefixlen, just update the value
-			current->value = value;
-			free(new_rule);
-		}else{
-			//Normal insertion
-			new_rule->next = current;
-			previous->next = new_rule;
-		}
-	}
-}
-
-/**
- * Deletes a rule in the linked list
- */
-void linked_list_deletion(struct entry* _entry, uint8_t prefixlen){
-	
-	if(_entry->current_rule == 0){
-		//List is empty, nothing to do
-	}else{
-		struct rule* previous = 0;
-		struct rule* current = _entry->current_rule;
-		
-		//Lazy evaluation on the second condition
-		while(current != 0 && current->prefixlen != prefixlen){
-			previous = current;
-			current = current->next;
-		}
-		
-		if(current == 0){
-			//Rule not found, nothing to do
-		}else{
-			if(previous == 0){
-				//Current is head, next becomes head
-				_entry->current_rule = current->next;
-			}else{
-				previous->next = current->next;
-			}
-			free(current);
-		}
-		
-	}
-}
-
-/**
- * Returns the pointer to the rule if found, 0 otherwise
- */
-struct rule* linked_list_contains(struct entry* _entry, uint8_t prefixlen)
-{
-	struct rule* current = _entry->current_rule;
-	
-	while(current != 0){
-		
-		if(current->prefixlen == prefixlen){
-			break;
-		}
-		current = current->next;
-	}
-	
-	return current;
-}
-
-/**
- * Returns true if the entry has a precise rule (prefixlen >= 24)
- */
-bool linked_list_contains_precise(struct entry* _entry)
-{
-	struct rule* current = _entry->current_rule;
-	
-	while(current != 0){
-		if(current->prefixlen >= 24){
-			return true;
-		}
-	}
-	
-	return false;
 }
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
@@ -369,11 +218,11 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
 
     uint8_t prefixlen = _key->prefixlen;
     uint8_t *data = _key->data;
-    struct entry **tbl_24 = _tbl->tbl_24;
-    struct entry **tbl_long = _tbl->tbl_long;
+    uint16_t *tbl_24 = _tbl->tbl_24;
+    uint16_t *tbl_long = _tbl->tbl_long;
 
     if(!tbl_24 || !tbl_long || !data || prefixlen > TBL_PLEN_MAX ||
-        _tbl->n_entries >= _tbl->max_entries){
+        _tbl->n_entries >= _tbl->max_entries || value > MAX_NEXT_HOP_VALUE){
         return -1;
     }
 
@@ -387,10 +236,9 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         first_index = correct_first_index_with_mask(first_index, prefixlen);
         size_t last_index = tbl_24_extract_last_index(_key);
 
-        //fill all entries between first index and last index with value if
-        //these entries don't have a longer prefix associated with them
+        //fill all entries between first index and last index with value
         for(int i = first_index; i <= last_index; i++){
-			linked_list_insertion(tbl_24[i], prefixlen, value);
+			tbl_24[i] = value;
         }
     } else {
         //If the prefixlen is not smaller than 24, we have to store the value
@@ -401,17 +249,18 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         //index and store it in the tbl_24
         size_t base_index;
         size_t tbl_24_index = tbl_24_extract_first_index(data);
-        if(tbl_24[tbl_24_index]->current_rule != 0 && tbl_24_entry_flag(tbl_24[tbl_24_index]->current_rule->value)){
-            base_index = tbl_24[tbl_24_index]->current_rule->value & TBL_LONG_REMOVE_FLAG_MASK;
+        if(tbl_24_entry_flag(tbl_24[tbl_24_index])){
+            base_index = tbl_24[tbl_24_index] & TBL_24_VAL_MASK;
         } else {
-			if(is_indexmap_full(_tbl->tbl_long_indexmap)){
-				printf("No more available index for tbl_long! Delete useless long rules to make place.\n");fflush(stdout);
+			if(_tbl->tbl_long_index == TBL_LONG_OFFSET_MAX){
+				printf("No more available index for tbl_long!\n");fflush(stdout);
 				return -1;
 			}
             //generate next index and store it in tbl_24
-            base_index = take_first_free_index(_tbl->tbl_long_indexmap);
+            base_index = _tbl->tbl_long_index + 1;
+            _tbl->tbl_long_index = base_index;
             
-            linked_list_insertion(tbl_24[tbl_24_index], prefixlen, tbl_24_entry_set_flag(base_index));
+            tbl_24[tbl_24_index] = tbl_24_entry_set_flag(base_index);
         }
 
         //The last byte in data is used as the starting offset for tbl_long
@@ -426,74 +275,12 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key, uint8_t value)
         //Store value in tbl_long entries indexed from value*256+offset up to
         //value*256+255
         for(int i = first_index; i <= last_index; i++){
-			linked_list_insertion(tbl_long[i], prefixlen, value);
+			tbl_long[i] = value;
         }
     }
 
     return 0;
 }
-
-int tbl_delete_elem(struct tbl *_tbl, struct key *_key)
-{
-    if(!_tbl || !_key){
-        return -1;
-    }
-
-    uint8_t prefixlen = _key->prefixlen;
-    uint8_t *data = _key->data;
-    struct entry **tbl_24 = _tbl->tbl_24;
-    struct entry **tbl_long = _tbl->tbl_long;
-
-    if(!tbl_24 || !tbl_long || !data || prefixlen > TBL_PLEN_MAX){
-        return -1;
-    }
-
-    size_t tbl_24_index = tbl_24_extract_first_index(data);
-    
-    struct rule* concerned_rule = linked_list_contains(tbl_24[tbl_24_index], prefixlen);
-    
-    if(concerned_rule == 0){
-		//No matching rule, nothing to do
-		return 0;
-	}
-
-    if(tbl_24_entry_flag(concerned_rule->value)) {
-        //tbl_24 contains a base index for tbl_long
-        size_t base_index = concerned_rule->value;
-
-        //remove all entries in tbl_long that match the key in argument and have
-        //the same prefix length as the key in argument
-
-        size_t first_index = tbl_long_extract_first_index(data, base_index);
-        size_t last_index = tbl_long_extract_last_index(_key, base_index);
-
-        for(int i = first_index; i <= last_index; i++){
-            linked_list_deletion(tbl_long[i], prefixlen);
-        }
-
-        //then, remove the entry from tbl_24
-        linked_list_deletion(tbl_24[tbl_24_index], prefixlen);
-        
-        //Check whether the used tbl_long index is still needed and free it if not
-        if(!linked_list_contains_precise(tbl_24[tbl_24_index])){
-			free_indexmap_index(_tbl->tbl_long_indexmap, base_index);
-		}
-        
-    } else {
-        //tbl_24 contains the next hop, just remove entries from the tbl_24 that
-        //match the key given in argument and have the same prefix lentgh as the
-        //key in argument
-
-        for(int i = tbl_24_extract_first_index(data);
-            i <= tbl_24_extract_last_index(_key); i++){
-            linked_list_deletion(tbl_24[i], prefixlen);
-        }
-    }
-
-    _tbl->n_entries --;
-    return 0;
-}
-
 
 int tbl_lookup_elem(struct tbl *_tbl, uint8_t* data)
 {
@@ -501,8 +288,8 @@ int tbl_lookup_elem(struct tbl *_tbl, uint8_t* data)
         return -1;
     }
 
-    struct entry **tbl_24 = _tbl->tbl_24;
-    struct entry **tbl_long = _tbl->tbl_long;
+    uint16_t *tbl_24 = _tbl->tbl_24;
+    uint16_t *tbl_long = _tbl->tbl_long;
 
     if(!tbl_24 || !tbl_long || !data){
         return -1;
@@ -510,23 +297,16 @@ int tbl_lookup_elem(struct tbl *_tbl, uint8_t* data)
 
     //get index corresponding to key for tbl_24
     size_t index = tbl_24_extract_first_index(data);
-
-    struct entry *_entry = tbl_24[index];
-    
-    if(_entry->current_rule == 0){
-		//No rule for the prefix
-		return -1;
-	}
+    uint16_t value = tbl_24[index];
 	
-	uint16_t tbl_24_entry_value = _entry->current_rule->value;
-	
-	if(tbl_24_entry_flag(tbl_24_entry_value)){
+	if(tbl_24_entry_flag(value)){
         //the value found in tbl_24 is a base index for an entry in tbl_long,
         //go look at the index corresponding to the key and this base index
-        size_t index_long = tbl_long_extract_first_index(data, tbl_24_entry_value & TBL_LONG_REMOVE_FLAG_MASK);
-        return tbl_long[index_long]->current_rule->value;
+        size_t index_long = tbl_long_extract_first_index(data, value & TBL_24_VAL_MASK);
+        uint16_t value_long = tbl_long[index_long];
+        return value_long;
     } else {
         //the value found in tbl_24 is the next hop, just return it
-        return tbl_24_entry_value;
+        return value;
     }
 }
