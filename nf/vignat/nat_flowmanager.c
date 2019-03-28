@@ -117,7 +117,7 @@ flow_manager_get_external(struct FlowManager* manager, uint16_t external_port,
   dchain_rejuvenate_index(manager->state->heap, index, time);
 
 #ifdef KLEE_VERIFICATION
-	concretize_devices(out_flow->internal_device, rte_eth_dev_count());
+	concretize_devices(&out_flow->internal_device, rte_eth_dev_count());
 
 #endif
 	return true;
