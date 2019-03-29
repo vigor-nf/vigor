@@ -2,16 +2,18 @@
 
 struct router_config config;
 
-#ifdef TRIE
-
-struct lpm_trie * lpm_trie;
-
-#else
 
 struct rte_lpm * lpm_dir;
 
-#endif
+typedef struct{
+	
+	uint32_t ip;
+	uint16_t port;
+	uint8_t dirty;
+	
+}cache;
 
+cache * ip_cache;
 
 
 struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
@@ -34,30 +36,29 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 	FILE *in_file  = fopen("routes", "r");
 	
 	if(!in_file){
-		printf("Error! Could not open file\n"); 
+		 
         abort();
 	}
 	
+
 	struct router_config config;
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
 	
-	#ifdef TRIE
-	
-	if(!lpm_trie){
-		fclose(in_file);
-		abort();
-	}
-	
-	#else
+
 	
 	if(!lpm_dir){
 		fclose(in_file);
 		abort();
 	}
+
+	ip_cache = calloc(CACHE_SIZE, sizeof(cache));
 	
-	#endif
+	
+	if(ip_cache == NULL){
+		abort();
+	}
 	
     //close file
     fclose(in_file);
@@ -65,47 +66,131 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 }
 
 
+int checkCache(uint32_t ip_addr){
+	
+	int res = 0;
+	
+	cache line = ip_cache[ip_addr % CACHE_SIZE];
+	
+	if(likely(ip_addr == line.ip)){	//check destination in cache
+		return line.port;
+	}
+	else{	//check in directory for lpm
+		
+		if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
+		
+				return FLOOD_FRAME;	// in case of lookup miss
+		} 
+		
+		if(line.dirty == 1){
+			
+			
+			line.port = res;
+			line.ip = ip_addr;
+			line.dirty = 0;
+			
+			return res;
+		}
+		else{
+			
+			line.dirty = 1;
+			return res;
+		}
+		
+	}
+}
+
+
 
 /**
- * Routes packets using a LPM Trie
+ * Routes packets using a LPM DIR-24-8
  */
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
-	//retrieve the ip
+
+	//half of the packets are "bad"...
+
+
+	//first try
+/*
 	struct ether_hdr* eth_hdr = nf_then_get_ether_header(mbuf_pkt(mbuf));
 	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
-	uint32_t ip_addr = rte_be_to_cpu_32(ip_hdr->dst_addr);
-	
-    int res = FLOOD_FRAME;
-    
-#ifdef TRIE	
+*/
 
-	struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
-    
-    if(unlikely(!key)){
-		printf("Couldn't allocate memory !");
-		abort();
+	//second try	
+
+	uint8_t* ip_options;
+	bool ip_ok = true;
+	struct ipv4_hdr * ip_hdr = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &ip_ok);
+
+	/*if(unlikely(!ip_ok)){
+		 printf("not a good ip\n"); fflush(stdout);
+		return FLOOD_FRAME;
+	}*/
+
+//as in l3fwd by dpdk -> SEGV
+
+
+/*	struct ipv4_hdr *ip_hdr;
+        struct ether_hdr *eth_hdr;
+
+        if (RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
+                eth_hdr = rte_pktmbuf_mtod(mbuf, struct ether_hdr *);
+                //ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
+
+		  ip_hdr = rte_pktmbuf_mtod_offset(mbuf, struct ipv4_hdr *, sizeof(struct ether_hdr));
+
+
 	}
+	else{
+
+		return FLOOD_FRAME;
+	}
+
+*/
+
+//as in policer
+
+  /*const uint16_t in_port = mbuf->port;
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+
+  if (unlikely(!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
+      !(mbuf->packet_type == 0 &&
+        ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4)))) {
+    printf("not an ipv4...\n"); fflush(stdout);
+    return in_port;
+  }
+
+  uint8_t* ip_options;
+  bool wellformed = true;
+	struct ipv4_hdr* ip_hdr = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
+  if (unlikely(!wellformed)) {
+	printf("router dropping packet...\n"); fflush(stdout);
+    return in_port;
+}
+
+
+*/
+
+    uint32_t ip_addr = rte_be_to_cpu_32(((struct ipv4_hdr *)ip_hdr)->dst_addr); //rte_be_to_cpu_32(ip_hdr->dst_addr);
+	
+    int res = 0;
+  
+#ifdef CACHE 
+   
+    return checkCache(ip_addr);
     
-	key->prefixlen = 32 ;
-    memcpy(key->data, &ip_addr, IPV4_IP_SIZE * sizeof(uint8_t));
-    
-	int res = trie_lookup_elem(lpm_trie, key);
-	
-	
-	free(key);
-	
-#else
-	
+#else	
+
 	if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
 		
-		res = FLOOD_FRAME;	// in case of lookup miss
-	}
-	printf("DESTINATION IS : %d\n", res);
+		return FLOOD_FRAME;	// in case of lookup miss
+	} 
 	
-#endif
-
+	//printf("Route is : %d\n",res); fflush(stdout);
 	return res;
+
+#endif
 }
 
 
@@ -114,16 +199,6 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
  */
 void insert_all(FILE * f){
 	
-	#ifdef TRIE
-	
-	lpm_trie = lpm_trie_alloc(MAX_ROUTES_ENTRIES);
-	
-	if(!lpm_trie){
-		printf("Could not initialize trie !\n");
-		abort();
-	}
-	
-	#else
 	
 	//inspired by dpdk's l3fwd example
 
@@ -143,7 +218,6 @@ void insert_all(FILE * f){
 	if (lpm_dir == NULL)
 		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
 	
-	#endif
 	
 	
 	 
@@ -219,13 +293,7 @@ void insert_all(FILE * f){
 		}
 		
    
-   
-		#ifdef TRIE
-		
-			struct lpm_trie_key *key = lpm_trie_key_alloc(mask, ip);
-			int res = trie_update_elem(lpm_trie, key, port);
-			
-		#else
+
 		
 			uint32_t  * ip_address= malloc(sizeof(uint32_t));
 			
@@ -240,11 +308,7 @@ void insert_all(FILE * f){
 			
 			free(ip_address);
 					
-			
-		#endif
-		
-		
-		
+
 		
       
 		if(res){
