@@ -2,5 +2,6 @@
 
 make router
 
-sudo ./build/router --vdev=net_tap2,iface=router,mac=fixed --file-prefix pref_router
+sudo ./build/router -l 30 --socket-mem=512,512 -w 0000:85:00.1 # --file-prefix pref_router
+ 
 

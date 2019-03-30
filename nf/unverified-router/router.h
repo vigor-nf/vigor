@@ -4,6 +4,7 @@
 
 #define MAX_ROUTES_ENTRIES 256
 #define MAX_TBL_8 	64	//number of 8bits tables for the dir-24-8 algorithm
+#define CACHE_SIZE 32
 
 
 #include "lib/nf_time.h"
@@ -26,18 +27,8 @@
 
 
 
-#ifdef TRIE
-
-//the Trie that will be used by the nf (global variable)
-extern struct lpm_trie * lpm_trie;	
-
-#else
-
 //the DIR-24-8 that will be used by the nf (global variable)
 extern struct rte_lpm * lpm_dir;			
-
-#endif
-
 
 
 /**
