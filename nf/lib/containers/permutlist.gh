@@ -12,13 +12,36 @@ fixpoint bool is_permutation(list<int> xs) {
     return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
 
+fixpoint bool permutation_contains_all(list<int> xs, nat x) {
+    switch(x) {
+        case zero: return mem(int_of_nat(zero), xs);
+        case succ(x_pred): return mem(int_of_nat(x), xs) && permutation_contains_all(xs, x_pred);
+    }
+}
+
+lemma void permutation_def_to_contains_all(list<int> xs)
+    requires    true == is_permutation(xs);
+    ensures     true == permutation_contains_all(xs, nat_of_int(length(xs)));
+{
+    assume (true == permutation_contains_all(xs, nat_of_int(length(xs))));
+}
+
+lemma void permutation_contains_all_to_some(list<int> xs, int check_for)
+    requires
+        true == permutation_contains_all(xs, nat_of_int(length(xs))) &*&
+        0 <= check_for &*& check_for < length(xs);
+    ensures
+        true == mem(check_for, xs);
+{
+    assume (true == mem(check_for, xs));
+}
+
 fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
     switch(xs) {
         case nil: return cons(x_tail, nil);
         case cons(x0, xs0): return cons(x0, list_append(xs0, x_tail));
     }
 }
-
 
 fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
     return take(end - begin, drop(begin, xs));
@@ -30,6 +53,29 @@ fixpoint list< list<t> > list_split_every_n<t>(list<t> xs, nat nb_split, int n) 
         case succ(nb_split_pred): 
             return cons(take(n, xs), list_split_every_n(drop(n, xs), nb_split_pred, n));
     }
+}
+
+lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j)
+    requires    length(xs) == int_of_nat(nb_split) * n &*&
+                0 <= i &*& i < n &*&
+                0 <= j &*& j < int_of_nat(nb_split);
+    ensures     nth(i, nth(j, list_split_every_n(xs, nb_split, n))) == nth(j * n + i, xs);
+{
+    assume (nth(i, nth(j, list_split_every_n(xs, nb_split, n))) == nth(j * n + i, xs));
+}
+
+lemma_auto(length(list_split_every_n(xs, nb_split, n))) void length_split<t>(list<t> xs, nat nb_split, int n)
+    requires    length(xs) == int_of_nat(nb_split) * n;
+    ensures     length(list_split_every_n(xs, nb_split, n)) == int_of_nat(nb_split);
+{
+    assume (length(list_split_every_n(xs, nb_split, n)) == int_of_nat(nb_split));
+}
+
+lemma void length_split_forall<t>(list<t> xs, nat nb_split, int n, int i)
+    requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= i &*& i < length(xs);
+    ensures     length(nth(i, list_split_every_n(xs, nb_split, n))) == n;
+{
+    assume (length(nth(i, list_split_every_n(xs, nb_split, n))) == n);
 }
 
 fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {
