@@ -1,0 +1,63 @@
+#ifndef _PERMUTATIONS_GH_INCLUDED_
+#define _PERMUTATIONS_GH_INCLUDED_
+
+#include <nat.gh>
+#include "listutils.gh"
+
+fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
+    return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
+}
+
+fixpoint bool is_sub_permutation2(int max_val, list<int> xs) {
+    return is_sub_permutation(xs, max_val);
+}
+
+lemma_auto(is_sub_permutation2(max_val, nil)) void sub_permutation2_nil(int max_val)
+    requires    true;
+    ensures     true == is_sub_permutation2(max_val, nil);
+{}
+
+lemma void sub_permutation2_forall_nil(list< list<int> > xs, int max_val)
+    requires    xs == repeat(nil, nat_of_int(length(xs)));
+    ensures     true == forall(xs, (is_sub_permutation2)(max_val));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0):
+            repeat_nth(nil, nat_of_int(length(xs)), 0);
+            repeat_tail(nil, nat_of_int(length(xs)));
+            sub_permutation2_forall_nil(xs0, max_val);
+    }
+}
+
+fixpoint bool is_permutation(list<int> xs) {
+    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
+}
+
+fixpoint bool permutation_contains_all(list<int> xs, nat x) {
+    switch(x) {
+        case zero: return mem(int_of_nat(zero), xs);
+        case succ(x_pred): return mem(int_of_nat(x), xs) && permutation_contains_all(xs, x_pred);
+    }
+}
+
+lemma void permutation_def_to_contains_all(list<int> xs)
+    requires    true == is_permutation(xs);
+    ensures     true == permutation_contains_all(xs, nat_of_int(length(xs)));
+{
+    assume (true == permutation_contains_all(xs, nat_of_int(length(xs))));
+}
+
+lemma void permutation_contains_all_to_some(list<int> xs, int check_for)
+    requires
+        true == permutation_contains_all(xs, nat_of_int(length(xs))) &*&
+        0 <= check_for &*& check_for < length(xs);
+    ensures
+        true == mem(check_for, xs);
+{
+    assume (true == mem(check_for, xs));
+}
+
+
+
+#endif //_PERMUTATIONS_GH_INCLUDED_

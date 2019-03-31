@@ -5,24 +5,25 @@
 #include "lib/containers/vector.h"
 
 //@ #include "prime.gh"
-//@ #include "permutlist.gh" 
+//@ #include "permutations.gh"
+//@ #include "listutils.gh"
 
 // MAX_CHT_HEIGHT*MAX_CHT_HEIGHT < MAX_INT
 #define MAX_CHT_HEIGHT 40000
 
 /*@
-  fixpoint bool valid_cht(list<pair<int, real> > values, uint32_t backend_capacity, uint32_t cht_height) {
-    return cht_height*backend_capacity == length(values) &&
-           0 < cht_height &&
-           cht_height < MAX_CHT_HEIGHT &&
-           MAX_CHT_HEIGHT*backend_capacity < INT_MAX &&
-           sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &&
-           backend_capacity < INT_MAX &&
-           true == forall(list_split_every_n(map(fst, values), nat_of_int(cht_height), backend_capacity), is_permutation);
-  }
+    fixpoint bool valid_cht(list<pair<int, real> > values, uint32_t backend_capacity, uint32_t cht_height) {
+        return 
+            cht_height*backend_capacity == length(values) &&
+            0 < cht_height && cht_height < MAX_CHT_HEIGHT &&
+            MAX_CHT_HEIGHT*backend_capacity < INT_MAX &&
+            sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &&
+            backend_capacity < INT_MAX &&
+            true == forall(list_split_every_n(map(fst, values), nat_of_int(cht_height), backend_capacity), is_permutation);
+    }
 
-  fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter);
-  fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter);
+    fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter);
+    fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter);
 @*/
 
 void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity);

@@ -1,40 +1,9 @@
-#ifndef _PERMUTLIST_GH_INCLUDED_
-#define _PERMUTLIST_GH_INCLUDED_
+#ifndef _LISTUTILS_GH_INCLUDED_
+#define _LISTUTILS_GH_INCLUDED_
 
 #include <nat.gh>
 #include "stdex.gh"
-
-fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
-    return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
-}
-
-fixpoint bool is_permutation(list<int> xs) {
-    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
-}
-
-fixpoint bool permutation_contains_all(list<int> xs, nat x) {
-    switch(x) {
-        case zero: return mem(int_of_nat(zero), xs);
-        case succ(x_pred): return mem(int_of_nat(x), xs) && permutation_contains_all(xs, x_pred);
-    }
-}
-
-lemma void permutation_def_to_contains_all(list<int> xs)
-    requires    true == is_permutation(xs);
-    ensures     true == permutation_contains_all(xs, nat_of_int(length(xs)));
-{
-    assume (true == permutation_contains_all(xs, nat_of_int(length(xs))));
-}
-
-lemma void permutation_contains_all_to_some(list<int> xs, int check_for)
-    requires
-        true == permutation_contains_all(xs, nat_of_int(length(xs))) &*&
-        0 <= check_for &*& check_for < length(xs);
-    ensures
-        true == mem(check_for, xs);
-{
-    assume (true == mem(check_for, xs));
-}
+#include "arith.gh"
 
 fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
     switch(xs) {
@@ -45,6 +14,96 @@ fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
 
 fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
     return take(end - begin, drop(begin, xs));
+}
+
+fixpoint bool is_cst<t>(t ref, t x) {
+    return ref == x;
+}
+
+fixpoint list<t> repeat<t>(t elem, nat n) {
+    switch(n) {
+        case zero: return nil;
+        case succ(n_pred): return cons(elem, repeat(elem, n_pred));
+    }
+}
+
+lemma_auto(length(repeat(elem, n))) void length_repeat<t>(t elem, nat n)
+    requires    true;
+    ensures     length(repeat(elem, n)) == int_of_nat(n);
+{
+    switch(n) {
+        case zero:
+        case succ(n_pred): length_repeat(elem, n_pred);
+    }
+}
+
+lemma void repeat_content<t>(t elem, nat n)
+    requires    true;
+    ensures     true == forall(repeat(elem, n), (is_cst)(elem));
+{
+    switch(n) {
+        case zero:
+        case succ(n_pred): repeat_content(elem, n_pred);
+    }
+}
+
+lemma void repeat_add<t>(t elem, nat n)
+    requires    n == succ(?n_pred);
+    ensures     cons(elem, repeat(elem, n_pred)) == repeat(elem, n);
+{
+    switch(n) {
+        case zero:
+        case succ(n_pred_bis): 
+    }
+}
+
+lemma void repeat_nth<t>(t elem, nat n, int i) 
+    requires    0 <= i &*& i < int_of_nat(n);
+    ensures     nth(i, repeat(elem, n)) == elem;
+{
+    repeat_content(elem, n);
+    forall_nth(repeat(elem, n), (is_cst)(elem), i);
+}
+
+lemma void repeat_tail<t>(t elem, nat n)
+    requires    n == succ(?n_pred);
+    ensures     tail(repeat(elem, n)) == repeat(elem, n_pred);
+{}
+
+fixpoint list< list<t> > split_varlim<t>(list<t> xs, int n, list<int> limits) {
+    switch(limits) {
+        case nil: return nil;
+        case cons(l0, ls0): 
+            return cons(take(l0, xs), split_varlim(drop(n, xs), n, ls0));
+    }
+}
+
+lemma void mul_equal(int a, int b, int c)
+    requires    a * b == c &*& a >= 0 &*& b > 0 &*& c >= 0;
+    ensures     a <= c;
+{
+    assume (a <= c);//TODO
+}
+
+lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits)
+    requires    
+        true == forall(limits, (is_cst)(0)) &*&
+        0 <= n &*& n * length(limits) == length(xs);
+    ensures
+        split_varlim(xs, n, limits) == repeat(nil, nat_of_int(length(limits)));
+{
+    switch(limits) {
+        case nil:
+            assert (length(xs) == 0);
+        case cons(l0, ls0):            
+            mul_equal(n, length(limits), length(xs));
+            length_drop(n, xs);
+            assert (length(ls0) == length(limits) - 1); 
+            mul_subst (length(ls0), length(limits) - 1, n);
+            split_varlim_nolim(drop(n, xs), n, ls0);
+            assert (nat_of_int(length(limits)) == succ(nat_of_int(length(ls0))));
+            repeat_add(nil, nat_of_int(length(limits)));
+    }
 }
 
 fixpoint list< list<t> > list_split_every_n<t>(list<t> xs, nat nb_split, int n) {
@@ -96,25 +155,18 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
     }
 }
 
-fixpoint list<int> first_n_integers_recursive(nat max, int index) {
-    switch(max) {
+fixpoint list<int> integers_list_rec(nat cnt, int index) {
+    switch(cnt) {
         case zero: return nil;
-        case succ(max_pred): return cons(index, first_n_integers_recursive(max_pred, index + 1));
+        case succ(cnt_pred): return cons(index, integers_list_rec(cnt_pred, index + 1));
     }
 }
 
-fixpoint list<int> first_n_integers(int n) {
-    return first_n_integers_recursive(nat_of_int(n), 0);
+fixpoint list<int> integers_list(int n, int start) {
+    return integers_list_rec(nat_of_int(n), start);
 }
 
 fixpoint bool eq<t>(pair<t,t> p) { return fst(p) == snd(p); }
-
-fixpoint bool l_contains<t>(list<t> xs, t x) {
-    switch(xs) {
-        case nil: return false;
-        case cons(x0, xs0) : return x0 == x || l_contains(xs0, x); 
-    }
-}
 
 lemma void take_full<t>(list<t> xs)
     requires    true;
@@ -144,14 +196,6 @@ lemma void append_take<t>(list<t> xs, int i, fixpoint (t,bool) f)
     assume (true == forall(take(i + 1, xs), f));
     // TODO
 }
-
-lemma void permutation_contains(list<int> xs)
-    requires    true == is_permutation(xs);
-    ensures     true == forall(xs, (l_contains)(xs));
-{
-    assume (true == forall(xs, (l_contains)(xs)));
-    // TODO
-} 
 
 lemma void unzip<t>(list<t> xs)
     requires    true;
@@ -277,4 +321,4 @@ lemma void chunk_zerosize<t>(list<t> xs, int n)
     take_0(drop_xs);
 }
 
-#endif //_PERMUTLIST_GH_INCLUDED_
+#endif //_LISTUTILS_GH_INCLUDED_
