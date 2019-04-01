@@ -18,15 +18,12 @@ lemma_auto(is_sub_permutation2(max_val, nil)) void sub_permutation2_nil(int max_
 {}
 
 lemma void sub_permutation2_forall_nil(list< list<int> > xs, int max_val)
-    requires    xs == repeat(nil, nat_of_int(length(xs)));
+    requires    true == forall(xs, (eq)(nil));
     ensures     true == forall(xs, (is_sub_permutation2)(max_val));
 {
     switch(xs) {
         case nil:
-        case cons(x0, xs0):
-            repeat_nth(nil, nat_of_int(length(xs)), 0);
-            repeat_tail(nil, nat_of_int(length(xs)));
-            sub_permutation2_forall_nil(xs0, max_val);
+        case cons(x0, xs0): sub_permutation2_forall_nil(xs0, max_val);
     }
 }
 
@@ -58,6 +55,32 @@ lemma void permutation_contains_all_to_some(list<int> xs, int check_for)
     assume (true == mem(check_for, xs));
 }
 
+fixpoint int list_to_length<t>(list<t> xs) {
+    return length(xs);
+}
+
+
+fixpoint bool integer_copies(list<int> xs, nat val, int nb_copies) {
+    switch(val) {
+        case zero: return count(xs, (eq)(int_of_nat(val))) == nb_copies;
+        case succ(val_pred): return count(xs, (eq)(int_of_nat(val))) == nb_copies && integer_copies(xs, val_pred, nb_copies);
+    }
+}
+
+lemma void permutation_to_count(list<int> xs)
+    requires    true == is_permutation(xs) &*& 0 < length(xs);
+    ensures     true == integer_copies(xs, nat_of_int(length(xs) - 1), 1);
+{
+    assume (true == integer_copies(xs, nat_of_int(length(xs) - 1), 1));
+}
+
+
+lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
+    requires    true == forall(list_split_every_n(xs, nb_split, n), is_permutation);
+    ensures     true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split));
+{
+    assume (true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split)));
+}
 
 
 #endif //_PERMUTATIONS_GH_INCLUDED_
