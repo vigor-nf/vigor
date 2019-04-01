@@ -8,6 +8,59 @@ fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
     return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
 
+lemma void take_preserves_mem<t>(list<t> tail, t head, int i)
+    requires    false == mem(head, tail) &*& 0 <= i;
+    ensures     false == mem(head, take(i, tail));
+{
+    switch(tail) {
+        case nil:
+        case cons(x0, xs0):
+            assert (head != x0);
+            if (i > 0) {
+            	take_preserves_mem(xs0, head, i-1);
+            }
+    }
+}
+
+lemma void take_preserves_no_dups<t>(list<t> xs, int i)
+    requires    true == no_dups(xs) &*& 0 <= i;
+    ensures     true == no_dups(take(i, xs));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0):
+            if (i > 0) {
+                take_preserves_no_dups(xs0, i - 1);
+                cons_take_take_cons(x0, xs0, i - 1);
+                take_preserves_mem(xs0, x0, i - 1);
+            } else {
+	        take_0(xs);
+            }
+    }
+}
+
+lemma void sub_permutation_take(list<int> xs, int max_val, int i)
+    requires    true == is_sub_permutation(xs, max_val) &*& 0 <= i;
+    ensures     true == is_sub_permutation(take(i, xs), max_val);
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0):
+            if (i <= 0) {
+            	assert (take(i, xs) == nil);
+            	assert (true == is_sub_permutation(take(i, xs), max_val));
+            } else {
+                sub_permutation_take(xs0, max_val, i - 1);
+                assume (take(i, xs) == append(take(i - 1, xs0), cons(x0, nil)));
+                cons_take_take_cons(x0, xs0, i - 1);
+                forall_append(take(i - 1, xs0), cons(x0, nil), (lt)(max_val));
+                forall_append(take(i - 1, xs0), cons(x0, nil), (ge)(max_val));
+		take_preserves_no_dups(xs, i);
+            }
+            
+    }
+}
+
 fixpoint bool is_sub_permutation2(int max_val, list<int> xs) {
     return is_sub_permutation(xs, max_val);
 }
@@ -76,7 +129,7 @@ lemma void permutation_to_count(list<int> xs)
 
 
 lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
-    requires    true == forall(list_split_every_n(xs, nb_split, n), is_permutation);
+    requires    true == forall(split(xs, nb_split, n), is_permutation);
     ensures     true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split));
 {
     assume (true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split)));

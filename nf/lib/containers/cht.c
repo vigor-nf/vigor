@@ -30,7 +30,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     fixpoint bool gt(int x, int y) { return x < y; }
 
     lemma void modulo_permutation_list_inner(list< pair<int,int> > xs, pair<int,int> index_val, int offset, int shift, int cht_height)
-        requires 
+        requires
             true == forall(xs, (is_modulo_permutation)(offset, shift, cht_height)) &*&
             true == is_modulo_permutation(offset, shift, cht_height, index_val) &*&
             true == forall(map(fst, xs), (lt)(cht_height)) &*&
@@ -46,7 +46,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             !mem(snd(index_val), map(snd, xs));
         {
             switch(xs) {
-                case nil: 
+                case nil:
                     assert (true == !mem(snd(index_val), map(snd, xs)));
 
                 case cons(x0, xs0):
@@ -81,12 +81,12 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             true == no_dups(map(snd, xs));
     {
         switch(xs) {
-        	case nil: 
+                case nil:
                 assert map(snd, xs) == nil;
                 assert (true == no_dups(map(snd, xs)));
-        	case cons(x0, xs0):
+                case cons(x0, xs0):
                 modulo_permutation_list(xs0, offset, shift, cht_height);
-		        modulo_permutation_list_inner(xs0, x0, offset, shift, cht_height);
+                        modulo_permutation_list_inner(xs0, x0, offset, shift, cht_height);
         }
     }
 
@@ -189,12 +189,12 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
 
     //// @ open ints(permutations, cht_height*backend_capacity, ?p0);
     //// @ close ints(permutations, cht_height*backend_capacity, p0);
-    //// @ close foreach(list_split_every_n(p0, zero, cht_height), permutation);
+    //// @ close foreach(split(p0, zero, cht_height), permutation);
     for (uint32_t i = 0; i < backend_capacity; ++i)
-    /*@ invariant 
+    /*@ invariant
             0 <= i &*& i <= backend_capacity &*&
             ints(permutations, cht_height*backend_capacity, ?p);@*/
-            //forall(list_split_every_n(p, nat_of_int(i), cht_height), is_permutation); @*/
+    // forall(split(p, nat_of_int(i), cht_height), is_permutation); @*/
     {
         uint32_t offset_absolut = i * 31;
         uint64_t offset = loop(offset_absolut, cht_height);
@@ -206,7 +206,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         //@ close ints(permutations, cht_height*backend_capacity, p0_in);
         //@ chunk_zerosize(p0_in, i * cht_height);
         for (uint32_t j = 0; j < cht_height; ++j)
-        /*@ invariant 
+        /*@ invariant
                 0 <= j &*& j <= cht_height &*&
                 ints(permutations, cht_height*backend_capacity, ?p_in) &*&
                 true == is_sub_permutation(chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
@@ -250,7 +250,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             // No duplicates guarantee
             //@ zip_no_dups(chunk_append);
             //@ modulo_permutation_list(chunk_append_ziped, offset, shift, cht_height);
-            
+
             // Prove invariant
             //@ unzip(chunk_append);
             //@ assume (chunk(update(((i*cht_height) + j), permut, p_in), i * cht_height, i * cht_height + j + 1) == chunk_append);//TODO
@@ -260,24 +260,24 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         //@ mul_bounds(cht_height, cht_height, i + 1, backend_capacity);
         //@ isolate_chunk_length(p, i * cht_height, (i + 1) * cht_height);
     }
-    
+
     //@ open ints(permutations, cht_height*backend_capacity, ?p_final);
     //@ close ints(permutations, cht_height*backend_capacity, p_final);
-    //@ list< list<int> > perms = list_split_every_n(p_final, nat_of_int(backend_capacity), cht_height);
+    //@ list< list<int> > perms = split(p_final, nat_of_int(backend_capacity), cht_height);
     //@ assume (true == forall(perms, is_permutation));
 
     int *next = malloc(sizeof(int) * (int)(cht_height));
     //@ assume(next != 0);//TODO: report failure
     //@ open ints(next, cht_height, ?n0);
     //@ close ints(next, cht_height, n0);
-    for (uint32_t i = 0 ; i < cht_height ; ++i)
-        /*@ invariant
-                0 <= i &*& i <= cht_height &*&
-                ints(next, cht_height, ?n_init) &*&
-                true == forall(take(i, n_init), (eq)(0));
-        @*/
+    for (uint32_t i = 0; i < cht_height; ++i)
+    /*@ invariant
+            0 <= i &*& i <= cht_height &*&
+            ints(next, cht_height, ?n_init) &*&
+            true == forall(take(i, n_init), (eq)(0));
+    @*/
     {
-        next[i] = 0; 
+        next[i] = 0;
         //@ list<int> updated_n = update(i, 0, n_init);
         //@ take_update_unrelevant(i, i, 0, n_init);
         //@ ints_to_nth(updated_n, n_init, i, 0);
@@ -307,8 +307,8 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //@ next_from_permuts_init(0, n_init);
 
     // Fill the priority lists for each hash in [0, cht_height)
-    for (uint32_t i = 0 ; i < cht_height ; ++i)
-    /*@invariant 
+    for (uint32_t i = 0; i < cht_height; ++i)
+    /*@invariant
         0 <= i &*& i <= cht_height &*&
 
         ints(permutations, cht_height*backend_capacity, p_final) &*&
@@ -327,13 +327,13 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         true == forall_idx(n, 0, (next_from_permuts)( flatten(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, 0))) ))
     ; @*/
     {
-        for (uint32_t j = 0 ; j < backend_capacity ; ++j)
-        /*@invariant 
+        for (uint32_t j = 0; j < backend_capacity; ++j)
+        /*@invariant
             0 <= j &*& j <= backend_capacity &*&
 
             ints(permutations, cht_height*backend_capacity, p_final) &*&
             true == forall(perms, is_permutation) &*&
-            
+
             ints(next, cht_height, ?n_in) &*&
             true == forall(n_in, (lt)(backend_capacity)) &*&
             true == forall(n_in, (ge)(0)) &*&
@@ -361,14 +361,11 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             //@ forall_nth(nth(j, perms), (ge)(0), i);
             int priority = next[bucket_id];
 
-            //@ forall_nth(n_in, (lt)(backend_capacity), bucket_id);
-            //@ forall_nth(n_in, (ge)(0), bucket_id);
-            //@ assert(0 <= priority); 
+            //@ assert(0 <= priority);
             //@ assert(priority < backend_capacity);
             next[bucket_id] += 1;
-            // // @ forall_update(n_in, (lt)(backend_capacity), bucket_id, next[bucket_id]);
-            // // @ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
-
+            //@ forall_update(n_in, (lt)(backend_capacity), bucket_id, next[bucket_id]);
+            //@ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
 
             // //@ mul_bounds(bucket_id, cht_height - 1, backend_capacity, backend_capacity);
             // //@ pair<uint32_t, real> old_val = nth(backend_capacity * bucket_id + priority, vals_in);
@@ -400,13 +397,13 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //         ints(permutations, cht_height*backend_capacity, p_final) &*&
     //         vectorp<uint32_t>(cht, u_integer, ?vals, addrs) &*&
     //         length(vals) == cht_height*backend_capacity &*&
-    //         true == forall(list_split_every_n(map(fst, vals), nat_of_int(i), backend_capacity), is_permutation) &*&
+    //         true == forall(split(map(fst, vals), nat_of_int(i), backend_capacity), is_permutation) &*&
     //         true == forall(perms, is_permutation); @*/
     // {
     //     uint32_t bknd = 0;
     //     uint32_t perm_pos = 0;
     //     //@ chunk_zerosize(map(fst, vals), i * backend_capacity);
-    //     //@ is_sub_permutation(chunk(map(fst, vals), i * backend_capacity, i * backend_capacity), backend_capacity);        
+    //     //@ is_sub_permutation(chunk(map(fst, vals), i * backend_capacity, i * backend_capacity), backend_capacity);
     //     for (uint32_t j = 0; j < backend_capacity; ++j)
     //     /*@ invariant
     //             0 <= j &*& j <= backend_capacity &*&
@@ -423,7 +420,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //         //@ mul_bounds(bknd, backend_capacity - 1, cht_height, cht_height);
     //         uint32_t index = bknd * cht_height + perm_pos;
     //         while (permutations[index] != (int)i)
-    //         /*@ invariant 
+    //         /*@ invariant
     //                 ints(permutations, cht_height*backend_capacity, p_final) &*&
     //                 bknd < backend_capacity &*&
     //                 perm_pos < cht_height &*&
@@ -460,10 +457,10 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //         }
     //     }
     // }
-
 }
 
-int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity, int *chosen_backend)
+int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity,
+                                         int *chosen_backend)
 /*@ requires vectorp<uint32_t>(cht, u_integer, ?values, ?addrs) &*&
              double_chainp(?ch, active_backends) &*&
              *chosen_backend |-> _ &*&

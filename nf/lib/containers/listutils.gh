@@ -37,6 +37,15 @@ fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
     return take(end - begin, drop(begin, xs));
 }
 
+lemma void chunk_shift<t>(list<t> xs, int begin, int end, int n)
+    requires    0 <= begin &*& 0 <= n &*& n <= begin &*& begin + n <= length(xs);
+    ensures     chunk(xs, begin, end) == chunk(drop(n, xs), begin - n, end - n);
+{
+    drop_drop(begin - n, n, xs);
+}
+
+//assume (chunk(xs, n * j, n * j + &) == chunk(drop(n,xs),n*(j-1),n*(j-1) + a));
+
 fixpoint list<t> repeat<t>(t elem, nat n) {
     switch(n) {
         case zero: return nil;
@@ -117,6 +126,13 @@ lemma void gen_limits_allzero(nat nb_split, int i, int j)
     }
 }
 
+lemma void gen_limits_increment_j(nat nb_split, int i, int j)
+    requires    0 < j &*& j < int_of_nat(nb_split);
+    ensures     gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j));
+{
+    assume (gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j)));
+}
+
 fixpoint list< list<t> > split_varlim<t>(list<t> xs, int n, list<int> limits) {
     switch(limits) {
         case nil: return nil;
@@ -147,17 +163,35 @@ lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits)
             assert (length(ls0) == length(limits) - 1); 
             mul_subst (length(ls0), length(limits) - 1, n);
             split_varlim_nolim(drop(n, xs), n, ls0);
-            assert (nat_of_int(length(limits)) == succ(nat_of_int(length(ls0))));
-            repeat_add(nil, nat_of_int(length(limits)));
-            repeat_content(nil, nat_of_int(length(limits)));
     }
 }
 
-fixpoint list< list<t> > list_split_every_n<t>(list<t> xs, nat nb_split, int n) {
+lemma void split_varlim_chunk_equiv<t>(list<t> xs, int n, list<int> limits, int j)
+    requires    0 <= n &*& 0 <= j &*& j < length(limits) &*& n * (j+1) <= length(xs) ;
+    ensures     nth(j, split_varlim(xs, n, limits)) == chunk(xs, n * j, n * j + nth(j, limits));
+{
+    switch(limits) {
+        case nil: 
+        case cons(l0, ls0):
+            if (j == 0) {
+                assert (chunk(xs, 0, l0) == take(l0, xs));
+            } else {
+                split_varlim_chunk_equiv(drop(n, xs), n, ls0, j - 1);
+                assert (nth(j, split_varlim(xs, n, limits)) == nth(j-1, split_varlim(drop(n,xs),n,ls0)));
+                assert (nth(j, limits) == nth(j-1,ls0));
+
+                mul_nonnegative(n, j);
+                mul_bounds(1, j, n, n);
+                chunk_shift(xs, n * j, n * j + nth(j, limits), n);
+            }
+    }
+}
+
+fixpoint list< list<t> > split<t>(list<t> xs, nat nb_split, int n) {
     switch(nb_split) {
         case zero: return nil;
         case succ(nb_split_pred): 
-            return cons(take(n, xs), list_split_every_n(drop(n, xs), nb_split_pred, n));
+            return cons(take(n, xs), split(drop(n, xs), nb_split_pred, n));
     }
 }
 
@@ -165,23 +199,23 @@ lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j)
     requires    length(xs) == int_of_nat(nb_split) * n &*&
                 0 <= i &*& i < n &*&
                 0 <= j &*& j < int_of_nat(nb_split);
-    ensures     nth(i, nth(j, list_split_every_n(xs, nb_split, n))) == nth(j * n + i, xs);
+    ensures     nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs);
 {
-    assume (nth(i, nth(j, list_split_every_n(xs, nb_split, n))) == nth(j * n + i, xs));
+    assume (nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs));
 }
 
-lemma_auto(length(list_split_every_n(xs, nb_split, n))) void length_split<t>(list<t> xs, nat nb_split, int n)
+lemma_auto(length(split(xs, nb_split, n))) void length_split<t>(list<t> xs, nat nb_split, int n)
     requires    length(xs) == int_of_nat(nb_split) * n;
-    ensures     length(list_split_every_n(xs, nb_split, n)) == int_of_nat(nb_split);
+    ensures     length(split(xs, nb_split, n)) == int_of_nat(nb_split);
 {
-    assume (length(list_split_every_n(xs, nb_split, n)) == int_of_nat(nb_split));
+    assume (length(split(xs, nb_split, n)) == int_of_nat(nb_split));
 }
 
 lemma void length_split_forall<t>(list<t> xs, nat nb_split, int n, int i)
     requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= i &*& i < length(xs);
-    ensures     length(nth(i, list_split_every_n(xs, nb_split, n))) == n;
+    ensures     length(nth(i, split(xs, nb_split, n))) == n;
 {
-    assume (length(nth(i, list_split_every_n(xs, nb_split, n))) == n);
+    assume (length(nth(i, split(xs, nb_split, n))) == n);
 }
 
 fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {
