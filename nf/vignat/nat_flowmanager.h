@@ -33,3 +33,4 @@ struct Vector** flow_manager_get_in_vec(struct FlowManager* manager);
 #endif
 
 #endif //_FLOWMANAGER_H_INCLUDED_
+

@@ -1,8 +1,7 @@
 #include "dir-24-8-basic.h"
 //@ #include <nat.gh>
 //@ #include <bitops.gh>
-//@ #include "dir-24-8-basic.gh"
-// @ #include "stdex.gh"
+//@ #include "stdex.gh"
 
 /*@
 fixpoint bool is_zero(uint16_t x){
@@ -22,16 +21,14 @@ fixpoint list<int> gen_zeroes(nat len){
 
 void fill_zeros(uint16_t *t, uint32_t size)
     //@ requires t[0..size] |-> _;
-    //@ ensures t[0.. size] |-> _;//n_repeat(nat_of_int(size), 0);
+    //@ ensures t[0.. size] |-> repeat_n(nat_of_int(size), 0);
 {
-
-    const uint16_t z = 0;
-    
+   
     for(uint32_t i = 0; i < size; i++)
     //@ requires t[i..size] |-> _;
-    //@ ensures t[old_i..size] |-> _;//n_repeat(nat_of_int(size-i), 0);
+    //@ ensures t[old_i..size] |-> repeat_n(nat_of_int(size - old_i), 0);
     {
-    	t[i] = z;
+    	t[i] = 0;
     }
 }
 

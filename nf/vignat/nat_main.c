@@ -141,3 +141,4 @@ void nf_config_cmdline_print_usage(void) {
 void nf_print_config() {
   nat_print_config(&config);
 }
+
