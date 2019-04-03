@@ -38,8 +38,8 @@ struct stub_device {
 
 // Required because the validator expects the traced mbuf and its content to stay at the same address throughout.
 // Sound as long as RX and TX are each called once at most, which we check.
-struct rte_mbuf traced_mbuf;
-struct stub_mbuf_content traced_mbuf_content;
+extern struct rte_mbuf traced_mbuf;
+extern struct stub_mbuf_content traced_mbuf_content;
 
 
 

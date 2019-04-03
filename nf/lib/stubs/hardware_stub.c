@@ -11,6 +11,8 @@
 #include "rte_cycles.h" // to include the next one cleanly
 #include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
+#include "lib/packet-io.h"
+
 #include <klee/klee.h>
 
 
@@ -30,6 +32,9 @@ static struct stub_register REGISTERS[0x20000]; // index == address
 
 // Incremented at each delay; in nanoseconds.
 static uint64_t TIME;
+
+extern struct rte_mbuf traced_mbuf;
+extern struct stub_mbuf_content traced_mbuf_content;
 
 // Checks for the traced_mbuf hack soundness
 static bool rx_called;
@@ -82,10 +87,6 @@ stub_device_start(struct stub_device* dev)
 	uint32_t rdt = DEV_REG(dev, 0x01018);
 	klee_assert(rdt >= 1);
 
-	if (klee_int("received") == 0) {
-		// no packet
-	}
-
 	// Descriptor is 128 bits, see page 313, table 7-15 "Descriptor Read Format"
 	// (which the NIC reads to know where to put a packet)
 	// and page 314, table 7-16 "Descriptor Write-Back Format"
@@ -101,6 +102,18 @@ stub_device_start(struct stub_device* dev)
 	klee_assert(head_addr == 0);
 
 	dev->old_mbuf_addr = mbuf_addr;
+
+	bool received = klee_int("received");
+	set_packet_receive_success(received);
+	if (!received) {
+		// no packet
+		return;
+	}
+
+	//if (klee_int("received") == 0) {
+	//	// no packet
+	//}
+
 
 	// Write phase
 
@@ -275,7 +288,12 @@ stub_device_start(struct stub_device* dev)
 	traced_mbuf.seqn = 0; // TODO?
 
 	struct rte_mbuf* trace_mbuf_addr = &traced_mbuf;
-	stub_core_trace_rx(&trace_mbuf_addr);
+	//stub_core_trace_rx(&trace_mbuf_addr);
+
+	bool received_a_packet = packet_receive(device_index, &traced_mbuf.buf_addr, &traced_mbuf.data_len);
+	klee_assert(received_a_packet);
+
+	//klee_assume(received_a_packet);
 
 	// Soundness for hack
 	klee_assert(!rx_called);
@@ -942,7 +960,9 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	traced_mbuf.timesync = 0; // TODO?
 	traced_mbuf.seqn = 0; // TODO?
 
-	uint8_t ret = stub_core_trace_tx(&traced_mbuf, device_index);
+	//uint8_t ret = stub_core_trace_tx(&traced_mbuf, device_index);
+	packet_send(&traced_mbuf, device_index);
+	uint8_t ret = 1;
 
 	// Soundness check
 	klee_assert(!tx_called);
@@ -2359,7 +2379,8 @@ stub_free(struct rte_mbuf* mbuf) {
 	memcpy(&traced_mbuf, mbuf, sizeof(struct rte_mbuf));
 	memcpy(&traced_mbuf_content, mbuf->buf_addr + mbuf->data_off, sizeof(struct stub_mbuf_content));
 	traced_mbuf.buf_addr = &traced_mbuf_content - mbuf->data_off;
-	stub_core_trace_free(&traced_mbuf);
+	packet_free(mbuf->buf_addr);
+	//stub_core_trace_free(&traced_mbuf);
 
 	// Still need to free the actual mbuf though
 	rte_mbuf_raw_free(mbuf);
