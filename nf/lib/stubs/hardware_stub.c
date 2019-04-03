@@ -33,8 +33,8 @@ static struct stub_register REGISTERS[0x20000]; // index == address
 // Incremented at each delay; in nanoseconds.
 static uint64_t TIME;
 
-extern struct rte_mbuf traced_mbuf;
-extern struct stub_mbuf_content traced_mbuf_content;
+struct rte_mbuf traced_mbuf;
+struct stub_mbuf_content traced_mbuf_content;
 
 // Checks for the traced_mbuf hack soundness
 static bool rx_called;
@@ -109,10 +109,6 @@ stub_device_start(struct stub_device* dev)
 		// no packet
 		return;
 	}
-
-	//if (klee_int("received") == 0) {
-	//	// no packet
-	//}
 
 
 	// Write phase
@@ -290,7 +286,7 @@ stub_device_start(struct stub_device* dev)
 	struct rte_mbuf* trace_mbuf_addr = &traced_mbuf;
 	//stub_core_trace_rx(&trace_mbuf_addr);
 
-	bool received_a_packet = packet_receive(device_index, &traced_mbuf.buf_addr, &traced_mbuf.data_len);
+	bool received_a_packet = packet_receive(device_index, &mbuf_addr, &traced_mbuf.data_len);
 	klee_assert(received_a_packet);
 
 	//klee_assume(received_a_packet);
@@ -961,7 +957,7 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	traced_mbuf.seqn = 0; // TODO?
 
 	//uint8_t ret = stub_core_trace_tx(&traced_mbuf, device_index);
-	packet_send(&traced_mbuf, device_index);
+	packet_send(&buf_addr, device_index);
 	uint8_t ret = 1;
 
 	// Soundness check
