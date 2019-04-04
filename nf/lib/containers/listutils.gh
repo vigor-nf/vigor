@@ -9,6 +9,8 @@ fixpoint bool eq<t>(t x, t y) {
     return x == y;
 }
 
+// ------------- flatten -------------
+
 fixpoint list<t> flatten<t>(list< list<t> > xs) {
     switch(xs) {
         case nil: return nil;
@@ -26,6 +28,8 @@ lemma void flatten_allnil<t>(list< list<t> > xs)
     }
 }
 
+// ------------- list_append -------------
+
 fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
     switch(xs) {
         case nil: return cons(x_tail, nil);
@@ -33,8 +37,19 @@ fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
     }
 }
 
+// ------------- chunk -------------
+
+
 fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
     return take(end - begin, drop(begin, xs));
+}
+
+lemma void chunk_zerosize<t>(list<t> xs, int n)
+    requires true;
+    ensures chunk(xs, n, n) == nil;
+{
+    list<t> drop_xs = drop(n, xs);
+    take_0(drop_xs);
 }
 
 lemma void chunk_shift<t>(list<t> xs, int begin, int end, int n)
@@ -44,7 +59,7 @@ lemma void chunk_shift<t>(list<t> xs, int begin, int end, int n)
     drop_drop(begin - n, n, xs);
 }
 
-//assume (chunk(xs, n * j, n * j + &) == chunk(drop(n,xs),n*(j-1),n*(j-1) + a));
+// ------------- repeat -------------
 
 fixpoint list<t> repeat<t>(t elem, nat n) {
     switch(n) {
@@ -96,6 +111,8 @@ lemma void repeat_tail<t>(t elem, nat n)
     ensures     tail(repeat(elem, n)) == repeat(elem, n_pred);
 {}
 
+// ------------- gen_limits -------------
+
 fixpoint list<int> gen_limits(nat nb_split, int i, int j) {
     switch(nb_split) {
         case zero: return nil;
@@ -126,25 +143,33 @@ lemma void gen_limits_allzero(nat nb_split, int i, int j)
     }
 }
 
+lemma void gen_limits_get_val(nat nb_split, int i, int j, int k)
+    requires    0 <= k &*& k < int_of_nat(nb_split);
+    ensures     nth(k, gen_limits(nb_split, i, j)) == ( (k < j) ? (i + 1) : i );
+{
+    switch(nb_split) {
+        case zero:
+        case succ(nb_split_pred): 
+            if (k > 0) {
+                gen_limits_get_val(nb_split_pred, i, j - 1, k - 1); 
+            }
+    }
+}
+
 lemma void gen_limits_increment_j(nat nb_split, int i, int j)
-    requires    0 < j &*& j < int_of_nat(nb_split);
+    requires    0 <= j &*& j < int_of_nat(nb_split);
     ensures     gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j));
 {
     assume (gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j)));
 }
+
+// ------------- split_varlim -------------
 
 fixpoint list< list<t> > split_varlim<t>(list<t> xs, int n, list<int> limits) {
     switch(limits) {
         case nil: return nil;
         case cons(l0, ls0): return cons(take(l0, xs), split_varlim(drop(n, xs), n, ls0));
     }
-}
-
-lemma void mul_equal(int a, int b, int c)
-    requires    a * b == c &*& a >= 0 &*& b > 0 &*& c >= 0;
-    ensures     a <= c;
-{
-    assume (a <= c);//TODO
 }
 
 lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits)
@@ -186,6 +211,32 @@ lemma void split_varlim_chunk_equiv<t>(list<t> xs, int n, list<int> limits, int 
             }
     }
 }
+
+lemma void split_varlim_increment_j<t>(list<t> xs, int n, list<int> limits1, list<int> limits2, int j)
+    requires    
+        0 <= j &*& j < length(limits1) &*& 
+        limits2 == update(j, nth(j, limits2), limits1) &*&
+        nth(j, limits1) != nth(j, limits2);
+    ensures     
+        split_varlim(xs, n, limits2) == update(j, nth(j, split_varlim(xs, n, limits2)), split_varlim(xs, n, limits1));
+{
+    switch(limits1) {
+        case nil:
+        case cons(l0, ls0):
+            if (j > 0) {
+                split_varlim_increment_j(drop(n, xs), n, ls0, tail(limits2), j-1);
+            }
+    }
+}
+
+lemma void split_varlim_increment_j_tmp<t>(list<t> xs, int n, nat nb_split, int i, int j)
+    requires    0 <= j &*& j < int_of_nat(nb_split);
+    ensures     nth(j, split_varlim(xs, n, gen_limits(nb_split, i, j + 1))) == append(nth(j, split_varlim(xs, n, gen_limits(nb_split, i, j))), cons(nth(j*n + i, xs), nil));
+{
+    assume (nth(j, split_varlim(xs, n, gen_limits(nb_split, i, j + 1))) == append(nth(j, split_varlim(xs, n, gen_limits(nb_split, i, j))), cons(nth(j*n + i, xs), nil)));
+}
+
+// ------------- split -------------
 
 fixpoint list< list<t> > split<t>(list<t> xs, nat nb_split, int n) {
     switch(nb_split) {
@@ -390,14 +441,6 @@ lemma void zip_no_dups<t>(list<t> xs)
 {
     list< pair<int, t> > xs_ziped = zip_with_index_recursive(xs, 0);
     zip_no_dups_rec(xs_ziped, xs, 0);
-}
-
-lemma void chunk_zerosize<t>(list<t> xs, int n)
-    requires true;
-    ensures chunk(xs, n, n) == nil;
-{
-    list<t> drop_xs = drop(n, xs);
-    take_0(drop_xs);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_

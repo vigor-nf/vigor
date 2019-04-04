@@ -1,6 +1,14 @@
 #ifndef ARITH_GH
 #define ARITH_GH
 
+lemma void mul_equal(int a, int b, int c)
+    requires    a * b == c &*& a >= 0 &*& b > 0 &*& c >= 0;
+    ensures     a <= c;
+{
+    assume (a <= c);//TODO
+}
+
+
 //Taken from https://groups.google.com/forum/#!topic/verifast/eCf5QzLtGlo
 lemma void mul_nonnegative(int x, int y)
     requires 0 <= x &*& 0 <= y;

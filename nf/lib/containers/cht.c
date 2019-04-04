@@ -343,11 +343,19 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             true == forall(vals_in, is_one) &*&
 
             true == forall(split_varlim(map(fst, vals_in), backend_capacity, n_in), (is_sub_permutation2)(backend_capacity)) &*&
-            true == forall(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j)), (is_sub_permutation2)(cht_height)) &*&
+            //true == forall(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j)), (is_sub_permutation2)(cht_height)) &*&
             true == forall_idx(n_in, 0, (next_from_permuts)( flatten(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j))) ))
         ; @*/
         {
             uint32_t *value;
+
+            //@ list< list<int> > explored = split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j));
+            //@ list< list<int> > explored_append = split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j + 1));
+            //@ gen_limits_increment_j(nat_of_int(backend_capacity), i, j);
+            //@ split_varlim_chunk_equiv(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j), j);
+
+            
+            //@ split_varlim_increment_j(p_final, cht_height, nat_of_int(backend_capacity), i, j);
 
             //@ mul_bounds(j, backend_capacity - 1, cht_height, cht_height);
             uint32_t index = j * cht_height + i;
@@ -361,9 +369,14 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             //@ forall_nth(nth(j, perms), (ge)(0), i);
             int priority = next[bucket_id];
 
+            //@ forall_nth(n_in, (ge)(0), bucket_id);
+            //@ forall_nth(n_in, (lt)(backend_capacity), bucket_id);
             //@ assert(0 <= priority);
             //@ assert(priority < backend_capacity);
             next[bucket_id] += 1;
+
+            //@ permutation_list_to_count(p_final, nat_of_int(backend_capacity), cht_height);
+
             //@ forall_update(n_in, (lt)(backend_capacity), bucket_id, next[bucket_id]);
             //@ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
 

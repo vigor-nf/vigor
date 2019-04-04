@@ -4,9 +4,15 @@
 #include <nat.gh>
 #include "listutils.gh"
 
+
+fixpoint bool is_permutation(list<int> xs) {
+    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
+}
+
 fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
     return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
+
 
 lemma void take_preserves_mem<t>(list<t> tail, t head, int i)
     requires    false == mem(head, tail) &*& 0 <= i;
@@ -34,7 +40,7 @@ lemma void take_preserves_no_dups<t>(list<t> xs, int i)
                 cons_take_take_cons(x0, xs0, i - 1);
                 take_preserves_mem(xs0, x0, i - 1);
             } else {
-	        take_0(xs);
+	            take_0(xs);
             }
     }
 }
@@ -55,7 +61,7 @@ lemma void sub_permutation_take(list<int> xs, int max_val, int i)
                 cons_take_take_cons(x0, xs0, i - 1);
                 forall_append(take(i - 1, xs0), cons(x0, nil), (lt)(max_val));
                 forall_append(take(i - 1, xs0), cons(x0, nil), (ge)(max_val));
-		take_preserves_no_dups(xs, i);
+		        take_preserves_no_dups(xs, i);
             }
             
     }
@@ -80,39 +86,6 @@ lemma void sub_permutation2_forall_nil(list< list<int> > xs, int max_val)
     }
 }
 
-fixpoint bool is_permutation(list<int> xs) {
-    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
-}
-
-fixpoint bool permutation_contains_all(list<int> xs, nat x) {
-    switch(x) {
-        case zero: return mem(int_of_nat(zero), xs);
-        case succ(x_pred): return mem(int_of_nat(x), xs) && permutation_contains_all(xs, x_pred);
-    }
-}
-
-lemma void permutation_def_to_contains_all(list<int> xs)
-    requires    true == is_permutation(xs);
-    ensures     true == permutation_contains_all(xs, nat_of_int(length(xs)));
-{
-    assume (true == permutation_contains_all(xs, nat_of_int(length(xs))));
-}
-
-lemma void permutation_contains_all_to_some(list<int> xs, int check_for)
-    requires
-        true == permutation_contains_all(xs, nat_of_int(length(xs))) &*&
-        0 <= check_for &*& check_for < length(xs);
-    ensures
-        true == mem(check_for, xs);
-{
-    assume (true == mem(check_for, xs));
-}
-
-fixpoint int list_to_length<t>(list<t> xs) {
-    return length(xs);
-}
-
-
 fixpoint bool integer_copies(list<int> xs, nat val, int nb_copies) {
     switch(val) {
         case zero: return count(xs, (eq)(int_of_nat(val))) == nb_copies;
@@ -129,11 +102,10 @@ lemma void permutation_to_count(list<int> xs)
 
 
 lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
-    requires    true == forall(split(xs, nb_split, n), is_permutation);
+    requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
     ensures     true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split));
 {
     assume (true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split)));
 }
-
 
 #endif //_PERMUTATIONS_GH_INCLUDED_
