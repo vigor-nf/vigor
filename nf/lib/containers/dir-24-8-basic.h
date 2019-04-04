@@ -36,10 +36,9 @@
 
 
 struct tbl{
-    uint16_t *tbl_24;
-    uint16_t *tbl_long;
+    uint16_t*tbl_24;
+    uint16_t* tbl_long;
     uint8_t tbl_long_index;
-    uint32_t n_entries;
 };
 
 struct key{
@@ -49,12 +48,11 @@ struct key{
 };
 
 /*@
-predicate table(struct tbl* t; list<uint16_t> tbl_24, list<uint16_t> tbl_long) = 
-	malloc_block_tbl(t)
-	&*& t->tbl_24 |-> ?t_24 &*& t->tbl_long |-> ?t_l &*& t->n_entries |-> ?n_entries
-	&*& t_24 != 0 &*& t_l != 0 &*& n_entries >= 0 &*& n_entries <= TBL_24_MAX_ENTRIES
-	&*& t_24[0..TBL_24_MAX_ENTRIES] |-> tbl_24
-	&*& t_l[0..TBL_LONG_MAX_ENTRIES] |-> tbl_long;
+predicate table(struct tbl* t, uint16_t* tbl_24, uint16_t* tbl_long, int long_index; list<uint16_t> t_24, list<uint16_t> t_l) = 
+	malloc_block_tbl(t) &*& malloc_block_ushorts(tbl_24, TBL_24_MAX_ENTRIES) &*& malloc_block_ushorts(tbl_long, TBL_LONG_MAX_ENTRIES)
+	&*& t->tbl_24 |-> tbl_24 &*& t->tbl_long |-> tbl_long &*& t->tbl_long_index |-> long_index
+	&*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> t_24 &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> t_l
+	&*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 
 predicate key(struct key* k) = 
 	malloc_block_key(k) &*& k->data |-> ?ipv4 &*& k->prefixlen |-> ?prefixlen &*& k->route |-> ?route;

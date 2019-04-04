@@ -1,8 +1,8 @@
 #include "dir-24-8-basic.h"
 //@ #include <nat.gh>
 //@ #include <bitops.gh>
+//@ #include "stdex.gh"
 //@ #include "dir-24-8-basic.gh"
-// @ #include "stdex.gh"
 
 /*@
 fixpoint bool is_zero(uint16_t x){
@@ -12,46 +12,35 @@ fixpoint bool is_zero(uint16_t x){
 fixpoint uint16_t map_zero(uint16_t x){
     return 0;
 }
-fixpoint list<int> gen_zeroes(nat len){
-  switch (len) {
-    case zero: return nil;
-    case succ(x) : return cons(0, gen_zeroes(x));
-    }
-}
 @*/
-
 void fill_zeros(uint16_t *t, uint32_t size)
     //@ requires t[0..size] |-> _;
-    //@ ensures t[0.. size] |-> _;//n_repeat(nat_of_int(size), 0);
+    //@ ensures t[0.. size] |-> _;//repeat_n(nat_of_int(size), 0);
 {
-
-    const uint16_t z = 0;
-    
+   
     for(uint32_t i = 0; i < size; i++)
     //@ requires t[i..size] |-> _;
-    //@ ensures t[old_i..size] |-> _;//n_repeat(nat_of_int(size-i), 0);
+    //@ ensures t[old_i..size] |-> _;//repeat_n(nat_of_int(size - old_i), 0);
     {
-    	t[i] = z;
+    	t[i] = 0;
     }
 }
 
 uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
-    // @ requires prefixlen <= 32;
-    // @ ensures true;
+    //@ requires prefixlen <= 32;
+    //@ ensures result == int_of_Z(mask32_from_prefixlen(prefixlen));
 {
-	size_t mask = 0xFFFFFFFF;
-	
-	
-	if(prefixlen == 32){
-	    return mask;
-	}else{
-	    // @ shiftright_limits(mask, nat_of_int(32), nat_of_int(0));
-	    mask = mask >> (32-prefixlen);
-	    // @ assert(mask > 0);
-	    // @ shiftleft_limits(mask, nat_of_int(32), nat_of_int(32));
-	    mask = mask << (32-prefixlen);
-	    return (uint32_t)mask;
-	}
+	uint32_t ip_masks[33] = { 0x00000000, 0x80000000, 0xC0000000, 0xE0000000,
+				  0xF0000000, 0xF8000000, 0xFC000000, 0xFE000000,
+				  0xFF000000, 0xFF800000, 0xFFC00000, 0xFFE00000,
+				  0xFFF00000, 0xFFF80000, 0xFFFC0000, 0xFFFE0000,
+				  0xFFFF0000, 0xFFFF8000, 0xFFFFC000, 0xFFFFE000,
+				  0xFFFFF000, 0xFFFFF800, 0xFFFFFC00, 0xFFFFFE00,
+				  0xFFFFFF00, 0xFFFFFF80, 0xFFFFFFC0, 0xFFFFFFE0,
+				  0xFFFFFFF0, 0xFFFFFFF8, 0xFFFFFFFC, 0xFFFFFFFE,
+				  0xFFFFFFFF};
+
+	return ip_masks[prefixlen];
 }
 
 /*@
@@ -59,7 +48,7 @@ lemma void bounded_uint8(uint8_t x);
     requires true;
     ensures 0 <= x &*& x <= 0xFF;
    
-lemma void identity_shift(uint32_t x);
+lemma void identity_shift(int x);
     requires x <= 0xFFFFFF;
     ensures x == ((x << 8) >> 8);
  
@@ -70,11 +59,10 @@ lemma void identity_shift(uint32_t x);
  */
 uint32_t tbl_24_extract_first_index(uint32_t data)
     //@ requires true;
-    //@ ensures true;
+    //@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24));
 {
-    uint32_t index = data >> BYTE_SIZE;
-    
-    return index;
+    //@ shiftright_limits(data, N32(), N8());
+    return data >> BYTE_SIZE;
 }
 
 
@@ -82,12 +70,16 @@ uint32_t tbl_24_extract_first_index(uint32_t data)
  * Computes how many entries the rule will take
  */
 uint32_t compute_rule_size(uint8_t prefixlen)
-    //@ requires true;
+    //@ requires prefixlen <= 32;
     //@ ensures true;
 {	
-	uint32_t res = prefixlen < 24 ? (uint32_t)(1 << (24 - prefixlen)) : (uint32_t)(1 << (32 - prefixlen));
-	
-	return res;
+	if(prefixlen < 24){
+		uint32_t res[25] = {0x1000000, 0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000 ,0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100 ,0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
+		return res[prefixlen];
+	}else{
+		uint32_t res[9] = {0x100 ,0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
+		return res[prefixlen-24];
+	}
 }
 
 bool tbl_24_entry_flag(uint16_t _entry)
@@ -101,14 +93,14 @@ uint16_t tbl_24_entry_set_flag(uint16_t _entry)
     //@ requires true;
     //@ ensures true;
 {
-    // @ bitor_limits(_entry, TBL_24_FLAG_MASK, nat_of_int(16));
+    //@ bitor_limits(_entry, TBL_24_FLAG_MASK, nat_of_int(16));
     return (uint16_t)(_entry | TBL_24_FLAG_MASK);
 }
 
 
-uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index)
+uint16_t tbl_long_extract_first_index(uint32_t data, uint16_t base_index)
     //@ requires true;
-    //@ ensures true;//result == compute_long_index(ipv4, base_index);
+    //@ ensures true;
 {
     // @ bounded_uint8(base_index);
     // @ bounded_uint8(nth(3, ipv4));
@@ -118,45 +110,49 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index)
     return (uint16_t)(base_index * (uint32_t)TBL_LONG_FACTOR + last_byte);
 }
 
-struct tbl *tbl_allocate()
+struct tbl* tbl_allocate()
     //@ requires true;
-    /*@ ensures result == 0 ? true : (table(result, ?tbl_24, ?tbl_long));
+    /*@ ensures result == 0 ? true : (table(result, _, _, 0, _, _));
     @*/
 {	
-    struct tbl *_tbl = malloc(sizeof(struct tbl));
+    struct tbl* _tbl = malloc(sizeof(struct tbl));
     if(_tbl == 0){
     	return 0;
     }
     
-    uint16_t *tbl_24 = (uint16_t *) malloc(TBL_24_MAX_ENTRIES * sizeof(uint16_t)); //array of pointers on structs
+    uint16_t* tbl_24 = (uint16_t*) malloc(TBL_24_MAX_ENTRIES * sizeof(uint16_t)); //array of pointers on structs
     if(tbl_24 == 0){
         free(_tbl);
         return 0;
     }
     
-    uint16_t *tbl_long = (uint16_t *) malloc(TBL_LONG_MAX_ENTRIES * sizeof(uint16_t));
+    uint16_t* tbl_long = (uint16_t*) malloc(TBL_LONG_MAX_ENTRIES * sizeof(uint16_t));
     if(tbl_long == 0){
         free(tbl_24);
         free(_tbl);
         return 0;
     }
+    
     //Set every element of the array to zero
     fill_zeros(tbl_24, TBL_24_MAX_ENTRIES);
     fill_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
-        
+    
+    
     _tbl->tbl_24 = tbl_24;
     _tbl->tbl_long = tbl_long;
     _tbl->tbl_long_index = 0;
-    _tbl->n_entries = 0;
-    //@ close table(_tbl, tbl_24, tbl_long);
+
+    //@ close table(_tbl, tbl_24, tbl_long, 0, _, _);
+
     return _tbl;
 }
 
 
 void tbl_free(struct tbl *_tbl)
-    //@ requires table(_tbl, _, _);
+    //@ requires table(_tbl, ?tbl_24, ?tbl_long, _, _, _);
     //@ ensures true;
 {
+    //@ open table(_tbl, tbl_24, tbl_long, _, _, _);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);
@@ -187,7 +183,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         //fill all entries between first index and last index with value
         for(int i = first_index; i < last_index; i++){
 		tbl_24[i] = value;
-		_tbl->n_entries++;
         }
     } else {
         //If the prefixlen is not smaller than 24, we have to store the value
@@ -198,10 +193,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         //index and store it in the tbl_24
         uint8_t base_index;
         uint32_t tbl_24_index = tbl_24_extract_first_index(data);
-        
-        if(tbl_24[tbl_24_index] == 0){
-            _tbl->n_entries++;
-        }
         
         if(tbl_24_entry_flag(tbl_24[tbl_24_index])){
             base_index = tbl_24[tbl_24_index] & TBL_24_VAL_MASK;
@@ -233,17 +224,18 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 }
 
 int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
-    // @ requires table(_tbl, ?t_24, ?t_l);
-    // @ ensures table(_tbl, t_24, t_l);
+    //@ requires table(_tbl, ?tb_24, ?tb_long, ?long_index, ?t_24, ?t_l);
+    //@ ensures table(_tbl, tb_24, tb_long, long_index, t_24, t_l);
 {
     uint16_t *tbl_24 = _tbl->tbl_24;
     uint16_t *tbl_long = _tbl->tbl_long;
 
     //get index corresponding to key for tbl_24
     uint32_t index = tbl_24_extract_first_index(data);
+
     uint16_t value = tbl_24[index];
 	
-	if(tbl_24_entry_flag(value)){
+    if(tbl_24_entry_flag(value)){
         //the value found in tbl_24 is a base index for an entry in tbl_long,
         //go look at the index corresponding to the key and this base index
         uint32_t index_long = tbl_long_extract_first_index(data, value & TBL_24_VAL_MASK);
@@ -254,3 +246,4 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
         return value;
     }
 }
+
