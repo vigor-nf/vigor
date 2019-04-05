@@ -48,10 +48,11 @@ struct key{
 };
 
 /*@
-predicate table(struct tbl* t, uint16_t* tbl_24, uint16_t* tbl_long, int long_index; list<uint16_t> t_24, list<uint16_t> t_l) = 
-	malloc_block_tbl(t) &*& malloc_block_ushorts(tbl_24, TBL_24_MAX_ENTRIES) &*& malloc_block_ushorts(tbl_long, TBL_LONG_MAX_ENTRIES)
-	&*& t->tbl_24 |-> tbl_24 &*& t->tbl_long |-> tbl_long &*& t->tbl_long_index |-> long_index &*& 0 <= long_index &*& long_index <= 256
-	&*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> t_24 &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> t_l
+predicate table(struct tbl* t, int long_index) = 
+	malloc_block_tbl(t) 
+	&*& t->tbl_24 |-> ?tbl_24 &*& t->tbl_long |-> ?tbl_long &*& t->tbl_long_index |-> long_index &*& 0 <= long_index &*& long_index <= 256
+	&*& malloc_block_ushorts(tbl_24, TBL_24_MAX_ENTRIES) &*& malloc_block_ushorts(tbl_long, TBL_LONG_MAX_ENTRIES)
+	&*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> _ &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> _
 	&*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 
 predicate key(struct key* k) = 
