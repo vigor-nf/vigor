@@ -116,7 +116,7 @@ stub_device_start(struct stub_device* dev)
 	if (!received) {
 		// no packet
 		uint64_t dummy_data_len;
-		bool received_a_packet = packet_receive(device_index, &mbuf_addr, &traced_mbuf.data_len);
+		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &traced_mbuf.data_len);
 		klee_assert(!received_a_packet);
 		return;
 	}
@@ -292,7 +292,7 @@ stub_device_start(struct stub_device* dev)
 	struct rte_mbuf* trace_mbuf_addr = &traced_mbuf;
 	//stub_core_trace_rx(&trace_mbuf_addr);
 
-	bool received_a_packet = packet_receive(device_index, &mbuf_addr, &traced_mbuf.data_len);
+	bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &traced_mbuf.data_len);
 	klee_assert(received_a_packet);
 
 	//klee_assume(received_a_packet);
@@ -963,7 +963,7 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	traced_mbuf.seqn = 0; // TODO?
 
 	//uint8_t ret = stub_core_trace_tx(&traced_mbuf, device_index);
-	packet_send(&buf_addr, device_index);
+	packet_send((void*)buf_addr, device_index);
 	uint8_t ret = 1;
 
 	// Soundness check
