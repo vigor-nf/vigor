@@ -101,12 +101,23 @@ stub_device_start(struct stub_device* dev)
 	uint64_t head_addr = descr[1];
 	klee_assert(head_addr == 0);
 
+	// Get device index
+	int device_index = 0;
+	while (dev != &DEVICES[device_index]) { device_index++; }
+
+
 	dev->old_mbuf_addr = mbuf_addr;
 
 	bool received = klee_int("received");
 	set_packet_receive_success(received);
+	//need it forward, to make sure packet_receive args are the same in both calls
+	uint16_t packet_length = sizeof(struct stub_mbuf_content);
+	traced_mbuf.data_len = packet_length;
 	if (!received) {
 		// no packet
+		uint64_t dummy_data_len;
+		bool received_a_packet = packet_receive(device_index, &mbuf_addr, &traced_mbuf.data_len);
+		klee_assert(!received_a_packet);
 		return;
 	}
 
@@ -212,7 +223,6 @@ stub_device_start(struct stub_device* dev)
 	uint64_t wb1 = 0b0000000000000000000000000000000000000000000000000000000000000011;
 
 	// get packet length
-	uint16_t packet_length = sizeof(struct stub_mbuf_content);
 	wb1 |= (uint64_t) packet_length << 32;
 
 	if (is_ipv4 && (
@@ -239,10 +249,6 @@ stub_device_start(struct stub_device* dev)
 	// "The 82599 writes back the receive descriptor immediately following the packet write into system memory."
 	descr[0] = wb0;
 	descr[1] = wb1;
-
-	// Get device index
-	int device_index = 0;
-	while (dev != &DEVICES[device_index]) { device_index++; }
 
 	// Get the DPDK packet type
 	uint32_t traced_ptype = 0;
