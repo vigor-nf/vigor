@@ -163,7 +163,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         uint32_t first_index = tbl_24_extract_first_index(masked_data);
         uint32_t rule_size = compute_rule_size(prefixlen);
         uint32_t last_index = first_index + rule_size;
-        //TODO: Must show that last_index <= 2^24
 
         //fill all entries between first index and last index with value
         for(uint32_t i = 0; i < TBL_24_MAX_ENTRIES; i++)
