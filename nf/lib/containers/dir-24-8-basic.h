@@ -38,7 +38,7 @@
 struct tbl{
     uint16_t*tbl_24;
     uint16_t* tbl_long;
-    uint8_t tbl_long_index;
+    uint16_t tbl_long_index;
 };
 
 struct key{
@@ -50,7 +50,7 @@ struct key{
 /*@
 predicate table(struct tbl* t, uint16_t* tbl_24, uint16_t* tbl_long, int long_index; list<uint16_t> t_24, list<uint16_t> t_l) = 
 	malloc_block_tbl(t) &*& malloc_block_ushorts(tbl_24, TBL_24_MAX_ENTRIES) &*& malloc_block_ushorts(tbl_long, TBL_LONG_MAX_ENTRIES)
-	&*& t->tbl_24 |-> tbl_24 &*& t->tbl_long |-> tbl_long &*& t->tbl_long_index |-> long_index
+	&*& t->tbl_24 |-> tbl_24 &*& t->tbl_long |-> tbl_long &*& t->tbl_long_index |-> long_index &*& 0 <= long_index &*& long_index <= 256
 	&*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> t_24 &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> t_l
 	&*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 

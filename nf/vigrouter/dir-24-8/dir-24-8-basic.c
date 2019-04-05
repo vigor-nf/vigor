@@ -43,23 +43,12 @@ uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
 	return ip_masks[prefixlen];
 }
 
-/*@
-lemma void bounded_uint8(uint8_t x);
-    requires true;
-    ensures 0 <= x &*& x <= 0xFF;
-   
-lemma void identity_shift(int x);
-    requires x <= 0xFFFFFF;
-    ensures x == ((x << 8) >> 8);
- 
-@*/
-
 /**
  * Extract the 24 MSB of an uint8_t array and returns then in size_t
  */
 uint32_t tbl_24_extract_first_index(uint32_t data)
     //@ requires true;
-    //@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24));
+    //@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*& result == (data >> BYTE_SIZE);
 {
     //@ shiftright_limits(data, N32(), N8());
     return data >> BYTE_SIZE;
@@ -71,14 +60,16 @@ uint32_t tbl_24_extract_first_index(uint32_t data)
  */
 uint32_t compute_rule_size(uint8_t prefixlen)
     //@ requires prefixlen <= 32;
-    //@ ensures true;
+    //@ ensures result > 0 &*& prefixlen < 24 ? result <= pow_nat(2, nat_of_int(24)) : result <= pow_nat(2, N8());
 {	
 	if(prefixlen < 24){
-		uint32_t res[25] = {0x1000000, 0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000 ,0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100 ,0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
-		return res[prefixlen];
+		uint32_t res[24] = {0x1000000, 0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000 ,0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100 ,0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2};
+		uint32_t v = res[prefixlen];
+		return v;
 	}else{
 		uint32_t res[9] = {0x100 ,0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
-		return res[prefixlen-24];
+		uint32_t v = res[prefixlen-24];
+		return v;
 	}
 }
 
@@ -98,16 +89,14 @@ uint16_t tbl_24_entry_set_flag(uint16_t _entry)
 }
 
 
-uint16_t tbl_long_extract_first_index(uint32_t data, uint16_t base_index)
+uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index)
     //@ requires true;
     //@ ensures true;
-{
-    // @ bounded_uint8(base_index);
-    // @ bounded_uint8(nth(3, ipv4));
+{   
+    //@ bitand_limits(data, 0xFF, N32());
+    uint16_t last_byte = (uint16_t)(data & 0xFF);
     
-    uint32_t last_byte = data & 0xFF;
-    
-    return (uint16_t)(base_index * (uint32_t)TBL_LONG_FACTOR + last_byte);
+    return (uint16_t)(base_index * (uint16_t)TBL_LONG_FACTOR + last_byte);
 }
 
 struct tbl* tbl_allocate()
@@ -159,9 +148,10 @@ void tbl_free(struct tbl *_tbl)
 }
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key)
-    // @ requires table(_tbl, ?t_24, ?t_l) &*& key(_key);
-    // @ ensures table(_tbl, t_24, t_l) &*& key(_key);
+    //@ requires table(_tbl, ?tb_24, ?tb_long, ?long_index, _, _) &*& key(_key);
+    //@ ensures table(_tbl, _, _, _, _, _) &*& key(_key);
 {
+    //@ open key(_key);
     uint8_t prefixlen = _key->prefixlen;
     uint32_t data = _key->data;
     uint16_t value = _key->route;
@@ -169,21 +159,31 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint16_t *tbl_long = _tbl->tbl_long;
 
     if(prefixlen > TBL_PLEN_MAX || value > MAX_NEXT_HOP_VALUE){
+        //@ close key(_key);
+        //@ close table(_tbl, tb_24, tb_long, long_index, _, _);
         return -1;
     }
 
 	uint32_t masked_data = data & build_mask_from_prefixlen(prefixlen);
 
-    //If prefixlen is smaller than 24, simply store the value in tbl_24, in
-    //entries indexed from data[0].data[1].data[2] up to data[0].data[1].255
+    //If prefixlen is smaller than 24, simply store the value in tbl_24
     if(prefixlen < 24){
-        uint32_t first_index = masked_data;
-        uint32_t last_index = first_index + compute_rule_size(prefixlen);
+        uint32_t first_index = tbl_24_extract_first_index(masked_data);
+        uint32_t rule_size = compute_rule_size(prefixlen);
+        uint32_t last_index = first_index + rule_size;
+        //TODO: Must show that last_index <= 2^24
 
         //fill all entries between first index and last index with value
-        for(int i = first_index; i < last_index; i++){
-		tbl_24[i] = value;
+        for(uint32_t i = 0; i < TBL_24_MAX_ENTRIES; i++)
+        //@ requires tbl_24[i..TBL_24_MAX_ENTRIES] |-> _;
+        //@ ensures tbl_24[old_i..TBL_24_MAX_ENTRIES] |-> _;
+        {
+        	if(i >= first_index && i < last_index){
+			tbl_24[i] = value;
+		}
         }
+        //@ close key(_key);
+        //@ close table(_tbl, tb_24, tb_long, long_index, _, _);
     } else {
         //If the prefixlen is not smaller than 24, we have to store the value
         //in tbl_long.
@@ -195,17 +195,21 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         uint32_t tbl_24_index = tbl_24_extract_first_index(data);
         
         if(tbl_24_entry_flag(tbl_24[tbl_24_index])){
-            base_index = tbl_24[tbl_24_index] & TBL_24_VAL_MASK;
+            uint16_t tbl_24_value = tbl_24[tbl_24_index];
+            base_index = (uint8_t)(tbl_24_value & 0xFF);
         } else {
-			if(_tbl->tbl_long_index == TBL_LONG_OFFSET_MAX){
-				printf("No more available index for tbl_long!\n");fflush(stdout);
-				return -1;
-			}
-            //generate next index and store it in tbl_24
-            base_index = _tbl->tbl_long_index + 1;
-            _tbl->tbl_long_index = base_index;
+		if(_tbl->tbl_long_index >= TBL_LONG_OFFSET_MAX){
+			printf("No more available index for tbl_long!\n");fflush(stdout);
+			//@ close key(_key);
+        		//@ close table(_tbl, tb_24, tb_long, 256, _, _);
+			return -1;
+		}else{
+            		//generate next index and store it in tbl_24
+            		base_index = (uint8_t)(_tbl->tbl_long_index);
+            		_tbl->tbl_long_index = (uint16_t)(base_index + 1);
             
-            tbl_24[tbl_24_index] = tbl_24_entry_set_flag(base_index);
+            		tbl_24[tbl_24_index] = tbl_24_entry_set_flag(base_index);
+            	}
         }
 
         //The last byte in data is used as the starting offset for tbl_long
@@ -215,9 +219,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
         //Store value in tbl_long entries indexed from value*256+offset up to
         //value*256+255
-        for(int i = first_index; i < last_index; i++){
+        for(uint32_t i = 0; i < TBL_LONG_MAX_ENTRIES; i++)
+        //@ requires tbl_long[i..TBL_LONG_MAX_ENTRIES] |-> _;
+        //@ ensures tbl_long[old_i..TBL_LONG_MAX_ENTRIES] |-> _;
+        {
+        
+        	if(i >= first_index && i < last_index){
 			tbl_long[i] = value;
+		}
         }
+        //@ close key(_key);
+        //@ close table(_tbl, tb_24, tb_long, _, _, _);
     }
 
     return 0;
@@ -238,7 +250,8 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
     if(tbl_24_entry_flag(value)){
         //the value found in tbl_24 is a base index for an entry in tbl_long,
         //go look at the index corresponding to the key and this base index
-        uint32_t index_long = tbl_long_extract_first_index(data, value & TBL_24_VAL_MASK);
+        //@ bitand_limits(data, 0xFF, N32());
+        uint32_t index_long = tbl_long_extract_first_index(data, (uint8_t)(value & 0xFF));
         uint16_t value_long = tbl_long[index_long];
         return value_long;
     } else {
