@@ -111,11 +111,14 @@ stub_device_start(struct stub_device* dev)
 	bool received = klee_int("received");
 	set_packet_receive_success(received);
 	//need it forward, to make sure packet_receive args are the same in both calls
-	uint16_t packet_length = sizeof(struct stub_mbuf_content);
+	uint16_t packet_length = sizeof(struct stub_mbuf_content); //TODO: make length symbolic
+	//uint16_t data_length = klee_int("data_len");
+	//klee_assume(packet_length <= 90); //Make sure it fits 1 mbuf
+	//klee_assume(data_length <= packet_length);
+	//klee_assume(sizeof(struct ether_hdr) <= data_length);
 	traced_mbuf.data_len = packet_length;
 	if (!received) {
 		// no packet
-		uint64_t dummy_data_len;
 		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &traced_mbuf.data_len);
 		klee_assert(!received_a_packet);
 		return;
