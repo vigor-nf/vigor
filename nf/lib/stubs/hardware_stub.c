@@ -33,9 +33,6 @@ static struct stub_register REGISTERS[0x20000]; // index == address
 // Incremented at each delay; in nanoseconds.
 static uint64_t TIME;
 
-struct rte_mbuf traced_mbuf;
-struct stub_mbuf_content traced_mbuf_content;
-
 // Checks for the traced_mbuf hack soundness
 static bool rx_called;
 static bool tx_called;
@@ -116,10 +113,10 @@ stub_device_start(struct stub_device* dev)
 	//klee_assume(packet_length <= 90); //Make sure it fits 1 mbuf
 	//klee_assume(data_length <= packet_length);
 	//klee_assume(sizeof(struct ether_hdr) <= data_length);
-	traced_mbuf.data_len = packet_length;
+	uint16_t data_len = packet_length;
 	if (!received) {
 		// no packet
-		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &traced_mbuf.data_len);
+		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
 		klee_assert(!received_a_packet);
 		return;
 	}
@@ -266,39 +263,8 @@ stub_device_start(struct stub_device* dev)
 	if (is_tcp) traced_ptype |= 0x00000100;
 	if (is_sctp) traced_ptype |= 0x00000400;
 
-	// Trace the mbuf
-	memcpy(&traced_mbuf_content, (void*) mbuf_addr, packet_length);
-	memset(&traced_mbuf, 0, sizeof(struct rte_mbuf));
-	traced_mbuf.buf_addr = &traced_mbuf_content;
-	traced_mbuf.buf_iova = (rte_iova_t) traced_mbuf.buf_addr;
-	traced_mbuf.data_off = 0;
-	traced_mbuf.refcnt = 1;
-	traced_mbuf.nb_segs = 1;
-	traced_mbuf.port = device_index;
-	traced_mbuf.ol_flags = 0; // TODO?
-	traced_mbuf.packet_type = traced_ptype;
-	traced_mbuf.pkt_len = packet_length;
-	traced_mbuf.data_len = packet_length;
-	traced_mbuf.vlan_tci = 0; // TODO?
-	traced_mbuf.hash.rss = 0; // TODO?
-	traced_mbuf.vlan_tci_outer = 0; // TODO?
-	traced_mbuf.buf_len = packet_length;
-	traced_mbuf.timestamp = 0; // TODO?
-	traced_mbuf.userdata = NULL;
-	traced_mbuf.pool = NULL;
-	traced_mbuf.next = NULL;
-	traced_mbuf.tx_offload = 0; // TODO?
-	traced_mbuf.priv_size = 0;
-	traced_mbuf.timesync = 0; // TODO?
-	traced_mbuf.seqn = 0; // TODO?
-
-	struct rte_mbuf* trace_mbuf_addr = &traced_mbuf;
-	//stub_core_trace_rx(&trace_mbuf_addr);
-
-	bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &traced_mbuf.data_len);
+	bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
 	klee_assert(received_a_packet);
-
-	//klee_assume(received_a_packet);
 
 	// Soundness for hack
 	klee_assert(!rx_called);
@@ -939,33 +905,6 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	int device_index = 0;
 	while (dev != &DEVICES[device_index]) { device_index++; }
 
-	// Trace the mbuf
-	memcpy(&traced_mbuf_content, (void*) buf_addr, sizeof(struct stub_mbuf_content));
-	memset(&traced_mbuf, 0, sizeof(struct rte_mbuf));
-	traced_mbuf.buf_addr = &traced_mbuf_content;
-	traced_mbuf.buf_iova = (rte_iova_t) traced_mbuf.buf_addr;
-	traced_mbuf.data_off = 0;
-	traced_mbuf.refcnt = 1;
-	traced_mbuf.nb_segs = 1;
-	traced_mbuf.port = device_index;
-	traced_mbuf.ol_flags = 0; // TODO?
-	traced_mbuf.packet_type = 0; // TODO?
-	traced_mbuf.pkt_len = buf_len;
-	traced_mbuf.data_len = buf_len;
-	traced_mbuf.vlan_tci = 0; // TODO?
-	traced_mbuf.hash.rss = 0; // TODO?
-	traced_mbuf.vlan_tci_outer = 0; // TODO?
-	traced_mbuf.buf_len = buf_len;
-	traced_mbuf.timestamp = 0; // TODO?
-	traced_mbuf.userdata = NULL;
-	traced_mbuf.pool = NULL;
-	traced_mbuf.next = NULL;
-	traced_mbuf.tx_offload = 0; // TODO?
-	traced_mbuf.priv_size = 0;
-	traced_mbuf.timesync = 0; // TODO?
-	traced_mbuf.seqn = 0; // TODO?
-
-	//uint8_t ret = stub_core_trace_tx(&traced_mbuf, device_index);
 	packet_send((void*)buf_addr, device_index);
 	uint8_t ret = 1;
 
@@ -2380,12 +2319,7 @@ stub_hardware_write(uint64_t addr, unsigned offset, unsigned size, uint64_t valu
 
 void
 stub_free(struct rte_mbuf* mbuf) {
-	// Ugh, we have to trace an mbuf with the right address, so we copy the whole thing... this is silly
-	memcpy(&traced_mbuf, mbuf, sizeof(struct rte_mbuf));
-	memcpy(&traced_mbuf_content, mbuf->buf_addr + mbuf->data_off, sizeof(struct stub_mbuf_content));
-	traced_mbuf.buf_addr = &traced_mbuf_content - mbuf->data_off;
 	packet_free(mbuf->buf_addr);
-	//stub_core_trace_free(&traced_mbuf);
 
 	// Still need to free the actual mbuf though
 	rte_mbuf_raw_free(mbuf);
