@@ -1,5 +1,6 @@
 #include "lib/stubs/core_stub.h"
 #include "lib/stubs/containers/str-descr.h"
+#include "lib/packet-io.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -232,6 +233,16 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 
 	return true;
 }
+
+void
+rte_pktmbuf_free(struct rte_mbuf* m)
+{
+	klee_assert(m != NULL);
+
+	packet_free(m->buf_addr);
+	stub_core_mbuf_free(m);
+}
+
 
 void
 stub_core_mbuf_free(struct rte_mbuf* mbuf)
