@@ -8,7 +8,6 @@ lemma void mul_equal(int a, int b, int c)
     assume (a <= c);//TODO
 }
 
-
 //Taken from https://groups.google.com/forum/#!topic/verifast/eCf5QzLtGlo
 lemma void mul_nonnegative(int x, int y)
     requires 0 <= x &*& 0 <= y;
@@ -31,6 +30,14 @@ lemma void mul_mono(int i, int n, int a)
     {
     }
 }
+
+lemma void mul_nonzero(int a, int b)
+        requires a > 0 &*& b > 0;
+        ensures a * b > 0;
+    {
+        mul_nonnegative(a - 1, b);
+        assert (a-1)*b < a*b;
+    }
 
 lemma void mul_mono_strict(int i, int n, int a)
     requires 0 <= i &*& i < n &*& 0 < a;

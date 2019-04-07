@@ -343,7 +343,7 @@ lemma void split_varlim_chunk_equiv<t>(list<t> xs, int n, list<int> limits, int 
     ensures     nth(j, split_varlim(xs, n, limits)) == chunk(xs, n * j, n * j + nth(j, limits));
 {
     switch(limits) {
-        case nil: 
+        case nil:
         case cons(l0, ls0):
             if (j > 0) {
                 split_varlim_chunk_equiv(drop(n, xs), n, ls0, j - 1);
@@ -354,19 +354,54 @@ lemma void split_varlim_chunk_equiv<t>(list<t> xs, int n, list<int> limits, int 
     }
 }
 
-lemma void split_varlim_update<t>(list<t> xs, int n, list<int> limits1, list<int> limits2, int j)
+lemma void split_varlim_update<t>(list<t> xs, int n, list<int> limits1, list<int> limits2, int i)
     requires    
-        0 <= j &*& j < length(limits1) &*& 
-        limits2 == update(j, nth(j, limits2), limits1) &*&
-        nth(j, limits1) != nth(j, limits2);
+        0 <= i &*& i < length(limits1) &*& 
+        limits2 == update(i, nth(i, limits2), limits1) &*&
+        nth(i, limits1) != nth(i, limits2);
     ensures     
-        split_varlim(xs, n, limits2) == update(j, nth(j, split_varlim(xs, n, limits2)), split_varlim(xs, n, limits1));
+        split_varlim(xs, n, limits2) == update(i, nth(i, split_varlim(xs, n, limits2)), split_varlim(xs, n, limits1));
 {
     switch(limits1) {
         case nil:
         case cons(l0, ls0):
+            if (i > 0) {
+                split_varlim_update(drop(n, xs), n, ls0, tail(limits2), i - 1);
+            }
+    }
+}
+
+lemma void split_varlim_update_unrelevant<t>(list<t> xs1, list<t> xs2, list<int> limits, int n, int i, int j, t new_val)
+    requires    
+        xs2 == update(n * j + i, new_val, xs1) &*& nth(n * j + i, xs2) == new_val &*& nth(j, limits) <= i &*&
+        true == forall(limits, (ge)(0)) &*& true == forall(limits, (le)(n)) &*&
+        length(xs1) == n * length(limits) &*&
+        0 <= i &*& i < n &*&
+        0 <= j &*& j < length(limits);
+    ensures     
+        split_varlim(xs1, n, limits) == split_varlim(xs2, n, limits);
+{
+    switch(limits) {
+        case nil:
+        case cons(l0, ls0):
             if (j > 0) {
-                split_varlim_update(drop(n, xs), n, ls0, tail(limits2), j-1);
+                mul_bounds(n, n, 1, j);
+                mul_bounds(n, n, j + 1, length(limits));
+                assert(n * j + i <= n * (j + 1) - 1);
+                assert (n * (j+1) - 1 < length(xs1));
+                assert (n * j + i < length(xs1));
+
+                drop_update_relevant(n, n * j + i, new_val, xs1);
+                nth_drop(n * j + i - n, n, xs2);
+                length_drop(n, xs1);
+                assert( length(ls0) == length(limits) - 1);
+                mul_subst(length(ls0), length(limits) - 1, n);
+                split_varlim_update_unrelevant(drop(n, xs1), drop(n, xs2), ls0, n, i, j - 1, new_val);
+                
+                take_update_unrelevant(l0, n * j + i, new_val, xs1);
+            } else {
+                take_update_unrelevant(l0, i, new_val, xs1);
+                drop_update_unrelevant(n, i, new_val, xs1);
             }
     }
 }
@@ -409,7 +444,7 @@ lemma void split_chunk_equiv<t>(list<t> xs, nat nb_split, int n, int i)
     ensures     nth(i, split(xs, nb_split, n)) == chunk(xs, n * i, n * (i+1));
 {
     switch(nb_split) {
-        case zero:            
+        case zero:
         case succ(nb_split_pred):
             if (i > 0) {
                 split_chunk_equiv(drop(n, xs), nb_split_pred, n, i-1);

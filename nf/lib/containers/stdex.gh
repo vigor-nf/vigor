@@ -101,6 +101,7 @@ fixpoint bool no_dups<t>(list<t> l) {
   }
 }
 
+fixpoint bool gt(int x, int y) { return x < y; }
 
 fixpoint bool ge(int x, int y) { return x <= y; }
 
