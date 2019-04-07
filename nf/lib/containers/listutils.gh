@@ -102,16 +102,13 @@ lemma void flatten_subcount(list< list<int> > xs, nat val)
 }
 
 lemma void flatten_subcount_special(list< list<int> > xs, nat val, int i, int special_val)
-    requires    
-        true == forall(xs, (sub_integer_copies)(val, 1)) &*&
-        count(nth(i, xs), (eq)(special_val)) == 0;
-    ensures     
-        count(flatten(xs), (eq)(special_val)) < length(xs);
+    requires    true == forall(xs, (sub_integer_copies)(val, 1)) &*& count(nth(i, xs), (eq)(special_val)) == 0;
+    ensures     count(flatten(xs), (eq)(special_val)) < length(xs);
 {
     assume (count(flatten(xs), (eq)(special_val)) < length(xs));
 }
 
-lemma void flatten_subcount_update(list< list<int> > xs, list< list<int> > ys, nat val, int i, int special_val)
+lemma void flatten_subcount_update_relevant(list< list<int> > xs, list< list<int> > ys, nat val, int i, int special_val)
     requires    
         true == forall(xs, (sub_integer_copies)(val, 1)) &*& count(nth(i, xs), (eq)(special_val)) == 0 &*&
         true == forall(ys, (sub_integer_copies)(val, 1)) &*& count(nth(i, ys), (eq)(special_val)) == 1 &*&
@@ -121,6 +118,18 @@ lemma void flatten_subcount_update(list< list<int> > xs, list< list<int> > ys, n
         count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)) + 1;
 {
     assume (count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)) + 1);
+}
+
+lemma void flatten_subcount_update_unrelevant(list< list<int> > xs, list< list<int> > ys, nat val, int i, int special_val, int count)
+    requires    
+        true == forall(xs, (sub_integer_copies)(val, 1)) &*& count(nth(i, xs), (eq)(special_val)) == count &*&
+        true == forall(ys, (sub_integer_copies)(val, 1)) &*& count(nth(i, ys), (eq)(special_val)) == count &*&
+        ys == update(i, nth(i, ys), xs) &*&
+        0 <= i &*& i < length(xs);
+    ensures     
+        count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val));
+{
+    assume (count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)));
 }
 
 // ------------- list_append -------------
@@ -280,6 +289,13 @@ lemma void gen_limits_get_val(nat nb_split, int i, int j, int k)
     }
 }
 
+lemma void gen_limits_increment_i(nat nb_split, int i)
+    requires    true;
+    ensures     gen_limits(nb_split, i + 1, 0) == gen_limits(nb_split, i, int_of_nat(nb_split));
+{
+    assume (gen_limits(nb_split, i, int_of_nat(nb_split)) == gen_limits(nb_split, i + 1, 0));
+}
+
 lemma void gen_limits_increment_j(nat nb_split, int i, int j)
     requires    0 <= j &*& j < int_of_nat(nb_split);
     ensures     gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j));
@@ -423,15 +439,11 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
     }
 }
 
-fixpoint list<int> integers_list_rec(nat cnt, int index) {
+fixpoint list<int> integers_list(nat cnt, int index) {
     switch(cnt) {
         case zero: return nil;
-        case succ(cnt_pred): return cons(index, integers_list_rec(cnt_pred, index + 1));
+        case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
     }
-}
-
-fixpoint list<int> integers_list(int n, int start) {
-    return integers_list_rec(nat_of_int(n), start);
 }
 
 lemma void take_full<t>(list<t> xs)
