@@ -3,6 +3,8 @@
 
 #include <nat.gh>
 #include "listutils.gh"
+#include "stdex.gh"
+#include "listexex.gh"
 
 
 // ------------- is_permutation -------------
@@ -16,6 +18,11 @@ fixpoint bool is_permutation(list<int> xs) {
 fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
     return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
+
+lemma void sub_permutation_complete(list<int> xs)
+    requires    true == is_sub_permutation(xs, length(xs));
+    ensures     true == is_permutation(xs);
+{}
 
 lemma void take_preserves_mem<t>(list<t> tail, t head, int i)
     requires    false == mem(head, tail) &*& 0 <= i;
@@ -70,6 +77,33 @@ lemma void sub_permutation_take(list<int> xs, int max_val, int i)
     }
 }
 
+// ------------- is_sub_permutation2 -------------
+
+fixpoint bool is_sub_permutation2(int max_val, list<int> xs) {
+    return is_sub_permutation(xs, max_val);
+}
+
+lemma_auto(is_sub_permutation2(max_val, nil)) void sub_permutation2_nil(int max_val)
+    requires    true;
+    ensures     true == is_sub_permutation2(max_val, nil);
+{}
+
+lemma void sub_permutation2_forall_nil(list< list<int> > xs, int max_val)
+    requires    true == forall(xs, (eq)(nil));
+    ensures     true == forall(xs, (is_sub_permutation2)(max_val));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): sub_permutation2_forall_nil(xs0, max_val);
+    }
+}
+
+// ------------- is_permutation_map_fst -------------
+
+fixpoint bool is_permutation_map_fst(list< pair<int, real> > xs) {
+    return is_permutation(map(fst, xs));
+}
+
 // ------------- is_sub_permutation_map_fst -------------
 
 fixpoint bool is_sub_permutation_map_fst(int max_val, list< pair<int, real> > xs) {
@@ -91,26 +125,15 @@ lemma void sub_permutation_map_fst_forall_nil(list< list< pair<int, real> > > xs
     }
 }
 
-// ------------- is_sub_permutation_map_fst -------------
-
-fixpoint bool is_sub_permutation2(int max_val, list<int> xs) {
-    return is_sub_permutation(xs, max_val);
-}
-
-lemma_auto(is_sub_permutation2(max_val, nil)) void sub_permutation2_nil(int max_val)
-    requires    true;
-    ensures     true == is_sub_permutation2(max_val, nil);
-{}
-
-lemma void sub_permutation2_forall_nil(list< list<int> > xs, int max_val)
-    requires    true == forall(xs, (eq)(nil));
-    ensures     true == forall(xs, (is_sub_permutation2)(max_val));
+lemma void sub_permutation_map_fst_complete(list< pair<int, real> > xs)
+    requires    true == is_sub_permutation_map_fst(length(xs), xs);
+    ensures     true == is_permutation_map_fst(xs);
 {
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): sub_permutation2_forall_nil(xs0, max_val);
-    }
+    map_preserves_length(fst, xs);
+    assert (true == is_sub_permutation(map(fst, xs), length(xs)));
+    sub_permutation_complete(map(fst, xs));
 }
+
 
 // ------------- permutations & count -------------
 
@@ -121,13 +144,13 @@ lemma void permutation_to_count(list<int> xs)
     assume (true == integer_copies(nat_of_int(length(xs) - 1), 1, xs));
 }
 
-
 lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
     requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
-    ensures     true == integer_copies(nat_of_int(length(xs) - 1), int_of_nat(nb_split), xs);
+    ensures     true == forall(split(xs, nb_split, n), (integer_copies)(nat_of_int(n - 1), 1));
 {
-    assume (true == integer_copies(nat_of_int(length(xs) - 1), int_of_nat(nb_split), xs));
+    assume (true == forall(split(xs, nb_split, n), (integer_copies)(nat_of_int(n - 1), 1)));
 }
+
 
 lemma void copies_to_sub(nat val, int nb_copies, list<int> xs)
     requires    true == integer_copies(val, nb_copies, xs);

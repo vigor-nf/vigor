@@ -14,6 +14,16 @@ fixpoint bool integer_copies(nat val, int nb_copies, list<int> xs) {
     }
 }
 
+lemma_auto(integer_copies(val, nb_copies, nil)) void integer_copies_nil(nat val, int nb_copies)
+    requires    0 == nb_copies;
+    ensures     true == integer_copies(val, nb_copies, nil);
+{
+    switch(val) {
+        case zero:
+        case succ(val_pred): integer_copies_nil(val_pred, nb_copies);
+    }
+}
+
 lemma void integer_copies_val(int x, nat val, int nb_copies, list<int> xs)
     requires    true == integer_copies(val, nb_copies, xs) &*& 0 <= x &*& x <= int_of_nat(val);
     ensures     count(xs, (eq)(x)) == nb_copies;
@@ -25,6 +35,16 @@ lemma void integer_copies_val(int x, nat val, int nb_copies, list<int> xs)
                 integer_copies_val(x, val_pred, nb_copies, xs);
             }
     }
+}
+
+lemma void integer_copies_append(list<int> xs, list<int> ys, int xs_count, int ys_count, nat val)
+    requires
+        true == integer_copies(val, xs_count, xs) &*& 
+        true == integer_copies(val, ys_count, ys);
+    ensures
+        true == integer_copies(val, xs_count + ys_count, append(xs, ys));
+{
+    assume (true == integer_copies(val, xs_count + ys_count, append(xs, ys)));
 }
 
 // ------------- sub_integer_copies -------------
@@ -85,6 +105,19 @@ lemma void flatten_allnil<t>(list< list<t> > xs)
     switch(xs) {
         case nil:
         case cons(x0, xs0): flatten_allnil(xs0);
+    }
+}
+
+lemma void flatten_count(list< list<int> > xs, nat val)
+    requires    true == forall(xs, (integer_copies)(val, 1));
+    ensures     true == integer_copies(val, length(xs), flatten(xs));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            flatten_count(xs0, val);
+            forall_nth(xs, (integer_copies)(val, 1), 0);
+            integer_copies_append(x0, flatten(xs0), 1, length(xs0), val);
     }
 }
 
@@ -303,6 +336,13 @@ lemma void gen_limits_increment_j(nat nb_split, int i, int j)
     assume (gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j)));
 }
 
+lemma void gen_limits_all_same(nat nb_split, int i)
+    requires    true;
+    ensures     true == forall(gen_limits(nb_split, i, 0), (eq)(i));
+{
+    assume (forall(gen_limits(nb_split, i, 0), (eq)(i)));
+}
+
 // ------------- split_varlim -------------
 
 fixpoint list< list<t> > split_varlim<t>(list<t> xs, int n, list<int> limits) {
@@ -406,6 +446,13 @@ lemma void split_varlim_update_unrelevant<t>(list<t> xs1, list<t> xs2, list<int>
     }
 }
 
+lemma void split_varlim_split_equiv<t>(list<t> xs, list<int> limits, int n, nat nb_split)
+    requires    true == forall(limits, (eq)(n)) &*& length(limits) == int_of_nat(nb_split);
+    ensures     split_varlim(xs, n, limits) == split(xs, nb_split, n);
+{
+    assume (split_varlim(xs, n, limits) == split(xs, nb_split, n));
+}
+
 // ------------- split -------------
 
 fixpoint list< list<t> > split<t>(list<t> xs, nat nb_split, int n) {
@@ -432,11 +479,27 @@ lemma_auto(length(split(xs, nb_split, n))) void length_split<t>(list<t> xs, nat 
     assume (length(split(xs, nb_split, n)) == int_of_nat(nb_split));
 }
 
-lemma void length_split_forall<t>(list<t> xs, nat nb_split, int n, int i)
+lemma void length_split_nth<t>(list<t> xs, nat nb_split, int n, int i)
     requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= i &*& i < length(xs);
     ensures     length(nth(i, split(xs, nb_split, n))) == n;
 {
     assume (length(nth(i, split(xs, nb_split, n))) == n);
+}
+
+lemma void length_split_forall<t>(list<t> xs, nat nb_split, int n)
+    requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= n &*& n <= length(xs);
+    ensures     true == forall(split(xs, nb_split, n), (length_eq)(n));
+{
+    switch(nb_split) {
+        case zero:
+        case succ(nb_split_pred):
+            if (nb_split_pred != zero) {
+                length_drop(n, xs);
+                mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+                mul_equal(n, int_of_nat(nb_split_pred), length(xs) - n);
+                length_split_forall(drop(n, xs), nb_split_pred, n);
+            }
+    }
 }
 
 lemma void split_chunk_equiv<t>(list<t> xs, nat nb_split, int n, int i)

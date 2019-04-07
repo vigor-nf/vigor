@@ -111,6 +111,8 @@ fixpoint bool le(int x, int y) { return y <= x; }
 
 fixpoint bool eq<t>(t x, t y) { return x == y; }
 
+fixpoint bool length_eq<t>(int length, list<t> xs) { return length == length(xs); }
+
 lemma void ge_le_ge(list<int> l, int i, int x)
 requires x <= i &*& true == forall(l, (ge)(i));
 ensures true == forall(l, (ge)(x));
