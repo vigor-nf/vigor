@@ -9,7 +9,7 @@ void fill_zeros(uint16_t *t, uint32_t size)
     //@ ensures t[0.. size] |-> _;//repeat_n(nat_of_int(size), 0);
 {
    
-    for(uint32_t i = 0; i < size; i++)
+    for(uint32_t i = 0; i < size; i++) 
     //@ requires t[i..size] |-> _;
     //@ ensures t[old_i..size] |-> _;//repeat_n(nat_of_int(size - old_i), 0);
     {

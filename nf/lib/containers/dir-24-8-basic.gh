@@ -29,7 +29,7 @@ fixpoint int rule_route(lpm_rule rule){
 }
 
 fixpoint Z value_mask(){
-	return Zsign(false);
+	return Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zsign(false), false), true), true), true), true), true), true), true);
 }
 	
 fixpoint int rule_24_get_value(Z entry){
@@ -41,6 +41,7 @@ fixpoint Z two_bytes_mask(){
 }
 
 fixpoint Z Z_of_int(int x){
+	//Still have to find a good way to generate Z, maybe using bitops.gh lemmas?
 	return Zsign(false);
 }
 	
@@ -53,13 +54,6 @@ fixpoint int indexlong_from_ipv4(Z ipv4, int index){
 	return index * 256 + int_of_Z(Z_and(ipv4, two_bytes_mask()));
 }
 
-/*fixpoint bool extract_flag(Z entry){// (entry >> 15) & 1 != 0
-	return int_of_Z(Z_and(Z_shiftright(entry, nat_of_int(15)), Zdigit(Zsign(false), true))) != 0;
-}
-	
-fixpoint Z set_flag(Z entry, Z four_bytes_mask){
-	return Z_or(entry, four_bytes_mask);
-}*/
 //Assuming that prefixlen <= 32
 fixpoint int compute_rule_size(int prefixlen){
 	return prefixlen < 24 ? pow_nat(2, nat_of_int(24 - prefixlen)) : pow_nat(2, nat_of_int(32 - prefixlen));
