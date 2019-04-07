@@ -122,4 +122,3 @@ flow_manager_get_external(struct FlowManager* manager, uint16_t external_port,
 #endif
 	return true;
 }
-

@@ -4,21 +4,12 @@
 //@ #include "stdex.gh"
 //@ #include "dir-24-8-basic.gh"
 
-/*@
-fixpoint bool is_zero(uint16_t x){
-    return x == 0;
-}
-
-fixpoint uint16_t map_zero(uint16_t x){
-    return 0;
-}
-@*/
 void fill_zeros(uint16_t *t, uint32_t size)
     //@ requires t[0..size] |-> _;
     //@ ensures t[0.. size] |-> _;//repeat_n(nat_of_int(size), 0);
 {
    
-    for(uint32_t i = 0; i < size; i++)
+    for(uint32_t i = 0; i < size; i++) 
     //@ requires t[i..size] |-> _;
     //@ ensures t[old_i..size] |-> _;//repeat_n(nat_of_int(size - old_i), 0);
     {
@@ -101,7 +92,7 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index)
 
 struct tbl* tbl_allocate()
     //@ requires true;
-    /*@ ensures result == 0 ? true : (table(result, _, _, 0, _, _));
+    /*@ ensures result == 0 ? true : (table(result, 0));
     @*/
 {	
     struct tbl* _tbl = malloc(sizeof(struct tbl));
@@ -131,27 +122,28 @@ struct tbl* tbl_allocate()
     _tbl->tbl_long = tbl_long;
     _tbl->tbl_long_index = 0;
 
-    //@ close table(_tbl, tbl_24, tbl_long, 0, _, _);
+    //@ close table(_tbl, 0);
 
     return _tbl;
 }
 
 
 void tbl_free(struct tbl *_tbl)
-    //@ requires table(_tbl, ?tbl_24, ?tbl_long, _, _, _);
+    //@ requires table(_tbl, _);
     //@ ensures true;
 {
-    //@ open table(_tbl, tbl_24, tbl_long, _, _, _);
+    //@ open table(_tbl, _);
     free(_tbl->tbl_24);
     free(_tbl->tbl_long);
     free(_tbl);
 }
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key)
-    //@ requires table(_tbl, ?tb_24, ?tb_long, ?long_index, _, _) &*& key(_key);
-    //@ ensures table(_tbl, _, _, _, _, _) &*& key(_key);
+    //@ requires table(_tbl, ?long_index) &*& key(_key);
+    //@ ensures table(_tbl, _) &*& key(_key);
 {
     //@ open key(_key);
+    //@ open table(_tbl, _);
     uint8_t prefixlen = _key->prefixlen;
     uint32_t data = _key->data;
     uint16_t value = _key->route;
@@ -160,7 +152,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
     if(prefixlen > TBL_PLEN_MAX || value > MAX_NEXT_HOP_VALUE){
         //@ close key(_key);
-        //@ close table(_tbl, tb_24, tb_long, long_index, _, _);
+        //@ close table(_tbl, long_index);
         return -1;
     }
 
@@ -171,7 +163,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         uint32_t first_index = tbl_24_extract_first_index(masked_data);
         uint32_t rule_size = compute_rule_size(prefixlen);
         uint32_t last_index = first_index + rule_size;
-        //TODO: Must show that last_index <= 2^24
 
         //fill all entries between first index and last index with value
         for(uint32_t i = 0; i < TBL_24_MAX_ENTRIES; i++)
@@ -183,7 +174,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 		}
         }
         //@ close key(_key);
-        //@ close table(_tbl, tb_24, tb_long, long_index, _, _);
+        //@ close table(_tbl, long_index);
     } else {
         //If the prefixlen is not smaller than 24, we have to store the value
         //in tbl_long.
@@ -201,7 +192,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 		if(_tbl->tbl_long_index >= TBL_LONG_OFFSET_MAX){
 			printf("No more available index for tbl_long!\n");fflush(stdout);
 			//@ close key(_key);
-        		//@ close table(_tbl, tb_24, tb_long, 256, _, _);
+        		//@ close table(_tbl, 256);
 			return -1;
 		}else{
             		//generate next index and store it in tbl_24
@@ -229,16 +220,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 		}
         }
         //@ close key(_key);
-        //@ close table(_tbl, tb_24, tb_long, _, _, _);
+        //@ close table(_tbl, _);
     }
 
     return 0;
 }
 
 int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
-    //@ requires table(_tbl, ?tb_24, ?tb_long, ?long_index, ?t_24, ?t_l);
-    //@ ensures table(_tbl, tb_24, tb_long, long_index, t_24, t_l);
+    //@ requires table(_tbl, ?long_index);
+    //@ ensures table(_tbl, long_index);
 {
+    //@ open table(_tbl, long_index);
     uint16_t *tbl_24 = _tbl->tbl_24;
     uint16_t *tbl_long = _tbl->tbl_long;
 
@@ -253,10 +245,11 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
         //@ bitand_limits(data, 0xFF, N32());
         uint32_t index_long = tbl_long_extract_first_index(data, (uint8_t)(value & 0xFF));
         uint16_t value_long = tbl_long[index_long];
+        //@ close table(_tbl, long_index);
         return value_long;
     } else {
         //the value found in tbl_24 is the next hop, just return it
+        //@ close table(_tbl, long_index);
         return value;
     }
 }
-

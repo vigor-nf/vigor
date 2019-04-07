@@ -127,7 +127,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, vig
 
 #ifdef KLEE_VERIFICATION
   // Concretize the backend, to avoid propagating a symbolic device
-  concretize_devices(backend.nic, rte_eth_dev_count());
+  concretize_devices(&backend.nic, rte_eth_dev_count());
 #endif//KLEE_VERIFICATION
 
   return backend;

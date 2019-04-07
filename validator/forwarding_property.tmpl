@@ -1,10 +1,10 @@
 //Capture the final state.
 assert map_vec_chain_coherent<FlowIdi>(?final_flow_map, ?final_flow_vec, ?final_flow_chain);
-emap<FlowIdi> flow_emap = emap(flow_map, flow_vec, flow_chain);
+emap<FlowIdi> flow_emap = emap(initial_fm, initial_fv, initial_heap);
 emap<FlowIdi> final_flow_emap = emap(final_flow_map, final_flow_vec, final_flow_chain);
 
 #define EXP_TIME (10)
-#define EXT_IP_ADDR external_addr
+#define EXT_IP_ADDR ext_ip
 #define EXT_PORT 1
 
 #define DEFAULT_DROP(hd1, hd2, hd3) \

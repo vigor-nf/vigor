@@ -8,4 +8,3 @@ struct FlowId {
   uint16_t internal_device;
   uint8_t protocol;
 };
-

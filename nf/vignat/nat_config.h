@@ -40,4 +40,3 @@ void nat_config_init(struct nat_config* config,
 void nat_config_cmdline_print_usage(void);
 
 void nat_print_config(struct nat_config* config);
-

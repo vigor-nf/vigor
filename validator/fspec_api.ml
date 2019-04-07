@@ -54,9 +54,13 @@ let deep_copy (var : var_spec) =
 
 let rec self_dereference tterm tmpgen =
   match tterm.v with
-  | Id x -> ("//@ assert *&" ^ x ^ "|-> ?" ^
-             (tmpgen ("pp" ^ x) ^ ";"),
-             {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
+  | Id x -> begin match tterm.t with
+      | Ptr _ ->
+        ("//@ assert *&" ^ x ^ "|-> ?" ^
+         (tmpgen ("pp" ^ x) ^ ";"),
+         {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
+      | _ -> ("", tterm)
+      end
   | Str_idx (x,fname) ->
     let (binding, x) = self_dereference x tmpgen in
     (binding,{v=Str_idx (x,fname);t=tterm.t})
