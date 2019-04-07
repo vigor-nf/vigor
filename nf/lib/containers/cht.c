@@ -138,8 +138,8 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void bounds_from_eq(list<int> xs, int x, int up_bound)
-        requires    true == forall(xs, (eq)(x)) &*& x < up_bound;
-        ensures     true == forall(xs, (lt)(up_bound)) &*& true == forall(xs, (ge)(x));
+        requires    true == forall(xs, (eq)(x)) &*& x <= up_bound;
+        ensures     true == forall(xs, (leq)(up_bound)) &*& true == forall(xs, (ge)(x));
     {
         switch(xs){
             case nil:
@@ -163,6 +163,34 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    lemma void mem_index<t>(list<t> xs, int i, t val)
+        requires    nth(i, xs) == val &*& 0 <= i &*& i < length(xs);
+        ensures     true == mem(val, xs);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0):
+                if (i > 0) {
+                    mem_index(xs0, i - 1, val);
+                }
+        }
+    }
+
+    lemma void no_dups_take_exclude<t>(list<t> xs, int i, t special_val)
+        requires    true == no_dups(xs) &*& nth(i, xs) == special_val &*& 0 <= i &*& i < length(xs);
+        ensures     count(take(i, xs), (eq)(special_val)) == 0;
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): 
+                if (i == 0) {
+                    take_0(xs);
+                } else {
+                    no_dups_take_exclude(xs0, i - 1, special_val);
+                    mem_index(xs0, i - 1, special_val);
+                }
+        }
+    }
 @*/
 
 void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
@@ -289,8 +317,6 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //@ close ints(next, cht_height, n_init);
     //@ assert (true == forall(n_init, (eq)(0)));
     //@ bounds_from_eq(n_init, 0, backend_capacity);
-    //@ assert (true == forall(n_init, (lt)(backend_capacity)));
-    //@ assert (true == forall(n_init, (ge)(0)));
 
     // Set up for forall(split_varlim(map(fst, vals),...),...)
     //@ map_preserves_length(fst, old_values);
@@ -315,8 +341,8 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         true == forall(perms, is_permutation) &*&
 
         ints(next, cht_height, ?n) &*&
-        true == forall(n, (lt)(backend_capacity)) &*&
         true == forall(n, (ge)(0)) &*&
+        true == forall(n, (leq)(backend_capacity)) &*&
 
         vectorp<uint32_t>(cht, u_integer, ?vals, addrs) &*&
         length(vals) == backend_capacity * cht_height &*&
@@ -335,8 +361,8 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             true == forall(perms, is_permutation) &*&
 
             ints(next, cht_height, ?n_in) &*&
-            true == forall(n_in, (lt)(backend_capacity)) &*&
             true == forall(n_in, (ge)(0)) &*&
+            true == forall(n_in, (leq)(backend_capacity)) &*&
 
             vectorp<uint32_t>(cht, u_integer, ?vals_in, addrs) &*&
             length(vals_in) == backend_capacity * cht_height &*&
@@ -349,36 +375,76 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         {
             uint32_t *value;
 
-            //@ list< list<int> > explored = split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j));
-            //@ list< list<int> > explored_append = split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j + 1));
+            //@ list<int> limits = gen_limits(nat_of_int(backend_capacity), i, j);
+            //@ list<int> limits_append = gen_limits(nat_of_int(backend_capacity), i, j+1);
+            //@ list< list<int> > explored = split_varlim(p_final, cht_height, limits);
+            //@ list< list<int> > explored_append = split_varlim(p_final, cht_height, limits_append);
+            //@ list<int> flatten_explored = flatten(explored);
+            //@ list<int> flatten_explored_append = flatten(explored_append);
+
+            // Proof that only element j of 'explored' changes during the iteration
             //@ gen_limits_increment_j(nat_of_int(backend_capacity), i, j);
-            //@ split_varlim_chunk_equiv(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j), j);
+            //@ gen_limits_get_val(nat_of_int(backend_capacity), i, j, j);
+            //@ gen_limits_get_val(nat_of_int(backend_capacity), i, j+1, j);
+            //@ split_varlim_update(p_final, cht_height, limits, limits_append, j);
 
-            
-            //@ split_varlim_increment_j(p_final, cht_height, nat_of_int(backend_capacity), i, j);
-
+            // Proof that the only difference between 'explored' and 'explored_append' is permutations[j * cht_height + i]
             //@ mul_bounds(j, backend_capacity - 1, cht_height, cht_height);
+            //@ split_varlim_chunk_equiv(p_final, cht_height, limits_append, j); // chunk(p_final, j * cht_height, j * cht_height + i+1)
+
+            //@ split_varlim_subcount(p_final, cht_height, limits);
+            //@ flatten_subcount(explored, nat_of_int(cht_height - 1));
+            //@ split_varlim_subcount(p_final, cht_height, limits_append);
+            //@ flatten_subcount(explored_append, nat_of_int(cht_height - 1));
+
+            //@ sub_integer_copies_val(cht_height - 1, nat_of_int(cht_height - 1), backend_capacity, flatten_explored);
+            //@ assert( count(flatten_explored, (eq)(cht_height - 1)) <= backend_capacity);
+
             uint32_t index = j * cht_height + i;
             int bucket_id = permutations[index];
-
-            // Proof that 0 <= bucket_id < cht_height
+            
+	        // Proof that 0 <= bucket_id < cht_height
             //@ split_to_source(p_final, nat_of_int(backend_capacity), cht_height, i, j);
             //@ forall_nth(perms, is_permutation, j);
             //@ length_split_forall(p_final, nat_of_int(backend_capacity), cht_height, j);
             //@ forall_nth(nth(j, perms), (lt)(length(nth(j, perms))), i);
             //@ forall_nth(nth(j, perms), (ge)(0), i);
             int priority = next[bucket_id];
-
+            
+            // Proof that next[bucket_id] < backend_capacity
+            //@ list<int> chunk_partial = chunk(p_final, j * cht_height, j * cht_height + i);
+            //@ list<int> chunk_complete = chunk(p_final, j * cht_height, (j+1) * cht_height);
+            //@ split_varlim_chunk_equiv(p_final, cht_height, limits, j); // chunk(p_final, j * cht_height, j * cht_height + i)
+            //@ split_chunk_equiv(p_final, nat_of_int(backend_capacity), cht_height, j); // chunk(p_final, j * cht_height, (j+1) * cht_height)
+            //@ forall_nth(perms, is_permutation, j);
+            //@ assert(true == is_permutation(chunk_complete));
+            //@ chunk_length(p_final, j * cht_height, (j+1) * cht_height);
+            //@ assert(true == is_sub_permutation(chunk_complete, cht_height));
+            //@ chunk_take(p_final, j * cht_height, j * cht_height + i, (j+1) * cht_height);
+            //@ sub_permutation_take(chunk_complete, cht_height, i);
+            //@ assert(true == is_sub_permutation(chunk_partial, cht_height));
+            //@ chunk_to_source(p_final, j * cht_height, (j+1) * cht_height, i);
+            //@ no_dups_take_exclude(chunk_complete, i, bucket_id);
+            //@ assert( count(chunk_partial, (eq)(bucket_id)) == 0);
+            //@ flatten_subcount_special(explored, nat_of_int(cht_height - 1), j, bucket_id);
+            //@ forall_idx_nth(n_in, 0, (next_from_permuts)(flatten_explored), bucket_id);
+            //@ assert(next[bucket_id] < backend_capacity);
+            
             //@ forall_nth(n_in, (ge)(0), bucket_id);
-            //@ forall_nth(n_in, (lt)(backend_capacity), bucket_id);
+            next[bucket_id] += 1;
+
+            // Update bounds on next array
+            //@ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
+            //@ forall_update(n_in, (leq)(backend_capacity), bucket_id, next[bucket_id]);
+
             //@ assert(0 <= priority);
             //@ assert(priority < backend_capacity);
-            next[bucket_id] += 1;
+
+            //@ assert (0 == 1);
 
             //@ permutation_list_to_count(p_final, nat_of_int(backend_capacity), cht_height);
 
-            //@ forall_update(n_in, (lt)(backend_capacity), bucket_id, next[bucket_id]);
-            //@ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
+
 
             // //@ mul_bounds(bucket_id, cht_height - 1, backend_capacity, backend_capacity);
             // //@ pair<uint32_t, real> old_val = nth(backend_capacity * bucket_id + priority, vals_in);

@@ -36,6 +36,20 @@ fixpoint bool forall_idx<t>(list<t> values, int idx, fixpoint (int,t,bool) prop)
   }
 }
 
+lemma void forall_idx_nth<t>(list<t> values, int idx, fixpoint(int,t,bool) prop, int i)
+requires 0 <= i &*& i < length(values) &*& true == forall_idx(values, idx, prop);
+ensures true == prop(idx + i, nth(i, values));
+{
+  switch(values) {
+    case nil: return;
+    case cons(h,t):
+      if (i == 0){}
+      else {
+        forall_idx_nth(t, idx + 1, prop, i-1);
+      }
+  }
+}
+
 lemma void extract_prop_by_idx<t>(list<t> v, fixpoint (int,t,bool) prop,
                                   int start_index, int index)
 requires true == forall_idx(v, start_index, prop) &*&
@@ -75,6 +89,10 @@ fixpoint bool no_dups<t>(list<t> l) {
 fixpoint bool ge(int x, int y) { return x <= y; }
 
 fixpoint bool lt(int x, int y) { return y < x; }
+
+fixpoint bool leq(int x, int y) { return y <= x; }
+
+fixpoint bool eq<t>(t x, t y) { return x == y; }
 
 lemma void ge_le_ge(list<int> l, int i, int x)
 requires x <= i &*& true == forall(l, (ge)(i));

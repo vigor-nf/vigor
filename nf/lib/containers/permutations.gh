@@ -5,14 +5,21 @@
 #include "listutils.gh"
 
 
+// ------------- is_permutation -------------
+
 fixpoint bool is_permutation(list<int> xs) {
     return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
+
+// ------------- is_sub_permutation -------------
 
 fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
     return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
 }
 
+fixpoint bool is_sub_permutation2(int max_val, list<int> xs) {
+    return is_sub_permutation(xs, max_val);
+}
 
 lemma void take_preserves_mem<t>(list<t> tail, t head, int i)
     requires    false == mem(head, tail) &*& 0 <= i;
@@ -67,10 +74,6 @@ lemma void sub_permutation_take(list<int> xs, int max_val, int i)
     }
 }
 
-fixpoint bool is_sub_permutation2(int max_val, list<int> xs) {
-    return is_sub_permutation(xs, max_val);
-}
-
 lemma_auto(is_sub_permutation2(max_val, nil)) void sub_permutation2_nil(int max_val)
     requires    true;
     ensures     true == is_sub_permutation2(max_val, nil);
@@ -86,26 +89,49 @@ lemma void sub_permutation2_forall_nil(list< list<int> > xs, int max_val)
     }
 }
 
-fixpoint bool integer_copies(list<int> xs, nat val, int nb_copies) {
-    switch(val) {
-        case zero: return count(xs, (eq)(int_of_nat(val))) == nb_copies;
-        case succ(val_pred): return count(xs, (eq)(int_of_nat(val))) == nb_copies && integer_copies(xs, val_pred, nb_copies);
-    }
-}
+
 
 lemma void permutation_to_count(list<int> xs)
     requires    true == is_permutation(xs) &*& 0 < length(xs);
-    ensures     true == integer_copies(xs, nat_of_int(length(xs) - 1), 1);
+    ensures     true == integer_copies(nat_of_int(length(xs) - 1), 1, xs);
 {
-    assume (true == integer_copies(xs, nat_of_int(length(xs) - 1), 1));
+    assume (true == integer_copies(nat_of_int(length(xs) - 1), 1, xs));
 }
 
 
 lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
     requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
-    ensures     true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split));
+    ensures     true == integer_copies(nat_of_int(length(xs) - 1), int_of_nat(nb_split), xs);
 {
-    assume (true == integer_copies(xs, nat_of_int(length(xs) - 1), int_of_nat(nb_split)));
+    assume (true == integer_copies(nat_of_int(length(xs) - 1), int_of_nat(nb_split), xs));
+}
+
+lemma void copies_to_sub(nat val, int nb_copies, list<int> xs)
+    requires    true == integer_copies(val, nb_copies, xs);
+    ensures     true == sub_integer_copies(val, nb_copies, xs);
+{
+    switch(val) {
+        case zero:
+        case succ(val_pred): copies_to_sub(val_pred, nb_copies, xs);
+    }
+}
+
+lemma void split_varlim_subcount(list<int> xs, int n, list<int> limits)
+    requires    true == forall(split(xs, nat_of_int(length(limits)), n), is_permutation) &*& 0 < n;
+    ensures     true == forall(split_varlim(xs, n, limits), (sub_integer_copies)(nat_of_int(n - 1), 1));
+{
+    assume(true == forall(split_varlim(xs, n, limits), (sub_integer_copies)(nat_of_int(n - 1), 1)));
+}
+
+lemma void split_varlim_subpermutation(list<int> xs, int n, list<int> limits, int i)
+    requires
+        true == forall(split(xs, nat_of_int(length(limits)), n), is_permutation) &*&
+        0 < n &*& 0 <= i &*& i < length(limits) &*& 
+        0 <= nth(i, limits) &*& nth(i, limits) <= n;
+    ensures
+        true == is_sub_permutation(nth(i, split_varlim(xs, n, limits)), n);
+{
+    assume (true == is_sub_permutation(nth(i, split_varlim(xs, n, limits)), n));
 }
 
 #endif //_PERMUTATIONS_GH_INCLUDED_
