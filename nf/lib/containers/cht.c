@@ -6,8 +6,8 @@
 //@ #include "permutations.gh"
 
 static uint64_t loop(uint64_t k, uint64_t capacity)
-//@ requires 0 < capacity &*& capacity < INT_MAX;
-/*@ ensures 0 <= result &*& result < capacity &*& result == k%capacity; @*/
+//@ requires    0 < capacity &*& capacity < INT_MAX;
+//@ ensures     0 <= result &*& result < capacity &*& result == k%capacity; 
 {
     uint64_t g = k % capacity;
     //@ div_mod_gt_0(g, k, capacity);
@@ -718,32 +718,72 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     return 0;
 }
 
+/*@
+
+    lemma void exists_index<t>(list<t> xs, fixpoint(t,bool) f, int i)
+        requires    0 <= i &*& i < length(xs) &*& true == f(nth(i, xs));
+        ensures     true == exists(xs, f);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): if (i > 0) exists_index(xs0, f, i - 1);
+        }
+    }
+
+
+    lemma void cht_exists_from_dchain(int hash, list<pair<int, real> > cht, dchain filter, int i, int cht_height, int backend_capacity)
+        requires    
+            0 <= i &*& i < dchain_index_range_fp(filter) &*& 
+            true == dchain_allocated_fp(filter, i) &*&
+            length(cht) == backend_capacity * cht_height &*&
+            dchain_index_range_fp(filter) == backend_capacity &*&
+            0 <= cht_height &*& 0 <= backend_capacity;
+        ensures     
+            true == cht_exists(hash, cht, filter);
+    {
+        assume (true == cht_exists(hash, cht, filter));
+
+        // chunk_length(cht, hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), hash%(length(cht)/dchain_index_range_fp(filter)) * (dchain_index_range_fp(filter) + 1));
+        // exists_index(chunk(cht, hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), hash%(length(cht)/dchain_index_range_fp(filter)) * (dchain_index_range_fp(filter) + 1)), (not_allocated)(filter), i);
+    }
+
+@*/
+
+
 int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity, int *chosen_backend)
-/*@ requires vectorp<uint32_t>(cht, u_integer, ?values, ?addrs) &*&
-             double_chainp(?ch, active_backends) &*&
-             *chosen_backend |-> _ &*&
-             dchain_index_range_fp(ch) == backend_capacity &*&
-             true == valid_cht(values, backend_capacity, cht_height); @*/
-/*@ ensures vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
-            double_chainp(ch, active_backends) &*&
-            *chosen_backend |-> ?chosen &*&
-            (result == 0 ?
-              false == cht_exists(hash, values, ch)        :
-              true == cht_exists(hash, values, ch) &*&
-              chosen == cht_choose(hash, values, ch) &*&
-              result == 1 &*&
-              0 <= chosen &*&
-              chosen < dchain_index_range_fp(ch)); @*/
+/*@ requires 
+        vectorp<uint32_t>(cht, u_integer, ?values, ?addrs) &*&
+        double_chainp(?ch, active_backends) &*&
+        *chosen_backend |-> _ &*&
+        dchain_index_range_fp(ch) == backend_capacity &*&
+        true == valid_cht(values, backend_capacity, cht_height); @*/
+/*@ ensures 
+        vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
+        double_chainp(ch, active_backends) &*&
+        *chosen_backend |-> ?chosen &*&
+        (result == 0 
+            ? false == cht_exists(hash, values, ch)        
+            : true == cht_exists(hash, values, ch) &*&
+            chosen == cht_choose(hash, values, ch) &*&
+            result == 1 &*&
+            0 <= chosen &*& chosen < dchain_index_range_fp(ch)
+        ); @*/
 {
     uint64_t start = loop(hash, cht_height);
     for (uint32_t i = 0; i < backend_capacity; ++i)
-    /*@ invariant 0 <= i &*& i <= backend_capacity &*&
-                  vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
-                  cht_height*backend_capacity == length(values) &*&
-                  double_chainp(ch, active_backends) &*&
-                  true == forall(values, is_one) &*&
-                  *chosen_backend |-> _ &*&
-                  0 <= start &*& start < cht_height; @*/
+    /*@invariant 
+        0 <= i &*& i <= backend_capacity &*&
+        0 <= start &*& start < cht_height &*&
+        
+        vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
+        cht_height*backend_capacity == length(values) &*&
+        true == forall(values, is_one) &*&
+
+        double_chainp(ch, active_backends) &*&
+        *chosen_backend |-> _ &*&
+
+        true == forall(chunk(values, start * backend_capacity, start * backend_capacity + i), (not_allocated)(ch))
+    ;@*/
     {
         //@ mul_bounds(start, cht_height, backend_capacity, backend_capacity);
         //@ mul_bounds(start+1, cht_height, backend_capacity, backend_capacity);
@@ -773,16 +813,25 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
         //@ assert (nth(candidate_idx, map(fst, values)) < backend_capacity);
         //@ assert (0 <= nth(candidate_idx, map(fst, values)));
         
-        //@ update_id(candidate_idx, values);
+        ////@ update_id(candidate_idx, values);
         //@ forall_nth(values, is_one, candidate_idx);
         if (dchain_is_index_allocated(active_backends, (int)*candidate)) {
             *chosen_backend = (int)*candidate;
-            vector_return(cht, (int)candidate_idx, candidate);
-            //@ assume(cht_exists(hash, values, ch));//TODO
+
+            //@ assert (true == dchain_allocated_fp(ch, *candidate));
+            //@ cht_exists_from_dchain(hash, values, ch, *candidate, cht_height, backend_capacity);
+            //@ assert(true == cht_exists(hash, values, ch));
             //@ assert candidate |-> ?chosen_candidate;
             //@ assume(fst(nth(candidate_idx, values)) == cht_choose(hash, values, ch));//TODO
+            
+            vector_return(cht, (int)candidate_idx, candidate);
             return 1;
         }
+
+        // Conservation of forall(chunk(...), ...);
+        //@ assert (false == dchain_allocated_fp(ch, *candidate));
+        //@ chunk_append(values, start * backend_capacity, start * backend_capacity + i);
+        //@ forall_append(chunk(values, start * backend_capacity, start * backend_capacity + i), cons(nth(candidate_idx, values), nil), (not_allocated)(ch));
         vector_return(cht, (int)candidate_idx, candidate);
     }
     //@ assume(!cht_exists(hash, values, ch));//TODO

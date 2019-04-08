@@ -23,8 +23,17 @@
             true == forall(split(values, nat_of_int(cht_height), backend_capacity), is_permutation_map_fst);
     }
 
-    fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter);
-    fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter);
+    fixpoint bool not_allocated(dchain filter, pair<int,real> idx) { return !dchain_allocated_fp(filter, fst(idx)); }
+
+    fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter) {
+        return exists(chunk(cht, hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), hash%(length(cht)/dchain_index_range_fp(filter)) * (dchain_index_range_fp(filter) + 1)), (not_allocated)(filter));
+    }
+
+    
+    fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter) {
+        return 0;
+    }
+
 @*/
 
 int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity);

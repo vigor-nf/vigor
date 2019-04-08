@@ -571,12 +571,16 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
     }
 }
 
+// ------------- integers_list -------------
+
 fixpoint list<int> integers_list(nat cnt, int index) {
     switch(cnt) {
         case zero: return nil;
         case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
     }
 }
+
+// ------------- lemmas -------------
 
 lemma void ints_to_nth(list<int> xs, list<int> xs_orig, int i, int val)
     requires    xs == update(i, val, xs_orig);
