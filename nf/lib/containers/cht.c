@@ -443,24 +443,27 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             permutations[i * cht_height + j] = (int)permut;
 
             //@ pair<int,int> new_elem = pair(j, permut);
+            //@ chunk_update_unrelevant(p_in, update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j, i * cht_height + j, permut);
 
-            //@ list<int> chunk = chunk(p_in, i * cht_height, i * cht_height + j);
-            //@ list<int> chunk_append = list_append(chunk, snd(new_elem));
+            //@ list<int> chunk = chunk(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
+            //@ list<int> chunk_append = append(chunk, cons(snd(new_elem), nil));
             //@ list< pair<int, int> > chunk_append_ziped = zip_with_index(chunk_append);
 
             //@ list< pair<int, int> > chunk_ziped = zip_with_index(chunk);
-            //@ list< pair<int, int> > chunk_ziped_append = list_append(chunk_ziped, new_elem);
+            //@ list< pair<int, int> > chunk_ziped_append = append(chunk_ziped, cons(new_elem, nil));
 
             // Length of chunk
-            //@ isolate_chunk_length(p_in, i * cht_height, i * cht_height + j);
-            //@ append_length(chunk, snd(new_elem));
+            //@ chunk_length(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
+            //@ length_append(chunk, cons(snd(new_elem), nil));
 
             // Append rule for zip_with_index
             //@ append_to_zip(chunk, snd(new_elem));
             //@ assert (chunk_append_ziped == chunk_ziped_append);
 
             // Preservation of fixpoint
-            //@ append_preserves_fixpoint(chunk_ziped, new_elem, (is_modulo_permutation)(offset, shift, cht_height));
+            //@ assert (true == forall(chunk_ziped, (is_modulo_permutation)(offset, shift, cht_height)));
+            //@ assert (true == forall(cons(new_elem, nil), (is_modulo_permutation)(offset, shift, cht_height)));
+            //@ forall_append(chunk_ziped, cons(new_elem, nil), (is_modulo_permutation)(offset, shift, cht_height));
             //@ assert (true == forall(chunk_ziped_append, (is_modulo_permutation)(offset, shift, cht_height)));
             //@ assert (true == forall(chunk_append_ziped, (is_modulo_permutation)(offset, shift, cht_height)));
 
@@ -475,18 +478,20 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
 
             // Prove invariant
             //@ unzip(chunk_append);
-            //@ assume (chunk(update(((i*cht_height) + j), permut, p_in), i * cht_height, i * cht_height + j + 1) == chunk_append);//TODO
+            //@ chunk_append(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
         }
 
         //@ mul_nonnegative(i, cht_height);
         //@ mul_bounds(cht_height, cht_height, i + 1, backend_capacity);
-        //@ isolate_chunk_length(p, i * cht_height, (i + 1) * cht_height);
+        //@ chunk_length(p, i * cht_height, (i + 1) * cht_height);
     }
 
     //@ open ints(permutations, cht_height*backend_capacity, ?p_final);
     //@ close ints(permutations, cht_height*backend_capacity, p_final);
     //@ list< list<int> > perms = split(p_final, nat_of_int(backend_capacity), cht_height);
     //@ assume (true == forall(perms, is_permutation));
+
+    //@ assert (0 == 1);
 
     int *next = malloc(sizeof(int) * (int)(cht_height));
     //@ assume(next != 0);//TODO: report failure

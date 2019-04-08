@@ -165,15 +165,6 @@ lemma void flatten_subcount_update_unrelevant(list< list<int> > xs, list< list<i
     assume (count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)));
 }
 
-// ------------- list_append -------------
-
-fixpoint list<t> list_append<t>(list<t> xs, t x_tail) {
-    switch(xs) {
-        case nil: return cons(x_tail, nil);
-        case cons(x0, xs0): return cons(x0, list_append(xs0, x_tail));
-    }
-}
-
 // ------------- chunk -------------
 
 fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
@@ -223,6 +214,22 @@ lemma void chunk_to_source<t>(list<t> xs, int begin, int end, int i)
     ensures     nth(begin + i, xs) == nth(i, chunk(xs, begin, end));
 {
     assume (nth(begin + i, xs) == nth(i, chunk(xs, begin, end)));
+}
+
+lemma void chunk_update_unrelevant<t>(list<t> xs, list<t> ys, int begin, int end, int i, t val)
+    requires 
+        0 <= begin &*& begin <= end &*& end <= i &*& i < length(xs) &*&
+        ys == update(i, val, xs);
+    ensures
+        chunk(xs, begin, end) == chunk(update(i, val, xs), begin, end);
+{
+    // take(end - begin, drop(begin, xs))
+    // take(end - begin, drop(begin, update(i, val, xs)))
+    list<t> tmp = update(i - begin, val, drop(begin, xs));
+    drop_update_relevant(begin, i, val, xs);
+    take_update_unrelevant(end, i, val, drop(begin, xs));
+    take_update_unrelevant(end, i, val, tmp);
+    assume (chunk(xs, begin, end) == chunk(update(i, val, xs), begin, end));
 }
 
 // ------------- repeat -------------
@@ -581,76 +588,11 @@ lemma void unzip<t>(list<t> xs)
     // TODO
 }
 
-lemma void isolate_chunk_length<t>(list<t> xs, int begin, int end)
-    requires    0 <= begin &*& begin <= end &*& end <= length(xs);
-    ensures     length(chunk(xs, begin, end)) == end - begin;
-{
-    length_take(begin, xs);
-    length_drop(end - begin, drop(begin, xs));
-}
-
-lemma void append_length<t>(list<t> xs, t x)
-    requires    true;
-    ensures     length(list_append(xs, x)) == length(xs) + 1;
-{
-    switch(xs) {
-        case nil: 
-        case cons(x0, xs0): append_length(xs0, x);
-    }
-}
-
-lemma void append_preserves_fixpoint<t>(list<t> xs, t x, fixpoint (t,bool) f)
-    requires 
-        true == forall(xs, (f)) &*&
-        true == f(x);
-    ensures
-        true == forall(list_append(xs, x), (f));
-{
-    switch(xs) {
-        case nil:
-            assert (list_append(xs, x) == cons(x, nil));
-            assert (true == f(x));
-        case cons(x0, xs0):
-            append_preserves_fixpoint(xs0, x, f);
-    }
-}
-
-lemma void append_preserves_bounds(list<int> xs, int x, int low_bound, int up_bound)
-    requires
-        true == forall(xs, (lt)(up_bound)) &*&
-        true == forall(xs, (ge)(low_bound)) &*&
-        low_bound <= x &*& x < up_bound;
-    ensures
-        true == forall(list_append(xs, x), (lt)(up_bound)) &*&
-        true == forall(list_append(xs, x), (ge)(low_bound));
-{
-    switch(xs) {
-        case nil:
-            assert (list_append(xs, x) == cons(x, nil));
-            assert (low_bound <= x && x < up_bound);
-        case cons(x0, xs0):
-            assert (low_bound <= x0 && x0 < up_bound);
-            append_preserves_bounds(xs0, x, low_bound, up_bound);
-    }
-}
-
 lemma void append_to_zip<t>(list<t> xs, t x) 
     requires true;
-    ensures list_append(zip_with_index(xs), pair(length(xs),x)) == zip_with_index(list_append(xs, x));
+    ensures append(zip_with_index(xs), cons(pair(length(xs),x), nil)) == zip_with_index(append(xs, cons(x, nil)));
 {
-    switch(xs) {
-        case nil:
-            assert (list_append(xs, x) == cons(x, nil));
-            list<t> l = list_append(xs, x);
-            assert (zip_with_index(l) == cons(pair(0, x), nil) );
-            
-            list< pair<int, t> > z = zip_with_index(xs);
-            assert (list_append(z, pair(0, x)) == cons( pair(0, x), nil));
-
-        case cons(x0, xs0):
-            assume (list_append(zip_with_index(xs), pair(length(xs),x)) == zip_with_index(list_append(xs, x)));
-            //TODO
-    }
+    assume (append(zip_with_index(xs), cons(pair(length(xs),x), nil)) == zip_with_index(append(xs, cons(x, nil))));
 } 
 
 lemma void zip_with_index_bounds<t>(list<t> xs) 
