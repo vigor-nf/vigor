@@ -26,15 +26,17 @@
     fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter);
 @*/
 
-void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity);
-/*@ requires vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
-             0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& true == is_prime(cht_height) &*&
-             0 < backend_capacity &*& backend_capacity < cht_height &*&
-             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
-             length(old_values) == cht_height*backend_capacity &*&
-             true == forall(old_values, is_one); @*/
-/*@ ensures vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
-            true == valid_cht(values, backend_capacity, cht_height); @*/
+int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity);
+/*@ requires 
+        vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
+        0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& true == is_prime(cht_height) &*&
+        0 < backend_capacity &*& backend_capacity < cht_height &*&
+        sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
+        length(old_values) == cht_height*backend_capacity &*&
+        true == forall(old_values, is_one); @*/
+/*@ ensures 
+        vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
+        (result == 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
 
 int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity,
                                          int *chosen_backend);

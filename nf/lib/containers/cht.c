@@ -387,15 +387,17 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 @*/
 
-void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
-/*@ requires vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
-             0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& true == is_prime(cht_height) &*&
-             0 < backend_capacity &*& backend_capacity < cht_height &*&
-             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
-             length(old_values) == cht_height*backend_capacity &*&
-             true == forall(old_values, is_one); @*/
-/*@ ensures vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
-            true == valid_cht(values, backend_capacity, cht_height); @*/
+int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
+/*@ requires 
+        vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
+        0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& true == is_prime(cht_height) &*&
+        0 < backend_capacity &*& backend_capacity < cht_height &*&
+        sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
+        length(old_values) == cht_height*backend_capacity &*&
+        true == forall(old_values, is_one); @*/
+/*@ ensures 
+        vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
+        (result == 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
 {
 
     //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
@@ -407,7 +409,9 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
 
     // Generate the permutations of 0..(cht_height - 1) for each backend
     int *permutations = malloc(sizeof(int) * (int)(cht_height * backend_capacity));
-    //@ assume(permutations != 0);//TODO: report failure
+    if (permutations == 0) {
+        return 1;
+    }
 
     for (uint32_t i = 0; i < backend_capacity; ++i)
     /*@ invariant
@@ -498,7 +502,11 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     //@ list< list<int> > perms = split(p_final, nat_of_int(backend_capacity), cht_height);
 
     int *next = malloc(sizeof(int) * (int)(cht_height));
-    //@ assume(next != 0);//TODO: report failure
+    if (next == 0) {
+        free(permutations);
+        return 1;
+    }
+    
     //@ open ints(next, cht_height, ?n0);
     //@ close ints(next, cht_height, n0);
     for (uint32_t i = 0; i < cht_height; ++i)
@@ -707,6 +715,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     // Free memory
     free(next);
     free(permutations);
+    return 0;
 }
 
 int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity, int *chosen_backend)
