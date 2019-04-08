@@ -409,14 +409,11 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
     int *permutations = malloc(sizeof(int) * (int)(cht_height * backend_capacity));
     //@ assume(permutations != 0);//TODO: report failure
 
-    //// @ open ints(permutations, cht_height*backend_capacity, ?p0);
-    //// @ close ints(permutations, cht_height*backend_capacity, p0);
-    //// @ close foreach(split(p0, zero, cht_height), permutation);
     for (uint32_t i = 0; i < backend_capacity; ++i)
     /*@ invariant
             0 <= i &*& i <= backend_capacity &*&
-            ints(permutations, cht_height*backend_capacity, ?p);@*/
-    // forall(split(p, nat_of_int(i), cht_height), is_permutation); @*/
+            ints(permutations, cht_height*backend_capacity, ?p) &*&
+            true == forall(split(p, nat_of_int(i), cht_height), is_permutation); @*/
     {
         uint32_t offset_absolut = i * 31;
         uint64_t offset = loop(offset_absolut, cht_height);
@@ -431,6 +428,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
         /*@ invariant
                 0 <= j &*& j <= cht_height &*&
                 ints(permutations, cht_height*backend_capacity, ?p_in) &*&
+                true == forall(split(p_in, nat_of_int(i), cht_height), is_permutation) &*&
                 true == is_sub_permutation(chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
                 true == forall(zip_with_index(chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, cht_height)); @*/
         {
@@ -444,6 +442,7 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
 
             //@ pair<int,int> new_elem = pair(j, permut);
             //@ chunk_update_unrelevant(p_in, update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j, i * cht_height + j, permut);
+            //@ split_update_unrelevant(p_in, update(i * cht_height + j, permut, p_in), nat_of_int(i), cht_height, i * cht_height + j, permut);
 
             //@ list<int> chunk = chunk(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
             //@ list<int> chunk_append = append(chunk, cons(snd(new_elem), nil));
@@ -481,17 +480,22 @@ void cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capa
             //@ chunk_append(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
         }
 
-        //@ mul_nonnegative(i, cht_height);
+        // Conservation of invariant for for forall(split(...), ...)
+        //@ open ints(permutations, cht_height*backend_capacity, ?p_in);
+        //@ close ints(permutations, cht_height*backend_capacity, p_in);
+        //@ list< list<int> > perms = split(p_in, nat_of_int(i), cht_height);
+        //@ list< int > new_elem = chunk(p_in, i * cht_height, i * cht_height + cht_height);
         //@ mul_bounds(cht_height, cht_height, i + 1, backend_capacity);
-        //@ chunk_length(p, i * cht_height, (i + 1) * cht_height);
+        //@ split_append(p_in, nat_of_int(i + 1), nat_of_int(i), cht_height);
+        //@ mul_nonnegative(i, cht_height);
+        //@ chunk_length(p_in, i * cht_height, i * cht_height + cht_height);
+        //@ sub_permutation_complete(new_elem);
+        //@ forall_append(perms, cons(new_elem, nil), is_permutation);
     }
 
     //@ open ints(permutations, cht_height*backend_capacity, ?p_final);
     //@ close ints(permutations, cht_height*backend_capacity, p_final);
     //@ list< list<int> > perms = split(p_final, nat_of_int(backend_capacity), cht_height);
-    //@ assume (true == forall(perms, is_permutation));
-
-    //@ assert (0 == 1);
 
     int *next = malloc(sizeof(int) * (int)(cht_height));
     //@ assume(next != 0);//TODO: report failure

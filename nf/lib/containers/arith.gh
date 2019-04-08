@@ -32,12 +32,12 @@ lemma void mul_mono(int i, int n, int a)
 }
 
 lemma void mul_nonzero(int a, int b)
-        requires a > 0 &*& b > 0;
-        ensures a * b > 0;
-    {
-        mul_nonnegative(a - 1, b);
-        assert (a-1)*b < a*b;
-    }
+    requires a > 0 &*& b > 0;
+    ensures a * b > 0;
+{
+    mul_nonnegative(a - 1, b);
+    assert (a-1)*b < a*b;
+}
 
 lemma void mul_mono_strict(int i, int n, int a)
     requires 0 <= i &*& i < n &*& 0 < a;

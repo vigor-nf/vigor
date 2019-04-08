@@ -525,6 +525,32 @@ lemma void split_chunk_equiv<t>(list<t> xs, nat nb_split, int n, int i)
     }
 }
 
+lemma void split_append<t>(list<t> xs, nat nb_split, nat nb_split_pred, int n)
+    requires    nb_split == succ(nb_split_pred) &*& int_of_nat(nb_split) * n <= length(xs) &*& 0 < n;
+    ensures     split(xs, nb_split, n) == append(split(xs, nb_split_pred, n), cons(chunk(xs, n * int_of_nat(nb_split_pred), n * int_of_nat(nb_split_pred) + n), nil));
+{
+    switch(nb_split_pred) {
+        case zero:
+            split_chunk_equiv(xs, nb_split, n, 0); 
+        case succ(nb_split_pred_pred):
+            mul_mono_strict(1, int_of_nat(nb_split), n);
+            length_drop(n, xs);
+            assert(int_of_nat(nb_split_pred) + 1 == int_of_nat(nb_split));
+            mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+            split_append(drop(n, xs), nb_split_pred, nb_split_pred_pred, n);
+
+            assume (split(xs, nb_split, n) == append(split(xs, nb_split_pred, n), cons(chunk(xs, n * int_of_nat(nb_split_pred), n * int_of_nat(nb_split_pred) + n), nil)));
+    }
+}
+
+lemma void split_update_unrelevant<t>(list<t> xs1, list<t> xs2, nat nb_split, int n, int i, t val)
+    requires    true;
+    ensures     split(xs1, nb_split, n) == split(xs2, nb_split, n);
+{
+    assume (split(xs1, nb_split, n) == split(xs2, nb_split, n));
+}
+
+// ------------- zip -------------
 
 fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {
     switch(xs) {
@@ -548,16 +574,6 @@ fixpoint list<int> integers_list(nat cnt, int index) {
     switch(cnt) {
         case zero: return nil;
         case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
-    }
-}
-
-lemma void take_full<t>(list<t> xs)
-    requires    true;
-    ensures     take(length(xs), xs) == xs;
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): take_full(xs0);
     }
 }
 
