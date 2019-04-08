@@ -476,6 +476,7 @@ lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j)
                 0 <= j &*& j < int_of_nat(nb_split);
     ensures     nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs);
 {
+    // use chunk_to_source
     assume (nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs));
 }
 

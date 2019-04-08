@@ -19,6 +19,7 @@
             MAX_CHT_HEIGHT*backend_capacity < INT_MAX &&
             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &&
             backend_capacity < INT_MAX &&
+            true == forall(values, is_one) &&
             true == forall(split(values, nat_of_int(cht_height), backend_capacity), is_permutation_map_fst);
     }
 

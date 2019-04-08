@@ -753,10 +753,26 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
         uint32_t *candidate;
         vector_borrow(cht, (int)candidate_idx, (void **)&candidate);
 
-        //@ map_preserves_length(fst, values);
-        //@ forall_nth(map(fst, values), (lt)(dchain_index_range_fp(ch)), candidate_idx);
+        //@ list< list< pair<uint32_t,real> > > permuts = split(values, nat_of_int(cht_height), backend_capacity);
+        //@ list< pair<uint32_t,real> > candidate_chunk = chunk(values, start * backend_capacity, (start+1) * backend_capacity);
+
+        // Proof that 0 <= map(fst, values)[candiadate_idx] < backend_capacity
+        //@ length_split(values, nat_of_int(cht_height), backend_capacity);
+        //@ forall_nth(permuts, is_permutation_map_fst, start);
+        //@ split_chunk_equiv(values, nat_of_int(cht_height), backend_capacity, start);
+        //@ assert (true == is_permutation_map_fst(candidate_chunk));
+        //@ is_permutation_map_fst_extract(candidate_chunk, map(fst, candidate_chunk));
+        //@ map_preserves_length(fst, candidate_chunk);
+        //@ chunk_length(values, start * backend_capacity, (start+1) * backend_capacity);
+        //@ forall_nth(map(fst, candidate_chunk), (ge)(0), i);
+        //@ forall_nth(map(fst, candidate_chunk), (lt)(backend_capacity), i);
+        //@ chunk_to_source(values, start * backend_capacity, (start+1) * backend_capacity, i);
+        //@ nth_map(i, fst, candidate_chunk);
+        //@ assert (fst(nth(candidate_idx, values)) < backend_capacity);
         //@ nth_map(candidate_idx, fst, values);
-        //@ forall_nth(map(fst, values), (ge)(0), candidate_idx);
+        //@ assert (nth(candidate_idx, map(fst, values)) < backend_capacity);
+        //@ assert (0 <= nth(candidate_idx, map(fst, values)));
+        
         //@ update_id(candidate_idx, values);
         //@ forall_nth(values, is_one, candidate_idx);
         if (dchain_is_index_allocated(active_backends, (int)*candidate)) {

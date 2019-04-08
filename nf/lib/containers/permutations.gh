@@ -104,6 +104,11 @@ fixpoint bool is_permutation_map_fst(list< pair<int, real> > xs) {
     return is_permutation(map(fst, xs));
 }
 
+lemma void is_permutation_map_fst_extract(list< pair<int, real> > xs, list<int> map_fst)
+    requires    map_fst == map(fst, xs) &*& true == is_permutation_map_fst(xs);
+    ensures     true == forall(map_fst, (lt)(length(map_fst))) &*& true == forall(map_fst, (ge)(0)) &*& true == no_dups(map_fst);
+{}
+
 // ------------- is_sub_permutation_map_fst -------------
 
 fixpoint bool is_sub_permutation_map_fst(int max_val, list< pair<int, real> > xs) {
