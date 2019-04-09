@@ -16,6 +16,8 @@ uint32_t global_packet_len;
 uint32_t global_tot_len_borrowed;
 uint8_t global_chunks[MAX_CHUNK_SIZE*PREALLOC_CHUNKS];
 uint32_t global_chunk_lengths[PREALLOC_CHUNKS];
+void * pkt_received = NULL;
+bool receive_succeded = false;
   struct ChunkLayout {
     bool set;
     uint32_t length;
@@ -29,6 +31,10 @@ chunk_constraint global_chunk_constraints[PREALLOC_CHUNKS];
 
 //void* global_packet_buffer;
 //};
+
+void set_packet_receive_success(bool received) {
+  receive_succeded = received;
+}
 
 void packet_set_next_chunk_layout(void* p, uint32_t length,
                                   struct str_field_descr* fields, int n_fields,
@@ -54,6 +60,7 @@ void packet_borrow_next_chunk(void* p, size_t length, void** chunk) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
   klee_trace_param_u32(length, "length");
+  klee_assert(receive_succeded);
   klee_assert(!global_sent);
   klee_assert(global_n_borrowed_chunks < PREALLOC_CHUNKS);
   klee_assert(length < MAX_CHUNK_SIZE);
@@ -141,6 +148,7 @@ void packet_state_total_length(void* p, uint16_t* len) {
   klee_trace_ret();
   klee_trace_param_just_ptr(p, sizeof(void*), "p");
   klee_trace_param_ptr_directed(len, sizeof(uint16_t), "len", TD_BOTH);
+  klee_assert(p == pkt_received);
 }
 
 bool packet_receive(uint16_t src_device, void** p, uint16_t* len) {
@@ -149,17 +157,18 @@ bool packet_receive(uint16_t src_device, void** p, uint16_t* len) {
   klee_trace_param_ptr_directed(p, sizeof(void*), "p", TD_OUT);
   klee_trace_param_ptr_directed(len, sizeof(uint16_t), "len", TD_BOTH);
 
-  if (klee_int("received") == 0) {
+  if (!receive_succeded) {
     return false;
   } else {
+    pkt_received = *p;
     //TODO: klee_forbid access to the buffer
     //*p = &global_packet_buffer;
     klee_make_symbolic(global_chunks, sizeof(global_chunks), "packet_chunks");
     global_n_borrowed_chunks = 0;
     global_tot_len_borrowed = 0;
     global_sent = false;
-    global_packet_len = klee_int("packet_len");
-    klee_assume(sizeof(struct ether_hdr) <= global_packet_len);
+    global_packet_len = *len;//klee_int("packet_len");
+    //klee_assume(sizeof(struct ether_hdr) <= global_packet_len);
     for (uint32_t i = 0; i < PREALLOC_CHUNKS; ++i) {
       global_chunk_layouts[i].set = false;
       global_chunk_constraints[i] = NULL;
@@ -205,6 +214,7 @@ uint32_t packet_get_unread_length(void* p)
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
   klee_assert(!global_sent);
+  klee_assert(receive_succeded);
   klee_assert(global_tot_len_borrowed <= global_packet_len);
   return (uint32_t)(global_packet_len - global_tot_len_borrowed);
 }
