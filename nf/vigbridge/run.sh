@@ -18,7 +18,7 @@ set -x
 
 if [ $SCENARIO = "loopback" ]; then
     sudo taskset -c 8 ./build/bridge -n 2 -- --capacity 32768 \
-	 --config no-file.cfg $PARAMS
+	  $PARAMS
 else
     echo "[bench] ERROR: non-loopback is not supported" 1>&2
     exit 1
