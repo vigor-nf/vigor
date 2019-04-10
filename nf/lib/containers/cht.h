@@ -18,15 +18,15 @@
             0 < cht_height && cht_height < MAX_CHT_HEIGHT &&
             MAX_CHT_HEIGHT*backend_capacity < INT_MAX &&
             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &&
-            backend_capacity < INT_MAX &&
+            0 < backend_capacity && backend_capacity < INT_MAX &&
             true == forall(values, is_one) &&
             true == forall(split(values, nat_of_int(cht_height), backend_capacity), is_permutation_map_fst);
     }
 
-    fixpoint bool not_allocated(dchain filter, pair<int,real> idx) { return !dchain_allocated_fp(filter, fst(idx)); }
+    fixpoint bool not_allocated(dchain filter, int idx) { return !dchain_allocated_fp(filter, idx); }
 
     fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter) {
-        return exists(chunk(cht, hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), hash%(length(cht)/dchain_index_range_fp(filter)) * (dchain_index_range_fp(filter) + 1)), (not_allocated)(filter));
+        return exists(chunk(map(fst, cht), hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), (hash%(length(cht)/dchain_index_range_fp(filter)) + 1) * dchain_index_range_fp(filter)), (dchain_allocated_fp)(filter));
     }
 
     

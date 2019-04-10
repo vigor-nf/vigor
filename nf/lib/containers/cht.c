@@ -730,21 +730,57 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         }
     }
 
+    lemma void exists_none<t>(list<t> xs, fixpoint(t,bool) f)
+        requires    true == forall( xs, (sup)( (eq)(false), f) );
+        ensures     false == exists(xs, f);
+    {
+        switch(xs) {
+            case nil: 
+            case cons(x0, xs0): exists_none(xs0, f);
+        }
+    }
 
     lemma void cht_exists_from_dchain(int hash, list<pair<int, real> > cht, dchain filter, int i, int cht_height, int backend_capacity)
         requires    
+            true == dchain_allocated_fp(filter, nth((hash%cht_height) * backend_capacity + i, map(fst, cht))) &*&
             0 <= i &*& i < dchain_index_range_fp(filter) &*& 
-            true == dchain_allocated_fp(filter, i) &*&
             length(cht) == backend_capacity * cht_height &*&
             dchain_index_range_fp(filter) == backend_capacity &*&
-            0 <= cht_height &*& 0 <= backend_capacity;
+            0 < cht_height &*& 0 < backend_capacity &*& 0 <= hash;
         ensures     
             true == cht_exists(hash, cht, filter);
     {
-        assume (true == cht_exists(hash, cht, filter));
+        int start = hash%cht_height;
+        list<int> chunk = chunk(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity);
 
-        // chunk_length(cht, hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), hash%(length(cht)/dchain_index_range_fp(filter)) * (dchain_index_range_fp(filter) + 1));
-        // exists_index(chunk(cht, hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), hash%(length(cht)/dchain_index_range_fp(filter)) * (dchain_index_range_fp(filter) + 1)), (not_allocated)(filter), i);
+        div_mod_gt_0(start, hash, cht_height);
+        assume (length(cht)/dchain_index_range_fp(filter) == cht_height);
+        mul_nonnegative(start, backend_capacity);
+        mul_bounds(start + 1, cht_height, backend_capacity, backend_capacity);
+        map_preserves_length(fst, cht);
+        chunk_to_source(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity, i);
+        chunk_length(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity);
+        exists_index(chunk, (dchain_allocated_fp)(filter), i);
+    }
+
+    lemma void cht_exists_neg(int hash, list<pair<int, real> > cht, dchain filter, int cht_height, int backend_capacity)
+        requires    
+            true == forall(chunk(map(fst, cht), (hash%cht_height) * backend_capacity,  ((hash%cht_height) + 1) * backend_capacity), (sup)( (eq)(false), (dchain_allocated_fp)(filter))) &*&
+            length(cht) == backend_capacity * cht_height &*&
+            dchain_index_range_fp(filter) == backend_capacity &*&
+            0 < cht_height &*& 0 < backend_capacity &*& 0 <= hash;
+        ensures     
+            false == cht_exists(hash, cht, filter);
+    {
+        int start = hash%cht_height;
+        list<int> chunk = chunk(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity);
+
+        div_mod_gt_0(start, hash, cht_height);
+        assume (length(cht)/dchain_index_range_fp(filter) == cht_height);
+        mul_nonnegative(start, backend_capacity);
+        mul_bounds(start + 1, cht_height, backend_capacity, backend_capacity);
+        map_preserves_length(fst, cht);
+        exists_none(chunk, (dchain_allocated_fp)(filter));
     }
 
 @*/
@@ -782,7 +818,7 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
         double_chainp(ch, active_backends) &*&
         *chosen_backend |-> _ &*&
 
-        true == forall(chunk(values, start * backend_capacity, start * backend_capacity + i), (not_allocated)(ch))
+        true == forall(chunk(map(fst, values), start * backend_capacity, start * backend_capacity + i), (sup)( (eq)(false), (dchain_allocated_fp)(ch)))
     ;@*/
     {
         //@ mul_bounds(start, cht_height, backend_capacity, backend_capacity);
@@ -819,7 +855,8 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
             *chosen_backend = (int)*candidate;
 
             //@ assert (true == dchain_allocated_fp(ch, *candidate));
-            //@ cht_exists_from_dchain(hash, values, ch, *candidate, cht_height, backend_capacity);
+            //@ assert (nth(candidate_idx, map(fst, values)) == *candidate);
+            //@ cht_exists_from_dchain(hash, values, ch, i, cht_height, backend_capacity);
             //@ assert(true == cht_exists(hash, values, ch));
             //@ assert candidate |-> ?chosen_candidate;
             //@ assume(fst(nth(candidate_idx, values)) == cht_choose(hash, values, ch));//TODO
@@ -830,10 +867,12 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
 
         // Conservation of forall(chunk(...), ...);
         //@ assert (false == dchain_allocated_fp(ch, *candidate));
-        //@ chunk_append(values, start * backend_capacity, start * backend_capacity + i);
-        //@ forall_append(chunk(values, start * backend_capacity, start * backend_capacity + i), cons(nth(candidate_idx, values), nil), (not_allocated)(ch));
+        //@ map_preserves_length(fst, values);
+        //@ chunk_append(map(fst, values), start * backend_capacity, start * backend_capacity + i);
+        //@ forall_append(chunk(map(fst, values), start * backend_capacity, start * backend_capacity + i), cons(nth(candidate_idx, map(fst, values)), nil),  (sup)( (eq)(false), (dchain_allocated_fp)(ch)));
         vector_return(cht, (int)candidate_idx, candidate);
     }
-    //@ assume(!cht_exists(hash, values, ch));//TODO
+    //@ cht_exists_neg(hash, values, ch, cht_height, backend_capacity);
+    //@ assert(false == cht_exists(hash, values, ch));
     return 0;
 }
