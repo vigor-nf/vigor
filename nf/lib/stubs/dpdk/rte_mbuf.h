@@ -93,4 +93,11 @@ rte_pktmbuf_priv_size(struct rte_mempool *mp)
 	return 0; // see pool_create
 }
 
+static void
+rte_mbuf_refcnt_set(struct rte_mbuf *m, uint16_t new_value) 
+{
+    m->refcnt = new_value;
+}
+
+
 #endif
