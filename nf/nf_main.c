@@ -68,18 +68,17 @@ static const uint16_t TX_QUEUES_COUNT = 1;
 static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
 
-// Clone pool for flood()
-static struct rte_mempool* clone_pool;
-
 void
-flood(struct rte_mbuf* frame, uint16_t skip_device,
-      uint16_t nb_devices, struct rte_mempool* clone_pool) {
+flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices) {
   rte_mbuf_refcnt_set(frame, nb_devices - 1);
+  int total_sent = 0;
   for (uint16_t device = 0; device < nb_devices; device++) {
     if (device == skip_device) continue;
-    rte_eth_tx_burst(device, 0, &frame, 1);
+    total_sent += rte_eth_tx_burst(device, 0, &frame, 1);
   }
-  rte_pktmbuf_free(frame);
+  if (total_sent != nb_devices - 1) {
+    rte_pktmbuf_free(frame);
+  }
 }
 
 // Buffer count for mempools
@@ -182,7 +181,7 @@ lcore_main(void)
       if (dst_device == VIGOR_DEVICE) {
         nf_free_packet(mbuf);
       } else if (dst_device == FLOOD_FRAME) {
-        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
+        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
       } else {
         nf_send_packet(mbuf, dst_device);
       }
@@ -225,19 +224,6 @@ main(int argc, char* argv[])
   );
   if (mbuf_pool == NULL) {
     rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: %s\n", rte_strerror(rte_errno));
-  }
-
-  // Create another pool for the flood() cloning
-  clone_pool = rte_pktmbuf_pool_create(
-    "clone_pool", // name
-     MEMPOOL_BUFFER_COUNT, // #elements
-     0, // cache size (same remark as above)
-     0, // application private data size
-     RTE_MBUF_DEFAULT_BUF_SIZE, // data buffer size
-     rte_socket_id() // socket ID
-  );
-  if (clone_pool == NULL) {
-    rte_exit(EXIT_FAILURE, "Cannot create mbuf clone pool: %s\n", rte_strerror(rte_errno));
   }
 
   // Initialize all devices
