@@ -74,13 +74,10 @@ static struct rte_mempool* clone_pool;
 void
 flood(struct rte_mbuf* frame, uint16_t skip_device,
       uint16_t nb_devices, struct rte_mempool* clone_pool) {
+  rte_mbuf_refcnt_set(frame, nb_devices - 1);
   for (uint16_t device = 0; device < nb_devices; device++) {
     if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
-      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
-    }
-    nf_send_packet(copy, device);
+    rte_eth_tx_burst(device, 0, &frame, 1);
   }
   rte_pktmbuf_free(frame);
 }

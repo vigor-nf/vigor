@@ -253,16 +253,20 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
   bridge_expire_entries(now);
   bridge_put_update_entry(&ether_header->s_addr, in_port, now);
 
-  int dst_device = bridge_get_device(&ether_header->d_addr, in_port);
+  int forward_to = bridge_get_device(&ether_header->d_addr, in_port);
 
-  if (dst_device == -1) {
+  if (forward_to == -1) {
     return FLOOD_FRAME;
   }
 
-  if (dst_device == -2) {
+  if (forward_to == -2) {
     NF_DEBUG("filtered frame");
     return in_port;
   }
+
+  uint16_t dst_device = (uint16_t)forward_to;
+
+  concretize_devices(&dst_device, rte_eth_dev_count());
 
   return dst_device;
 }
