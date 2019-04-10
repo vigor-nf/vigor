@@ -152,7 +152,7 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 # KLEE verification
 # if something takes longer than expected, try --max-solver-time=3 --debug-report-symbdex (to avoid symbolic indices)
 VERIF_COMMAND := /usr/bin/time -v \
-                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs
+                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
 # NF args for the verification
 NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
 
