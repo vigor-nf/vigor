@@ -23,15 +23,13 @@
             true == forall(split(values, nat_of_int(cht_height), backend_capacity), is_permutation_map_fst);
     }
 
-    fixpoint bool not_allocated(dchain filter, int idx) { return !dchain_allocated_fp(filter, idx); }
-
     fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter) {
         return exists(chunk(map(fst, cht), hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), (hash%(length(cht)/dchain_index_range_fp(filter)) + 1) * dchain_index_range_fp(filter)), (dchain_allocated_fp)(filter));
     }
 
     
     fixpoint int cht_choose(int hash, list<pair<int, real> > cht, dchain filter) {
-        return 0;
+        return nth(hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter) + unpack_option_default(index_of_fp(chunk(map(fst, cht), hash%(length(cht)/dchain_index_range_fp(filter)) * dchain_index_range_fp(filter), (hash%(length(cht)/dchain_index_range_fp(filter)) + 1) * dchain_index_range_fp(filter)), 0, (dchain_allocated_fp)(filter)), 0), map(fst, cht));
     }
 
 @*/
