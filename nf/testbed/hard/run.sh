@@ -11,7 +11,7 @@
 #     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "~/vnds/nat"
 # $2: The scenario, one of the following:
 #     "mg-1p": Measure throughput: find the rate at which the middlebox
-#              starts loosing 1% of packets.
+#              starts losing 1% of packets.
 #     "mg-existing-flows-latency": Measure the forwarding latency for existing
 #                                  flows.
 #     "mg-new-flows-latency": Measure the forwarding latency for new flows.
