@@ -14,13 +14,6 @@ fixpoint option<int> index_of_fp<t>(list<t> xs, int idx, fixpoint (t,bool) fp) {
     }
 }
 
-fixpoint t unpack_option_default<t>(option<t> opt, t default_value) {
-    switch(opt) {
-        case none: return default_value;
-        case some(value): return value;
-    }
-}
-
 lemma void index_of_fp_exists<t>(list<t> xs, int idx, fixpoint (t,bool) fp, int i)
     requires    true == forall(take(i, xs), (sup)((eq)(false), fp)) &*& true == fp(nth(i, xs));
     ensures     index_of_fp(xs, idx, fp) == some(idx + i);

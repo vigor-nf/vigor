@@ -7,7 +7,7 @@
 
 static uint64_t loop(uint64_t k, uint64_t capacity)
 //@ requires    0 < capacity &*& capacity < INT_MAX;
-//@ ensures     0 <= result &*& result < capacity &*& result == k%capacity; 
+//@ ensures     0 <= result &*& result < capacity &*& result == k%capacity;
 {
     uint64_t g = k % capacity;
     //@ div_mod_gt_0(g, k, capacity);
@@ -15,6 +15,9 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
 }
 
 /*@
+    // ------------- 1st double-nested loop -------------
+
+
     fixpoint bool is_modulo_permutation(int offset, int shift, int cht_height, pair<int, int> index_elem_pair) {
         return snd(index_elem_pair) == ((offset + shift * fst(index_elem_pair)) % cht_height);
     }
@@ -127,6 +130,8 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    // ------------- 2nd double-nested loop -------------
+
     lemma void bounds_from_eq(list<int> xs, int x, int up_bound)
         requires    true == forall(xs, (eq)(x)) &*& x <= up_bound;
         ensures     true == forall(xs, (le)(up_bound)) &*& true == forall(xs, (ge)(x));
@@ -154,11 +159,11 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void next_from_permuts_end(list<int> ns, int idx, nat val, int nb_copies, list<int> xs)
-        requires    
-            true == forall_idx(ns, idx, (next_from_permuts)(xs)) &*& 
+        requires
+            true == forall_idx(ns, idx, (next_from_permuts)(xs)) &*&
             true == integer_copies(val, nb_copies, xs) &*&
             0 <= idx &*& idx + length(ns) - 1 == int_of_nat(val);
-        ensures     
+        ensures
             true == forall(ns, (eq)(nb_copies));
     {
         switch(ns) {
@@ -174,7 +179,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         ensures     count(xs, (eq)(elem)) == 0;
     {
         switch(xs) {
-            case nil: 
+            case nil:
             case cons(x0, xs0): mem_count_zero(xs0, elem);
         }
     }
@@ -184,7 +189,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         ensures     count(xs, (eq)(elem)) >= 1;
     {
         switch(xs) {
-            case nil: 
+            case nil:
             case cons(x0, xs0):
                 if (x0 != elem) {
                     mem_count_bound(xs0, elem);
@@ -195,31 +200,17 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                         mem_count_zero(xs0, elem);
                     }
                 }
-                
+
         }
     }
 
-    lemma void update_tail<t>(list<t> xs, list<t> ys, int i, t val)
-        requires    ys == update(i, val, xs) &*& 0 < i &*& i < length(ys);
-        ensures     tail(ys) == update(i - 1, val, tail(xs));
-    {
-        assume (tail(ys) == update(i - 1, val, tail(xs)));
-    }
-
-    lemma void update_nth<t>(list<t> xs, int i, t val)
-        requires    nth(i, xs) == val &*& 0 < i &*& i < length(xs);
-        ensures     nth(i - 1, tail(xs)) == val;
-    {
-        assume (nth(i - 1, tail(xs)) == val);
-    }
-
     lemma void next_from_permuts_update(list<int> next, list<int> next_update, int idx, list< list<int> > xs, list< list<int> > ys, list<int> xs_elem, list<int> ys_elem, nat val, int i, int j, int special_value)
-        requires    
-            true == forall_idx(next, idx, (next_from_permuts)(flatten(xs))) &*& 
+        requires
+            true == forall_idx(next, idx, (next_from_permuts)(flatten(xs))) &*&
             true == forall(next_update, (ge)(0)) &*&
             j < length(next) &*& length(next) <= int_of_nat(val) + 1 &*&
             idx == int_of_nat(val) + 1 - length(next) &*& j == special_value - idx &*&
-               
+
             true == forall(xs, (sub_integer_copies)(val, 1)) &*&
             true == forall(ys, (sub_integer_copies)(val, 1)) &*&
             xs_elem == nth(i, xs) &*& ys_elem == nth(i, ys) &*&
@@ -228,10 +219,10 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             0 <= i &*& i < length(xs) &*&
 
             (0 <= j)
-                ?   next_update == update(j, nth(j, next) + 1, next) 
+                ?   next_update == update(j, nth(j, next) + 1, next)
                 :   next_update == next;
-                
-        ensures     
+
+        ensures
             true == forall_idx(next_update, idx, (next_from_permuts)(flatten(ys)));
     {
         switch(next_update) {
@@ -241,8 +232,9 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 length_tail(next);
                 length_tail(next_update);
                 if (j > 0) {
-                    update_tail(next, next_update, j, nth(j, next) + 1);
-                    update_nth(next, j, nth(j, next));
+                    cons_head_tail(next);
+                    update_tail_tail_update(head(next), tail(next), j, nth(j, next) + 1);
+                    nth_cons(j, tail(next), head(next));
                 } else if (j == 0) {
                     tail_of_update_0(next, nth(j, next) + 1);
                     tail_of_update_0(next_update, nth(j, next) + 1);
@@ -308,7 +300,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                     // Conclude on the number of occurences of idx
                     flatten_subcount_update_unrelevant(xs, ys, val, i, idx, 0);
                     forall_idx_nth(next, idx, (next_from_permuts)(flatten(xs)), 0);
-                    
+
                     if (j != 0) {
                         assert (true == next_from_permuts(flatten(xs), idx, nth(0, next)));
                         assert (nth(0, next) == nth(0, next_update));
@@ -348,7 +340,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 if (i > 0) {
                     no_dups_take_include(xs0, i - 1, special_val);
                 }
@@ -361,7 +353,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 if (i == 0) {
                     take_0(xs);
                 } else {
@@ -372,30 +364,30 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void cht_end(list< list< pair<int,real> > > permuts, int backend_capacity)
-        requires    
+        requires
             true == forall(permuts, (is_sub_permutation_map_fst)(backend_capacity)) &*&
             true == forall(permuts, (length_eq)(backend_capacity));
-        ensures     
+        ensures
             true == forall(permuts, is_permutation_map_fst);
     {
         switch(permuts) {
             case nil:
-            case cons(p0, ps0): 
+            case cons(p0, ps0):
                 cht_end(ps0, backend_capacity);
                 sub_permutation_map_fst_complete(p0);
-        } 
+        }
     }
 @*/
 
 int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
-/*@ requires 
+/*@ requires
         vectorp<uint32_t>(cht, u_integer, ?old_values, ?addrs) &*&
         0 < cht_height &*& cht_height < MAX_CHT_HEIGHT &*& true == is_prime(cht_height) &*&
         0 < backend_capacity &*& backend_capacity < cht_height &*&
         sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &*&
         length(old_values) == cht_height*backend_capacity &*&
         true == forall(old_values, is_one); @*/
-/*@ ensures 
+/*@ ensures
         vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
         (result == 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
 {
@@ -506,7 +498,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         free(permutations);
         return 1;
     }
-    
+
     //@ open ints(next, cht_height, ?n0);
     //@ close ints(next, cht_height, n0);
     for (uint32_t i = 0; i < cht_height; ++i)
@@ -604,15 +596,15 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
 
             uint32_t index = j * cht_height + i;
             int bucket_id = permutations[index];
-            
-	        // Proof that 0 <= bucket_id < cht_height
+
+            // Proof that 0 <= bucket_id < cht_height
             //@ split_to_source(p_final, nat_of_int(backend_capacity), cht_height, i, j);
             //@ forall_nth(perms, is_permutation, j);
             //@ length_split_nth(p_final, nat_of_int(backend_capacity), cht_height, j);
             //@ forall_nth(nth(j, perms), (lt)(length(nth(j, perms))), i);
             //@ forall_nth(nth(j, perms), (ge)(0), i);
             int priority = next[bucket_id];
-            
+
             // Proof that next[bucket_id] < backend_capacity
             //@ list<int> chunk_partial = chunk(p_final, j * cht_height, j * cht_height + i);
             //@ list<int> chunk_complete = chunk(p_final, j * cht_height, (j+1) * cht_height);
@@ -631,7 +623,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ flatten_subcount_special(explored, nat_of_int(cht_height - 1), j, bucket_id);
             //@ forall_idx_nth(n_in, 0, (next_from_permuts)(flatten_explored), bucket_id);
             //@ assert(next[bucket_id] < backend_capacity);
-            
+
             //@ forall_nth(n_in, (ge)(0), bucket_id);
             next[bucket_id] += 1;
             // Update bounds on next array
@@ -646,7 +638,6 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ chunk_append(p_final, j * cht_height, j * cht_height + i);
             //@ next_from_permuts_update(n_in, n_in_update, 0, explored, explored_update, chunk_partial, chunk_partial_update, nat_of_int(cht_height-1), j, bucket_id, bucket_id);
 
-
             // Update the CHT
             //@ mul_bounds(bucket_id, cht_height - 1, backend_capacity, backend_capacity);
             //@ pair<uint32_t, real> old_val = nth(backend_capacity * bucket_id + priority, vals_in);
@@ -657,12 +648,11 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ forall_update(vals_in, is_one, backend_capacity * bucket_id + priority, pair(j, 1.0));
             //@ update_update_rewrite(pair(j, 1.0), backend_capacity * bucket_id + priority, old_val, vals_in);
 
-                        
             // Proof that only split_varlim(vals_in,...)[bucket_id] is modified
             //@ list< pair<uint32_t, real> > vals_in_update = update(backend_capacity * bucket_id + priority, pair(j, 1.0), vals_in);
             //@ split_varlim_update_unrelevant(vals_in, vals_in_update, n_in, backend_capacity, priority, bucket_id, pair(j, 1.0));
             //@ split_varlim_update(vals_in_update, backend_capacity, n_in, n_in_update, bucket_id);
-            
+
             // Proof that only element j is appended to chunk_vals
             //@ list< pair<uint32_t, real> > chunk_vals = chunk(vals_in_update, backend_capacity * bucket_id, backend_capacity * bucket_id + priority);
             //@ list< pair<uint32_t, real> > chunk_vals_update = chunk(vals_in_update, backend_capacity * bucket_id, backend_capacity * bucket_id + priority+1);
@@ -670,20 +660,20 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ split_varlim_chunk_equiv(vals_in_update, backend_capacity, n_in_update, bucket_id); // chunk_vals_update
             //@ chunk_append(vals_in_update, backend_capacity * bucket_id, backend_capacity * bucket_id + priority);
             //@ assert (chunk_vals_update == append(chunk_vals, cons(pair(j, 1.0), nil)));
-            
+
             // Proof that appending j preserves the permutation
             //@ list < list< pair<uint32_t, real> > > split_vals_in = split_varlim(vals_in_update, backend_capacity, n_in);
             //@ forall_nth(split_vals_in, (is_sub_permutation_map_fst)(backend_capacity), bucket_id);
             //@ assert (true == is_sub_permutation_map_fst(backend_capacity, chunk_vals));
             //@ assert (true == no_dups(map(fst, chunk_vals)));
 
-            // goal --> false == mem(j, map(fst, chunk_vals)); 
+            // goal --> false == mem(j, map(fst, chunk_vals));
 
             //@ assume (true == is_sub_permutation_map_fst(backend_capacity, chunk_vals_update));
             //@ forall_update(split_varlim(vals_in_update, backend_capacity, n_in), (is_sub_permutation_map_fst)(backend_capacity), bucket_id, chunk_vals_update);
         }
 
-        // Conservation of invariant for for forall_idx(...) 
+        // Conservation of invariant for for forall_idx(...)
         //@ open ints(next, cht_height, ?n_in);
         //@ close ints(next, cht_height, n_in);
         //@ assert(true == forall_idx(n_in, 0, (next_from_permuts)( flatten(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, backend_capacity))) )));
@@ -703,7 +693,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     //@ assert (true == integer_copies(nat_of_int(cht_height - 1), backend_capacity, all_p_final));
     //@ assert (true == forall_idx(n, 0, (next_from_permuts)(all_p_final)));
     //@ next_from_permuts_end(n, 0, nat_of_int(cht_height - 1), backend_capacity, all_p_final);
-    
+
     // Proof that the CHT is completely filled with permutations
     //@ list< list< pair<uint32_t, real> > > permuts = split(vals, nat_of_int(cht_height), backend_capacity);
     //@ split_varlim_split_equiv(vals, n, backend_capacity, nat_of_int(cht_height));
@@ -711,7 +701,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     //@ length_split_forall(vals, nat_of_int(cht_height), backend_capacity);
     //@ cht_end(permuts, backend_capacity);
     //@ assert (true == valid_cht(vals, backend_capacity, cht_height));
-    
+
     // Free memory
     free(next);
     free(permutations);
@@ -735,19 +725,19 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         ensures     false == exists(xs, f);
     {
         switch(xs) {
-            case nil: 
+            case nil:
             case cons(x0, xs0): exists_none(xs0, f);
         }
     }
 
     lemma void cht_exists_from_dchain(int hash, list<pair<int, real> > cht, dchain filter, int i, int cht_height, int backend_capacity)
-        requires    
+        requires
             true == dchain_allocated_fp(filter, nth((hash%cht_height) * backend_capacity + i, map(fst, cht))) &*&
-            0 <= i &*& i < dchain_index_range_fp(filter) &*& 
+            0 <= i &*& i < dchain_index_range_fp(filter) &*&
             length(cht) == backend_capacity * cht_height &*&
             dchain_index_range_fp(filter) == backend_capacity &*&
             0 < cht_height &*& 0 < backend_capacity &*& 0 <= hash;
-        ensures     
+        ensures
             true == cht_exists(hash, cht, filter);
     {
         int start = hash%cht_height;
@@ -764,12 +754,12 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     }
 
     lemma void cht_exists_neg(int hash, list<pair<int, real> > cht, dchain filter, int cht_height, int backend_capacity)
-        requires    
+        requires
             true == forall(chunk(map(fst, cht), (hash%cht_height) * backend_capacity,  ((hash%cht_height) + 1) * backend_capacity), (sup)( (eq)(false), (dchain_allocated_fp)(filter))) &*&
             length(cht) == backend_capacity * cht_height &*&
             dchain_index_range_fp(filter) == backend_capacity &*&
             0 < cht_height &*& 0 < backend_capacity &*& 0 <= hash;
-        ensures     
+        ensures
             false == cht_exists(hash, cht, filter);
     {
         int start = hash%cht_height;
@@ -807,20 +797,19 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
 
 @*/
 
-
 int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity, int *chosen_backend)
-/*@ requires 
+/*@ requires
         vectorp<uint32_t>(cht, u_integer, ?values, ?addrs) &*&
         double_chainp(?ch, active_backends) &*&
         *chosen_backend |-> _ &*&
         dchain_index_range_fp(ch) == backend_capacity &*&
         true == valid_cht(values, backend_capacity, cht_height); @*/
-/*@ ensures 
+/*@ ensures
         vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
         double_chainp(ch, active_backends) &*&
         *chosen_backend |-> ?chosen &*&
-        (result == 0 
-            ? false == cht_exists(hash, values, ch)        
+        (result == 0
+            ? false == cht_exists(hash, values, ch)
             : true == cht_exists(hash, values, ch) &*&
             chosen == cht_choose(hash, values, ch) &*&
             result == 1 &*&
@@ -829,10 +818,10 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
 {
     uint64_t start = loop(hash, cht_height);
     for (uint32_t i = 0; i < backend_capacity; ++i)
-    /*@invariant 
+    /*@invariant
         0 <= i &*& i <= backend_capacity &*&
         0 <= start &*& start < cht_height &*&
-        
+
         vectorp<uint32_t>(cht, u_integer, values, addrs) &*&
         cht_height*backend_capacity == length(values) &*&
         true == forall(values, is_one) &*&
@@ -870,7 +859,7 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
         //@ nth_map(candidate_idx, fst, values);
         //@ assert (nth(candidate_idx, map(fst, values)) < backend_capacity);
         //@ assert (0 <= nth(candidate_idx, map(fst, values)));
-        
+
         ////@ update_id(candidate_idx, values);
         //@ forall_nth(values, is_one, candidate_idx);
         if (dchain_is_index_allocated(active_backends, (int)*candidate)) {
@@ -889,7 +878,7 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
             //@ chunk_take(map(fst, values), start * backend_capacity, start * backend_capacity + i, (start + 1) * backend_capacity);
             //@ cht_choose_index(hash, values, ch, i, cht_height, backend_capacity);
             //@ assert(fst(nth(candidate_idx, values)) == cht_choose(hash, values, ch));
-            
+
             vector_return(cht, (int)candidate_idx, candidate);
             return 1;
         }
