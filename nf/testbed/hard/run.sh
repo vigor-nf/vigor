@@ -58,7 +58,7 @@ case $SCENARIO in
     "mg-1p")
         LUA_SCRIPT="l3-load-find-1p.lua"
         echo "[bench] Benchmarking throughput..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 3000 -u 5 -t 20 1 0"
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 5000 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-find-mg-1p.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-find-mg-1p.txt"
     ;;
