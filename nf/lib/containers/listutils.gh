@@ -568,6 +568,30 @@ lemma void split_update_unrelevant<t>(list<t> xs1, list<t> xs2, nat nb_split, in
     assume (split(xs1, nb_split, n) == split(xs2, nb_split, n));
 }
 
+fixpoint int extract_j(int n, int divisor) {
+    return n / divisor;
+}
+
+fixpoint int extract_i(int n, int divisor) {
+    return n % divisor;
+}
+
+lemma void extract_works(int n, int divisor, int j, int i)
+    requires    extract_j(n, divisor) == j &*& extract_i(n, divisor) == i &*& 0 < divisor &*& 0 <= n;
+    ensures     n == j * divisor + i;
+{
+    div_rem_nonneg(n, divisor);
+}
+
+// ------------- integers_list -------------
+
+fixpoint list<int> integers_list(nat cnt, int index) {
+    switch(cnt) {
+        case zero: return nil;
+        case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
+    }
+}
+
 // ------------- zip -------------
 
 fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {
@@ -588,12 +612,23 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
     }
 }
 
-// ------------- integers_list -------------
+fixpoint list< pair<int, t> > zip_index<t>(list<t> xs) {
+    return zip(integers_list(nat_of_int(length(xs)), 0) , xs);
+}
 
-fixpoint list<int> integers_list(nat cnt, int index) {
-    switch(cnt) {
+// ------------- index2D -------------
+
+fixpoint list< pair<int,int> > index2DLine(nat len, int cst, int idx) {
+    switch(len) {
         case zero: return nil;
-        case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
+        case succ(len_pred): return cons(pair(cst, idx), index2DLine(len_pred, cst, idx + 1));
+    }
+}
+
+fixpoint list< pair<int,int> > index2D(nat nb_rows, int nb_columns, int i) {
+    switch(nb_rows) {
+        case zero: return nil;
+        case succ(nb_rows_pred): return append( index2DLine(nat_of_int(nb_columns), i, 0) , index2D(nb_rows_pred, nb_columns, i + 1) );
     }
 }
 

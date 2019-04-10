@@ -1,0 +1,78 @@
+#ifndef _TRANSPOSE_GH_INCLUDED_
+#define _TRANSPOSE_GH_INCLUDED_
+
+#include <nat.gh>
+#include "arith.gh"
+
+
+fixpoint list<t> transpose_rec_row<t>(list<t> xs, int nb_cols, int idx_col_cst, int idx_row, nat it_row) {
+    switch(it_row) {
+        case zero: return nil;
+        case succ(it_row_pred): return cons( nth(idx_row * nb_cols + idx_col_cst, xs) , transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row + 1, it_row_pred) );
+    }
+}
+
+fixpoint list<t> transpose_rec<t>(list<t> xs, int nb_rows, int nb_cols, int idx_col, nat it_col) {
+    switch(it_col) {
+        case zero: return nil;
+        case succ(it_col_pred): return append( transpose_rec_row(xs, nb_cols, idx_col, 0, nat_of_int(nb_rows)) , transpose_rec(xs, nb_rows, nb_cols, idx_col + 1, it_col_pred) );
+    }
+}
+
+fixpoint list<t> transpose<t>(list<t> xs, int nb_rows, int nb_cols) {
+    return transpose_rec(xs, nb_rows, nb_cols, 0, nat_of_int(nb_cols));
+}
+
+lemma_auto(length(transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row, it_row))) void length_transpose_rec_row<t>(list<t> xs, int nb_cols, int idx_col_cst, int idx_row, nat it_row)
+    requires    true;
+    ensures     length(transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row, it_row)) == int_of_nat(it_row);
+{
+    switch(it_row) {
+        case zero:
+        case succ(it_row_pred): length_transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row + 1, it_row_pred);
+    }
+}
+
+lemma_auto(length(transpose_rec(xs, nb_rows, nb_cols, idx_col, it_col))) void length_transpose_rec<t>(list<t> xs, int nb_rows, int nb_cols, int idx_col, nat it_col)
+    requires    0 <= nb_rows;
+    ensures     length(transpose_rec(xs, nb_rows, nb_cols, idx_col, it_col)) == nb_rows * int_of_nat(it_col);
+{
+    switch(it_col) {
+        case zero:
+        case succ(it_col_pred): 
+            length_transpose_rec(xs, nb_rows, nb_cols, idx_col + 1, it_col_pred);
+            mul_subst(int_of_nat(it_col), int_of_nat(it_col_pred) + 1, nb_rows);
+    }
+}
+
+lemma void transpose_row_to_src<t>(list<t> xs, list<t> xs_transpose, int nb_rows, int nb_cols, int i, nat j)
+    requires
+        xs_transpose == transpose(xs, nb_rows, nb_cols) &*&
+        length(xs) == nb_rows * nb_cols &*&
+        0 <= i &*& i < nb_rows &*&
+        0 <= int_of_nat(j) &*& int_of_nat(j) < nb_cols;
+    ensures
+        nth(i * nb_rows + int_of_nat(j), xs) == nth(int_of_nat(j) * nb_rows + i, xs_transpose);
+{
+    switch(j) {
+        case zero:
+        case succ(j_pred):
+    }
+}
+
+lemma void transpose_to_src<t>(list<t> xs, list<t> xs_transpose, int nb_rows, int nb_cols, int i, nat j)
+    requires
+        xs_transpose == transpose(xs, nb_rows, nb_cols) &*&
+        length(xs) == nb_rows * nb_cols &*&
+        0 <= i &*& i < nb_rows &*&
+        0 <= int_of_nat(j) &*& int_of_nat(j) < nb_cols;
+    ensures
+        nth(i * nb_rows + int_of_nat(j), xs) == nth(int_of_nat(j) * nb_rows + i, xs_transpose);
+{
+    switch(j) {
+        case zero:
+        case succ(j_pred):
+    }
+}
+
+#endif //_LISTUTILS_GH_INCLUDED_
