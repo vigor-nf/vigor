@@ -42,9 +42,12 @@ struct stub_device DEVICES[STUB_DEVICES_COUNT];
 void stub_hardware_receive_packet(uint16_t device);
 // HACK this should not be needed :( but it is cause of the current impl. of havocing
 void stub_hardware_reset_receive(uint16_t device);
-#else
+
+struct dsos_pci_nic *stub_hardware_get_nics(int *n);
+
+#else //VIGOR_STUB_HARDWARE
 struct stub_device DEVICES[0];
 
 static inline void stub_hardware_receive_packet(uint16_t device) { }
 static inline void stub_hardware_reset_receive(uint16_t device) { }
-#endif
+#endif//VIGOR_STUB_HARDWARE
