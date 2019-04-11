@@ -22,6 +22,12 @@
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
 
+#ifdef DSOS
+#  define MAIN nf_main
+#else//DSOS
+#  define MAIN main
+#endif//DSOS
+
 #include <inttypes.h>
 
 #ifdef KLEE_VERIFICATION
@@ -193,7 +199,7 @@ lcore_main(void)
 // --- Main ---
 
 int
-main(int argc, char* argv[])
+MAIN(int argc, char* argv[])
 {
   // Initialize the Environment Abstraction Layer (EAL)
   int ret = rte_eal_init(argc, argv);

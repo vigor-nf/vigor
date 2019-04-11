@@ -1,6 +1,8 @@
 #include "lib/stubs/externals/externals_stub.h"
 #include "lib/stubs/hardware_stub.h"
 
+#include "lib/kernel/dsos_pci.h"
+
 #include <dirent.h>
 #include <endian.h>
 #include <fcntl.h>
@@ -15,6 +17,8 @@
 #include <sys/types.h>
 
 #include <klee/klee.h>
+
+#define PCI_MAX_RESOURCE 6
 
 // Globals
 static const int POS_UNOPENED = -1;
@@ -78,6 +82,10 @@ static char* FILE_CONTENT_HPINFO = (char*) -200;
 // Special case: Hugepage files
 static char* FILE_CONTENT_HUGEPAGE = (char*) -300;
 
+struct dsos_pci_nic *PCI_DEVICES;
+int NUM_PCI_DEVICES;
+
+const int MSR_FD = 1337;
 
 int
 access(const char* pathname, int mode)
@@ -120,6 +128,10 @@ open(const char* file, int oflag, ...)
 	// NUMA map, unsupported for now
 	if (!strcmp(file, "/proc/self/numa_maps") && oflag == O_RDONLY) {
 		return -1; // TODO
+	}
+
+	if (!strcmp(file, "/dev/cpu/0/msr") && oflag == O_RDONLY) {
+		return MSR_FD;
 	}
 
 	// Generic
@@ -275,6 +287,31 @@ read(int fd, void *buf, size_t count)
 	return 0;
 }
 
+ssize_t
+pread(int fd, void *buf, size_t count, off_t offset)
+{
+	klee_assert(FILES[fd].pos != POS_UNOPENED);
+	klee_assert(FILES[fd].kind == KIND_FILE);
+
+	if (fd == MSR_FD) {
+		// MSR_PLATFORM_INFO
+		klee_assert(offset == 0xCE);
+		klee_assert(count == 8);
+
+		*((uint64_t *) buf) = (33ULL << 8);
+		return 8;
+	}
+
+	klee_assert(count == 1);
+
+	if (offset < strlen(FILES[fd].content)) {
+		*((char*) buf) = FILES[fd].content[offset];
+		return 1;
+	}
+
+	return -1;
+}
+
 int
 close(int fd)
 {
@@ -359,11 +396,13 @@ mmap(void* addr, size_t length, int prot, int flags, int fd, off_t offset)
 	klee_assert(FILES[fd].kind == KIND_FILE);
 
 	// First off, are we trying to mmap device memory?
-	for (int n = 0; n < sizeof(DEVICES)/sizeof(DEVICES[0]); n++) {
-		if ((void*) FILES[fd].content == DEVICES[n].mem) {
-			klee_assert(length == DEVICES[n].mem_len);
+	for (int n = 0; n < NUM_PCI_DEVICES; n++) {
+		for (int i = 0; i < PCI_MAX_RESOURCE; i++) {
+			if ((void*) FILES[fd].content == PCI_DEVICES[n].resources[i].start) {
+				klee_assert(length == PCI_DEVICES[n].resources[i].size && PCI_DEVICES[n].resources[i].is_mem);
 
-			return DEVICES[n].mem;
+				return PCI_DEVICES[n].resources[i].start;
+			}
 		}
 	}
 
@@ -435,12 +474,16 @@ int
 munmap(void* addr, size_t length)
 {
 	// First off, are we trying to unmap device memory?
-	for (int n = 0; n < sizeof(DEVICES)/sizeof(DEVICES[0]); n++) {
-		if (addr == DEVICES[n].mem) {
-			klee_assert(length == DEVICES[n].mem_len);
+	for (int n = 0; n < NUM_PCI_DEVICES; n++) {
+		for (int i = 0; i < PCI_NUM_RESOURCES; i++) {
+			struct dsos_pci_nic *p;
 
-			// Do nothing - the memory still exists!
-			return 0;
+			if (addr == PCI_DEVICES[n].resources[i].start) {
+				klee_assert(length == PCI_DEVICES[n].resources[i].size && PCI_DEVICES[n].resources[i].is_mem);
+
+				// Do nothing - the memory still exists!
+				return 0;
+			}
 		}
 	}
 
@@ -467,40 +510,59 @@ munmap(void* addr, size_t length)
 	klee_abort();
 }
 
+int
+__libc_open(const char *pathname, int flags, mode_t mode)
+{
+	return open(pathname, flags, mode);
+}
 
-__attribute__((constructor(150))) // High prio, must execute after other stuff since it relies on hardware stubs
-static void
-stub_stdio_files_init(void)
+void
+stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 {
 	// Helper methods declarations
 	char* stub_pci_file(const char* device_name, const char* file_name);
 	char* stub_pci_folder(const char* device_name);
 	char* stub_pci_addr(size_t addr);
+	char* stub_pci_name(int index);
 	int stub_add_file(char* path, char* content);
 	int stub_add_link(char* path, char* content);
 	int stub_add_folder_array(char* path, int children_len, int* children);
 	int stub_add_folder(char* path, int children_len, ...);
 
+	assert(devs != NULL);
 
-	// KLEE does this usually, but we don't go through it for uclibc
-	klee_alias_function("__libc_open", "open");
+	PCI_DEVICES = devs;
+	NUM_PCI_DEVICES = n;
 
 	// Files initialization
 	int f = 0;
 	memset(FILES, 0, sizeof(FILES));
 
-#ifdef VIGOR_STUB_HARDWARE
 	// PCI-related files
-	int* dev_folders = (int*) malloc(STUB_DEVICES_COUNT * sizeof(int));
-	for (int n = 0; n < STUB_DEVICES_COUNT; n++) {
-		char* dev = DEVICES[n].name;
+	int* dev_folders = (int*) malloc(NUM_PCI_DEVICES * sizeof(int));
+	for (int n = 0; n < NUM_PCI_DEVICES; n++) {
+		struct dsos_pci_nic *p;
+
+		char* dev = stub_pci_name(n);
 
 		// Basic files
-		int vendor_fd = stub_add_file(stub_pci_file(dev, "vendor"), "32902\n"); // Intel (0x8086)
-		int device_fd = stub_add_file(stub_pci_file(dev, "device"), "4347\n"); // Intel 82599ES (0x10fb)
-		int subvendor_fd = stub_add_file(stub_pci_file(dev, "subsystem_vendor"), "0\n"); // any
-		int subdevice_fd = stub_add_file(stub_pci_file(dev, "subsystem_device"), "0\n"); // any
-		int class_fd = stub_add_file(stub_pci_file(dev, "class"), "131072\n"); // Intel 82599ES (0x020000)
+		char sysfs_resource[24];
+
+		snprintf(sysfs_resource, sizeof(sysfs_resource), "%u\n", devs[n].vendor_id);
+		int vendor_fd = stub_add_file(stub_pci_file(dev, "vendor"), strdup(sysfs_resource));
+
+		snprintf(sysfs_resource, sizeof(sysfs_resource), "%u\n", devs[n].device_id);
+		int device_fd = stub_add_file(stub_pci_file(dev, "device"), strdup(sysfs_resource));
+
+		snprintf(sysfs_resource, sizeof(sysfs_resource), "%u\n", devs[n].subsystem_vendor_id);
+		int subvendor_fd = stub_add_file(stub_pci_file(dev, "subsystem_vendor"), strdup(sysfs_resource));
+
+		snprintf(sysfs_resource, sizeof(sysfs_resource), "%u\n", devs[n].subsystem_id);
+		int subdevice_fd = stub_add_file(stub_pci_file(dev, "subsystem_device"), strdup(sysfs_resource));
+
+		snprintf(sysfs_resource, sizeof(sysfs_resource), "%u\n", devs[n].vendor_id);
+		int class_fd = stub_add_file(stub_pci_file(dev, "class"), strdup(sysfs_resource));
+
 		int maxvfs_fd = stub_add_file(stub_pci_file(dev, "max_vfs"), "0\n"); // no virtual functions
 		int numanode_fd = stub_add_file(stub_pci_file(dev, "numa_node"), "0\n"); // NUMA node 0
 
@@ -508,38 +570,71 @@ stub_stdio_files_init(void)
 		int driver_fd = stub_add_link(stub_pci_file(dev, "driver"), "/drivers/igb_uio");
 
 		// 'uio' folder, itself containing an empty folder 'uioN' (where N is the device number)
-		char uio_name[1024];
+		char uio_name[32];
 		snprintf(uio_name, sizeof(uio_name), "uio/uio%d", n);
 		int uio_entry_fd = stub_add_folder(stub_pci_file(dev, strdup(uio_name)), 0);
 		int uio_fd = stub_add_folder(stub_pci_file(dev, "uio"), 1, uio_entry_fd);
+
 
 		// Resources file
 		// Multiple lines; each line has the format <start addr> <end addr> <flags>
 		// all of which are 64-bit numbers in hexadecimal notation (starting with 0x)
 		// Flag 0x200 is "memory", i.e. the addresses designate a DMA location
+		// Flag 0x100 is "I/O", i.e. the addresses designate a I/O port range
 		// DPDK interprets 6 lines max (PCI_MAX_RESOURCE)
 
-		// One single resource, rest are empty
-		char* resource_format =
-			"%s %s 0x0000000000000200\n"
-			"0x0000000000000000 0x0000000000000000 0x0000000000000000\n"
-			"0x0000000000000000 0x0000000000000000 0x0000000000000000\n"
-			"0x0000000000000000 0x0000000000000000 0x0000000000000000\n"
-			"0x0000000000000000 0x0000000000000000 0x0000000000000000\n"
-			"0x0000000000000000 0x0000000000000000 0x0000000000000000\n";
+		const char *resource_mem_format = "%s %s 0x0000000000000200\n";
+		const char *resource_io_format = "%s %s 0x0000000000000100\n";
+
 		char resource_content[1024];
-		snprintf(resource_content, sizeof(resource_content), resource_format,
-				stub_pci_addr((size_t) DEVICES[n].mem), stub_pci_addr((size_t) DEVICES[n].mem + DEVICES[n].mem_len - 1));
+		resource_content[0] = '\0';
 
-		int resource_fd = stub_add_file(stub_pci_file(dev, "resource"), strdup(resource_content));
+		int dev_folder_children[16] = {
+			vendor_fd, device_fd, subvendor_fd,
+			subdevice_fd, class_fd, maxvfs_fd,
+			numanode_fd, 0, uio_fd
+		};
 
-		// Since we say we have one resource, we need to create it...
-		int resource0_fd = stub_add_file(stub_pci_file(dev, "resource0"), (char*) DEVICES[n].mem);
+		int dev_folder_children_counter = 9;
 
-		dev_folders[n] = stub_add_folder(stub_pci_folder(dev), 11,
-					vendor_fd, device_fd, subvendor_fd, subdevice_fd,
-					class_fd, maxvfs_fd, numanode_fd, driver_fd,
-					uio_fd, resource_fd, resource0_fd);
+		for (int i = 0; i < PCI_NUM_RESOURCES; i++) {
+			if (devs[n].resources[i].start == NULL) {
+				// No resource actually present
+				strncat(resource_content, "0x0000000000000000 0x0000000000000000 0x0000000000000000\n",
+					sizeof(resource_content) - 1);
+			} else {
+				char resource_line_content[180];
+				char resource_name[20];
+				const char *resource_format;
+
+				if (devs[n].resources[i].is_mem) {
+					resource_format = resource_mem_format;
+				} else {
+					char portio_start_buf[16];
+					resource_format = resource_io_format;
+
+					strcat(uio_name, "/portio/port0/start");
+					snprintf(portio_start_buf, sizeof(portio_start_buf), "%lu\n", (unsigned long)devs[n].resources[i].start);
+					stub_add_file(stub_pci_file(dev, strdup(uio_name)), strdup(portio_start_buf));
+				}
+
+				snprintf(resource_line_content, sizeof(resource_line_content), resource_format,
+						stub_pci_addr((size_t) devs[n].resources[i].start),
+						stub_pci_addr((size_t) devs[n].resources[i].start + devs[n].resources[i].size - 1));
+
+				strncat(resource_content, resource_line_content, sizeof(resource_content) - 1);
+
+				snprintf(resource_name, sizeof(resource_name), "resource%d", i);
+
+				dev_folder_children[dev_folder_children_counter++] =
+					stub_add_file(stub_pci_file(dev, strdup(resource_name)), (char*) devs[n].resources[i].start);
+			}
+		}
+
+		dev_folder_children[dev_folder_children_counter++] =
+			stub_add_file(stub_pci_file(dev, "resource"), strdup(resource_content));
+
+		dev_folders[n] = stub_add_folder_array(stub_pci_folder(dev), dev_folder_children_counter, dev_folder_children);
 
 		// UIO stuff
 		char sys_uio_path[1024];
@@ -549,11 +644,10 @@ stub_stdio_files_init(void)
 		// Interrupts
 		char interrupts_file_path[1024];
 		snprintf(interrupts_file_path, sizeof(interrupts_file_path), "/dev/uio%d", n);
-		DEVICES[n].interrupts_fd = stub_add_file(strdup(interrupts_file_path), "");
+		devs[n].interrupts_fd = stub_add_file(strdup(interrupts_file_path), "");
 	}
 
-	stub_add_folder_array("/sys/bus/pci/devices", STUB_DEVICES_COUNT, dev_folders);
-#endif
+	stub_add_folder_array("/sys/bus/pci/devices", NUM_PCI_DEVICES, dev_folders);
 
 	// Hugepages properties
 	char huge_free_value[1024];
@@ -594,7 +688,6 @@ stub_stdio_files_init(void)
 	// Other devices
 	stub_add_file("/dev/zero", ""); // HACK as long as it's not read, we can pretend it doesn't contain anything
 }
-
 
 // Helper methods - not part of the external stubs
 
@@ -693,4 +786,14 @@ stub_add_folder(char* path, int children_len, ...)
 	}
 
 	return stub_add_folder_array(path, children_len, children);
+}
+
+char*
+stub_pci_name(int index)
+{
+	klee_assert(index >= 0 && index < 10); // simpler
+
+	char buffer[1024];
+	snprintf(buffer, sizeof(buffer), "0000:00:00.%d", index);
+	return strdup(buffer);
 }

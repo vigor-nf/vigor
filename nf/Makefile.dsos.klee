@@ -1,0 +1,136 @@
+### Use this to build a LLVM bitcode file for verification
+
+SHELL = /bin/bash -O extglob -c
+
+lld ?=ld.lld-6.0
+clang ?=clang
+
+arch ?= amd64
+target ?= $(arch)-dsos
+kernel := kernel-$(arch).bc
+
+CONTAINERS_DIR := lib/containers
+CONTAINERS_STUBS_DIR := lib/stubs/containers
+NAT_DIR := vignat
+STUBS_DIR := lib/stubs
+
+# NAT
+nat_source_files := $(NAT_DIR)/nat_main.c \
+	$(NAT_DIR)/nat_config.c \
+	$(NAT_DIR)/nat_flow.c \
+	$(NAT_DIR)/nat_flowmanager.c
+
+# NF
+nf_includes := -I .
+nf_includes += -I src
+nf_includes += -I $(RTE_SDK)/lib/librte_cmdline
+
+# For NAT debug output
+# nf_defs += -DENABLE_LOG
+
+nf_source_files := nf_main.c \
+	lib/nf_util.c
+
+nf_source_files += $(wildcard $(RTE_SDK)/lib/librte_cmdline/*.c)
+
+# Actually container stubs
+nf_containers := $(CONTAINERS_STUBS_DIR)/map-stub.c \
+	$(CONTAINERS_STUBS_DIR)/double-map-stub.c \
+	$(CONTAINERS_STUBS_DIR)/double-chain-stub.c \
+	$(CONTAINERS_STUBS_DIR)/vector-stub.c \
+	$(CONTAINERS_STUBS_DIR)/expirator-stub.c
+
+# DPDK
+dpdk_includes := -I $(RTE_SDK)/include/dpdk \
+	-I $(RTE_SDK)/lib/librte_eal/common \
+	-I $(RTE_SDK)/drivers/bus/vdev \
+	-I $(RTE_SDK)/drivers/bus/pci \
+	-I $(RTE_SDK)/drivers/net/ixgbe \
+	-I $(RTE_SDK)/lib/librte_kni
+
+dpdk_includes += --include=$(STUBS_DIR)/builtin_stub.h --include=rte_config.h
+
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_eal/common/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_ether/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_hash/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_mempool/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_mbuf/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_pci/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/lib/librte_ring/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/bus/vdev/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/bus/pci/*.c)
+dpdk_source_files += $(wildcard $(RTE_SDK)/drivers/bus/pci/linux/*.c)
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_fdir.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_flow.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_ethdev.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_ipsec.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_pf.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_tm.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_api.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_common.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_phy.c
+dpdk_source_files += $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_82599.c
+
+# Stubs
+stubs_source_files := $(wildcard $(STUBS_DIR)/*.c)
+stubs_source_files += $(wildcard $(STUBS_DIR)/externals/*.c)
+stubs_source_files := $(filter-out $(STUBS_DIR)/driver_stub.c, $(stubs_source_files))
+
+kernel_source_files := $(wildcard lib/kernel/*.c)
+
+other_misc_includes := -I $(KLEE_INCLUDE) -I lib -I lib/kernel
+
+all_c_source_files = $(nat_source_files) $(nf_source_files) \
+	$(dpdk_source_files) $(stubs_source_files) $(kernel_source_files) \
+	$(nf_containers) $(NAT_DIR)/nat_loop.c
+
+all_c_bytecode := $(patsubst %.c, %.bc, $(all_c_source_files))
+
+CFLAGS := -mssse3 -msse2 -msse4.1 -c \
+	-g -emit-llvm
+
+OPT_EXCEPTIONS := memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,stub_hardware_write,stub_prefetch,stub_rdtsc,stub_pause,stub_socket,stub_strerror,stub_delay
+
+verif_defs := -DKLEE_VERIFICATION -DRTE_COMPILE_TIME_CPUFLAGS=424242 -D__linux__
+verif_defs += -D_GNU_SOURCE -DVIGOR_STUB_HARDWARE -DSTUB_DEVICES_COUNT=2
+
+klee_args := -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 \
+		-dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error \
+		-max-memory=750000 -search=dfs -condone-undeclared-havocs -libc=none
+
+
+.PHONY: all clean symbex kernel
+
+all: $(kernel)
+
+
+clean:
+	@rm -f $(all_c_bytecode) dsos_raw.bc dsos.bc *.os $(kernel)
+
+
+symbex: $(kernel)
+	klee $(klee_args) $(kernel)
+
+
+debug: $(kernel)
+	gdb -ex "r" --args klee $(klee_args) $(kernel)
+
+
+$(kernel): $(all_c_bytecode)
+	ar x ../../klee-uclibc/lib/libc.a
+	rm -f sleep.os vfprintf.os socket.os exit.os abort.os fflush.os fflush_unlocked.os
+	llvm-link -o dsos_raw.bc  *.os $(all_c_bytecode)
+
+	opt -basicaa -basiccg -internalize -internalize-public-api-list=main,$(OPT_EXCEPTIONS) \
+		-globaldce dsos_raw.bc > $(kernel)
+
+	rm -f *.os
+
+
+# Bytecode files
+%.bc: %.c
+	@$(clang) $(dpdk_defs) $(verif_defs) $(nf_defs) \
+		$(nf_includes) $(dpdk_includes) $(other_misc_includes) $(kernel_includes) \
+		$(CFLAGS) $< -o $@

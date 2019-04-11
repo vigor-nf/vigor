@@ -31,6 +31,9 @@ validate-balancer: clean
 validate-policer: clean
 	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
+validate-nat-dsos: clean
+	./test_all.sh ../nf/klee-last out ../nf nat_fspec.cmo
+
 # Regression test suite
 test-results/%.done: regression-tests/%
 	./run-test.sh $* test-results
