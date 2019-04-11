@@ -48,31 +48,44 @@ lemma_auto(length(transpose_rec(xs, nb_rows, nb_cols, idx_col, it_col))) void le
 lemma void transpose_rec_row_to_src<t>(list<t> xs, int nb_rows, int nb_cols, int i, int idx_col_cst, int idx_row, nat it_row)
     requires
         length(xs) == nb_rows * nb_cols &*&
+        0 <= i &*& i < nb_rows &*&
         0 <= idx_col_cst &*& idx_col_cst < nb_cols &*&
-        0 <= idx_row &*& idx_row < nb_rows &*&
+        0 <= idx_row &*& idx_row <= i &*&
         int_of_nat(it_row) == nb_rows - idx_row;
     ensures
-        nth(i * nb_cols + idx_col_cst, xs) == nth(i, transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row, nat_of_int(nb_rows)));
+        nth(i * nb_cols + idx_col_cst, xs) == nth(i - idx_row, transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row, it_row));
 {
     switch(it_row) {
         case zero:
-        case succ(it_row_pred): transpose_rec_row_to_src(xs, nb_rows, nb_cols, i, idx_col_cst, idx_row + 1, it_row_pred);
+        case succ(it_row_pred): if (idx_row < i) transpose_rec_row_to_src(xs, nb_rows, nb_cols, i, idx_col_cst, idx_row + 1, it_row_pred);
     }
 }
 
 lemma void transpose_rec_to_src<t>(list<t> xs, list<t> xs_transpose, int nb_rows, int nb_cols, int i, int j, int idx_col, nat it_col)
     requires
-        xs_transpose == transpose(xs, nb_rows, nb_cols) &*&
+        xs_transpose == transpose(xs, nb_rows, nb_cols) &*& 
         length(xs) == nb_rows * nb_cols &*&
         0 <= i &*& i < nb_rows &*&
-        0 <= idx_col &*& idx_col < nb_cols &*&
-        int_of_nat(it_col) = nb_cols - idx_col;
+        0 <= j &*& j < nb_cols &*&
+        0 <= idx_col &*& idx_col <= j &*&
+        int_of_nat(it_col) == nb_cols - idx_col;
     ensures
-        nth(i * nb_rows + int_of_nat(it_col), xs) == nth(int_of_nat(it_col) * nb_rows + i, xs_transpose);
+        nth(i * nb_cols + j, xs) == nth((j - idx_col) * nb_rows + i, transpose_rec(xs, nb_rows, nb_cols, idx_col, it_col));
 {
     switch(it_col) {
-        case zero: transpose_rec_row_to_src(xs, nb_rows, nb_cols, idx_col, 0, nat_of_int(i));
-        case succ(it_col_pred): transpose_rec_to_src(xs, xs_transpose, nb_rows, nb_cols, i, j, idx_col + 1, it_col_pred);
+        case zero: 
+        case succ(it_col_pred): 
+            if (idx_col < j) {
+                transpose_rec_to_src(xs, xs_transpose, nb_rows, nb_cols, i, j, idx_col + 1, it_col_pred);
+                mul_bounds(0, j - (idx_col + 1), nb_rows, nb_rows);
+                mul_bounds(j - (idx_col + 1), int_of_nat(it_col_pred) - 1, nb_rows, nb_rows);
+                nth_append_r(transpose_rec_row(xs, nb_cols, idx_col, 0, nat_of_int(nb_rows)) , transpose_rec(xs, nb_rows, nb_cols, idx_col + 1, it_col_pred), (j - (idx_col + 1)) * nb_rows + i);
+            } else {
+                assert (idx_col == j);
+                assert ((j - idx_col) * nb_rows + i == i);
+                transpose_rec_row_to_src(xs, nb_rows, nb_cols, i, idx_col, 0, nat_of_int(nb_rows));
+                nth_append(transpose_rec_row(xs, nb_cols, idx_col, 0, nat_of_int(nb_rows)) , transpose_rec(xs, nb_rows, nb_cols, idx_col + 1, it_col_pred), i);
+            }
     }
 }
 
@@ -83,9 +96,9 @@ lemma void transpose_to_src<t>(list<t> xs, list<t> xs_transpose, int nb_rows, in
         0 <= i &*& i < nb_rows &*&
         0 <= j &*& j < nb_cols;
     ensures
-        nth(i * nb_rows + int_of_nat(j), xs) == nth(int_of_nat(j) * nb_rows + i, xs_transpose);
+        nth(i * nb_cols + j, xs) == nth(j * nb_rows + i, xs_transpose);
 {
-    transpose_rec_to_src(xs, xs_transpose, nb_rows, nb_cols, i, j, 0, nat_of_int(j));
+    transpose_rec_to_src(xs, xs_transpose, nb_rows, nb_cols, i, j, 0, nat_of_int(nb_cols));
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_
