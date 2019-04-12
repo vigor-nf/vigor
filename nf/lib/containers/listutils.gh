@@ -5,6 +5,80 @@
 #include "stdex.gh"
 #include "arith.gh"
 
+
+// ------------- filter_idx -------------
+
+fixpoint list<int> filter_idx<t>(list<t> xs, int idx, fixpoint (t, bool) fp) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return fp(x0) ? cons(idx, filter_idx(xs0, idx + 1, fp)) : filter_idx(xs0, idx + 1, fp);
+    }
+}
+
+lemma void filter_idx_count<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count)
+    requires    count(xs, fp) == count;
+    ensures     length(filter_idx(xs, idx, fp)) == count;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): if (fp(x0)) filter_idx_count(xs0, idx + 1, fp, count - 1); else filter_idx_count(xs0, idx + 1, fp, count);
+    }
+}
+
+lemma void count_idx<t>(list<t> xs, fixpoint(t, bool) fp, int i)
+    requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     count(xs, fp) > 0;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (i > 0) {
+                count_idx(xs0, fp, i - 1);
+            } else {
+                count_nonnegative(xs0, fp);
+            }
+    }
+}
+
+lemma void filter_idx_fst<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i)
+    requires    count(take(i, xs), fp) == 0 &*& true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     nth(0, filter_idx(xs, idx, fp)) == i + idx;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (i > 0) {
+                count_nonnegative(take(i - 1, xs0), fp);
+                filter_idx_fst(xs0, idx + 1, fp, i - 1);
+            }
+    }
+}
+
+lemma void filter_idx_take<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count, int i)
+    requires
+        count(take(i, xs), fp) == count &*& true == fp(nth(i, xs)) &*&
+        0 <= count &*& 0 <= i &*& i < length(xs);
+    ensures     
+        nth(count, filter_idx(xs, idx, fp)) == i + idx;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (i > 0) {
+                if (fp(x0)) {
+                    count_idx(take(i, xs), fp, 0);
+                    filter_idx_take(xs0, idx + 1, fp, count - 1, i - 1);
+                } else {
+                    if (count == 0) {
+                        filter_idx_fst(xs, idx, fp, i);
+                    } else {
+                        filter_idx_take(xs0, idx + 1, fp, count, i - 1);
+                    }
+                }
+            }
+    }
+}
+
 // ------------- index_of_fixpoint -------------
 
 fixpoint option<int> index_of_fp<t>(list<t> xs, int idx, fixpoint (t,bool) fp) {
@@ -20,7 +94,6 @@ lemma void index_of_fp_exists<t>(list<t> xs, int idx, fixpoint (t,bool) fp, int 
 {
     assume (index_of_fp(xs, idx, fp) == some(idx + i));
 }
-
 
 // ------------- integer_copies -------------
 
@@ -568,21 +641,6 @@ lemma void split_update_unrelevant<t>(list<t> xs1, list<t> xs2, nat nb_split, in
     assume (split(xs1, nb_split, n) == split(xs2, nb_split, n));
 }
 
-fixpoint int extract_j(int n, int divisor) {
-    return n / divisor;
-}
-
-fixpoint int extract_i(int n, int divisor) {
-    return n % divisor;
-}
-
-lemma void extract_works(int n, int divisor, int j, int i)
-    requires    extract_j(n, divisor) == j &*& extract_i(n, divisor) == i &*& 0 < divisor &*& 0 <= n;
-    ensures     n == j * divisor + i;
-{
-    div_rem_nonneg(n, divisor);
-}
-
 // ------------- integers_list -------------
 
 fixpoint list<int> integers_list(nat cnt, int index) {
@@ -614,22 +672,6 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
 
 fixpoint list< pair<int, t> > zip_index<t>(list<t> xs) {
     return zip(integers_list(nat_of_int(length(xs)), 0) , xs);
-}
-
-// ------------- index2D -------------
-
-fixpoint list< pair<int,int> > index2DLine(nat len, int cst, int idx) {
-    switch(len) {
-        case zero: return nil;
-        case succ(len_pred): return cons(pair(cst, idx), index2DLine(len_pred, cst, idx + 1));
-    }
-}
-
-fixpoint list< pair<int,int> > index2D(nat nb_rows, int nb_columns, int i) {
-    switch(nb_rows) {
-        case zero: return nil;
-        case succ(nb_rows_pred): return append( index2DLine(nat_of_int(nb_columns), i, 0) , index2D(nb_rows_pred, nb_columns, i + 1) );
-    }
 }
 
 // ------------- lemmas -------------

@@ -28,6 +28,20 @@ fixpoint bool forall2<t1,t2>(list<t1> l1, list<t2> l2, fixpoint (t1,t2,bool) f) 
   }
 }
 
+lemma void forall2_update<t1,t2>(list<t1> l1, list<t2> l2, fixpoint (t1,t2,bool) f, int i, t1 v1, t2 v2)
+    requires    true == forall2(l1, l2, f) &*& true == f(v1, v2);
+    ensures     true == forall2(update(i, v1, l1), update(i, v2, l2), f);
+{
+    switch(l1) {
+        case nil:
+        case cons(h1, t1):
+            switch(l2) {
+                case nil:
+                case cons(h2, t2): if (i != 0) forall2_update(t1, t2, f, i - 1, v1, v2);
+            }
+    }
+}
+
 fixpoint bool forall_idx<t>(list<t> values, int idx, fixpoint (int,t,bool) prop) {
   switch(values) {
     case nil: return true;
@@ -47,7 +61,7 @@ lemma void forall_idx_nth<t>(list<t> values, int idx, fixpoint(int,t,bool) prop,
 }
 
 lemma void forall_idx_update<t>(list<t> values, int idx, fixpoint(int,t,bool) prop, int i, t v)
-    requires    true == forall_idx(values, idx, prop) &*& true == prop(idx  +i, v);
+    requires    true == forall_idx(values, idx, prop) &*& true == prop(idx + i, v);
     ensures     true == forall_idx(update(i, v, values), idx, prop);
 {
     switch(values) {

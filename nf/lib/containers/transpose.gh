@@ -4,6 +4,7 @@
 #include <nat.gh>
 #include "arith.gh"
 
+// ------------- transpose -------------
 
 fixpoint list<t> transpose_rec_row<t>(list<t> xs, int nb_cols, int idx_col_cst, int idx_row, nat it_row) {
     switch(it_row) {
@@ -99,6 +100,41 @@ lemma void transpose_to_src<t>(list<t> xs, list<t> xs_transpose, int nb_rows, in
         nth(i * nb_cols + j, xs) == nth(j * nb_rows + i, xs_transpose);
 {
     transpose_rec_to_src(xs, xs_transpose, nb_rows, nb_cols, i, j, 0, nat_of_int(nb_cols));
+}
+
+lemma void transpose_preserves_count_rec<t>(list<t> xs, int nb_rows, int nb_cols, int count, fixpoint (t, bool) fp, nat it)
+    requires    count(xs, fp) == count &*& length(xs) == nb_rows * nb_cols &*& 0 <= count;
+    ensures     count(take(int_of_nat(it), transpose(xs, nb_rows, nb_cols)), fp) == count;
+{
+    switch(it) {
+        case zero:
+        case succ(it_pred):
+    }
+}
+
+lemma void transpose_preserves_count<t>(list<t> xs, int nb_rows, int nb_cols, int count, fixpoint (t, bool) fp)
+    requires    count(xs, fp) == count &*& length(xs) == nb_rows * nb_cols &*& 0 <= count;
+    ensures     count(transpose(xs, nb_rows, nb_cols), fp) == count;
+{
+    transpose_preserves_count_rec(xs, nb_rows, nb_cols, count, fp, nat_of_int(nb_rows * nb_cols));
+}
+
+
+// ------------- extract_row/column -------------
+
+fixpoint int extract_row(int nb_rows, int n) {
+    return n / nb_rows;
+}
+
+fixpoint int extract_column(int nb_rows, int n) {
+    return n % nb_rows;
+}
+
+lemma void extract_works(int n, int nb_rows, int row, int col)
+    requires    extract_row(nb_rows, n) == row &*& extract_column(nb_rows, n) == col &*& 0 < nb_rows &*& 0 <= n;
+    ensures     n == row * nb_rows + col;
+{
+    div_rem_nonneg(n, nb_rows);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_
