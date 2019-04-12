@@ -141,7 +141,94 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    lemma void forall2_eq_cst<t>(list<t> l1, list<t> l2, t val)
+        requires    true == forall(l1, (eq)(val)) &*& true == forall(l2, (eq)(val));
+        ensures     true == forall2(l1, l2, eq);
+    {
+        switch(l1) {
+            case nil:
+            case cons(h1, t1):
+                switch(l2) {
+                    case nil:
+                    case cons(h2, t2): 
+                        forall_nth(l1, (eq)(val), 0);
+                        forall_nth(l2, (eq)(val), 0);
+                        forall2_eq_cst(t1, t2, val);
+                }
+        }
+    }
+
     // ------------- 2nd double-nested loop -------------
+
+    fixpoint list<int> filter_transpose(list<int> p_transpose, int limit, int bucket_id) {
+        return filter_idx(take(limit, p_transpose), 0, (eq)(bucket_id));
+    }
+
+    fixpoint list<int> next_invariant(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx) {
+        switch(idx) {
+            case zero: return nil;
+            case succ(idx_pred): return cons( length(filter_transpose(p_transpose, limit, cht_height - int_of_nat(idx))) , next_invariant(p_transpose, limit, backend_capacity, cht_height, idx_pred) );
+        }
+    }
+
+    lemma_auto(length(next_invariant(p_transpose, limit, backend_capacity, cht_height, idx))) void length_next_invariant(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx)
+        requires    true;
+        ensures     length(next_invariant(p_transpose, limit, backend_capacity, cht_height, idx)) == int_of_nat(idx);
+    {
+        switch(idx) {
+            case zero:
+            case succ(idx_pred): length_next_invariant(p_transpose, limit, backend_capacity, cht_height, idx_pred);
+        }
+    }
+
+    lemma void next_invariant_init(list<int> p_transpose, int backend_capacity, int cht_height, nat idx)
+        requires    true;
+        ensures     true == forall(next_invariant(p_transpose, 0, backend_capacity, cht_height, idx), (eq)(0));
+    {
+        switch(idx) {
+            case zero:
+            case succ(idx_pred):
+                assert (take(0, p_transpose) == nil);
+                assert(count(nil, (eq)(cht_height - int_of_nat(idx))) == 0);
+                filter_idx_count_to_length(take(0, p_transpose), 0,  (eq)(cht_height - int_of_nat(idx)), 0);
+                next_invariant_init(p_transpose, backend_capacity, cht_height, idx_pred);
+        }
+    }
+
+    lemma void next_invariant_length_update(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx, int bucket_id)
+        requires    
+            nth(limit, p_transpose) == bucket_id &*& 
+            0 <= bucket_id &*& bucket_id < cht_height &*&
+            0 <= limit &*& limit < length(p_transpose) &*&
+            int_of_nat(idx) <= cht_height; 
+        ensures
+            (cht_height - int_of_nat(idx) <= bucket_id)
+                ?   next_invariant(p_transpose, limit + 1, backend_capacity, cht_height, idx) == 
+                    update(bucket_id - (cht_height - int_of_nat(idx)), nth(bucket_id - (cht_height - int_of_nat(idx)), next_invariant(p_transpose, limit, backend_capacity, cht_height, idx)) + 1, next_invariant(p_transpose, limit, backend_capacity, cht_height, idx))
+                :   next_invariant(p_transpose, limit + 1, backend_capacity, cht_height, idx) == next_invariant(p_transpose, limit, backend_capacity, cht_height, idx);
+    {
+        switch(idx) {
+            case zero:
+            case succ(idx_pred):
+                // Variables
+                int diff = cht_height - int_of_nat(idx);
+                list<int> lim_p_transpose = take(limit, p_transpose);
+                list<int> cur_list = filter_transpose(p_transpose, limit, diff);
+                list<int> new_elem = cons(nth(limit, p_transpose), nil);
+                
+                // Prove the property for the head
+                take_plus_one(limit, p_transpose);
+                filter_idx_length_to_count(lim_p_transpose, 0, (eq)(diff), length(cur_list));
+                if (bucket_id == diff) {
+                    filter_idx_count_append(lim_p_transpose, new_elem, 0, (eq)(diff), length(cur_list), 1);
+                } else{
+                    filter_idx_count_append(lim_p_transpose, new_elem, 0, (eq)(diff), length(cur_list), 0);
+                } 
+
+                // Recursive call
+                next_invariant_length_update(p_transpose, limit, backend_capacity, cht_height, idx_pred, bucket_id);
+        }
+    }
 
     fixpoint bool next_from_permuts(list<int> xs, int bucket_id, int next_elem) {
         return next_elem == count(xs, (eq)(bucket_id));
@@ -429,23 +516,6 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
-    lemma void forall2_eq_cst<t>(list<t> l1, list<t> l2, t val)
-        requires    true == forall(l1, (eq)(val)) &*& true == forall(l2, (eq)(val));
-        ensures     true == forall2(l1, l2, eq);
-    {
-        switch(l1) {
-            case nil:
-            case cons(h1, t1):
-                switch(l2) {
-                    case nil:
-                    case cons(h2, t2): 
-                        forall_nth(l1, (eq)(val), 0);
-                        forall_nth(l2, (eq)(val), 0);
-                        forall2_eq_cst(t1, t2, val);
-                }
-        }
-    }
-
     lemma void map_preserves_update<t1,t2>(list<t1> xs, list<t1> xs_update, fixpoint (t1,t2) fp, int i, t1 val)
         requires    xs_update == update(i, val, xs) &*& 0 <= i &*& i < length(xs);
         ensures     map(fp, xs_update) == update(i, fp(val), map(fp, xs));
@@ -601,19 +671,18 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     //@ assert (true == forall(n_init, (eq)(0)));
     //@ bounds_from_eq(n_init, 0, backend_capacity);
 
-    // Useful variables for later
     //@ open ints(permutations, cht_height*backend_capacity, ?p_final);
     //@ close ints(permutations, cht_height*backend_capacity, p_final);
+
+    // Useful variables for later
     //@ list< list<int> > perms = split(p_final, nat_of_int(backend_capacity), cht_height);
     //@ list<int> p_transpose = transpose(p_final, backend_capacity, cht_height);
 
-    // Set up for forall_idx(n, 0, ...)
-    //@ gen_limits_allzero(nat_of_int(backend_capacity), 0, 0);
-    //@ split_varlim_nolim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), 0, 0));
-    //@ flatten_allnil(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), 0, 0)));
-    //@ next_from_permuts_init(n_init, 0);
+    // Set up for forall2(n, next_invariant(p_transpose, 0, backend_capacity, cht_height, nat_of_int(cht_height)), eq)
+    //@ next_invariant_init(p_transpose, backend_capacity, cht_height, nat_of_int(cht_height));
+    //@ forall2_eq_cst(n_init, next_invariant(p_transpose, 0, backend_capacity, cht_height, nat_of_int(cht_height)), 0);
 
-    // Set up for forall2(split_varlim(map(fst, vals),...),...)
+    // Set up for forall2(split_varlim(map(fst, vals), backend_capacity, n), filter_and_take(p_transpose, 0, cht_height, n), eq)
     //@ map_preserves_length(fst, old_values);
     //@ split_varlim_nolim(map(fst, old_values), backend_capacity, n_init);
     //@ filter_and_take_init(p_transpose, 0, cht_height, n_init);
@@ -630,7 +699,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         ints(next, cht_height, ?n) &*&
         true == forall(n, (ge)(0)) &*&
         true == forall(n, (le)(backend_capacity)) &*&
-        true == forall_idx(n, 0, (next_from_permuts)( flatten(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, 0))) )) &*&
+        true == forall2(n, next_invariant(p_transpose, i * backend_capacity, backend_capacity, cht_height, nat_of_int(cht_height)), eq) &*&
 
         vectorp<uint32_t>(cht, u_integer, ?vals, addrs) &*&
         length(vals) == backend_capacity * cht_height &*&
@@ -648,7 +717,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             ints(next, cht_height, ?n_in) &*&
             true == forall(n_in, (ge)(0)) &*&
             true == forall(n_in, (le)(backend_capacity)) &*&
-            true == forall_idx(n_in, 0, (next_from_permuts)( flatten(split_varlim(p_final, cht_height, gen_limits(nat_of_int(backend_capacity), i, j))) )) &*&
+            true == forall2(n_in, next_invariant(p_transpose, i * backend_capacity + j, backend_capacity, cht_height, nat_of_int(cht_height)), eq) &*&
 
             vectorp<uint32_t>(cht, u_integer, ?vals_in, addrs) &*&
             length(vals_in) == backend_capacity * cht_height &*&
@@ -659,6 +728,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             uint32_t *value;
             //@ mul_bounds(j, backend_capacity - 1, cht_height, cht_height);
 
+            /*
             // Variables
             //@ list<int> limits = gen_limits(nat_of_int(backend_capacity), i, j);
             //@ list<int> limits_update = gen_limits(nat_of_int(backend_capacity), i, j+1);
@@ -666,7 +736,9 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ list< list<int> > explored_update = split_varlim(p_final, cht_height, limits_update);
             //@ list<int> flatten_explored = flatten(explored);
             //@ list<int> flatten_explored_update = flatten(explored_update);
+            */
 
+            /*
             // Proof that only element explored[j] changes during the iteration
             //@ gen_limits_increment_j(nat_of_int(backend_capacity), i, j);
             //@ gen_limits_get_val(nat_of_int(backend_capacity), i, j, j);
@@ -678,6 +750,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ split_varlim_subcount(p_final, cht_height, limits_update);
             //@ flatten_subcount(explored, nat_of_int(cht_height - 1));
             //@ flatten_subcount(explored_update, nat_of_int(cht_height - 1));
+            */
 
             uint32_t index = j * cht_height + i;
             int bucket_id = permutations[index];
@@ -690,6 +763,17 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ forall_nth(nth(j, perms), (ge)(0), i);
             int priority = next[bucket_id];
 
+            // Variables
+            //@ list<int> next_invar = next_invariant(p_transpose, i * backend_capacity + j, backend_capacity, cht_height, nat_of_int(cht_height));
+            //@ list<int> next_invar_update = next_invariant(p_transpose, i * backend_capacity + (j+1), backend_capacity, cht_height, nat_of_int(cht_height));
+
+            // Proof that next_invar_update = update(bucket_id, next_invar[bucket_id] + 1, next_invar)
+            //@ transpose_to_src(p_final, p_transpose, backend_capacity, cht_height, j, i);
+            //@ mul_nonnegative(i, backend_capacity);
+            //@ mul_bounds(i, cht_height - 1, backend_capacity, backend_capacity);
+            //@ next_invariant_length_update(p_transpose, i * backend_capacity + j, backend_capacity, cht_height, nat_of_int(cht_height), bucket_id);
+
+            /*
             // Proof that next[bucket_id] < backend_capacity
             //@ list<int> chunk_partial = chunk(p_final, j * cht_height, j * cht_height + i);
             //@ list<int> chunk_complete = chunk(p_final, j * cht_height, (j+1) * cht_height);
@@ -708,6 +792,9 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ flatten_subcount_special(explored, nat_of_int(cht_height - 1), j, bucket_id);
             //@ forall_idx_nth(n_in, 0, (next_from_permuts)(flatten_explored), bucket_id);
             //@ assert(next[bucket_id] < backend_capacity);
+            */
+
+            //@ assert (0 == 1);
 
             //@ forall_nth(n_in, (ge)(0), bucket_id);
             next[bucket_id] += 1;
@@ -716,12 +803,14 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
             //@ forall_update(n_in, (le)(backend_capacity), bucket_id, next[bucket_id]);
 
+            /*
             // Proof that the property on the values in n_in is preserved
             //@ list<int> chunk_partial_update = chunk(p_final, j * cht_height, j * cht_height + i+1);
             //@ split_varlim_chunk_equiv(p_final, cht_height, limits_update, j); // chunk(p_final, j * cht_height, j * cht_height + i+1)
             //@ count_to_mem(chunk_partial, bucket_id);
             //@ chunk_append(p_final, j * cht_height, j * cht_height + i);
             //@ next_from_permuts_update(n_in, n_in_update, 0, explored, explored_update, chunk_partial, chunk_partial_update, nat_of_int(cht_height-1), j, bucket_id, bucket_id);
+            */
 
             // Update the CHT
             //@ mul_bounds(bucket_id, cht_height - 1, backend_capacity, backend_capacity);

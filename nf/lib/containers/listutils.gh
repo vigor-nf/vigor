@@ -15,13 +15,39 @@ fixpoint list<int> filter_idx<t>(list<t> xs, int idx, fixpoint (t, bool) fp) {
     }
 }
 
-lemma void filter_idx_count<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count)
+lemma void filter_idx_count_to_length<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count)
     requires    count(xs, fp) == count;
     ensures     length(filter_idx(xs, idx, fp)) == count;
 {
     switch(xs) {
         case nil:
-        case cons(x0, xs0): if (fp(x0)) filter_idx_count(xs0, idx + 1, fp, count - 1); else filter_idx_count(xs0, idx + 1, fp, count);
+        case cons(x0, xs0): 
+            if (fp(x0)) filter_idx_count_to_length(xs0, idx + 1, fp, count - 1); 
+            else filter_idx_count_to_length(xs0, idx + 1, fp, count);
+    }
+}
+
+lemma void filter_idx_length_to_count<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count)
+    requires    length(filter_idx(xs, idx, fp)) == count;
+    ensures     count(xs, fp) == count;
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (fp(x0)) filter_idx_length_to_count(xs0, idx + 1, fp, count - 1); 
+            else filter_idx_length_to_count(xs0, idx + 1, fp, count);
+    }
+}
+
+lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp, int count_xs, int count_ys)
+    requires    count(xs, fp) == count_xs &*& count(ys, fp) == count_ys;
+    ensures     length(filter_idx(append(xs, ys), idx, fp)) == count_xs + count_ys;
+{
+    switch(xs) {
+        case nil: filter_idx_count_to_length(ys, idx, fp, count_ys);
+        case cons(x0, xs0): 
+            if (fp(x0)) filter_idx_count_append(xs0, ys, idx + 1, fp, count_xs - 1, count_ys); 
+            else filter_idx_count_append(xs0, ys, idx + 1, fp, count_xs, count_ys);
     }
 }
 
