@@ -689,7 +689,7 @@ stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 	stub_add_file("/dev/zero", ""); // HACK as long as it's not read, we can pretend it doesn't contain anything
 }
 
-#ifndef DSOS
+#if (defined VIGOR_STUB_HARDWARE) && !(defined DSOS)
 __attribute__((constructor(150))) // High prio, must execute after other stuff since it relies on hardware stubs
 void
 stub_stdio_files_init_constructor(void)
@@ -700,7 +700,7 @@ stub_stdio_files_init_constructor(void)
 	devs = stub_hardware_get_nics(&num_devs);
         stub_stdio_files_init(devs, num_devs);
 }
-#endif//!DSOS
+#endif// (defined VIGOR_STUB_HARDWARE) && !(defined DSOS)
 
 // Helper methods - not part of the external stubs
 
