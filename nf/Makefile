@@ -18,6 +18,7 @@ NF_DEVICES ?= 2
 # If KLEE_BUILD_PATH is not defined (such as in the paths saved by install.sh),
 # try to compute it based on KLEE_INCLUDE.
 KLEE_BUILD_PATH ?= $(KLEE_INCLUDE)/../build
+KLEE_UCLIBC ?= $(KLEE_INCLUDE)/../../klee-uclibc
 
 
 # DPDK stuff
@@ -186,3 +187,15 @@ verify-hardware: $(AUTO_GEN_FILES)
 	$(OPT_COMMAND)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
+
+verify-dsos: $(AUTO_GEN_FILES)
+	$(CLEAN_COMMAND)
+	# Use DPDK stuff + stub hardware
+	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_HARDWARE -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(SELF_DIR)/lib/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
+	ar x $(KLEE_UCLIBC)/lib/libc.a
+	rm -f sleep.os vfprintf.os socket.os exit.os fflush.os fflush_unlocked.os
+	llvm-link -o nf_raw.bc  *.os *.bc
+	$(OPT_COMMAND)
+	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
+	$(CLEAN_COMMAND)
+

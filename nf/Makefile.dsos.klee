@@ -99,7 +99,7 @@ verif_defs += -D_GNU_SOURCE -DVIGOR_STUB_HARDWARE -DSTUB_DEVICES_COUNT=2
 verif_defs += -DDSOS
 
 klee_args := -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 \
-		-dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error \
+		-allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error \
 		-max-memory=750000 -search=dfs -condone-undeclared-havocs -libc=none
 
 

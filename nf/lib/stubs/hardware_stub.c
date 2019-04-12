@@ -2437,4 +2437,4 @@ stub_hardware_reset_receive(uint16_t device)
 void stub_hardware_init(void) { assert(0); }
 struct dsos_pci_nic *stub_hardware_get_nics(int *n) { assert(0); }
 
-#endif
+#endif // VIGOR_STUB_HARDWARE
