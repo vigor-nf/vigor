@@ -41,6 +41,10 @@ nf_defs += -DDSOS # Distinguish this build from verify-hardware run
 # For NAT debug output
 nf_defs += -DENABLE_LOG
 
+
+NF_ARGUMENTS=-DNF_ARGUMENTS='"vignat", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--expire", "10", "--starting-port", "0", "--max-flows", "65536", "--extip", "0.0.0.0", "--eth-dest", "0,01:23:45:67:89:00", "--eth-dest", "1,01:23:45:67:89:01"'
+nf_defs += $(NF_ARGUMENTS)
+
 nf_source_files := $(NF_DIR)/nf_main.c \
 	$(NF_DIR)/lib/nf_util.c \
 	$(NF_DIR)/lib/nf_time.c
@@ -113,6 +117,7 @@ assembly_object_files := $(patsubst %.asm, %.o, $(assembly_source_files))
 
 CFLAGS := --target=i686-pc-none-elf -march=i686 -mssse3 -msse2 -msse4.1 -c \
 	-ffreestanding -g -Wno-builtin-macro-redefined
+
 
 OBJ_LIST := $(assembly_object_files) $(all_c_object_files)
 

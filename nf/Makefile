@@ -77,6 +77,12 @@ VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE)
 # ...and the DPDK cmdline library
 VERIF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
 
+# NF args for the verification
+NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
+
+dquote=\"
+NF_ARGUMENTS_MACRO=-DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),$(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS))\"
+
 # Defines. TODO remove _GNU_SOURCE from here, #define it in files
 VERIF_DEFS := -D_GNU_SOURCE -DKLEE_VERIFICATION
 # Number of devices
@@ -154,8 +160,6 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 # if something takes longer than expected, try --max-solver-time=3 --debug-report-symbdex (to avoid symbolic indices)
 VERIF_COMMAND := /usr/bin/time -v \
                  klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
-# NF args for the verification
-NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
 
 clean: clean-gen
 clean-gen:
@@ -191,7 +195,7 @@ verify-hardware: $(AUTO_GEN_FILES)
 verify-dsos: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
-	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_HARDWARE -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(SELF_DIR)/lib/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
+	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DVIGOR_STUB_HARDWARE -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(SELF_DIR)/lib/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
 	ar x $(KLEE_UCLIBC)/lib/libc.a
 	rm -f sleep.os vfprintf.os socket.os exit.os fflush.os fflush_unlocked.os
 	llvm-link -o nf_raw.bc  *.os *.bc

@@ -19,25 +19,7 @@ extern struct dsos_pci_nic *stub_hardware_get_nics(int *n);
 
 int main(void)
 {
-	static char *argv[] = {
-		"vignat", "--no-shconf",
-		"--",
-		"--lan-dev", "0",
-		"--wan", "1",
-		"--expire", "10",
-		"--starting-port", "0",
-		"--max-flows", "65536",
-#ifdef VIGOR_STUB_HARDWARE
-		"--extip", "0.0.0.0",
-		"--eth-dest", "0,01:23:45:67:89:00",
-		"--eth-dest", "1,01:23:45:67:89:01",
-#else
-		"--extip", "192.168.4.2",
-		"--eth-dest", "0,90:e2:ba:55:14:24",
-		"--eth-dest", "1,90:e2:ba:55:14:25",
-#endif
-		NULL,
-	};
+	static char *argv[] = { NF_ARGUMENTS, NULL, };
 
 	static const int argc = (sizeof(argv) / sizeof(argv[0])) - 1;
 
