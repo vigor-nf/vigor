@@ -20,14 +20,14 @@ extern int NUM_PCI_DEVICES;
 
 FILE* fopencookie_ret = NULL;
 
-#ifndef KLEE_VERIFICATION
+#ifdef DSOS
 int
 fflush(FILE* stream)
 {
 	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
 	return 0;
 }
-#endif//KLEE_VERIFICATION
+#endif//DSOS
 
 int
 vfprintf(FILE* stream, const char* format, _G_va_list __arg)

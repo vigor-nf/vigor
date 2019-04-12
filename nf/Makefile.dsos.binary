@@ -26,7 +26,8 @@ grub_cfg := grub.cfg
 # NAT
 nat_source_files := $(NAT_DIR)/nat_main.c \
 	$(NAT_DIR)/nat_config.c \
-	$(NAT_DIR)/nat_flow.c \
+	$(NAT_DIR)/flow.h.gen.c \
+	$(NAT_DIR)/nat_state.c \
 	$(NAT_DIR)/nat_flowmanager.c
 
 # NF
@@ -35,6 +36,7 @@ nf_includes += -I src
 nf_includes += -I $(RTE_SDK)/lib/librte_cmdline
 
 nf_defs := -D_GNU_SOURCE
+nf_defs += -DDSOS # Distinguish this build from verify-hardware run
 
 # For NAT debug output
 nf_defs += -DENABLE_LOG
@@ -110,7 +112,7 @@ assembly_source_files := $(KERNEL_DIR)/asm/boot.asm  $(KERNEL_DIR)/asm/multiboot
 assembly_object_files := $(patsubst %.asm, %.o, $(assembly_source_files))
 
 CFLAGS := --target=i686-pc-none-elf -march=i686 -mssse3 -msse2 -msse4.1 -c \
-	-ffreestanding -g -Wno-macro-redefined
+	-ffreestanding -g -Wno-builtin-macro-redefined
 
 OBJ_LIST := $(assembly_object_files) $(all_c_object_files)
 

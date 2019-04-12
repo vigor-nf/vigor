@@ -17,7 +17,8 @@ STUBS_DIR := lib/stubs
 # NAT
 nat_source_files := $(NAT_DIR)/nat_main.c \
 	$(NAT_DIR)/nat_config.c \
-	$(NAT_DIR)/nat_flow.c \
+	$(NAT_DIR)/flow.h.gen.c \
+	$(NAT_DIR)/nat_state.c \
 	$(NAT_DIR)/nat_flowmanager.c
 
 # NF
@@ -95,6 +96,7 @@ OPT_EXCEPTIONS := memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,
 
 verif_defs := -DKLEE_VERIFICATION -DRTE_COMPILE_TIME_CPUFLAGS=424242 -D__linux__
 verif_defs += -D_GNU_SOURCE -DVIGOR_STUB_HARDWARE -DSTUB_DEVICES_COUNT=2
+verif_defs += -DDSOS
 
 klee_args := -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 \
 		-dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error \

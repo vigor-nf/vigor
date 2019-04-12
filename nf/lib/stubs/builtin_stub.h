@@ -4,10 +4,12 @@
 
 
 // Pretend we support those
-#define __SSE3__
-#define __SSSE3__
-#define __SSE4_1__
-#define __SSE4_2__
+#ifndef DSOS
+#  define __SSE3__
+#  define __SSSE3__
+#  define __SSE4_1__
+#  define __SSE4_2__
+#endif//!DSOS
 
 
 // Pretend that everything is known to be a compile-time constant, so DPDK uses less fancy tricks
