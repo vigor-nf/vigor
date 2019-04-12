@@ -28,6 +28,24 @@ fixpoint bool forall2<t1,t2>(list<t1> l1, list<t2> l2, fixpoint (t1,t2,bool) f) 
   }
 }
 
+lemma void forall2_nth<t1,t2>(list<t1> l1, list<t2> l2,
+                              fixpoint(t1,t2,bool) f, int index)
+requires 0 <= index &*& index < length(l1) &*& index < length(l2) &*&
+          true == forall2(l1, l2, f);
+ensures true == f(nth(index, l1), nth(index, l2));
+{
+  switch(l1) {
+    case nil: return;
+    case cons(h1,t1):
+      switch(l2) {
+        case nil: return;
+        case cons(h2,t2):
+          if (index == 0) return;
+          forall2_nth(t1, t2, f, index - 1);
+      }
+  }
+}
+
 lemma void forall2_update<t1,t2>(list<t1> l1, list<t2> l2, fixpoint (t1,t2,bool) f, int i, t1 v1, t2 v2)
     requires    true == forall2(l1, l2, f) &*& true == f(v1, v2);
     ensures     true == forall2(update(i, v1, l1), update(i, v2, l2), f);
@@ -354,24 +372,6 @@ lemma void note(bool b)
 requires b;
 ensures b;
 {}
-
-lemma void forall2_nth<t1,t2>(list<t1> l1, list<t2> l2,
-                              fixpoint(t1,t2,bool) f, int index)
-requires 0 <= index &*& index < length(l1) &*& index < length(l2) &*&
-          true == forall2(l1, l2, f);
-ensures true == f(nth(index, l1), nth(index, l2));
-{
-  switch(l1) {
-    case nil: return;
-    case cons(h1,t1):
-      switch(l2) {
-        case nil: return;
-        case cons(h2,t2):
-          if (index == 0) return;
-          forall2_nth(t1, t2, f, index - 1);
-      }
-  }
-}
 
 lemma void nth_map<t1,t2>(int index, fixpoint (t1,t2) f, list<t1> l)
 requires 0 <= index &*& index < length(l);

@@ -156,6 +156,13 @@ lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
     assume (true == forall(split(xs, nb_split, n), (integer_copies)(nat_of_int(n - 1), 1)));
 }
 
+lemma void permutation_split_to_count(list<int> xs, nat nb_split, int n)
+    requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
+    ensures     true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs);
+{
+    assume (true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs));
+}
+
 
 lemma void copies_to_sub(nat val, int nb_copies, list<int> xs)
     requires    true == integer_copies(val, nb_copies, xs);
