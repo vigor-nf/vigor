@@ -10,21 +10,29 @@ pushd nf/vignat
   make clean
   make
   make verify-dpdk
+  make verify-hardware-nf.bc
+  make verify-dsos-nf.bc
 popd
 pushd nf/vigbridge
   make clean
   make
   make verify-dpdk
+  make verify-hardware-nf.bc
+  make verify-dsos-nf.bc
 popd
 pushd nf/vigbalancer
   make clean
   make
   make verify-dpdk
+  make verify-hardware-nf.bc
+  make verify-dsos-nf.bc
 popd
 pushd nf/vigpolicer
   make clean
   make
   make verify-dpdk
+  make verify-hardware-nf.bc
+  make verify-dsos-nf.bc
 popd
 
 echo "All symbex succeeded"

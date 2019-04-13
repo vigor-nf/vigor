@@ -169,16 +169,19 @@ clean: clean-gen
 clean-gen:
 	rm -f $(AUTO_GEN_FILES)
 
-verify-dpdk: $(AUTO_GEN_FILES)
+verify-dpdk-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stub headers
 	$(COMPILE_COMMAND) $(VERIF_DEFS) -DVIGOR_STUB_DPDK $(VERIF_INCLUDES) -I $(SELF_DIR)/lib/stubs/dpdk $(VERIF_FILES) $(VERIF_FLAGS)
 	$(LINK_COMMAND)
 	$(OPT_COMMAND)
+
+verify-dpdk: verify-dpdk-nf.bc $(AUTO_GEN_FILES)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
 verify-driver: $(AUTO_GEN_FILES)
+	echo "verify-driver is not supported anymore"
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub driver
 	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_DRIVER $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/driver_stub.c $(VERIF_FLAGS)
@@ -187,16 +190,18 @@ verify-driver: $(AUTO_GEN_FILES)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
-verify-hardware: $(AUTO_GEN_FILES)
+verify-hardware-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
 	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_HARDWARE $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(VERIF_FLAGS)
 	$(LINK_COMMAND)
 	$(OPT_COMMAND)
+
+verify-hardware: verify-hardware-nf.bc
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
-
-verify-dsos: $(AUTO_GEN_FILES)
+	
+verify-dsos-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
 	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DVIGOR_STUB_HARDWARE -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(SELF_DIR)/lib/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
@@ -204,6 +209,8 @@ verify-dsos: $(AUTO_GEN_FILES)
 	rm -f sleep.os vfprintf.os socket.os exit.os fflush.os fflush_unlocked.os
 	llvm-link -o nf_raw.bc  *.os *.bc
 	$(OPT_COMMAND)
+
+verify-dsos: verify-dsos-nf.bc
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
