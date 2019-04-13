@@ -2,17 +2,16 @@
 //@ #include <nat.gh>
 //@ #include <bitops.gh>
 //@ #include "stdex.gh"
-//@ #include "dir-24-8-basic.gh"
 
-void fill_zeros(uint16_t *t, uint32_t size)
+void fill_invalid(uint16_t *t, uint32_t size)
 //@ requires t[0..size] |-> _;
-//@ ensures t[0.. size] |-> _;//repeat_n(nat_of_int(size), 0);
+//@ ensures t[0.. size] |-> repeat_n(nat_of_int(size), INVALID);
 {
   for(uint32_t i = 0; i < size; i++) 
   //@ requires t[i..size] |-> _;
-  //@ ensures t[old_i..size] |-> _;//repeat_n(nat_of_int(size - old_i), 0);
+  //@ ensures t[old_i..size] |-> repeat_n(nat_of_int(size - old_i), INVALID);
   {
-    t[i] = 0;
+    t[i] = INVALID;
   }
 }
 
@@ -35,7 +34,7 @@ uint32_t tbl_24_extract_first_index(uint32_t data)
 //@ requires true;
 //@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*& result == (data >> BYTE_SIZE);
 {
-  //@ shiftright_limits(data, N32(), N8());
+  //@ shiftright_limits(data, N32, N8);
   return data >> BYTE_SIZE;
 }
 
@@ -45,7 +44,7 @@ uint32_t tbl_24_extract_first_index(uint32_t data)
  */
 uint32_t compute_rule_size(uint8_t prefixlen)
 //@ requires prefixlen <= 32;
-//@ ensures result > 0 &*& prefixlen < 24 ? result <= pow_nat(2, nat_of_int(24)) : result <= pow_nat(2, N8());
+//@ ensures result > 0 &*& prefixlen < 24 ? result <= pow_nat(2, nat_of_int(24)) : result <= pow_nat(2, N8);
 {	
   if(prefixlen < 24){
     uint32_t res[24] = { 0x1000000, 0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000,
@@ -79,7 +78,7 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index)
 //@ requires true;
 //@ ensures true;
 {   
-  //@ bitand_limits(data, 0xFF, N32());
+  //@ bitand_limits(data, 0xFF, N32);
   uint16_t last_byte = (uint16_t)(data & 0xFF);
     
   return (uint16_t)(base_index * (uint16_t)TBL_LONG_FACTOR + last_byte);
@@ -108,8 +107,8 @@ struct tbl* tbl_allocate()
   }
     
   //Set every element of the array to zero
-  fill_zeros(tbl_24, TBL_24_MAX_ENTRIES);
-  fill_zeros(tbl_long, TBL_LONG_MAX_ENTRIES);
+  fill_invalid(tbl_24, TBL_24_MAX_ENTRIES);
+  fill_invalid(tbl_long, TBL_LONG_MAX_ENTRIES);
     
     
   _tbl->tbl_24 = tbl_24;
@@ -165,7 +164,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     {
       if(i >= first_index && i < last_index){
 	    tbl_24[i] = value;
-	  }
+      }
     }
     //@ close key(_key);
     //@ close table(_tbl, long_index);
@@ -178,14 +177,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       //index and store it in the tbl_24
       uint8_t base_index;
       uint32_t tbl_24_index = tbl_24_extract_first_index(data);
-        
-      if(tbl_24_entry_flag(tbl_24[tbl_24_index])){
-
-        uint16_t tbl_24_value = tbl_24[tbl_24_index];
-        base_index = (uint8_t)(tbl_24_value & 0xFF);
-
-      } else {
-
+      
+      if(tbl_24[tbl_24_index] == INVALID || !tbl_24_entry_flag(tbl_24[tbl_24_index])){
         if(_tbl->tbl_long_index >= TBL_LONG_OFFSET_MAX){
 
           printf("No more available index for tbl_long!\n");fflush(stdout);
@@ -199,8 +192,12 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
           _tbl->tbl_long_index = (uint16_t)(base_index + 1);
             
           tbl_24[tbl_24_index] = tbl_24_entry_set_flag(base_index);
-        }
+        }      
+      }else{
+        uint16_t tbl_24_value = tbl_24[tbl_24_index];
+        base_index = (uint8_t)(tbl_24_value & 0xFF);
       }
+      
 
       //The last byte in data is used as the starting offset for tbl_long
       //indexes
@@ -237,10 +234,10 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
 
   uint16_t value = tbl_24[index];
 	
-  if(tbl_24_entry_flag(value)){
+  if(value != INVALID && tbl_24_entry_flag(value)){
   //the value found in tbl_24 is a base index for an entry in tbl_long,
   //go look at the index corresponding to the key and this base index
-    //@ bitand_limits(data, 0xFF, N32());
+    //@ bitand_limits(data, 0xFF, N32);
     uint32_t index_long = tbl_long_extract_first_index(data, (uint8_t)(value & 0xFF));
     uint16_t value_long = tbl_long[index_long];
     //@ close table(_tbl, long_index);
