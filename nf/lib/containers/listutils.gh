@@ -51,6 +51,26 @@ lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint 
     }
 }
 
+lemma void filter_idx_drop_last<t>(list<t> xs, int idx, fixpoint(t, bool) fp, t x)
+    requires    false == fp(x);
+    ensures     filter_idx(xs, idx, fp) == filter_idx(append(xs, cons(x, nil)), idx, fp);
+{
+    switch(xs) {
+        case nil: 
+        case cons(x0, xs0): filter_idx_drop_last(xs0, idx + 1, fp, x);
+    }
+}
+
+lemma void filter_idx_include_last<t>(list<t> xs, int idx, fixpoint(t, bool) fp, t x)
+    requires    true == fp(x);
+    ensures     append(filter_idx(xs, idx, fp), cons(idx + length(xs), nil)) == filter_idx(append(xs, cons(x, nil)), idx, fp);
+{
+    switch(xs) {
+        case nil: 
+        case cons(x0, xs0): filter_idx_include_last(xs0, idx + 1, fp, x);
+    }
+}
+
 lemma void count_idx<t>(list<t> xs, fixpoint(t, bool) fp, int i)
     requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
     ensures     count(xs, fp) > 0;
@@ -153,58 +173,6 @@ lemma void integer_copies_val(int x, nat val, int nb_copies, list<int> xs)
     }
 }
 
-lemma void integer_copies_append(list<int> xs, list<int> ys, int xs_count, int ys_count, nat val)
-    requires
-        true == integer_copies(val, xs_count, xs) &*& 
-        true == integer_copies(val, ys_count, ys);
-    ensures
-        true == integer_copies(val, xs_count + ys_count, append(xs, ys));
-{
-    assume (true == integer_copies(val, xs_count + ys_count, append(xs, ys)));
-}
-
-// ------------- sub_integer_copies -------------
-
-fixpoint bool sub_integer_copies(nat val, int nb_copies, list<int> xs) {
-    switch(val) {
-        case zero: return count(xs, (eq)(int_of_nat(val))) <= nb_copies;
-        case succ(val_pred): return count(xs, (eq)(int_of_nat(val))) <= nb_copies && sub_integer_copies(val_pred, nb_copies, xs);
-    }
-}
-
-lemma_auto(sub_integer_copies(val, nb_copies, nil)) void sub_integer_copies_nil(nat val, int nb_copies)
-    requires    0 <= nb_copies;
-    ensures     true == sub_integer_copies(val, nb_copies, nil);
-{
-    switch(val) {
-        case zero:
-        case succ(val_pred): sub_integer_copies_nil(val_pred, nb_copies);
-    }
-}
-
-lemma void sub_integer_copies_val(int x, nat val, int nb_copies, list<int> xs)
-    requires    true == sub_integer_copies(val, nb_copies, xs) &*& 0 <= x &*& x <= int_of_nat(val);
-    ensures     count(xs, (eq)(x)) <= nb_copies;
-{
-    switch(val) {
-        case zero:
-        case succ(val_pred):
-            if (int_of_nat(val) != x) {
-                sub_integer_copies_val(x, val_pred, nb_copies, xs);
-            }
-    }
-}
-
-lemma void sub_integer_copies_append(list<int> xs, list<int> ys, int xs_count, int ys_count, nat val)
-    requires
-        true == sub_integer_copies(val, xs_count, xs) &*& 
-        true == sub_integer_copies(val, ys_count, ys);
-    ensures
-        true == sub_integer_copies(val, xs_count + ys_count, append(xs, ys));
-{
-    assume (true == sub_integer_copies(val, xs_count + ys_count, append(xs, ys)));
-}
-
 // ------------- flatten -------------
 
 fixpoint list<t> flatten<t>(list< list<t> > xs) {
@@ -222,63 +190,6 @@ lemma void flatten_allnil<t>(list< list<t> > xs)
         case nil:
         case cons(x0, xs0): flatten_allnil(xs0);
     }
-}
-
-lemma void flatten_count(list< list<int> > xs, nat val)
-    requires    true == forall(xs, (integer_copies)(val, 1));
-    ensures     true == integer_copies(val, length(xs), flatten(xs));
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): 
-            flatten_count(xs0, val);
-            forall_nth(xs, (integer_copies)(val, 1), 0);
-            integer_copies_append(x0, flatten(xs0), 1, length(xs0), val);
-    }
-}
-
-lemma void flatten_subcount(list< list<int> > xs, nat val)
-    requires    true == forall(xs, (sub_integer_copies)(val, 1));
-    ensures     true == sub_integer_copies(val, length(xs), flatten(xs));
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): 
-            flatten_subcount(xs0, val);
-            forall_nth(xs, (sub_integer_copies)(val, 1), 0);
-            sub_integer_copies_append(x0, flatten(xs0), 1, length(xs0), val);
-    }
-}
-
-lemma void flatten_subcount_special(list< list<int> > xs, nat val, int i, int special_val)
-    requires    true == forall(xs, (sub_integer_copies)(val, 1)) &*& count(nth(i, xs), (eq)(special_val)) == 0;
-    ensures     count(flatten(xs), (eq)(special_val)) < length(xs);
-{
-    assume (count(flatten(xs), (eq)(special_val)) < length(xs));
-}
-
-lemma void flatten_subcount_update_relevant(list< list<int> > xs, list< list<int> > ys, nat val, int i, int special_val)
-    requires    
-        true == forall(xs, (sub_integer_copies)(val, 1)) &*& count(nth(i, xs), (eq)(special_val)) == 0 &*&
-        true == forall(ys, (sub_integer_copies)(val, 1)) &*& count(nth(i, ys), (eq)(special_val)) == 1 &*&
-        ys == update(i, nth(i, ys), xs) &*&
-        0 <= i &*& i < length(xs);
-    ensures     
-        count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)) + 1;
-{
-    assume (count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)) + 1);
-}
-
-lemma void flatten_subcount_update_unrelevant(list< list<int> > xs, list< list<int> > ys, nat val, int i, int special_val, int count)
-    requires    
-        true == forall(xs, (sub_integer_copies)(val, 1)) &*& count(nth(i, xs), (eq)(special_val)) == count &*&
-        true == forall(ys, (sub_integer_copies)(val, 1)) &*& count(nth(i, ys), (eq)(special_val)) == count &*&
-        ys == update(i, nth(i, ys), xs) &*&
-        0 <= i &*& i < length(xs);
-    ensures     
-        count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val));
-{
-    assume (count(flatten(ys), (eq)(special_val)) == count(flatten(xs), (eq)(special_val)));
 }
 
 // ------------- chunk -------------
@@ -399,72 +310,6 @@ lemma void repeat_tail<t>(t elem, nat n)
     requires    n == succ(?n_pred);
     ensures     tail(repeat(elem, n)) == repeat(elem, n_pred);
 {}
-
-// ------------- gen_limits -------------
-
-fixpoint list<int> gen_limits(nat nb_split, int i, int j) {
-    switch(nb_split) {
-        case zero: return nil;
-        case succ(nb_split_pred): 
-            return (j > 0)
-                ? cons(i + 1, gen_limits(nb_split_pred, i, j - 1))
-                : cons(i, gen_limits(nb_split_pred, i, j - 1));
-    }
-}
-
-lemma_auto(length(gen_limits(nb_split, i, j))) void length_gen_limits(nat nb_split, int i, int j)
-    requires    true;
-    ensures     length(gen_limits(nb_split, i, j)) == int_of_nat(nb_split);
-{
-    switch(nb_split) {
-        case zero:
-        case succ(nb_split_pred): length_gen_limits(nb_split_pred, i, j - 1);
-    }
-}
-
-lemma void gen_limits_allzero(nat nb_split, int i, int j)
-    requires    j <= 0;
-    ensures     true == forall(gen_limits(nb_split, i, j), (eq)(i));
-{
-    switch(nb_split) {
-        case zero:
-        case succ(nb_split_pred): gen_limits_allzero(nb_split_pred, i, j - 1);
-    }
-}
-
-lemma void gen_limits_get_val(nat nb_split, int i, int j, int k)
-    requires    0 <= k &*& k < int_of_nat(nb_split);
-    ensures     nth(k, gen_limits(nb_split, i, j)) == ( (k < j) ? (i + 1) : i );
-{
-    switch(nb_split) {
-        case zero:
-        case succ(nb_split_pred): 
-            if (k > 0) {
-                gen_limits_get_val(nb_split_pred, i, j - 1, k - 1); 
-            }
-    }
-}
-
-lemma void gen_limits_increment_i(nat nb_split, int i)
-    requires    true;
-    ensures     gen_limits(nb_split, i + 1, 0) == gen_limits(nb_split, i, int_of_nat(nb_split));
-{
-    assume (gen_limits(nb_split, i, int_of_nat(nb_split)) == gen_limits(nb_split, i + 1, 0));
-}
-
-lemma void gen_limits_increment_j(nat nb_split, int i, int j)
-    requires    0 <= j &*& j < int_of_nat(nb_split);
-    ensures     gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j));
-{
-    assume (gen_limits(nb_split, i, j + 1) == update(j, nth(j, gen_limits(nb_split, i, j + 1)), gen_limits(nb_split, i, j)));
-}
-
-lemma void gen_limits_all_same(nat nb_split, int i)
-    requires    true;
-    ensures     true == forall(gen_limits(nb_split, i, 0), (eq)(i));
-{
-    assume (forall(gen_limits(nb_split, i, 0), (eq)(i)));
-}
 
 // ------------- split_varlim -------------
 

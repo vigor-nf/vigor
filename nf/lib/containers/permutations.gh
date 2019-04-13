@@ -139,7 +139,6 @@ lemma void sub_permutation_map_fst_complete(list< pair<int, real> > xs)
     sub_permutation_complete(map(fst, xs));
 }
 
-
 // ------------- permutations & count -------------
 
 lemma void permutation_to_count(list<int> xs)
@@ -149,47 +148,11 @@ lemma void permutation_to_count(list<int> xs)
     assume (true == integer_copies(nat_of_int(length(xs) - 1), 1, xs));
 }
 
-lemma void permutation_list_to_count(list<int> xs, nat nb_split, int n)
-    requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
-    ensures     true == forall(split(xs, nb_split, n), (integer_copies)(nat_of_int(n - 1), 1));
-{
-    assume (true == forall(split(xs, nb_split, n), (integer_copies)(nat_of_int(n - 1), 1)));
-}
-
 lemma void permutation_split_to_count(list<int> xs, nat nb_split, int n)
     requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
     ensures     true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs);
 {
     assume (true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs));
-}
-
-
-lemma void copies_to_sub(nat val, int nb_copies, list<int> xs)
-    requires    true == integer_copies(val, nb_copies, xs);
-    ensures     true == sub_integer_copies(val, nb_copies, xs);
-{
-    switch(val) {
-        case zero:
-        case succ(val_pred): copies_to_sub(val_pred, nb_copies, xs);
-    }
-}
-
-lemma void split_varlim_subcount(list<int> xs, int n, list<int> limits)
-    requires    true == forall(split(xs, nat_of_int(length(limits)), n), is_permutation) &*& 0 < n;
-    ensures     true == forall(split_varlim(xs, n, limits), (sub_integer_copies)(nat_of_int(n - 1), 1));
-{
-    assume(true == forall(split_varlim(xs, n, limits), (sub_integer_copies)(nat_of_int(n - 1), 1)));
-}
-
-lemma void split_varlim_subpermutation(list<int> xs, int n, list<int> limits, int i)
-    requires
-        true == forall(split(xs, nat_of_int(length(limits)), n), is_permutation) &*&
-        0 < n &*& 0 <= i &*& i < length(limits) &*& 
-        0 <= nth(i, limits) &*& nth(i, limits) <= n;
-    ensures
-        true == is_sub_permutation(nth(i, split_varlim(xs, n, limits)), n);
-{
-    assume (true == is_sub_permutation(nth(i, split_varlim(xs, n, limits)), n));
 }
 
 #endif //_PERMUTATIONS_GH_INCLUDED_

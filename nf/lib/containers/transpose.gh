@@ -134,4 +134,26 @@ lemma void extract_works(int n, int nb_rows, int row, int col)
     div_rem_nonneg(n, nb_rows);
 }
 
+lemma void extract_row_val(int nb_rows, int n, int i, int j)
+    requires   
+        n == i * nb_rows + j &*&
+        0 <= n &*& 0 < nb_rows &*&
+        0 <= i &*& 0 <= j;
+    ensures    
+        extract_row(nb_rows, n) == i;
+{
+    assume (extract_row(nb_rows, n) == i);
+}
+
+lemma void extract_column_val(int nb_rows, int n, int i, int j)
+    requires   
+        n == i * nb_rows + j &*&
+        0 <= n &*& 0 < nb_rows &*&
+        0 <= i &*& 0 <= j;
+    ensures    
+        extract_column(nb_rows, n) == j;
+{
+    assume (extract_column(nb_rows, n) == j);
+}
+
 #endif //_LISTUTILS_GH_INCLUDED_
