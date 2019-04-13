@@ -119,41 +119,41 @@ lemma void transpose_preserves_count<t>(list<t> xs, int nb_rows, int nb_cols, in
 
 // ------------- extract_row/column -------------
 
-fixpoint int extract_row(int nb_rows, int n) {
-    return n / nb_rows;
+fixpoint int extract_row(int nb_cols, int n) {
+    return n / nb_cols;
 }
 
-fixpoint int extract_column(int nb_rows, int n) {
-    return n % nb_rows;
+fixpoint int extract_column(int nb_cols, int n) {
+    return n % nb_cols;
 }
 
-lemma void extract_works(int n, int nb_rows, int row, int col)
-    requires    extract_row(nb_rows, n) == row &*& extract_column(nb_rows, n) == col &*& 0 < nb_rows &*& 0 <= n;
-    ensures     n == row * nb_rows + col;
+lemma void extract_works(int n, int nb_cols, int row, int col)
+    requires    extract_row(nb_cols, n) == row &*& extract_column(nb_cols, n) == col &*& 0 < nb_cols &*& 0 <= n;
+    ensures     n == row * nb_cols + col;
 {
-    div_rem_nonneg(n, nb_rows);
+    div_rem_nonneg(n, nb_cols);
 }
 
-lemma void extract_row_val(int nb_rows, int n, int i, int j)
+lemma void extract_row_val(int nb_cols, int n, int i, int j)
     requires   
-        n == i * nb_rows + j &*&
-        0 <= n &*& 0 < nb_rows &*&
+        n == i * nb_cols + j &*&
+        0 <= n &*& 0 < nb_cols &*&
         0 <= i &*& 0 <= j;
     ensures    
-        extract_row(nb_rows, n) == i;
+        extract_row(nb_cols, n) == i;
 {
-    assume (extract_row(nb_rows, n) == i);
+    assume (extract_row(nb_cols, n) == i);
 }
 
-lemma void extract_column_val(int nb_rows, int n, int i, int j)
+lemma void extract_column_val(int nb_cols, int n, int i, int j)
     requires   
-        n == i * nb_rows + j &*&
-        0 <= n &*& 0 < nb_rows &*&
+        n == i * nb_cols + j &*&
+        0 <= n &*& 0 < nb_cols &*&
         0 <= i &*& 0 <= j;
     ensures    
-        extract_column(nb_rows, n) == j;
+        extract_column(nb_cols, n) == j;
 {
-    assume (extract_column(nb_rows, n) == j);
+    assume (extract_column(nb_cols, n) == j);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_
