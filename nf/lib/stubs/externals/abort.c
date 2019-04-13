@@ -11,14 +11,4 @@ void abort(void)
 	dsos_halt();
 }
 
-#else //!KLEE_VERIFICATION
-
-/* #include <klee/klee.h> */
-/* #include <stdlib.h> */
-
-/* void abort(void) */
-/* { */
-/* 	klee_abort(); */
-/* } */
-
 #endif //!KLEE_VERIFICATION

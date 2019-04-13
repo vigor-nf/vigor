@@ -13,15 +13,4 @@ void exit(int exit_code)
 	dsos_halt();
 }
 
-#else //!KLEE_VERIFICATION
-
-/* #include <klee/klee.h> */
-
-/* extern void exit(int exit_code); */
-
-/* void exit(int exit_code) */
-/* { */
-/* 	klee_silent_exit(exit_code); */
-/* } */
-
 #endif //!KLEE_VERIFICATION

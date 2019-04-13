@@ -80,6 +80,10 @@ VERIF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
 # NF args for the verification
 NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
 
+# Convert the bash-style NF arguments (nf --no-shconf -- -n 3 -m 6) into
+# C-style char*[] comma separated list
+# of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for DSOS to put
+# into argv at compilation time.
 dquote=\"
 NF_ARGUMENTS_MACRO=-DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),$(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS))\"
 

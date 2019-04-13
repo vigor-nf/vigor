@@ -17,22 +17,12 @@ vigor_time_t start_time(void) {
     vigor_time_t starting_time;
     klee_make_symbolic(&starting_time, sizeof(vigor_time_t), "starting_time");
 
-    /* struct timespec tp; */
-    /* clock_gettime(CLOCK_MONOTONIC, &tp); */
-    /* starting_time = tp.tv_nsec; */
-
-    //klee_assume(starting_time >= 0);
     last_time = starting_time;
     return last_time;
 }
 
 vigor_time_t restart_time(void) {
     klee_make_symbolic(&starting_time, sizeof(vigor_time_t), "restarting_time");
-    /* struct timespec tp; */
-    /* clock_gettime(CLOCK_MONOTONIC, &tp); */
-    /* starting_time = tp.tv_sec * 1000000000 + tp.tv_nsec; */
-
-    //klee_assume(starting_time >= 0);
     last_time = starting_time;
     return last_time;
 }
@@ -42,12 +32,6 @@ vigor_time_t current_time(void) {
     klee_trace_ret();
     vigor_time_t next_time;
     klee_make_symbolic(&next_time, sizeof(vigor_time_t), "next_time");
-
-    /* struct timespec tp; */
-    /* clock_gettime(CLOCK_MONOTONIC, &tp); */
-    /* next_time = tp.tv_sec * 1000000000 + tp.tv_nsec; */
-
-    //klee_assume(last_time <= next_time);
     last_time = next_time;
     return next_time;
 }
@@ -83,17 +67,17 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
     uint64_t freq = dsos_tsc_get_freq();
 
 
-#ifndef KLEE_VERIFICATION
-    tp->tv_nsec = (tsc * 1000000000 / freq) % 1000000000;
-    tp->tv_sec = tsc / freq;
-#else
+#ifdef KLEE_VERIFICATION
     // HACK: Verifast doesn't like the division
     // even though there is no reason why it shouldn't
     // be correct since it's just scaling the TSC by a constant.
     // Maybe some more lemmas are needed.
     tp->tv_sec = tsc / freq;
     tp->tv_nsec = tsc; //FIXME: modulo 1000000000, etc, use a proper formula;
-#endif
+#else//KLEE_VERIFICATION
+    tp->tv_nsec = (tsc * 1000000000 / freq) % 1000000000;
+    tp->tv_sec = tsc / freq;
+#endif//KLEE_VERIFICATION
 
     return 0;
 }
