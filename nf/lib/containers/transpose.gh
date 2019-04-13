@@ -3,6 +3,7 @@
 
 #include <nat.gh>
 #include "arith.gh"
+#include "listutils.gh"
 
 // ------------- transpose -------------
 
@@ -110,12 +111,23 @@ lemma void transpose_to_src<t>(list<t> xs, list<t> xs_transpose, int nb_rows, in
 }
 
 lemma void transpose_preserves_count<t>(list<t> xs, int nb_rows, int nb_cols, int count, fixpoint (t, bool) fp)
-    requires    count(xs, fp) == count &*& length(xs) == nb_rows * nb_cols &*& 0 <= count;
+    requires    count(xs, fp) == count &*& length(xs) == nb_rows * nb_cols;
     ensures     count(transpose(xs, nb_rows, nb_cols), fp) == count;
 {
     assume (count(transpose(xs, nb_rows, nb_cols), fp) == count);
 }
 
+lemma void transpose_preserves_integer_copies(list<int> xs, int nb_rows, int nb_cols, int nb_copies, nat val)
+    requires    true == integer_copies(val, nb_copies, xs) &*& length(xs) == nb_rows * nb_cols;
+    ensures     true == integer_copies(val, nb_copies, transpose(xs, nb_rows, nb_cols));
+{
+    switch(val) {
+        case zero:  transpose_preserves_count(xs, nb_rows, nb_cols, nb_copies, (eq)(0));
+        case succ(val_pred): 
+            transpose_preserves_count(xs, nb_rows, nb_cols, nb_copies, (eq)(int_of_nat(val)));
+            transpose_preserves_integer_copies(xs, nb_rows, nb_cols, nb_copies, val_pred);
+    }
+}
 
 // ------------- extract_row/column -------------
 

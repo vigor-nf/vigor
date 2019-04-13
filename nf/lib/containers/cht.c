@@ -158,6 +158,22 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    lemma void forall2_eq<t>(list<t> l1, list<t> l2, t val)
+        requires    true == forall2(l1, l2, eq) &*& true == forall(l2, (eq)(val)) &*& length(l2) >= length(l1);
+        ensures     true == forall(l1, (eq)(val));
+    {
+        switch(l1) {
+            case nil:
+            case cons(h1, t1):
+                switch(l2) {
+                    case nil:
+                    case cons(h2, t2): 
+                        forall2_nth(l1, l2, eq, 0);
+                        forall2_eq(t1, t2, val);
+                }
+        }
+    }
+
     lemma void map_preserves_update<t1,t2>(list<t1> xs, list<t1> xs_update, fixpoint (t1,t2) fp, int i, t1 val)
         requires    xs_update == update(i, val, xs) &*& 0 <= i &*& i < length(xs);
         ensures     map(fp, xs_update) == update(i, fp(val), map(fp, xs));
@@ -252,6 +268,19 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
 
                 // Recursive call
                 next_invariant_update(p_transpose, limit, cht_height, idx_pred, bucket_id);
+        }
+    }
+
+    lemma void next_invariant_end(list<int> p_transpose, int backend_capacity, int cht_height, nat idx)
+        requires    true == integer_copies(nat_of_int(cht_height - 1), backend_capacity, p_transpose) &*& int_of_nat(idx) <= cht_height;
+        ensures     true == forall(next_invariant(p_transpose, length(p_transpose), cht_height, idx), (eq)(backend_capacity));
+    {
+        switch(idx) {
+            case zero:
+            case succ(idx_pred):
+                integer_copies_val(cht_height - int_of_nat(idx), nat_of_int(cht_height - 1), backend_capacity, p_transpose);
+                filter_idx_count_to_length(p_transpose, 0, (eq)(cht_height - int_of_nat(idx)), backend_capacity);
+                next_invariant_end(p_transpose, backend_capacity, cht_height, idx_pred);
         }
     }
 
@@ -689,9 +718,25 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ forall2_update(cht_split, cht_invar, eq, bucket_id, nth(bucket_id, cht_split_update), nth(bucket_id, cht_invar_update));
         }
     }
+
+    //@ open ints(next, cht_height, ?n);
+    //@ close ints(next, cht_height, n);
     //@ assert vectorp<uint32_t>(cht, u_integer, ?vals, addrs);
 
+    // Proof that next == [backend_capacity, backend_capacity, ..., backend_capacity]
+    //@ permutation_split_to_count(p_final, nat_of_int(backend_capacity), cht_height);
+    //@ transpose_preserves_integer_copies(p_final, backend_capacity, cht_height, backend_capacity, nat_of_int(cht_height - 1));
+    //@ next_invariant_end(p_transpose, backend_capacity, cht_height, nat_of_int(cht_height));
+    //@ forall2_eq(n, next_invariant(p_transpose, length(p_transpose), cht_height, nat_of_int(cht_height)), backend_capacity);
+    //@ assert(true == forall(n, (eq)(backend_capacity)));
+
     // Proof that the CHT is completely filled with permutations
+	
+    
+    
+    
+    
+    
     //@ assert (true == valid_cht(vals, backend_capacity, cht_height));
 
     // Free memory
