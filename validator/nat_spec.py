@@ -2,7 +2,7 @@ EXP_TIME = 10
 EXT_IP_ADDR = ext_ip
 EXT_PORT = 1
 
-if EXP_TIME <= now: # consider only normal moments, remote from the start of the epoch
+if a_packet_received and EXP_TIME <= now: # consider only normal moments, remote from the start of the epoch
     flow_emap = emap_expire_all(flow_emap, now - EXP_TIME)
 if a_packet_received: # This is probably implied by the first pop_header call, TODO: check
 
