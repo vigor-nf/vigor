@@ -150,10 +150,32 @@ lemma void permutation_to_count(list<int> xs)
 }
 
 lemma void permutation_split_to_count(list<int> xs, nat nb_split, int n)
-    requires    true == forall(split(xs, nb_split, n), is_permutation) &*& 0 < length(xs);
-    ensures     true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs);
+    requires    
+        true == forall(split(xs, nb_split, n), is_permutation) &*&
+        length(xs) == int_of_nat(nb_split) * n &*&
+        0 < n &*& n <= length(xs);
+    ensures     
+        true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs);
 {
-    assume (true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs));
+    switch(nb_split) {
+        case zero:
+        case succ(nb_split_pred):
+            if (nb_split_pred != zero) {
+                // Recursive call
+                length_drop(n, xs);
+                mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+                mul_equal(n, int_of_nat(nb_split_pred), length(xs) - n);
+                permutation_split_to_count(drop(n, xs), nb_split_pred, n);            
+            }
+
+            list<int> ret_xs = drop(n, xs);
+            list<int> first_chunk = take(n, xs);
+            assert (xs == append(first_chunk, ret_xs));
+
+            split_chunk_equiv(xs, nb_split, n, 0);
+            permutation_to_count(first_chunk);
+            integer_copies_append(first_chunk, ret_xs, nat_of_int(n - 1), 1, int_of_nat(nb_split_pred));
+    }
 }
 
 lemma void forall_ge_lower(list<int> xs, int low_bound, int x)
@@ -224,7 +246,7 @@ lemma void permutation_from_filter_idx(list<int> xs, nat nb_split, int nb_split_
             forall_nth(split(xs, nb_split, n), is_permutation, 0);
             permutation_to_count(first_chunk);
             integer_copies_val(bucket_id, nat_of_int(n - 1), 1, first_chunk);
-            filter_idx_count_to_length(first_chunk, idx, (eq)(bucket_id), 1);
+            filter_idx_length_count_equiv(first_chunk, idx, (eq)(bucket_id));
             map_preserves_length((extract_row)(n), filter_first_chunk);
             assert (length(filter_first_chunk) == 1);
 

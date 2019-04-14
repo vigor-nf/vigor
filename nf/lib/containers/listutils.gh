@@ -15,27 +15,15 @@ fixpoint list<int> filter_idx<t>(list<t> xs, int idx, fixpoint (t, bool) fp) {
     }
 }
 
-lemma void filter_idx_count_to_length<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count)
-    requires    count(xs, fp) == count;
-    ensures     length(filter_idx(xs, idx, fp)) == count;
+lemma void filter_idx_length_count_equiv<t>(list<t> xs, int idx, fixpoint (t, bool) fp)
+    requires    true;
+    ensures     count(xs, fp) == length(filter_idx(xs, idx, fp));
 {
     switch(xs) {
         case nil:
         case cons(x0, xs0): 
-            if (fp(x0)) filter_idx_count_to_length(xs0, idx + 1, fp, count - 1); 
-            else filter_idx_count_to_length(xs0, idx + 1, fp, count);
-    }
-}
-
-lemma void filter_idx_length_to_count<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count)
-    requires    length(filter_idx(xs, idx, fp)) == count;
-    ensures     count(xs, fp) == count;
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): 
-            if (fp(x0)) filter_idx_length_to_count(xs0, idx + 1, fp, count - 1); 
-            else filter_idx_length_to_count(xs0, idx + 1, fp, count);
+            if (fp(x0)) filter_idx_length_count_equiv(xs0, idx + 1, fp); 
+            else filter_idx_length_count_equiv(xs0, idx + 1, fp);
     }
 }
 
@@ -49,15 +37,15 @@ lemma void filter_idx_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bo
     }
 }
 
-lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp, int count_xs, int count_ys)
-    requires    count(xs, fp) == count_xs &*& count(ys, fp) == count_ys;
-    ensures     length(filter_idx(append(xs, ys), idx, fp)) == count_xs + count_ys;
+lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp)
+    requires    true;
+    ensures     length(filter_idx(append(xs, ys), idx, fp)) == count(xs, fp) + count(ys, fp);
 {
     switch(xs) {
-        case nil: filter_idx_count_to_length(ys, idx, fp, count_ys);
+        case nil: filter_idx_length_count_equiv(ys, idx, fp);
         case cons(x0, xs0): 
-            if (fp(x0)) filter_idx_count_append(xs0, ys, idx + 1, fp, count_xs - 1, count_ys); 
-            else filter_idx_count_append(xs0, ys, idx + 1, fp, count_xs, count_ys);
+            if (fp(x0)) filter_idx_count_append(xs0, ys, idx + 1, fp); 
+            else filter_idx_count_append(xs0, ys, idx + 1, fp);
     }
 }
 
@@ -202,6 +190,23 @@ lemma void integer_copies_val(int x, nat val, int nb_copies, list<int> xs)
             if (int_of_nat(val) != x) {
                 integer_copies_val(x, val_pred, nb_copies, xs);
             }
+    }
+}
+
+lemma void integer_copies_append(list<int> xs, list<int> ys, nat val, int nb_copies_xs, int nb_copies_ys)
+    requires    true == integer_copies(val, nb_copies_xs, xs) &*& true == integer_copies(val, nb_copies_ys, ys);
+    ensures     true == integer_copies(val, nb_copies_xs + nb_copies_ys, append(xs, ys));
+{
+    switch(val) {
+        case zero:
+            integer_copies_val(int_of_nat(val), val, nb_copies_xs, xs);
+            integer_copies_val(int_of_nat(val), val, nb_copies_ys, ys);
+            count_append(xs, ys, (eq)(int_of_nat(val)));
+        case succ(val_pred):
+            integer_copies_val(int_of_nat(val), val, nb_copies_xs, xs);
+            integer_copies_val(int_of_nat(val), val, nb_copies_ys, ys);
+            count_append(xs, ys, (eq)(int_of_nat(val)));
+            integer_copies_append(xs, ys, val_pred, nb_copies_xs, nb_copies_ys);
     }
 }
 
