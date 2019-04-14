@@ -16,15 +16,15 @@ if EXP_TIME < now: # consider only normal moments, remote from the start of the 
         # TODO: VVV replace this with assertions, as we already expect the ether/ip/tcpudp stack
         # because of the above 3 calls to pop_header
         if ((h1.type & 0x10) == 0x10): # 0x10 -> IPv4
-            if (h2.inpid == 6 or h2.inpid == 17): # 6/17 -> TCP/UDP
+            if (h2.pid == 6 or h2.pid == 17): # 6/17 -> TCP/UDP
                 if (received_on_port == EXT_PORT):
-                    flow_indx = h3.idst_port - start_port
+                    flow_indx = h3.dst_port - start_port
                     if (emap_has_idx(flow_emap, flow_indx)): # Flow is present in the table
                         internal_flow = emap_get_key(flow_emap, flow_indx)
                         flow_emap = emap_refresh_idx(flow_emap, flow_indx, now)
-                        if (internal_flow.sp != h2.isaddr or
-                            internal_flow.dp != h2.isrc_port or
-                            internal_flow.prot != h2.inpid):
+                        if (internal_flow.sp != h2.saddr or
+                            internal_flow.dp != h3.src_port or
+                            internal_flow.prot != h2.pid):
                             return ([],[])
                         else:
                             return ([internal_flow.idev],
@@ -34,7 +34,7 @@ if EXP_TIME < now: # consider only normal moments, remote from the start of the 
                     else:
                         return ([],[])
                 else: # packet from the internal network
-                    internal_flow_id = FlowId(isrc_port, idst_port, isaddr, idaddr, received_on_port, inpid)
+                    internal_flow_id = FlowId(h3.src_port, h3.dst_port, h2.saddr, h2.daddr, received_on_port, h2.pid)
                     if (emap_has(flow_emap, internal_flow_id)): # flow present in the table
                         idx = emap_get(flow_emap, internal_flow_id)
                         flow_emap = emap_refresh_idx(flow_emap, idx, now)
