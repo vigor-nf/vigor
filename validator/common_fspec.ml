@@ -1273,9 +1273,11 @@ let abstract_state_capture containers =
        | UInt
        | UInt32 -> ""
        | EMap (typ, m, v, h) -> "emap<" ^ (ityp_name typ) ^ "> " ^ name ^
-                                " = emap<" ^ (ityp_name typ) ^ ">(" ^ m ^ ", " ^ v ^ ", " ^ h ^ ");\n" ^
+                                " = emap<" ^ (ityp_name typ) ^ ">(" ^ m ^
+                                ", initial_" ^ v ^ ", " ^ h ^ ");\n" ^
                                 "emap<" ^ (ityp_name typ) ^ "> final_" ^ name ^
-                                " = emap<" ^ (ityp_name typ) ^ ">(final_" ^ m ^ ", final_" ^ v ^ ", final_" ^ h ^ ");\n"
+                                " = emap<" ^ (ityp_name typ) ^ ">(final_" ^ m ^
+                                ", finalizing_final_" ^ v ^ ", final_" ^ h ^ ");\n"
      )))
 
 let fun_types containers records =

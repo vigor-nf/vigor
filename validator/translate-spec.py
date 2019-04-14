@@ -1,25 +1,30 @@
 #!/usr/bin/python3
 import ast
 
-protocol_headers = {'ether' : ['saddr', 'daddr', 'type'],
-                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
-                              'ttl', 'pid', 'cksu', 'saddr', 'daddr'],
-                    'tcpudp' : ['src_port', 'dst_port']}
+protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
+                   'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
+                             'ttl', 'pid', 'cksu', 'saddr', 'daddr'],
+                   'tcpudp' : ['src_port', 'dst_port'],
+                   'tcp' : ['srcp', 'dstp', 'seq', 'ack', 'doff',
+                            'flags', 'win', 'cksum', 'urp']}
 objConstructors = {'emap_get_key' : {'constructor' : 'FlowIdc',
                                      'type' : 'FlowIdi',
                                      'fields' : ['sp', 'dp', 'sip', 'dip', 'idev', 'prot']}}
 typeConstructors = {'FlowIdc' : 'FlowIdi',
                     'emap' : 'emap<FlowIdi>'}
-header_stack = "recv_headers"
-dummy_cnt = 0
+headerStack = 'recv_headers'
+dummyCnt = 0
 objects = {}
-declaredVars = []
+stateVars = ['flow_emap']
+declaredVars = stateVars.copy()
 
 indentLevel = 0
 indentWidth = 2
 
+specFile = None
+
 def indentPrint(text):
-    print(' '*indentLevel*indentWidth + text)
+    specFile.write(' '*indentLevel*indentWidth + text + '\n')
 
 def guessType(rhs):
     if (isinstance(rhs, ast.Call) and
@@ -31,7 +36,7 @@ def guessType(rhs):
 def isHeaderConstructor(expr):
     return (isinstance(expr, ast.Call) and
             isinstance(expr.func, ast.Name) and
-            expr.func.id in protocol_headers)
+            expr.func.id in protocolHeaders)
 
 def renderHeaderConstructor(expr):
     protocol = expr.func.id
@@ -43,18 +48,22 @@ def renderHeaderConstructor(expr):
         base = objects[base]
     else:
         base = None
-    set_fields = dict(map(lambda kw : (kw.arg, kw.value), expr.keywords))
+    setFields = dict(map(lambda kw : (kw.arg, kw.value), expr.keywords))
     result = expr.func.id + "_hdr(" + expr.func.id + "_hdrc("
-    for f in protocol_headers[expr.func.id]:
-        if f in set_fields:
-            if isinstance(set_fields[f], ast.Ellipsis):
+    first = True
+    for f in protocolHeaders[expr.func.id]:
+        if first:
+            first = False
+        else:
+            result += ', '
+        if f in setFields:
+            if isinstance(setFields[f], ast.Ellipsis):
                 result += '_'
             else:
-                result += renderExpr(set_fields[f])
+                result += renderExpr(setFields[f])
         else:
             assert base != None, expr.func.id + " undefined field " + f
             result += base[f]
-        result += ", "
     result += "))"
     return result
 
@@ -76,6 +85,7 @@ def renderExpr(expr):
         assert len(expr.comparators) == 1
         right = renderExpr(expr.comparators[0])
         if   isinstance(relation, ast.Lt): sign = '<'
+        if   isinstance(relation, ast.LtE): sign = '<='
         elif isinstance(relation, ast.Eq): sign = '=='
         elif isinstance(relation, ast.NotEq): sign = '!='
         elif isinstance(relation, ast.Gt): sign = '>'
@@ -109,17 +119,17 @@ def renderExpr(expr):
     else:
         return "complicated"
 
-def genOutcome(ports_headers):
-    assert isinstance(ports_headers, ast.Tuple)
-    assert len(ports_headers.elts) == 2
-    ports = ports_headers.elts[0]
-    headers = ports_headers.elts[1]
+def genOutcome(portsHeaders):
+    assert isinstance(portsHeaders, ast.Tuple)
+    assert len(portsHeaders.elts) == 2
+    ports = portsHeaders.elts[0]
+    headers = portsHeaders.elts[1]
     assert isinstance(ports, ast.List)
     assert isinstance(headers, ast.List)
     if ports.elts:
         return "assert sent_on_ports == {} && sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
     else:
-        return "assert sent_on_ports == [];"
+        return "assert sent_on_ports == nil;"
 
 def isPopHeader(expr):
     if (not isinstance(expr, ast.Assign) or
@@ -139,28 +149,28 @@ def isPopHeader(expr):
     return True
 
 def translatePopHeader(binding, body):
-    global header_stack, dummy_cnt, objects
-    indentPrint("switch({}) {{\n".format(header_stack))
-    on_mismatch = genOutcome(binding.value.keywords[0].value)
-    indentPrint("case nil: {}".format(on_mismatch))
-    header_stack_tail = header_stack + "_t"
-    header = "tmp" + str(dummy_cnt)
-    dummy_cnt += 1
-    indentPrint("case cons({}, {}):".format(header, header_stack_tail))
-    header_stack = header_stack_tail
+    global headerStack, dummyCnt, objects
+    indentPrint("switch({}) {{\n".format(headerStack))
+    onMismatch = genOutcome(binding.value.keywords[0].value)
+    indentPrint("case nil: {}".format(onMismatch))
+    headerStackTail = headerStack + "_t"
+    header = "tmp" + str(dummyCnt)
+    dummyCnt += 1
+    indentPrint("case cons({}, {}):".format(header, headerStackTail))
+    headerStack = headerStackTail
     indentPrint("switch({}) {{".format(header))
     protocol = binding.value.args[0].id
-    assert protocol in protocol_headers
-    for p in protocol_headers.keys():
+    assert protocol in protocolHeaders
+    for p in protocolHeaders.keys():
         if p != protocol:
-            indentPrint("case {}(dummy): {}".format(p + '_hdr', on_mismatch))
+            indentPrint("case {}(dummy): {}".format(p + '_hdr', onMismatch))
     obj = binding.targets[0].id
-    fields = protocol_headers[protocol]
-    field_instances = list(map(lambda f : obj + '_' + f, fields))
-    objects[obj] = dict(zip(fields, field_instances))
-    hdr_name = protocol + '_hdr_shell'
-    indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdr_name, hdr_name))
-    indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(field_instances)))
+    fields = protocolHeaders[protocol]
+    fieldInstances = list(map(lambda f : obj + '_' + f, fields))
+    objects[obj] = dict(zip(fields, fieldInstances))
+    hdrName = protocol + '_hdr_shell'
+    indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdrName, hdrName))
+    indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(fieldInstances)))
     translate(body)
     indentPrint("}}}")
 
@@ -179,12 +189,12 @@ def isObjAssignment(expr):
 
 def translateObjAssignment(binding, body):
     global objects
-    var_name = binding.targets[0].id
+    varName = binding.targets[0].id
     fields = objConstructors[binding.value.func.id]['fields']
     ctor = objConstructors[binding.value.func.id]['constructor']
-    field_instances = list(map(lambda f : var_name + '_' + f, fields))
-    objects[var_name] = dict(zip(fields, field_instances))
-    indentPrint("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(field_instances)))
+    fieldInstances = list(map(lambda f : varName + '_' + f, fields))
+    objects[varName] = dict(zip(fields, fieldInstances))
+    indentPrint("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(fieldInstances)))
     translate(body)
     indentPrint("}")
 
@@ -232,5 +242,9 @@ def translate(exprList):
 
 specRaw = open("nat_spec.py").read()
 specAst = ast.parse(specRaw)
+specFile = open("forwarding_property.tmpl", "w")
 indentPrint("bit_and_hack();")
 translate(specAst.body)
+for v in stateVars:
+    indentPrint("assert final_{} == {};".format(v, v))
+specFile.close()
