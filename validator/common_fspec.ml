@@ -312,7 +312,7 @@ let map_alloc_spec map_specs =
              ")(a) \
               {\
               call();\
-              }\n
+              }\n\
               break;\n"
            )) ) ^
           "default:\n\
@@ -1248,6 +1248,35 @@ let gen_vector_params containers records =
       | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;entry_type=String.Map.find_exn records typ}
       | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32}
       | _ -> None)
+
+let abstract_state_capture containers =
+  (String.concat ~sep:"" (List.mapi containers ~f:(fun i (name,t) ->
+       match t with
+       | Map (typ, _, _) -> "assert mapp<" ^ (ityp_name typ) ^ ">(" ^
+                            name ^ "_ptr, _, _, _, mapc(_, ?" ^
+                            ("final_" ^ name) ^ ", _));\n" ^
+                            "list<pair<" ^ (ityp_name typ) ^ ", int> > " ^ name ^ " = initial_" ^ name ^ ";\n"
+       | Vector (typ, _, _) -> "assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
+                               name ^ "_ptr, _, ?" ^
+                               ("finalizing_final_" ^ name) ^ ", _);\n" ^
+                               "vector<" ^ (ityp_name typ) ^ "> " ^ name ^ " = vector(" ^ "initial_" ^ name ^ ");\n" ^
+                               "vector<" ^ (ityp_name typ) ^ "> final_" ^ name ^
+                               " = vector(" ^ "finalizing_final_" ^ name ^ ");\n"
+       | CHT (_, _) -> "assert vectorp<uint32_t>(" ^
+                       name ^ "_ptr, _, ?" ^
+                       ("final_" ^ name) ^ ", _);\n" ^
+                       "list<pair<uint32_t, real> > " ^ name ^ " = " ^ "initial_" ^ name ^ ";\n"
+       | DChain _ -> "assert double_chainp(?" ^ "final_" ^ name ^ ", " ^
+                     name ^ "_ptr);\n" ^
+                     "dchain " ^ name ^ " = " ^ ("initial_" ^ name) ^ ";\n"
+       | Int
+       | UInt
+       | UInt32 -> ""
+       | EMap (typ, m, v, h) -> "emap<" ^ (ityp_name typ) ^ "> " ^ name ^
+                                " = emap<" ^ (ityp_name typ) ^ ">(" ^ m ^ ", " ^ v ^ ", " ^ h ^ ");\n" ^
+                                "emap<" ^ (ityp_name typ) ^ "> final_" ^ name ^
+                                " = emap<" ^ (ityp_name typ) ^ ">(final_" ^ m ^ ", final_" ^ v ^ ", final_" ^ h ^ ");\n"
+     )))
 
 let fun_types containers records =
   String.Map.of_alist_exn

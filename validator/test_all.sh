@@ -94,7 +94,7 @@ if [ -z "$WORK_DIR" ]; then
     echo " spec-dir - the root directory of the project. Necessary to find"
     echo "            the include files."
     echo " plugin - the validator plugin file - OCaml dynamic module,"
-    echo "          should have a cmo extension. E.g. nat_fspec.cmo"
+    echo "          should have a cma extension. E.g. nat_fspec.cma"
     echo " test# - optional number of the prefix file to run. If abscent"
     echo "         the validator will run all the prefixes in the given"
     echo "         directory."

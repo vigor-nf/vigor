@@ -19,7 +19,7 @@ let containers = ["fm", Map ("FlowId", "max_flows", "");
                   "start_port", Int;
                   "ext_ip", UInt32;
                   "nat_device", UInt32;
-                  "", EMap ("FlowId", "fm", "fv", "heap")]
+                  "flow_emap", EMap ("FlowId", "fm", "fv", "heap")]
 
 let records = String.Map.of_alist_exn
                 ["FlowId", flow_id_struct]
@@ -33,6 +33,7 @@ struct
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
   let user_check_for_complete_iteration =
+    (abstract_state_capture containers) ^
     (In_channel.read_all "forwarding_property.tmpl")
 end
 
