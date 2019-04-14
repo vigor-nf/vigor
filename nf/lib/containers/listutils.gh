@@ -558,6 +558,40 @@ fixpoint list<int> integers_list(nat cnt, int index) {
     }
 }
 
+lemma_auto(length(integers_list(cnt, index))) void length_integers_list(nat cnt, int index) 
+    requires    true;
+    ensures     length(integers_list(cnt, index)) == int_of_nat(cnt);
+{
+    switch(cnt) {
+        case zero:
+        case succ(cnt_pred): length_integers_list(cnt_pred, index + 1);
+    }
+}
+
+lemma_auto(nth(i, integers_list(cnt, index))) void val_integers_list(nat cnt, int index, int i)
+    requires    0 <= i && i <  int_of_nat(cnt);
+    ensures     nth(i, integers_list(cnt, index)) == index + i;
+{
+    switch(cnt) {
+        case zero:
+        case succ(cnt_pred): if (i > 0) val_integers_list(cnt_pred, index + 1, i - 1);
+    }
+}
+
+lemma void integers_list_subset(list<int> xs, int low_bound, int up_bound)
+    requires    true == forall(xs, (ge)(low_bound)) &*& true == forall(xs, (lt)(up_bound)) &*& low_bound <= up_bound;
+    ensures     true == subset(xs, integers_list(nat_of_int(up_bound - low_bound), low_bound));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0):
+            integers_list_subset(xs0, low_bound, up_bound);
+            forall_nth(xs, (ge)(low_bound), 0);
+            forall_nth(xs, (lt)(up_bound), 0);
+            val_integers_list(nat_of_int(up_bound - low_bound), low_bound, x0 - low_bound);
+    }
+}
+
 // ------------- zip -------------
 
 fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {

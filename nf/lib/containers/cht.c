@@ -241,36 +241,6 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
-    lemma void mem_count_zero<t>(list<t> xs, t elem)
-        requires    false == mem(elem, xs);
-        ensures     count(xs, (eq)(elem)) == 0;
-    {
-        switch(xs) {
-            case nil:
-            case cons(x0, xs0): mem_count_zero(xs0, elem);
-        }
-    }
-
-    lemma void mem_count_bound<t>(list<t> xs, t elem)
-        requires    true == mem(elem, xs);
-        ensures     count(xs, (eq)(elem)) >= 1;
-    {
-        switch(xs) {
-            case nil:
-            case cons(x0, xs0):
-                if (x0 != elem) {
-                    mem_count_bound(xs0, elem);
-                } else {
-                    if (mem(elem, xs0)) {
-                        mem_count_bound(xs0, elem);
-                    } else {
-                        mem_count_zero(xs0, elem);
-                    }
-                }
-
-        }
-    }
-
     lemma void count_to_mem<t>(list<t> xs, t val)
         requires    count(xs, (eq)(val)) == 0;
         ensures     false == mem(val, xs);
@@ -780,7 +750,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         list<int> chunk = chunk(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity);
 
         div_mod_gt_0(start, hash, cht_height);
-        assume (length(cht)/dchain_index_range_fp(filter) == cht_height);
+        div_exact(cht_height, backend_capacity);
         mul_nonnegative(start, backend_capacity);
         mul_bounds(start + 1, cht_height, backend_capacity, backend_capacity);
         map_preserves_length(fst, cht);
@@ -802,7 +772,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         list<int> chunk = chunk(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity);
 
         div_mod_gt_0(start, hash, cht_height);
-        assume (length(cht)/dchain_index_range_fp(filter) == cht_height);
+        div_exact(cht_height, backend_capacity);
         mul_nonnegative(start, backend_capacity);
         mul_bounds(start + 1, cht_height, backend_capacity, backend_capacity);
         map_preserves_length(fst, cht);
@@ -823,7 +793,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         list<int> chunk = chunk(map(fst, cht), start * backend_capacity, (start + 1) * backend_capacity);
 
         div_mod_gt_0(start, hash, cht_height);
-        assume (length(cht)/dchain_index_range_fp(filter) == cht_height);
+        div_exact(cht_height, backend_capacity);
         mul_nonnegative(start, backend_capacity);
         mul_bounds(start + 1, cht_height, backend_capacity, backend_capacity);
         map_preserves_length(fst, cht);
