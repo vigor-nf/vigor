@@ -3,7 +3,7 @@ import ast
 
 protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
-                             'ttl', 'pid', 'cksu', 'saddr', 'daddr'],
+                             'ttl', 'npid', 'cksu', 'saddr', 'daddr'],
                    'tcpudp' : ['src_port', 'dst_port'],
                    'tcp' : ['srcp', 'dstp', 'seq', 'ack', 'doff',
                             'flags', 'win', 'cksum', 'urp']}
@@ -127,7 +127,7 @@ def genOutcome(portsHeaders):
     assert isinstance(ports, ast.List)
     assert isinstance(headers, ast.List)
     if ports.elts:
-        return "assert sent_on_ports == {} && sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
+        return "assert sent_on_ports == {}; assert sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
     else:
         return "assert sent_on_ports == nil;"
 
