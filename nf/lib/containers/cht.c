@@ -84,16 +84,6 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
-    lemma void lt_transitive(list<int> xs, int bound, int up_bound)
-        requires bound <= up_bound &*& true == forall(xs, (lt)(bound));
-        ensures true == forall(xs, (lt)(up_bound));
-    {
-        switch(xs) {
-            case nil:
-            case cons(x0, xs0): lt_transitive(xs0, bound, up_bound);
-        }
-    }
-
     lemma void forall_lt_upper(list<int> xs, int up_bound, int x)
         requires true == forall(xs, (lt)(up_bound)) &*& up_bound <= x ;
         ensures !mem(x, xs);
@@ -154,22 +144,6 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                         forall_nth(l1, (eq)(val), 0);
                         forall_nth(l2, (eq)(val), 0);
                         forall2_eq_cst(t1, t2, val);
-                }
-        }
-    }
-
-    lemma void forall2_eq<t>(list<t> l1, list<t> l2, t val)
-        requires    true == forall2(l1, l2, eq) &*& true == forall(l2, (eq)(val)) &*& length(l2) >= length(l1);
-        ensures     true == forall(l1, (eq)(val));
-    {
-        switch(l1) {
-            case nil:
-            case cons(h1, t1):
-                switch(l2) {
-                    case nil:
-                    case cons(h2, t2): 
-                        forall2_nth(l1, l2, eq, 0);
-                        forall2_eq(t1, t2, val);
                 }
         }
     }
@@ -417,6 +391,41 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    // ------------- End of function -------------
+
+    lemma void forall2_eq<t>(list<t> l1, list<t> l2, t val)
+        requires    true == forall2(l1, l2, eq) &*& true == forall(l2, (eq)(val)) &*& length(l2) >= length(l1);
+        ensures     true == forall(l1, (eq)(val));
+    {
+        switch(l1) {
+            case nil:
+            case cons(h1, t1):
+                switch(l2) {
+                    case nil:
+                    case cons(h2, t2): 
+                        forall2_nth(l1, l2, eq, 0);
+                        forall2_eq(t1, t2, val);
+                }
+        }
+    }
+
+    lemma void forall2_prop_eq<t>(list<t> l1, list<t> l2, fixpoint (t, bool) fp)
+        requires    true == forall2(l1, l2, eq) &*& true == forall(l2, fp) &*& length(l2) >= length(l1);
+        ensures     true == forall(l1, fp);
+    {
+        switch(l1) {
+            case nil:
+            case cons(h1, t1):
+                switch(l2) {
+                    case nil:
+                    case cons(h2, t2): 
+                        forall_nth(l2, fp, 0);
+                        forall2_prop_eq(t1, t2, fp);
+                }
+        }
+    }
+
+
 @*/
 
 int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capacity)
@@ -504,7 +513,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
 
             // Arithmetic bounds
             //@ zip_with_index_bounds(chunk_append);
-            //@ lt_transitive(map(fst, chunk_append_ziped), length(chunk_append), cht_height);
+            //@ lt_le_lt(map(fst, chunk_append_ziped), length(chunk_append), cht_height);
             //@ modulo_permutation_bounds(chunk_append_ziped, offset, shift, cht_height);
 
             // No duplicates guarantee
@@ -731,13 +740,19 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     //@ assert(true == forall(n, (eq)(backend_capacity)));
 
     // Proof that the CHT is completely filled with permutations
-	
+    //@ list < list<int> > cht_rows = split(map(fst, vals), nat_of_int(cht_height), backend_capacity);
+    //@ list < list<int> > cht_invar = cht_invariant(p_transpose, length(p_transpose), backend_capacity, cht_height, nat_of_int(cht_height));
+    //@ split_varlim_split_equiv(map(fst, vals), n, backend_capacity, nat_of_int(cht_height));
     
-    
-    
-    
-    
+
+
+    // @ forall2_prop_eq(cht_rows, cht_invar, is_permutation);
     //@ assert (true == valid_cht(vals, backend_capacity, cht_height));
+
+     
+    // Must prove that each element of cht_invar is a permutation of 0...(C-1)
+    // cht_invar[bucket_id] == map(  (extract_column)(backend_capacity) , filter_idx(p_transpose, 0, (eq)(bucket_id)) )
+
 
     // Free memory
     free(next);

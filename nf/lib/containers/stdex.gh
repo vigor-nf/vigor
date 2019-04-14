@@ -156,6 +156,16 @@ ensures true == forall(l, (ge)(x));
   }
 }
 
+lemma void lt_le_lt(list<int> xs, int bound, int up_bound)
+    requires bound <= up_bound &*& true == forall(xs, (lt)(bound));
+    ensures true == forall(xs, (lt)(up_bound));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): lt_le_lt(xs0, bound, up_bound);
+    }
+}
+
 fixpoint bool opt_no_dups<t>(list<option<t> > l) {
   switch(l) {
     case nil: return true;

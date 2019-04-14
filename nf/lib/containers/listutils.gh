@@ -39,6 +39,16 @@ lemma void filter_idx_length_to_count<t>(list<t> xs, int idx, fixpoint (t, bool)
     }
 }
 
+lemma void filter_idx_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp)
+    requires    true;
+    ensures     filter_idx(append(xs, ys), idx, fp) == append(filter_idx(xs, idx, fp), filter_idx(ys, idx + length(xs), fp));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): filter_idx_append(xs0, ys, idx + 1, fp);
+    }
+}
+
 lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp, int count_xs, int count_ys)
     requires    count(xs, fp) == count_xs &*& count(ys, fp) == count_ys;
     ensures     length(filter_idx(append(xs, ys), idx, fp)) == count_xs + count_ys;
@@ -68,6 +78,28 @@ lemma void filter_idx_include_last<t>(list<t> xs, int idx, fixpoint(t, bool) fp,
     switch(xs) {
         case nil: 
         case cons(x0, xs0): filter_idx_include_last(xs0, idx + 1, fp, x);
+    }
+}
+
+lemma void filter_idx_ge<t>(list<t> xs, int idx, fixpoint(t, bool) fp)
+    requires    true;
+    ensures     true == forall(filter_idx(xs, idx, fp), (ge)(idx));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            filter_idx_ge(xs0, idx + 1, fp);
+            ge_le_ge(filter_idx(xs0, idx + 1, fp), idx + 1, idx);
+    }
+}
+
+lemma void filter_idx_lt<t>(list<t> xs, int idx, fixpoint(t, bool) fp)
+    requires    true;
+    ensures     true == forall(filter_idx(xs, idx, fp), (lt)(idx + length(xs)));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): filter_idx_lt(xs0, idx + 1, fp);
     }
 }
 

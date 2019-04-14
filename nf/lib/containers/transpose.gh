@@ -3,6 +3,7 @@
 
 #include <nat.gh>
 #include "arith.gh"
+#include "modulo.gh"
 #include "listutils.gh"
 
 // ------------- transpose -------------
@@ -129,6 +130,13 @@ lemma void transpose_preserves_integer_copies(list<int> xs, int nb_rows, int nb_
     }
 }
 
+lemma void transpose_preserves_row_col_idx_equiv<t>(list<t> xs, list<t> xs_transpose, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
+    requires    xs_transpose == transpose(xs, nb_rows, nb_cols);
+    ensures     map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)) == map((extract_column)(nb_rows) , filter_idx(xs_transpose, 0, fp));
+{
+    assume ( map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)) == map((extract_column)(nb_rows) , filter_idx(xs_transpose, 0, fp)) );
+}
+
 // ------------- extract_row/column -------------
 
 fixpoint int extract_row(int nb_cols, int n) {
@@ -166,6 +174,34 @@ lemma void extract_column_val(int nb_cols, int n, int i, int j)
         extract_column(nb_cols, n) == j;
 {
     assume (extract_column(nb_cols, n) == j);
+}
+
+lemma void extract_row_ge(int nb_cols, int val, list<int> xs)
+    requires    true == forall(xs, (ge)(val + nb_cols)) &*& 0 <= val &*& 0 < nb_cols;
+    ensures     true == forall(map( (extract_row)(nb_cols), xs ), (ge)(val/nb_cols + 1));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0):
+            forall_nth(xs, (ge)(val + nb_cols), 0);
+            div_incr(val, nb_cols);
+            div_ge(val + nb_cols, x0, nb_cols);
+            extract_row_ge(nb_cols, val, xs0);
+    }
+}
+
+lemma void extract_row_lt(int nb_cols, int val, list<int> xs)
+    requires    true == forall(xs, (lt)(val + nb_cols)) &*& 0 <= val &*& 0 < nb_cols;
+    ensures     true == forall(map( (extract_row)(nb_cols), xs ), (lt)(val/nb_cols + 1));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0):
+            forall_nth(xs, (lt)(val + nb_cols), 0);
+            div_incr(val, nb_cols);
+            div_lt(x0, val + nb_cols, nb_cols);
+            extract_row_lt(nb_cols, val, xs0);
+    }
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_
