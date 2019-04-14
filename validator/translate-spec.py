@@ -49,6 +49,8 @@ def renderHeaderConstructor(expr):
     else:
         base = None
     setFields = dict(map(lambda kw : (kw.arg, kw.value), expr.keywords))
+    for f in setFields.keys():
+        assert f in protocolHeaders[expr.func.id]
     result = expr.func.id + "_hdr(" + expr.func.id + "_hdrc("
     first = True
     for f in protocolHeaders[expr.func.id]:

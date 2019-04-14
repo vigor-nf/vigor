@@ -31,13 +31,13 @@ if a_packet_received: # This is probably implied by the first pop_header call, T
                 else:
                     return ([],[])
             else: # packet from the internal network
-                internal_flow_id = FlowIdc(h3.src_port, h3.dst_port, h2.saddr, h2.daddr, received_on_port, h2.pid)
+                internal_flow_id = FlowIdc(h3.src_port, h3.dst_port, h2.saddr, h2.daddr, received_on_port, h2.npid)
                 if (emap_has(flow_emap, internal_flow_id)): # flow present in the table
                     idx = emap_get(flow_emap, internal_flow_id)
                     flow_emap = emap_refresh_idx(flow_emap, idx, now)
                     return ([EXT_PORT],
                             [ether(h1, saddr=..., daddr=...),
-                             ipv4(h2, icksum=..., saddr=EXT_IP_ADDR),
+                             ipv4(h2, cksum=..., saddr=EXT_IP_ADDR),
                              tcpudp(h3, src_port=idx + start_port)])
                 else: # No flow in the table
                     if (emap_full(flow_emap)): # flowtable overflow
@@ -47,7 +47,7 @@ if a_packet_received: # This is probably implied by the first pop_header call, T
                         flow_emap = emap_add(flow_emap, internal_flow_id, idx, now)
                         return ([EXT_PORT],
                                 [ether(h1, saddr=..., daddr=...),
-                                 ipv4(h2, icksum=..., saddr=EXT_IP_ADDR),
+                                 ipv4(h2, cksum=..., saddr=EXT_IP_ADDR),
                                  tcpudp(h3, src_port=idx + start_port)])
         else: # Non TCP or UDP packet
             return ([],[])
