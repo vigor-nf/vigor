@@ -11,7 +11,7 @@ if EXP_TIME < now: # consider only normal moments, remote from the start of the 
 
         h1 = pop_header(ether, on_mismatch=([],[]))
         h2 = pop_header(ipv4, on_mismatch=([],[]))
-        h3 = pop_header(tcp_udp, on_mismatch=([],[]))
+        h3 = pop_header(tcpudp, on_mismatch=([],[]))
 
         # TODO: VVV replace this with assertions, as we already expect the ether/ip/tcpudp stack
         # because of the above 3 calls to pop_header
@@ -50,7 +50,7 @@ if EXP_TIME < now: # consider only normal moments, remote from the start of the 
                             flow_emap = emap_add(flow_emap, internal_flow_id, idx, now)
                             return ([EXT_PORT],
                                     [ether(h1, saddr=..., daddr=...),
-                                     ipv4(h2, icksum=..., saddr=EXT_IP_ADDR, daddr=internal_flow_id.sip),
+                                     ipv4(h2, icksum=..., saddr=EXT_IP_ADDR),
                                      tcpudp(h3, src_port=idx + start_port)])
             else: # Non TCP or UDP packet
                 return ([],[])

@@ -4,20 +4,53 @@ import ast
 specRaw = open("nat_spec.py").read()
 specAst = ast.parse(specRaw)
 
-def render_expr(expr):
+def isHeaderConstructor(expr):
+    return (isinstance(expr, ast.Call) and
+            isinstance(expr.func, ast.Name) and
+            expr.func.id in protocol_headers)
+
+def renderHeaderConstructor(expr):
+    protocol = expr.func.id
+    if expr.args:
+        assert len(expr.args) == 1
+        assert isinstance(expr.args[0], ast.Name)
+        base = expr.args[0].id
+        assert base in objects
+        base = objects[base]
+    else:
+        base = None
+    set_fields = dict(map(lambda kw : (kw.arg, kw.value), expr.keywords))
+    result = expr.func.id + "_hdr(" + expr.func.id + "_hdrc("
+    for f in protocol_headers[expr.func.id]:
+        if f in set_fields:
+            if isinstance(set_fields[f], ast.Ellipsis):
+                result += '_'
+            else:
+                result += renderExpr(set_fields[f])
+        else:
+            assert base != None, expr.func.id + " undefined field " + f
+            result += base[f]
+        result += ", "
+    result += "))"
+    return result
+
+def renderExpr(expr):
     if isinstance(expr, ast.Name):
         return expr.id
     elif isinstance(expr, ast.Num):
         return expr.n
     elif isinstance(expr, ast.Call):
-        args = ", ".join(list(map(render_expr, expr.args)))
+        if isHeaderConstructor(expr):
+            return renderHeaderConstructor(expr)
+        assert not expr.keywords, "keywords are not recognized:" + ast.dump(expr)
+        args = ", ".join(list(map(renderExpr, expr.args)))
         return "{}({})".format(expr.func.id, args)
     elif isinstance(expr, ast.Compare):
-        left = render_expr(expr.left)
+        left = renderExpr(expr.left)
         assert len(expr.ops) == 1
         relation = expr.ops[0]
         assert len(expr.comparators) == 1
-        right = render_expr(expr.comparators[0])
+        right = renderExpr(expr.comparators[0])
         if   isinstance(relation, ast.Lt): sign = '<'
         elif isinstance(relation, ast.Eq): sign = '=='
         elif isinstance(relation, ast.NotEq): sign = '!='
@@ -25,24 +58,24 @@ def render_expr(expr):
         else: sign = '???'
         return "({} {} {})".format(left, sign, right)
     elif isinstance(expr, ast.BinOp):
-        left = render_expr(expr.left)
-        right = render_expr(expr.right)
+        left = renderExpr(expr.left)
+        right = renderExpr(expr.right)
         if   isinstance(expr.op, ast.Sub): sign = '-'
         elif isinstance(expr.op, ast.Add): sign = '+'
         elif isinstance(expr.op, ast.BitAnd): sign = '&'
         else: sign = '???'
         return "({} {} {})".format(left, sign, right)
     elif isinstance(expr, ast.BoolOp):
-        left = render_expr(expr.values[0])
-        right = render_expr(expr.values[1])
+        left = renderExpr(expr.values[0])
+        right = renderExpr(expr.values[1])
         if   isinstance(expr.op, ast.And): sign = '&&'
         elif isinstance(expr.op, ast.Or): sign = '||'
         else: sign = '???'
-        return "(" + (sign.join(map(render_expr, expr.values))) + ")"
+        return "(" + (sign.join(map(renderExpr, expr.values))) + ")"
     elif isinstance(expr, ast.List):
         result = ""
         for e in expr.elts:
-            result = "cons(" + render_expr(e) + ", " + result
+            result = "cons(" + renderExpr(e) + ", " + result
         return result + "nil" + (")" * len(expr.elts))
     elif isinstance(expr, ast.Attribute):
         assert isinstance(expr.value, ast.Name)
@@ -60,7 +93,7 @@ def genOutcome(ports_headers):
     assert isinstance(ports, ast.List)
     assert isinstance(headers, ast.List)
     if ports.elts:
-        return "assert sent_on_ports == {} && sent_headers == {};".format(render_expr(ports), render_expr(headers))
+        return "assert sent_on_ports == {} && sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
     else:
         return "assert sent_on_ports == [];"
 
@@ -84,7 +117,7 @@ def isPopHeader(expr):
 protocol_headers = {'ether':['saddr', 'daddr', 'type'],
                     'ipv4':['vihl', 'tos', 'len', 'pid', 'foff',
                             'ttl', 'pid', 'cksu', 'saddr', 'daddr'],
-                    'tcp_udp':['src_port', 'dst_port']}
+                    'tcpudp':['src_port', 'dst_port']}
 header_stack = "recv_headers"
 dummy_cnt = 0
 objects = {}
@@ -136,7 +169,7 @@ def translateObjAssignment(binding, body):
     ctor = objConstructors[binding.value.func.id]['constructor']
     field_instances = list(map(lambda f : var_name + '_' + f, fields))
     objects[var_name] = dict(zip(fields, field_instances))
-    print("switch({}) {{ case {}({}):".format(render_expr(binding.value), ctor, ", ".join(field_instances)))
+    print("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(field_instances)))
     translate(body)
     print("}")
 
@@ -144,7 +177,6 @@ def translate(exprList):
     while exprList:
         [expr, *exprList] = exprList
         if isinstance(expr, ast.Assign):
-            value = render_expr(expr.value)
             assert isinstance(expr.targets, list)
             target = expr.targets[0]
             if isinstance(target, ast.Name):
@@ -155,6 +187,7 @@ def translate(exprList):
                     translateObjAssignment(expr, exprList)
                     return
                 assert len(expr.targets) == 1
+                value = renderExpr(expr.value)
                 if target.id.isupper():
                     print("#define {} ({})".format(target.id, value))
                 else:
@@ -162,13 +195,15 @@ def translate(exprList):
             else:
                 print("Weird assignment")
         elif isinstance(expr, ast.If):
-            print("if ({}) {{".format(render_expr(expr.test)))
+            print("if ({}) {{".format(renderExpr(expr.test)))
             translate(expr.body)
             print("} else {")
             translate(expr.orelse)
             print("}")
         elif isinstance(expr, ast.Assert):
-            print("assert {};".format(render_expr(expr.test)))
+            print("assert {};".format(renderExpr(expr.test)))
+        elif isinstance(expr, ast.Return):
+            print(genOutcome(expr.value))
         else:
             print ("Unrecognized construct {}".format(ast.dump(expr)))
 
