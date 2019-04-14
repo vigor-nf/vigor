@@ -1,8 +1,26 @@
 #!/usr/bin/python3
 import ast
 
-specRaw = open("nat_spec.py").read()
-specAst = ast.parse(specRaw)
+protocol_headers = {'ether' : ['saddr', 'daddr', 'type'],
+                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
+                              'ttl', 'pid', 'cksu', 'saddr', 'daddr'],
+                    'tcpudp' : ['src_port', 'dst_port']}
+objConstructors = {'emap_get_key' : {'constructor' : 'FlowIdc',
+                                     'type' : 'FlowIdi',
+                                     'fields' : ['sp', 'dp', 'sip', 'dip', 'idev', 'prot']}}
+typeConstructors = {'FlowIdc' : 'FlowIdi',
+                    'emap' : 'emap<FlowIdi>'}
+header_stack = "recv_headers"
+dummy_cnt = 0
+objects = {}
+declaredVars = []
+
+def guessType(rhs):
+    if (isinstance(rhs, ast.Call) and
+        isinstance(rhs.func, ast.Name) and
+        rhs.func.id in typeConstructors):
+        return typeConstructors[rhs.func.id]
+    return "int"
 
 def isHeaderConstructor(expr):
     return (isinstance(expr, ast.Call) and
@@ -114,13 +132,6 @@ def isPopHeader(expr):
     assert isinstance(value.args[0], ast.Name)
     return True
 
-protocol_headers = {'ether':['saddr', 'daddr', 'type'],
-                    'ipv4':['vihl', 'tos', 'len', 'pid', 'foff',
-                            'ttl', 'pid', 'cksu', 'saddr', 'daddr'],
-                    'tcpudp':['src_port', 'dst_port']}
-header_stack = "recv_headers"
-dummy_cnt = 0
-objects = {}
 def translatePopHeader(binding, body):
     global header_stack, dummy_cnt, objects
     print("switch({}) {{\n".format(header_stack))
@@ -147,8 +158,6 @@ def translatePopHeader(binding, body):
     translate(body)
     print("}}}")
 
-objConstructors = {'emap_get_key':{'constructor' : 'FlowIdc',
-                                   'fields' : ['sp', 'dp', 'sip', 'dip', 'idev', 'prot']}}
 def isObjAssignment(expr):
     if (not isinstance(expr, ast.Assign) or
         len(expr.targets) != 1):
@@ -191,7 +200,12 @@ def translate(exprList):
                 if target.id.isupper():
                     print("#define {} ({})".format(target.id, value))
                 else:
-                    print("{} = {};".format(target.id, value))
+                    global declaredVars
+                    if target.id in declaredVars:
+                        print("{} = {};".format(target.id, value))
+                    else:
+                        declaredVars.append(target.id)
+                        print("{} {} = {};".format(guessType(expr.value), target.id, value))
             else:
                 print("Weird assignment")
         elif isinstance(expr, ast.If):
@@ -207,4 +221,7 @@ def translate(exprList):
         else:
             print ("Unrecognized construct {}".format(ast.dump(expr)))
 
+specRaw = open("nat_spec.py").read()
+specAst = ast.parse(specRaw)
+print("bit_and_hack();")
 translate(specAst.body)
