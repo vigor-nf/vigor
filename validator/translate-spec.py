@@ -16,7 +16,6 @@ headerStack = 'recv_headers'
 dummyCnt = 0
 objects = {}
 stateVars = ['flow_emap']
-declaredVars = stateVars.copy()
 
 indentLevel = 0
 indentWidth = 2
@@ -150,7 +149,7 @@ def isPopHeader(expr):
     assert isinstance(value.args[0], ast.Name)
     return True
 
-def translatePopHeader(binding, body):
+def translatePopHeader(binding, body, declaredVars):
     global headerStack, dummyCnt, objects
     indentPrint("switch({}) {{\n".format(headerStack))
     onMismatch = genOutcome(binding.value.keywords[0].value)
@@ -173,7 +172,7 @@ def translatePopHeader(binding, body):
     hdrName = protocol + '_hdr_shell'
     indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdrName, hdrName))
     indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(fieldInstances)))
-    translate(body)
+    translate(body, declaredVars)
     indentPrint("}}}")
 
 def isObjAssignment(expr):
@@ -189,7 +188,7 @@ def isObjAssignment(expr):
         return False
     return True
 
-def translateObjAssignment(binding, body):
+def translateObjAssignment(binding, body, declaredVars):
     global objects
     varName = binding.targets[0].id
     fields = objConstructors[binding.value.func.id]['fields']
@@ -197,10 +196,10 @@ def translateObjAssignment(binding, body):
     fieldInstances = list(map(lambda f : varName + '_' + f, fields))
     objects[varName] = dict(zip(fields, fieldInstances))
     indentPrint("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(fieldInstances)))
-    translate(body)
+    translate(body, declaredVars)
     indentPrint("}")
 
-def translate(exprList):
+def translate(exprList, declaredVars):
     global indentLevel
     indentLevel += 1
     while exprList:
@@ -210,17 +209,16 @@ def translate(exprList):
             target = expr.targets[0]
             if isinstance(target, ast.Name):
                 if isPopHeader(expr):
-                    translatePopHeader(expr, exprList)
+                    translatePopHeader(expr, exprList, declaredVars.copy())
                     break
                 if isObjAssignment(expr):
-                    translateObjAssignment(expr, exprList)
+                    translateObjAssignment(expr, exprList, declaredVars.copy())
                     break
                 assert len(expr.targets) == 1
                 value = renderExpr(expr.value)
                 if target.id.isupper():
                     indentPrint("#define {} ({})".format(target.id, value))
                 else:
-                    global declaredVars
                     if target.id in declaredVars:
                         indentPrint("{} = {};".format(target.id, value))
                     else:
@@ -230,9 +228,9 @@ def translate(exprList):
                 indentPrint("Weird assignment")
         elif isinstance(expr, ast.If):
             indentPrint("if ({}) {{".format(renderExpr(expr.test)))
-            translate(expr.body)
+            translate(expr.body, declaredVars.copy())
             indentPrint("} else {")
-            translate(expr.orelse)
+            translate(expr.orelse, declaredVars.copy())
             indentPrint("}")
         elif isinstance(expr, ast.Assert):
             indentPrint("assert {};".format(renderExpr(expr.test)))
@@ -246,7 +244,7 @@ specRaw = open("nat_spec.py").read()
 specAst = ast.parse(specRaw)
 specFile = open("forwarding_property.tmpl", "w")
 indentPrint("bit_and_hack();")
-translate(specAst.body)
+translate(specAst.body, stateVars.copy())
 for v in stateVars:
     indentPrint("assert final_{} == {};".format(v, v))
 specFile.close()
