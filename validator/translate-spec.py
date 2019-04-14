@@ -3,7 +3,7 @@ import ast
 
 protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
-                             'ttl', 'npid', 'cksu', 'saddr', 'daddr'],
+                             'ttl', 'npid', 'cksum', 'saddr', 'daddr'],
                    'tcpudp' : ['src_port', 'dst_port'],
                    'tcp' : ['srcp', 'dstp', 'seq', 'ack', 'doff',
                             'flags', 'win', 'cksum', 'urp']}
@@ -108,7 +108,7 @@ def renderExpr(expr):
         return "(" + (sign.join(map(renderExpr, expr.values))) + ")"
     elif isinstance(expr, ast.List):
         result = ""
-        for e in expr.elts:
+        for e in reversed(expr.elts):
             result = "cons(" + renderExpr(e) + ", " + result
         return result + "nil" + (")" * len(expr.elts))
     elif isinstance(expr, ast.Attribute):
