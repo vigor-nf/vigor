@@ -15,6 +15,12 @@ dummy_cnt = 0
 objects = {}
 declaredVars = []
 
+indentLevel = 0
+indentWidth = 2
+
+def indentPrint(text):
+    print(' '*indentLevel*indentWidth + text)
+
 def guessType(rhs):
     if (isinstance(rhs, ast.Call) and
         isinstance(rhs.func, ast.Name) and
@@ -134,29 +140,29 @@ def isPopHeader(expr):
 
 def translatePopHeader(binding, body):
     global header_stack, dummy_cnt, objects
-    print("switch({}) {{\n".format(header_stack))
+    indentPrint("switch({}) {{\n".format(header_stack))
     on_mismatch = genOutcome(binding.value.keywords[0].value)
-    print("case nil: {}".format(on_mismatch))
+    indentPrint("case nil: {}".format(on_mismatch))
     header_stack_tail = header_stack + "_t"
     header = "tmp" + str(dummy_cnt)
     dummy_cnt += 1
-    print("case cons({}, {}):".format(header, header_stack_tail))
+    indentPrint("case cons({}, {}):".format(header, header_stack_tail))
     header_stack = header_stack_tail
-    print("switch({}) {{".format(header))
+    indentPrint("switch({}) {{".format(header))
     protocol = binding.value.args[0].id
     assert protocol in protocol_headers
     for p in protocol_headers.keys():
         if p != protocol:
-            print("case {}(dummy): {}".format(p + '_hdr', on_mismatch))
+            indentPrint("case {}(dummy): {}".format(p + '_hdr', on_mismatch))
     obj = binding.targets[0].id
     fields = protocol_headers[protocol]
     field_instances = list(map(lambda f : obj + '_' + f, fields))
     objects[obj] = dict(zip(fields, field_instances))
     hdr_name = protocol + '_hdr_shell'
-    print("case {}({}): switch({}) {{".format(protocol + '_hdr', hdr_name, hdr_name))
-    print("case {}({}): ".format(protocol + '_hdrc', ", ".join(field_instances)))
+    indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdr_name, hdr_name))
+    indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(field_instances)))
     translate(body)
-    print("}}}")
+    indentPrint("}}}")
 
 def isObjAssignment(expr):
     if (not isinstance(expr, ast.Assign) or
@@ -178,11 +184,13 @@ def translateObjAssignment(binding, body):
     ctor = objConstructors[binding.value.func.id]['constructor']
     field_instances = list(map(lambda f : var_name + '_' + f, fields))
     objects[var_name] = dict(zip(fields, field_instances))
-    print("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(field_instances)))
+    indentPrint("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(field_instances)))
     translate(body)
-    print("}")
+    indentPrint("}")
 
 def translate(exprList):
+    global indentLevel
+    indentLevel += 1
     while exprList:
         [expr, *exprList] = exprList
         if isinstance(expr, ast.Assign):
@@ -191,37 +199,38 @@ def translate(exprList):
             if isinstance(target, ast.Name):
                 if isPopHeader(expr):
                     translatePopHeader(expr, exprList)
-                    return
+                    break
                 if isObjAssignment(expr):
                     translateObjAssignment(expr, exprList)
-                    return
+                    break
                 assert len(expr.targets) == 1
                 value = renderExpr(expr.value)
                 if target.id.isupper():
-                    print("#define {} ({})".format(target.id, value))
+                    indentPrint("#define {} ({})".format(target.id, value))
                 else:
                     global declaredVars
                     if target.id in declaredVars:
-                        print("{} = {};".format(target.id, value))
+                        indentPrint("{} = {};".format(target.id, value))
                     else:
                         declaredVars.append(target.id)
-                        print("{} {} = {};".format(guessType(expr.value), target.id, value))
+                        indentPrint("{} {} = {};".format(guessType(expr.value), target.id, value))
             else:
-                print("Weird assignment")
+                indentPrint("Weird assignment")
         elif isinstance(expr, ast.If):
-            print("if ({}) {{".format(renderExpr(expr.test)))
+            indentPrint("if ({}) {{".format(renderExpr(expr.test)))
             translate(expr.body)
-            print("} else {")
+            indentPrint("} else {")
             translate(expr.orelse)
-            print("}")
+            indentPrint("}")
         elif isinstance(expr, ast.Assert):
-            print("assert {};".format(renderExpr(expr.test)))
+            indentPrint("assert {};".format(renderExpr(expr.test)))
         elif isinstance(expr, ast.Return):
-            print(genOutcome(expr.value))
+            indentPrint(genOutcome(expr.value))
         else:
-            print ("Unrecognized construct {}".format(ast.dump(expr)))
+            indentPrint ("Unrecognized construct {}".format(ast.dump(expr)))
+    indentLevel -= 1
 
 specRaw = open("nat_spec.py").read()
 specAst = ast.parse(specRaw)
-print("bit_and_hack();")
+indentPrint("bit_and_hack();")
 translate(specAst.body)
