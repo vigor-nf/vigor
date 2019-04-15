@@ -28,6 +28,7 @@ validate-bridge: clean
 	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cma
 
 validate-balancer: clean
+	python3 translate-spec.py lb-spec.py balancer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cma
 
 validate-policer: clean
