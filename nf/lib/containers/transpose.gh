@@ -23,6 +23,42 @@ lemma void extract_works(int nb_cols, int n, int row, int col)
     div_rem_nonneg(n, nb_cols);
 }
 
+lemma void extract_unique_row(int nb_rows, int nb_cols, int i1, int i2, int j)
+    requires 
+        i1 != i2 &*& 0 < nb_rows &*& 0 < nb_cols &*&
+        0 <= i1 &*& i1 < nb_rows &*&
+        0 <= i2 &*& i2 < nb_rows &*&
+        0 <= j &*& j < nb_cols;
+    ensures
+        i1 * nb_cols + j != i2 * nb_cols + j;
+{
+    if (i1 < i2) {
+        mul_mono_strict(i1, i2, nb_cols);
+    } else {
+        mul_mono_strict(i2, i1, nb_cols);
+
+    }
+}
+
+lemma void extract_unique(int nb_rows, int nb_cols, int i1, int i2, int j1, int j2)
+    requires 
+        i1 != i2 &*& j1 != j2 &*&
+        0 < nb_rows &*& 0 < nb_cols &*&
+        0 <= i1 &*& i1 < nb_rows &*&
+        0 <= i2 &*& i2 < nb_rows &*&
+        0 <= j1 &*& j1 < nb_cols &*&
+        0 <= j2 &*& j2 < nb_cols;
+    ensures
+        i1 * nb_cols + j1 != i2 * nb_cols + j2;
+{
+    if (i1 < i2) {
+        mul_mono(i1 + 1, i2, nb_cols);
+    } else {
+        mul_mono(i2 + 1, i1, nb_cols);
+    }
+}
+
+
 lemma void extract_bounds(int nb_rows, int nb_cols, int n)
     requires    
         0 <= n &*& n < nb_rows * nb_cols &*&
@@ -224,6 +260,26 @@ lemma_auto void take_alt_0<t>(int nb_rows, int nb_cols, list<t> xs)
 }
 
 // ------------- lemmas on transpose -------------
+
+fixpoint bool nth_list<t>(fixpoint(t, bool) fp, list<t> xs, int idx) { return fp(nth(idx, xs)); } 
+
+lemma void transpose_filter_idx_transfer<t>(list<t> xs, int nb_rows, int nb_cols, int i, int j, fixpoint (t, bool) fp)
+    requires    
+        true == mem(i * nb_cols + j, filter_idx(xs, 0, fp)) &*&
+        length(xs) == nb_rows * nb_cols &*&
+        0 <= i &*& i < nb_rows &*&
+        0 <= j &*& j < nb_cols;
+    ensures     
+        true == mem(j * nb_rows + i, filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp));
+{
+    mul_bounds(i, nb_rows - 1, nb_cols, nb_cols);
+    filter_idx_mem_to_nth(xs, 0, fp, i * nb_cols + j);
+
+    transpose_to_src(xs, nb_rows, nb_cols, i, j);
+
+    mul_bounds(j, nb_cols - 1, nb_rows, nb_rows);
+    filter_idx_nth_to_mem(transpose(xs, nb_rows, nb_cols), 0, fp, j * nb_rows + i);
+}
 
 lemma void transpose_row_col_idx_equiv<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
     requires    length(xs) == nb_rows * nb_cols;

@@ -87,6 +87,48 @@ lemma void filter_idx_lt<t>(list<t> xs, int idx, fixpoint(t, bool) fp)
     }
 }
 
+lemma void mem_ge(list<int> xs, int low_bound, int x)
+    requires    true == forall(xs, (ge)(low_bound)) &*& x < low_bound;
+    ensures     false == mem(x, xs);
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            forall_nth(xs, (ge)(low_bound), 0);
+            mem_ge(xs0, low_bound, x);
+    }
+}
+
+lemma void filter_idx_nth_to_mem<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i) 
+    requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     true == mem(i + idx, filter_idx(xs, idx, fp));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): if (i > 0) filter_idx_nth_to_mem(xs0, idx + 1, fp, i - 1);
+    }
+}
+
+lemma void filter_idx_mem_to_nth<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i) 
+    requires    true == mem(i + idx, filter_idx(xs, idx, fp)) &*& 0 <= i &*& i < length(xs);
+    ensures     true == fp(nth(i, xs));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            if (i > 0) filter_idx_mem_to_nth(xs0, idx + 1, fp, i - 1);
+            else {
+                filter_idx_ge(xs0, idx + 1, fp);
+                if (!fp(x0)) {
+                    assert (filter_idx(xs, idx, fp) == filter_idx(xs0, idx + 1, fp));
+                    assert (true == mem(idx, filter_idx(xs, idx, fp)));
+                    assert (true == forall(filter_idx(xs, idx, fp), (ge)(idx + 1)));
+                    mem_ge(filter_idx(xs, idx, fp), idx + 1, idx);
+                }
+            }
+    }
+}
+
 lemma void count_idx<t>(list<t> xs, fixpoint(t, bool) fp, int i)
     requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
     ensures     count(xs, fp) > 0;

@@ -3,7 +3,6 @@
 
 #include <nat.gh>
 #include "listutils.gh"
-#include "transpose.gh"
 #include "stdex.gh"
 #include "listexex.gh"
 #include "set.gh"
