@@ -49,7 +49,7 @@ if [ -f "$LOG_FILE" ]; then
 fi
 
 
-if [ "$MIDDLEBOX" = "netfilter" ]; then
+if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     case $SCENARIO in
 	"mg-new-flows-latency")
 	    EXPIRATION_TIME=1

@@ -8,7 +8,7 @@ if [ -z $MIDDLEBOX ]; then
     exit 1
 fi
 
-if [ "$MIDDLEBOX" = "netfilter" ]; then
+if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     echo "no need to kill netfilter"
 else
     sudo killall -9 nat lb bridge policer

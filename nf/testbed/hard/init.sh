@@ -63,6 +63,8 @@ esac
 NETWORK_APP="dpdk"
 if [ $MIDDLEBOX = "netfilter" ]; then
     NETWORK_APP="netfilter"
+elif [ $MIDDLEBOX = "ipvs" ]; then
+    NETWORK_APP="ipvs"
 elif [ ! -d $MIDDLEBOX ]; then
     echo "Unknown middlebox app: $MIDDLEBOX" 1>&2
     exit 10
