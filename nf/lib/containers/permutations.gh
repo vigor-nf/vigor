@@ -267,23 +267,6 @@ lemma void permutation_split_to_count(list<int> xs, nat nb_split, int n)
     }
 }
 
-lemma void forall_ge_lower(list<int> xs, int low_bound, int x)
-    requires true == forall(xs, (ge)(low_bound)) &*& x < low_bound;
-    ensures !mem(x, xs);
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0): forall_ge_lower(xs0, low_bound, x);
-    }
-}
-
-lemma void no_dups_ge(list<int> xs, int low_bound, int x)
-    requires true == no_dups(xs) &*& true == forall(xs, (ge)(low_bound)) &*& x < low_bound;
-    ensures true == no_dups(cons(x, xs));
-{
-    forall_ge_lower(xs, low_bound, x);
-}
-
 lemma void list_unit_length(list<int> xs)
     requires    length(xs) == 1;
     ensures     xs == cons(nth(0, xs), nil);

@@ -611,6 +611,31 @@ lemma_auto(nth(i, integers_list(cnt, index))) void val_integers_list(nat cnt, in
     }
 }
 
+lemma void integers_list_bounds(nat cnt, int index)
+    requires    true;
+    ensures     true == forall(integers_list(cnt, index), (ge)(index)) &*& true == forall(integers_list(cnt, index), (lt)(index + int_of_nat(cnt)));
+{
+    switch(cnt) {
+        case zero:
+        case succ(cnt_pred): 
+            integers_list_bounds(cnt_pred, index + 1);
+            ge_le_ge(integers_list(cnt_pred, index + 1), index + 1, index);
+    }
+}
+
+lemma void integers_list_no_dups(nat cnt, int index)
+    requires    true;
+    ensures     true == no_dups(integers_list(cnt, index));
+{
+    switch(cnt) {
+        case zero:
+        case succ(cnt_pred): 
+            integers_list_no_dups(cnt_pred, index + 1);
+            integers_list_bounds(cnt_pred, index + 1);
+            no_dups_ge(integers_list(cnt_pred, index + 1), index + 1, index);
+    }
+}
+
 lemma void integers_list_subset(list<int> xs, int low_bound, int up_bound)
     requires    true == forall(xs, (ge)(low_bound)) &*& true == forall(xs, (lt)(up_bound)) &*& low_bound <= up_bound;
     ensures     true == subset(xs, integers_list(nat_of_int(up_bound - low_bound), low_bound));
@@ -627,77 +652,81 @@ lemma void integers_list_subset(list<int> xs, int low_bound, int up_bound)
 
 // ------------- zip -------------
 
-fixpoint list< pair<int, t> > zip_with_index_recursive<t>(list<t> xs, int index) {
-    switch(xs) {
-        case nil: return nil;
-        case cons(x0, xs0): return cons( pair(index, x0), zip_with_index_recursive(xs0, index + 1) );
-    }
-}
-
-fixpoint list< pair<int, t> > zip_with_index<t>(list<t> xs) {
-    return zip_with_index_recursive(xs, 0);
-}
-
 fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
     switch(xs) {
         case nil: return nil;
-        case cons(x0, xs0): return cons( pair(x0, head(ys)) , zip(xs0, tail(ys)) );
+        case cons(x0, xs0): 
+            return switch(ys) {
+                case nil: return nil;
+                case cons(y0, ys0): return cons( pair(x0, y0) , zip(xs0, ys0) );
+            };
     }
 }
+
+lemma void zip_unzip_fst<t1, t2>(list<t1> xs, list<t2> ys)
+    requires    length(xs) == length(ys);
+    ensures     xs == map(fst, zip(xs, ys));
+{
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): 
+            switch(ys) {
+                case nil:
+                case cons(y0, ys0): zip_unzip_fst(xs0, ys0);
+            }
+    }
+}
+
+lemma void zip_unzip_snd<t1, t2>(list<t1> xs, list<t2> ys)
+    requires    length(xs) == length(ys);
+    ensures     ys == map(snd, zip(xs, ys));
+{
+    switch(xs) {
+        case nil: length_0_nil(ys);
+        case cons(x0, xs0): 
+            switch(ys) {
+                case nil:
+                case cons(y0, ys0): zip_unzip_snd(xs0, ys0);
+            }
+    }
+}
+
+// ------------- zip_index -------------
 
 fixpoint list< pair<int, t> > zip_index<t>(list<t> xs) {
     return zip(integers_list(nat_of_int(length(xs)), 0) , xs);
 }
 
-lemma void unzip<t>(list<t> xs)
+lemma void zip_index_unzip<t>(list<t> xs)
     requires    true;
-    ensures     xs == map(snd, zip_with_index(xs));
+    ensures     xs == map(snd, zip_index(xs));
 {
-    assume (xs == map(snd, zip_with_index(xs)));
-    // TODO
+    zip_unzip_snd(integers_list(nat_of_int(length(xs)), 0), xs);
 }
 
 lemma void append_to_zip<t>(list<t> xs, t x) 
     requires true;
-    ensures append(zip_with_index(xs), cons(pair(length(xs),x), nil)) == zip_with_index(append(xs, cons(x, nil)));
+    ensures append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil)));
 {
-    assume (append(zip_with_index(xs), cons(pair(length(xs),x), nil)) == zip_with_index(append(xs, cons(x, nil))));
+    assume (append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil))));
 } 
 
 lemma void zip_with_index_bounds<t>(list<t> xs) 
     requires true;
     ensures 
-        true == forall( map(fst, zip_with_index(xs)), (lt)(length(xs)) ) &*&
-        true == forall( map(fst, zip_with_index(xs)), (ge)(0) );
+        true == forall( map(fst, zip_index(xs)), (lt)(length(xs)) ) &*&
+        true == forall( map(fst, zip_index(xs)), (ge)(0) );
 {
-    assume ( true == forall( map(fst, zip_with_index(xs)), (lt)(length(xs)) ));
-    assume ( true == forall( map(fst, zip_with_index(xs)), (ge)(0) ));
-    //TODO
-}
-
-lemma void zip_no_dups_helper<t>(list<t> xs, int index)
-    requires true;
-    ensures xs == nil ? true : fst(head(zip_with_index_recursive(xs, index))) == index;
-{
-    switch(xs) {
-        case nil: true;
-        case cons(x0, xs0): assert(fst(head(zip_with_index_recursive(xs, index))) == index);
-    }
-}
-
-lemma void zip_no_dups_rec<t>(list< pair<int, t> > xs_ziped, list<t> xs, int index)
-    requires xs_ziped == zip_with_index_recursive(xs, index);
-    ensures true == no_dups(map(fst, xs_ziped));
-{
-    assume (true == no_dups(map(fst, xs_ziped))); //TODO
+    zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
+    integers_list_bounds(nat_of_int(length(xs)), 0);
 }
 
 lemma void zip_no_dups<t>(list<t> xs)
     requires true;
-    ensures true == no_dups(map(fst, zip_with_index(xs)));
+    ensures true == no_dups(map(fst, zip_index(xs)));
 {
-    list< pair<int, t> > xs_ziped = zip_with_index_recursive(xs, 0);
-    zip_no_dups_rec(xs_ziped, xs, 0);
+    zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
+    integers_list_no_dups(nat_of_int(length(xs)), 0);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_
