@@ -308,7 +308,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     lemma void cht_invariant_update(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx, int bucket_id, int i, int j)
         requires    
             nth(limit, p_transpose) == bucket_id &*& limit == i * backend_capacity + j &*& 
-            0 <= i &*& 0 <= j &*& 0 < backend_capacity &*&
+            0 <= i &*& 0 <= j &*& j < backend_capacity &*& 0 < backend_capacity &*&
             0 <= bucket_id &*& bucket_id < cht_height &*&
             0 <= limit &*& limit < length(p_transpose) &*&
             int_of_nat(idx) <= cht_height; 
@@ -507,10 +507,11 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     @*/
     {
         next[i] = 0;
-        //@ list<int> updated_n = update(i, 0, n_init);
+        //@ list<int> n_init_update = update(i, 0, n_init);
         //@ take_update_unrelevant(i, i, 0, n_init);
-        //@ ints_to_nth(updated_n, n_init, i, 0);
-        //@ append_take(updated_n, i, (eq)(0));
+        //@ nth_update(i, i, 0, n_init);
+        //@ take_plus_one(i, n_init_update);
+        //@ forall_append(take(i, n_init), cons(nth(i, n_init_update), nil), (eq)(0));
     }
 
     // End of initialization for next array
@@ -596,7 +597,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ list<int> filter_bucket_update = filter_transpose(p_transpose, limit_update, bucket_id);
 
             // Proof that next_invar_update = update(bucket_id, next_invar[bucket_id] + 1, next_invar)
-            //@ transpose_to_src(p_final, p_transpose, backend_capacity, cht_height, j, i);
+            //@ transpose_to_src(p_final, backend_capacity, cht_height, j, i);
             //@ mul_nonnegative(i, backend_capacity);
             //@ mul_bounds(i, cht_height - 1, backend_capacity, backend_capacity);
             //@ next_invariant_update(p_transpose, i * backend_capacity + j, cht_height, nat_of_int(cht_height), bucket_id);
@@ -610,7 +611,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ list<int> drop_limit_update = drop(limit_update, p_transpose);
             //@ permutation_split_to_count(p_final, nat_of_int(backend_capacity), cht_height);
             //@ integer_copies_val(bucket_id, nat_of_int(cht_height - 1), backend_capacity, p_final);
-            //@ transpose_preserves_count(p_final, backend_capacity, cht_height, backend_capacity, (eq)(bucket_id));
+            //@ transpose_preserves_count(p_final, backend_capacity, cht_height, (eq)(bucket_id));
             //@ assert (p_transpose == append(take_limit_update, drop_limit_update));
             //@ filter_idx_length_count_equiv(take_limit_update, 0, (eq)(bucket_id));
             //@ count_nonnegative(drop_limit_update, (eq)(bucket_id));

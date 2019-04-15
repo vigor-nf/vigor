@@ -21,9 +21,7 @@ lemma void filter_idx_length_count_equiv<t>(list<t> xs, int idx, fixpoint (t, bo
 {
     switch(xs) {
         case nil:
-        case cons(x0, xs0): 
-            if (fp(x0)) filter_idx_length_count_equiv(xs0, idx + 1, fp); 
-            else filter_idx_length_count_equiv(xs0, idx + 1, fp);
+        case cons(x0, xs0): filter_idx_length_count_equiv(xs0, idx + 1, fp); 
     }
 }
 
@@ -43,9 +41,7 @@ lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint 
 {
     switch(xs) {
         case nil: filter_idx_length_count_equiv(ys, idx, fp);
-        case cons(x0, xs0): 
-            if (fp(x0)) filter_idx_count_append(xs0, ys, idx + 1, fp); 
-            else filter_idx_count_append(xs0, ys, idx + 1, fp);
+        case cons(x0, xs0): filter_idx_count_append(xs0, ys, idx + 1, fp); 
     }
 }
 
@@ -239,12 +235,11 @@ lemma void chunk_zerosize<t>(list<t> xs, int n)
     requires true;
     ensures chunk(xs, n, n) == nil;
 {
-    list<t> drop_xs = drop(n, xs);
-    take_0(drop_xs);
+    take_0(drop(n, xs));
 }
 
-lemma void chunk_length<t>(list<t> xs, int begin, int end)
-    requires    0 <= begin &*& begin <= end &*& end <= length(xs);
+lemma_auto(length(chunk(xs, begin, end))) void chunk_length<t>(list<t> xs, int begin, int end)
+    requires    0 <= begin && begin <= end && end <= length(xs);
     ensures     length(chunk(xs, begin, end)) == end - begin;
 {
     length_drop(begin, xs);
@@ -259,25 +254,32 @@ lemma void chunk_shift<t>(list<t> xs, int begin, int end, int n)
 }
 
 lemma void chunk_append<t>(list<t> xs, int begin, int end)
-    requires    0 <= begin &*& begin <= end &*& end <= length(xs);
+    requires    0 <= begin &*& begin <= end &*& end < length(xs);
     ensures     chunk(xs, begin, end + 1) == append(chunk(xs, begin, end), cons(nth(end, xs), nil));
 {
-    assume (chunk(xs, begin, end + 1) == append(chunk(xs, begin, end), cons(nth(end, xs), nil)));
+    length_drop(begin, xs);
+    take_plus_one(end - begin, drop(begin, xs));
+    nth_drop(end - begin, begin, xs);
 }
 
 lemma void chunk_take<t>(list<t> xs, int begin, int end1, int end2)
     requires    0 <= begin &*& begin <= end1 &*& end1 <= end2 &*& end2 <= length(xs);
     ensures     take(end1 - begin, chunk(xs, begin, end2)) == chunk(xs, begin, end1);
 {
-    list<t> drop_xs = drop(begin, xs);
-    take_take(end1 - begin, end2 - begin, drop_xs);
+    take_take(end1 - begin, end2 - begin, drop(begin, xs));
 }
 
 lemma void chunk_to_source<t>(list<t> xs, int begin, int end, int i)
-    requires    0 <= begin &*& begin <= end &*& end <= length(xs);
+    requires    0 <= begin &*& begin <= end &*& end <= length(xs) &*& 0 <= i &*& i < end - begin;
     ensures     nth(begin + i, xs) == nth(i, chunk(xs, begin, end));
 {
-    assume (nth(begin + i, xs) == nth(i, chunk(xs, begin, end)));
+    if (begin == 0) {
+        nth_take(i, end, xs);
+    } else {
+        length_drop(begin, xs);
+        nth_drop(i, begin, xs);
+    }
+    
 }
 
 lemma void chunk_update_unrelevant<t>(list<t> xs, list<t> ys, int begin, int end, int i, t val)
@@ -358,10 +360,17 @@ fixpoint list< list<t> > split_varlim<t>(list<t> xs, int n, list<int> limits) {
 }
 
 lemma_auto(length(split_varlim(xs, n, limits))) void length_split_varlim<t>(list<t> xs, int n, list<int> limits)
-    requires    length(xs) == length(limits) * n;
+    requires    length(xs) == length(limits) * n && 0 <= n;
     ensures     length(split_varlim(xs, n, limits)) == length(limits);
 {
-    assume (length(split_varlim(xs, n, limits)) == length(limits));
+    switch(limits) {
+        case nil:
+        case cons(l0, ls0): 
+            mul_equal(n, length(limits), length(xs));
+            length_drop(n, xs);
+            mul_subst (length(ls0), length(limits) - 1, n);
+            length_split_varlim(drop(n, xs), n, ls0);
+    }
 }
 
 lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits)
@@ -377,7 +386,6 @@ lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits)
         case cons(l0, ls0):            
             mul_equal(n, length(limits), length(xs));
             length_drop(n, xs);
-            assert (length(ls0) == length(limits) - 1); 
             mul_subst (length(ls0), length(limits) - 1, n);
             split_varlim_nolim(drop(n, xs), n, ls0);
     }
@@ -455,7 +463,15 @@ lemma void split_varlim_split_equiv<t>(list<t> xs, list<int> limits, int n, nat 
     requires    true == forall(limits, (eq)(n)) &*& length(limits) == int_of_nat(nb_split);
     ensures     split_varlim(xs, n, limits) == split(xs, nb_split, n);
 {
-    assume (split_varlim(xs, n, limits) == split(xs, nb_split, n));
+    switch(limits) {
+        case nil:
+        case cons(l0, ls0): 
+            forall_nth(limits, (eq)(n), 0);
+            switch(nb_split) {
+                case zero:
+                case succ(nb_split_pred): split_varlim_split_equiv(drop(n, xs), ls0, n, nb_split_pred);
+            }
+    }
 }
 
 // ------------- split -------------
@@ -463,33 +479,38 @@ lemma void split_varlim_split_equiv<t>(list<t> xs, list<int> limits, int n, nat 
 fixpoint list< list<t> > split<t>(list<t> xs, nat nb_split, int n) {
     switch(nb_split) {
         case zero: return nil;
-        case succ(nb_split_pred): 
-            return cons(take(n, xs), split(drop(n, xs), nb_split_pred, n));
+        case succ(nb_split_pred): return cons(take(n, xs), split(drop(n, xs), nb_split_pred, n));
     }
 }
 
-lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j)
-    requires    length(xs) == int_of_nat(nb_split) * n &*&
-                0 <= i &*& i < n &*&
-                0 <= j &*& j < int_of_nat(nb_split);
-    ensures     nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs);
-{
-    // use chunk_to_source
-    assume (nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs));
-}
-
 lemma_auto(length(split(xs, nb_split, n))) void length_split<t>(list<t> xs, nat nb_split, int n)
-    requires    length(xs) == int_of_nat(nb_split) * n;
+    requires    length(xs) == int_of_nat(nb_split) * n && 0 <= n;
     ensures     length(split(xs, nb_split, n)) == int_of_nat(nb_split);
 {
-    assume (length(split(xs, nb_split, n)) == int_of_nat(nb_split));
+    switch(nb_split) {
+        case zero:
+        case succ(nb_split_pred):
+            mul_mono(1, int_of_nat(nb_split), n);
+            length_drop(n, xs);
+            mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+            length_split(drop(n, xs), nb_split_pred, n);
+    }
 }
 
-lemma void length_split_nth<t>(list<t> xs, nat nb_split, int n, int i)
-    requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= i &*& i < length(xs);
+lemma_auto(length(nth(i, split(xs, nb_split, n)))) void length_split_nth<t>(list<t> xs, nat nb_split, int n, int i)
+    requires    length(xs) == int_of_nat(nb_split) * n && 0 <= n && 0 <= i && i < int_of_nat(nb_split);
     ensures     length(nth(i, split(xs, nb_split, n))) == n;
 {
-    assume (length(nth(i, split(xs, nb_split, n))) == n);
+    switch(nb_split) {
+        case zero:
+        case succ(nb_split_pred): 
+            mul_mono(1, int_of_nat(nb_split), n);
+            if (i > 0) {
+                length_drop(n, xs);
+                mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+                length_split_nth(drop(n, xs), nb_split_pred, n, i - 1);
+            }
+    }
 }
 
 lemma void length_split_forall<t>(list<t> xs, nat nb_split, int n)
@@ -522,6 +543,18 @@ lemma void split_chunk_equiv<t>(list<t> xs, nat nb_split, int n, int i)
                 chunk_shift(xs, n * i, n * (i+1), n);
             }
     }
+}
+
+lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j)
+    requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= n &*&
+                0 <= i &*& i < n &*&
+                0 <= j &*& j < int_of_nat(nb_split);
+    ensures     nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs);
+{
+    mul_mono(j + 1, int_of_nat(nb_split), n);
+    split_chunk_equiv(xs, nb_split, n, j);
+    mul_nonnegative(j, n);
+    chunk_to_source(xs, n * j, n * (j+1), i);
 }
 
 lemma void split_append<t>(list<t> xs, nat nb_split, nat nb_split_pred, int n)
@@ -614,27 +647,6 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
 
 fixpoint list< pair<int, t> > zip_index<t>(list<t> xs) {
     return zip(integers_list(nat_of_int(length(xs)), 0) , xs);
-}
-
-// ------------- lemmas -------------
-
-lemma void ints_to_nth(list<int> xs, list<int> xs_orig, int i, int val)
-    requires    xs == update(i, val, xs_orig);
-    ensures     nth(i, xs) == val;
-{
-    assume (nth(i, xs) == val);
-    // TODO
-}
-
-lemma void append_take<t>(list<t> xs, int i, fixpoint (t,bool) f)
-    requires 
-        0 <= i &*& i < length(xs) &*&
-        true == forall(take(i, xs), f) &*& true == f(nth(i, xs));
-    ensures 
-        true == forall(take(i + 1, xs), f);
-{
-    assume (true == forall(take(i + 1, xs), f));
-    // TODO
 }
 
 lemma void unzip<t>(list<t> xs)
