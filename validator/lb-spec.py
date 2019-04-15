@@ -22,7 +22,7 @@ if received_on_port == EXT_PORT: # Packet from the external network - client
         flow_id = emap_get(flow_emap, packet_flow)
         backend_id = vector_get(flow_id_to_backend_id, flow_id)
         if emap_has_idx(backend_ip_emap, backend_id):
-            flow_emap = emap_refreh_idx(flow_emap, emap_get(flow_emap, packet_flow), now)
+            flow_emap = emap_refresh_idx(flow_emap, emap_get(flow_emap, packet_flow), now)
             backend = vector_get(backends, backend_id)
             return ([backend.nic],
                     [ether(h1, saddr=..., daddr=backend.mac),
