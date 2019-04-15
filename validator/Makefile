@@ -20,9 +20,11 @@ clean:
 	rm -f validator.byte
 
 validate-nat: clean
+	python3 translate-spec.py nat-spec.py forwarding_property.tmpl
 	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cma
 
 validate-bridge: clean
+	python3 translate-spec.py bridge-spec.py bridge_forwarding_property.tmpl
 	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cma
 
 validate-balancer: clean
