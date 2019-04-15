@@ -22,18 +22,11 @@ lemma void div_ge(int a, int b, int c)
     assume (a/c <= b/c);
 }
 
-lemma void div_lt_correct(int a, int b, int c)
+lemma void div_lt(int a, int b, int c)
     requires    a < b*c  &*& 0 < c;
     ensures     a/c < b*c/c;
 {
     assume (a/c < b*c/c);
-}
-
-lemma void div_lt(int a, int b, int c)
-    requires    a < b  &*& 0 < c;
-    ensures     a/c < b/c;
-{
-    assume (a/c < b/c);
 }
 
 lemma void mul_equal(int a, int b, int c)

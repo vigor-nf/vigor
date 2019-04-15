@@ -391,9 +391,9 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     lemma void permutation_from_filter_idx(list<int> xs, nat nb_split, int nb_split_base, int n, int bucket_id, int idx)
         requires    
             true == forall(split(xs, nb_split, n), is_permutation) &*&
-            length(xs) == int_of_nat(nb_split) * n &*&
+            length(xs) == int_of_nat(nb_split) * n &*& int_of_nat(nb_split) <= nb_split_base &*&
             0 <= bucket_id &*& bucket_id < n &*& 
-            idx == nb_split_base * n - length(xs) &*& 0 <= nb_split_base &*& 0 <= idx &*&
+            idx == (nb_split_base - int_of_nat(nb_split)) * n &*& 0 <= nb_split_base &*& 0 <= idx &*&
             0 < n &*& n <= length(xs);
         ensures     
             true == is_sub_permutation(map( (extract_row)(n) , filter_idx(xs, idx, (eq)(bucket_id)) ), nb_split_base);
@@ -438,14 +438,18 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 int map_new_idx = extract_row(n, new_idx);
                 nth_map(0, (extract_row)(n), filter_first_chunk);
                 filter_idx_lt(first_chunk, idx, (eq)(bucket_id));
-                extract_row_lt(n, idx, filter_first_chunk);
+                list_unit_length(map_filter_first_chunk);
+                forall_nth(filter_first_chunk, (lt)(idx + n), 0);
+                div_lt(new_idx, nb_split_base - int_of_nat(nb_split) + 1, n);
+                div_exact(nb_split_base - int_of_nat(nb_split) + 1, n);
+                div_exact(nb_split_base - int_of_nat(nb_split), n);
+                assert (map_filter_first_chunk == cons(map_new_idx, nil));
                 assert (true == forall(map_filter_first_chunk, (lt)(idx/n + 1)));
                 forall_nth(map_filter_first_chunk, (lt)((idx/n) + 1), 0);
                 assert(map_new_idx < idx/n + 1);
                 
                 // Prove that map_new_idx isn't in map_ret_recursive
                 no_dups_ge(map_ret_recursive, idx/n + 1, map_new_idx);
-                list_unit_length(map_filter_first_chunk);
                 assert (true == no_dups(append(map_filter_first_chunk, map_ret_recursive)));
                 map_append((extract_row)(n), filter_first_chunk, ret_recursive);
                 assert (append(map_filter_first_chunk, map_ret_recursive) == map((extract_row)(n), append(filter_first_chunk, ret_recursive)) );
@@ -463,7 +467,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 assert (new_idx < nb_split_base * n);
 
                 div_exact(nb_split_base, n);
-                div_lt(new_idx, nb_split_base * n, n);
+                div_lt(new_idx, nb_split_base, n);
                 div_ge(0, new_idx, n);
                 div_zero(n);
 

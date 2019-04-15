@@ -32,7 +32,7 @@ lemma void extract_bounds(int nb_rows, int nb_cols, int n)
         0 <= extract_column(nb_cols, n) &*& extract_column(nb_cols, n) < nb_cols;
 {
     div_rem_nonneg(n, nb_cols);
-    div_lt_correct(n, nb_rows, nb_cols);
+    div_lt(n, nb_rows, nb_cols);
     div_exact(nb_rows, nb_cols);
     div_mod_gt_0(n % nb_cols, n, nb_cols);
 }
@@ -70,20 +70,6 @@ lemma void extract_row_ge(int nb_cols, int val, list<int> xs)
             div_incr(val, nb_cols);
             div_ge(val + nb_cols, x0, nb_cols);
             extract_row_ge(nb_cols, val, xs0);
-    }
-}
-
-lemma void extract_row_lt(int nb_cols, int val, list<int> xs)
-    requires    true == forall(xs, (lt)(val + nb_cols)) &*& 0 <= val &*& 0 < nb_cols;
-    ensures     true == forall(map( (extract_row)(nb_cols), xs ), (lt)(val/nb_cols + 1));
-{
-    switch(xs) {
-        case nil:
-        case cons(x0, xs0):
-            forall_nth(xs, (lt)(val + nb_cols), 0);
-            div_incr(val, nb_cols);
-            div_lt(x0, val + nb_cols, nb_cols);
-            extract_row_lt(nb_cols, val, xs0);
     }
 }
 
