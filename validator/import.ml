@@ -691,6 +691,9 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
   | Sexp.List [Sexp.Atom "Mul"; Sexp.Atom width; lhs; rhs] ->
     let mt = guess_type_l [lhs;rhs] Unknown in
     {v=Bop(Mul, get_sexp_value_raw lhs mt ~at, get_sexp_value_raw rhs mt ~at);t=mt}
+  | Sexp.List [Sexp.Atom "Sub"; Sexp.Atom width; lhs; rhs] ->
+    let mt = guess_type_l [lhs;rhs] Unknown in
+    {v=Bop(Sub, get_sexp_value_raw lhs mt ~at, get_sexp_value_raw rhs mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "Add"; Sexp.Atom _; lhs; rhs] ->
     let res_type = guess_type_l [lhs;rhs] Unknown in
     let res_type = if is_unknown res_type then t else res_type in

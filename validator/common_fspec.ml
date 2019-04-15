@@ -109,7 +109,7 @@ let common_fun_types =
                   lemmas_before = [];
                   lemmas_after = [];};
    "packet_receive", {ret_type = Static Boolean;
-                      arg_types = stt [Uint16; Ptr (Ptr Sint8); Ptr Uint16];
+                      arg_types = stt [Uint16; Ptr (Ptr Sint8); Ptr Uint32];
                       extra_ptr_types = [];
                       lemmas_before = [];
                       lemmas_after = [
@@ -259,9 +259,10 @@ let common_fun_types =
                                 lemmas_after = [];};
    "packet_state_total_length", {ret_type = Static Void;
                                  arg_types = stt [Ptr Sint8;
-                                                  Ptr Uint16];
+                                                  Ptr Uint32];
                                  extra_ptr_types = [];
-                                 lemmas_before = [];
+                                 lemmas_before = [(fun {args;} ->
+                                   "packet_size = *" ^ (List.nth_exn args 1) ^ ";\n")];
                                  lemmas_after = [];};
    "packet_free", {ret_type = Static Void;
                    arg_types = stt [Ptr Sint8;];
@@ -1185,6 +1186,7 @@ let gen_preamble nf_loop containers =
    uint16_t received_on_port;\n\
    int the_index_allocated = -1;\n\
    int64_t time_for_allocated_index = 0;\n\
+   uint32_t packet_size = 0;\n\
    bool a_packet_received = false;\n" ^
   (String.concat ~sep:"" (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
        match ctyp with

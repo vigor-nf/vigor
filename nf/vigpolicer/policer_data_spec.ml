@@ -6,7 +6,7 @@ let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
                   "dyn_vals", Vector ("DynamicValue", "capacity", "");
                   "capacity", UInt32;
                   "dev_count", UInt32;
-                  "", EMap ("ip_addr", "dyn_map", "dyn_keys", "dyn_heap");
+                  "flow_emap", EMap ("ip_addr", "dyn_map", "dyn_keys", "dyn_heap");
                  ]
 
 let loop_header_fname = "policer_loop.h"

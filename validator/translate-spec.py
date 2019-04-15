@@ -90,7 +90,7 @@ def renderExpr(expr):
         assert len(expr.comparators) == 1
         right = renderExpr(expr.comparators[0])
         if   isinstance(relation, ast.Lt): sign = '<'
-        if   isinstance(relation, ast.LtE): sign = '<='
+        elif   isinstance(relation, ast.LtE): sign = '<='
         elif isinstance(relation, ast.Eq): sign = '=='
         elif isinstance(relation, ast.NotEq): sign = '!='
         elif isinstance(relation, ast.Gt): sign = '>'
@@ -101,6 +101,7 @@ def renderExpr(expr):
         right = renderExpr(expr.right)
         if   isinstance(expr.op, ast.Sub): sign = '-'
         elif isinstance(expr.op, ast.Add): sign = '+'
+        elif isinstance(expr.op, ast.Mult): sign = '*'
         elif isinstance(expr.op, ast.BitAnd): sign = '&'
         else: sign = '???'
         return "({} {} {})".format(left, sign, right)
@@ -289,7 +290,14 @@ elif 'lb' in pythonSpecFname:
                         'LoadBalancedFlowc' : 'LoadBalancedFlowi'}
     stateVars = ['flow_emap', 'flow_id_to_backend_id', 'backends', 'backend_ip_emap', 'cht']
     globalVars = stateVars.copy()
-    globalVars
+elif 'policer' in pythonSpecFname:
+    objConstructors = {'vector_get|dyn_vals' : {'constructor' : 'DynamicValuec',
+                                                'type' : 'DynamicValuei',
+                                                'fields' : ['bucket_size', 'bucket_time']}}
+    typeConstructors = {'DynamicValuec' : 'DynamicValuei'}
+    stateVars = ['flow_emap', 'dyn_vals']
+    globalVars = stateVars.copy()
+
 
 
 translate(specAst.body, globalVars)

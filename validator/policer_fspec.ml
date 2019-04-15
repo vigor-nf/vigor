@@ -14,7 +14,7 @@ let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
                   "dyn_vals", Vector ("DynamicValue", "capacity", "");
                   "capacity", UInt32;
                   "dev_count", UInt32;
-                  "", EMap ("ip_addr", "dyn_map", "dyn_keys", "dyn_heap");
+                  "flow_emap", EMap ("ip_addr", "dyn_map", "dyn_keys", "dyn_heap");
                  ]
 
 let records = String.Map.of_alist_exn
@@ -30,7 +30,9 @@ struct
   let finishing_fun = "loop_invariant_consume"
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
-  let user_check_for_complete_iteration = In_channel.read_all "policer_forwarding_property.tmpl"
+  let user_check_for_complete_iteration =
+    (abstract_state_capture containers) ^
+    (In_channel.read_all "policer_forwarding_property.tmpl")
 end
 
 (* Register the module *)

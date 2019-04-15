@@ -32,6 +32,7 @@ validate-balancer: clean
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cma
 
 validate-policer: clean
+	python3 translate-spec.py policer-spec.py policer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
 # Regression test suite
