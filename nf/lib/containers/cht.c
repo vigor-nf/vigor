@@ -378,6 +378,102 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    lemma void list_unit_length(list<int> xs)
+        requires    length(xs) == 1;
+        ensures     xs == cons(nth(0, xs), nil);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): length_0_nil(xs0);
+        }
+    }
+
+    lemma void permutation_from_filter_idx(list<int> xs, nat nb_split, int nb_split_base, int n, int bucket_id, int idx)
+        requires    
+            true == forall(split(xs, nb_split, n), is_permutation) &*&
+            length(xs) == int_of_nat(nb_split) * n &*&
+            0 <= bucket_id &*& bucket_id < n &*& 
+            idx == nb_split_base * n - length(xs) &*& 0 <= nb_split_base &*& 0 <= idx &*&
+            0 < n &*& n <= length(xs);
+        ensures     
+            true == is_sub_permutation(map( (extract_row)(n) , filter_idx(xs, idx, (eq)(bucket_id)) ), nb_split_base);
+    {
+        switch(nb_split) {
+            case zero:
+            case succ(nb_split_pred):
+                if (nb_split_pred != zero) {
+                    // Recursive call
+                    length_drop(n, xs);
+                    mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+                    mul_equal(n, int_of_nat(nb_split_pred), length(xs) - n);
+                    permutation_from_filter_idx(drop(n, xs), nb_split_pred, nb_split_base, n, bucket_id, idx + n);                
+                }
+
+                list<int> ret_xs = drop(n, xs);
+                list<int> ret_recursive = filter_idx(ret_xs, idx + n, (eq)(bucket_id));
+                list<int> map_ret_recursive = map( (extract_row)(n) , ret_recursive );
+                assert (true == is_sub_permutation(map_ret_recursive, nb_split_base));
+
+                // Prove that all elements in map_ret_recursive are >= (idx/n) + 1
+                filter_idx_ge(ret_xs, idx + n, (eq)(bucket_id));
+                extract_row_ge(n, idx, ret_recursive);
+                assert (true == forall(map_ret_recursive, (ge)(idx/n + 1)));
+
+                list<int> first_chunk = take(n, xs);
+                list<int> filter_first_chunk = filter_idx(first_chunk, idx, (eq)(bucket_id));
+                list<int> map_filter_first_chunk = map( (extract_row)(n) , filter_first_chunk );
+                split_chunk_equiv(xs, nb_split, n, 0);
+                assert (nth(0, split(xs, nb_split, n)) == first_chunk);
+
+                // Prove that length(filter_first_chunk) == 1
+                forall_nth(split(xs, nb_split, n), is_permutation, 0);
+                permutation_to_count(first_chunk, nat_of_int(length(first_chunk) - 1));
+                integer_copies_val(bucket_id, nat_of_int(n - 1), 1, first_chunk);
+                filter_idx_length_count_equiv(first_chunk, idx, (eq)(bucket_id));
+                map_preserves_length((extract_row)(n), filter_first_chunk);
+                assert (length(filter_first_chunk) == 1);
+
+                // Prove that all elements in map_filter_first_chunk are < (idx/n) + 1
+                int new_idx = nth(0, filter_first_chunk);
+                int map_new_idx = extract_row(n, new_idx);
+                nth_map(0, (extract_row)(n), filter_first_chunk);
+                filter_idx_lt(first_chunk, idx, (eq)(bucket_id));
+                extract_row_lt(n, idx, filter_first_chunk);
+                assert (true == forall(map_filter_first_chunk, (lt)(idx/n + 1)));
+                forall_nth(map_filter_first_chunk, (lt)((idx/n) + 1), 0);
+                assert(map_new_idx < idx/n + 1);
+                
+                // Prove that map_new_idx isn't in map_ret_recursive
+                no_dups_ge(map_ret_recursive, idx/n + 1, map_new_idx);
+                list_unit_length(map_filter_first_chunk);
+                assert (true == no_dups(append(map_filter_first_chunk, map_ret_recursive)));
+                map_append((extract_row)(n), filter_first_chunk, ret_recursive);
+                assert (append(map_filter_first_chunk, map_ret_recursive) == map((extract_row)(n), append(filter_first_chunk, ret_recursive)) );
+            
+                // Append rule for filter_idx
+                filter_idx_append(first_chunk, ret_xs, idx, (eq)(bucket_id));
+                assert (filter_idx(append(first_chunk, ret_xs), idx, (eq)(bucket_id)) == append(filter_first_chunk, ret_recursive));
+                
+                // Prove bounds                
+                filter_idx_ge(first_chunk, idx, (eq)(bucket_id));
+                forall_nth(filter_first_chunk, (ge)(idx), 0);
+                assert (new_idx >= 0);
+
+                forall_nth(filter_first_chunk, (lt)(idx + n), 0);
+                assert (new_idx < nb_split_base * n);
+
+                div_exact(nb_split_base, n);
+                div_lt(new_idx, nb_split_base * n, n);
+                div_ge(0, new_idx, n);
+                div_zero(n);
+
+                forall_append(map_filter_first_chunk, map_ret_recursive, (ge)(0));
+                forall_append(map_filter_first_chunk, map_ret_recursive, (lt)(n));
+                assert (true == forall(append(map_filter_first_chunk, map_ret_recursive), (ge)(0)));
+                assert (true == forall(append(map_filter_first_chunk, map_ret_recursive), (lt)(nb_split_base)));
+        }
+    }
+
     lemma void cht_end(list<int> xs, int backend_capacity, int cht_height, nat idx)
         requires    
             true == forall(split(xs, nat_of_int(backend_capacity), cht_height), is_permutation) &*&
