@@ -225,46 +225,22 @@ lemma_auto void take_alt_0<t>(int nb_rows, int nb_cols, list<t> xs)
 
 // ------------- lemmas on transpose -------------
 
-
-// lemma void transpose_preserves_count_rec<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp, nat idx)
-//     requires    length(xs) == nb_rows * nb_cols &*& 0 < nb_rows &*& 0 < nb_cols &*& int_of_nat(idx) <= nb_rows * nb_cols;
-//     ensures     count(take_alt(int_of_nat(idx), nb_rows, nb_cols, transpose(xs, nb_rows, nb_cols)), fp) == count(take(int_of_nat(idx), xs), fp);
-// {
-//     switch(idx) {
-//         case zero: 
-//         case succ(idx_pred):
-//             list<t> xs_transpose = transpose(xs, nb_rows, nb_cols);
-//             int n = int_of_nat(idx) - 1;
-            
-//             int i = extract_row(nb_cols, n);
-//             int j = extract_column(nb_cols, n);
-//             extract_works(nb_cols, n, i, j);
-//             extract_bounds(nb_rows, nb_cols, n);
-
-//             t elem_xs = nth(i * nb_cols + j, xs);
-//             t elem_xs_transpose = nth(j * nb_rows + i, xs_transpose);
-//             transpose_to_src(xs, nb_rows, nb_cols, i, j);
-//             assert (elem_xs == elem_xs_transpose);
-
-//             take_plus_one(int_of_nat(idx_pred), xs);
-//             assert (take(int_of_nat(idx), xs) == append(take(int_of_nat(idx_pred), xs), cons(elem_xs, nil)));
-//             count_append(take(int_of_nat(idx_pred), xs), cons(elem_xs, nil), fp);
-
-//             assume (take_alt(int_of_nat(idx), nb_rows, nb_cols, transpose(xs, nb_rows, nb_cols)) ==
-//                 append(take_alt(int_of_nat(idx_pred), nb_rows, nb_cols, transpose(xs, nb_rows, nb_cols)), cons(elem_xs_transpose, nil)));
-//             count_append(take_alt(int_of_nat(idx_pred), nb_rows, nb_cols, transpose(xs, nb_rows, nb_cols)), cons(elem_xs_transpose, nil), fp);
-
-//             transpose_preserves_count_rec(xs, nb_rows, nb_cols, fp, idx_pred);
-//     }
-   
-// }
-
+lemma void transpose_row_col_idx_equiv<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
+    requires    length(xs) == nb_rows * nb_cols;
+    ensures     map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)) == map((extract_column)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp));
+{
+    assume ( map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)) == map((extract_column)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp)) );
+}
 
 lemma void transpose_preserves_count<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
     requires    length(xs) == nb_rows * nb_cols;
     ensures     count(transpose(xs, nb_rows, nb_cols), fp) == count(xs, fp);
 {
-   assume (count(transpose(xs, nb_rows, nb_cols), fp) == count(xs, fp));
+    transpose_row_col_idx_equiv(xs, nb_rows, nb_cols, fp);
+    map_preserves_length((extract_row)(nb_cols), filter_idx(xs, 0, fp));
+    map_preserves_length((extract_column)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp));
+    filter_idx_length_count_equiv(xs, 0, fp);
+    filter_idx_length_count_equiv(transpose(xs, nb_rows, nb_cols), 0, fp);
 }
 
 lemma void transpose_preserves_integer_copies(list<int> xs, int nb_rows, int nb_cols, int nb_copies, nat val)
@@ -277,13 +253,6 @@ lemma void transpose_preserves_integer_copies(list<int> xs, int nb_rows, int nb_
             transpose_preserves_count(xs, nb_rows, nb_cols, (eq)(int_of_nat(val)));
             transpose_preserves_integer_copies(xs, nb_rows, nb_cols, nb_copies, val_pred);
     }
-}
-
-lemma void transpose_row_col_idx_equiv<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
-    requires    length(xs) == nb_rows * nb_cols;
-    ensures     map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)) == map((extract_column)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp));
-{
-    assume ( map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)) == map((extract_column)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp)) );
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_
