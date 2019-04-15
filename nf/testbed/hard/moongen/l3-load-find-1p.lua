@@ -10,7 +10,7 @@ local log    = require "log"
 
 -- set addresses here
 local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE	= "192.168.6.5" -- actual address will be SRC_IP_BASE + random(0, flows)
+local SRC_IP_BASE	= "10.0.0.1" -- actual address will be SRC_IP_BASE + random(0, flows)
 local DST_IP		= "192.168.4.10"
 local SRC_PORT		= 234
 local DST_PORT		= 319
@@ -42,6 +42,7 @@ function master(args)
 	end
 	local minRate = 10
 	local rate = minRate + (maxRate - minRate)/2
+--	for _,nflws in pairs({64000}) do
 	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
 		-- Heatup phase
 		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
@@ -50,7 +51,7 @@ function master(args)
 		local snt, rcv = loadTask:wait()
 		printf("heatup results: %d sent, %f loss", snt, (snt-rcv)/snt);
 		if (rcv < snt/100) then
-			printf("unsuccessfull exiting");
+			printf("unsuccessful exiting");
 			return	
 		end
 		mg.waitForTasks()
