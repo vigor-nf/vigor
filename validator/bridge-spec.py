@@ -1,8 +1,9 @@
 EXP_TIME = 10
-if EXP_TIME <= now:
-    dyn_emap = emap_expire_all(dyn_emap, now - EXP_TIME)
 
 h = pop_header(ether, on_mismatch=([],[]))
+
+if EXP_TIME <= now:
+    dyn_emap = emap_expire_all(dyn_emap, now - EXP_TIME)
 
 if emap_has(dyn_emap, h.saddr):
     dyn_emap = emap_refresh_idx(dyn_emap, emap_get(dyn_emap, h.saddr), now)
