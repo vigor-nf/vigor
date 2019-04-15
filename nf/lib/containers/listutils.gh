@@ -282,20 +282,12 @@ lemma void chunk_to_source<t>(list<t> xs, int begin, int end, int i)
     
 }
 
-lemma void chunk_update_unrelevant<t>(list<t> xs, list<t> ys, int begin, int end, int i, t val)
-    requires 
-        0 <= begin &*& begin <= end &*& end <= i &*& i < length(xs) &*&
-        ys == update(i, val, xs);
-    ensures
-        chunk(xs, begin, end) == chunk(update(i, val, xs), begin, end);
+lemma void chunk_update_unrelevant<t>(list<t> xs, int begin, int end, int i, t val)
+    requires    0 <= begin &*& begin <= end &*& end <= i &*& i < length(xs);
+    ensures     chunk(xs, begin, end) == chunk(update(i, val, xs), begin, end);
 {
-    // take(end - begin, drop(begin, xs))
-    // take(end - begin, drop(begin, update(i, val, xs)))
-    list<t> tmp = update(i - begin, val, drop(begin, xs));
     drop_update_relevant(begin, i, val, xs);
-    take_update_unrelevant(end, i, val, drop(begin, xs));
-    take_update_unrelevant(end, i, val, tmp);
-    assume (chunk(xs, begin, end) == chunk(update(i, val, xs), begin, end));
+    take_update_unrelevant(end - begin, i - begin, val, drop(begin, xs));
 }
 
 // ------------- repeat -------------
@@ -567,7 +559,6 @@ lemma void split_append<t>(list<t> xs, nat nb_split, nat nb_split_pred, int n)
         case succ(nb_split_pred_pred):
             mul_mono_strict(1, int_of_nat(nb_split), n);
             length_drop(n, xs);
-            assert(int_of_nat(nb_split_pred) + 1 == int_of_nat(nb_split));
             mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
             split_append(drop(n, xs), nb_split_pred, nb_split_pred_pred, n);
 
@@ -575,11 +566,24 @@ lemma void split_append<t>(list<t> xs, nat nb_split, nat nb_split_pred, int n)
     }
 }
 
-lemma void split_update_unrelevant<t>(list<t> xs1, list<t> xs2, nat nb_split, int n, int i, t val)
-    requires    true;
-    ensures     split(xs1, nb_split, n) == split(xs2, nb_split, n);
+lemma void split_update_unrelevant<t>(list<t> xs, nat nb_split, int n, int i, t val)
+    requires    0 < n &*& int_of_nat(nb_split) * n <= i &*& i < length(xs);
+    ensures     split(xs, nb_split, n) == split(update(i, val, xs), nb_split, n);
 {
-    assume (split(xs1, nb_split, n) == split(xs2, nb_split, n));
+    switch(nb_split) {
+        case zero:
+        case succ(nb_split_pred):
+            if (nb_split_pred != zero) {
+                mul_mono_strict(1, int_of_nat(nb_split), n);
+                length_drop(n, xs);
+                mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
+                drop_update_relevant(n, i, val, xs);
+                take_update_unrelevant(n, i, val, xs);
+                split_update_unrelevant(drop(n, xs), nb_split_pred, n, i - n, val);
+            } else {
+                take_update_unrelevant(n, i, val, xs);
+            }
+    }
 }
 
 // ------------- integers_list -------------
@@ -704,26 +708,24 @@ lemma void zip_index_unzip<t>(list<t> xs)
     zip_unzip_snd(integers_list(nat_of_int(length(xs)), 0), xs);
 }
 
-lemma void append_to_zip<t>(list<t> xs, t x) 
-    requires true;
-    ensures append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil)));
+lemma void zip_index_append<t>(list<t> xs, t x) 
+    requires    true;
+    ensures     append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil)));
 {
     assume (append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil))));
 } 
 
-lemma void zip_with_index_bounds<t>(list<t> xs) 
-    requires true;
-    ensures 
-        true == forall( map(fst, zip_index(xs)), (lt)(length(xs)) ) &*&
-        true == forall( map(fst, zip_index(xs)), (ge)(0) );
+lemma void zip_index_bounds<t>(list<t> xs) 
+    requires    true;
+    ensures     true == forall( map(fst, zip_index(xs)), (ge)(0) ) &*& true == forall( map(fst, zip_index(xs)), (lt)(length(xs)) );
 {
     zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
     integers_list_bounds(nat_of_int(length(xs)), 0);
 }
 
-lemma void zip_no_dups<t>(list<t> xs)
-    requires true;
-    ensures true == no_dups(map(fst, zip_index(xs)));
+lemma void zip_index_no_dups<t>(list<t> xs)
+    requires    true;
+    ensures     true == no_dups(map(fst, zip_index(xs)));
 {
     zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
     integers_list_no_dups(nat_of_int(length(xs)), 0);

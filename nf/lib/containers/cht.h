@@ -20,7 +20,7 @@
             sizeof(int)*MAX_CHT_HEIGHT*(backend_capacity + 1) < INT_MAX &&
             0 < backend_capacity && backend_capacity < INT_MAX &&
             true == forall(values, is_one) &&
-            true == forall(split(values, nat_of_int(cht_height), backend_capacity), is_permutation_map_fst);
+            true == forall(split(map(fst, values), nat_of_int(cht_height), backend_capacity), is_permutation);
     }
 
     fixpoint bool cht_exists(int hash, list<pair<int, real> > cht, dchain filter) {

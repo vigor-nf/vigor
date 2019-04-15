@@ -378,6 +378,42 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
+    lemma void cht_end(list<int> xs, int backend_capacity, int cht_height, nat idx)
+        requires    
+            true == forall(split(xs, nat_of_int(backend_capacity), cht_height), is_permutation) &*&
+            length(xs) == backend_capacity * cht_height &*&
+            0 < backend_capacity &*& 0 < cht_height &*&
+            int_of_nat(idx) <= cht_height;
+        ensures
+            true == forall( cht_invariant(transpose(xs, backend_capacity, cht_height), backend_capacity * cht_height, backend_capacity, cht_height, idx), is_permutation);
+    {
+        switch(idx) {
+            case zero:
+            case succ(idx_pred): 
+                int bucket_id = cht_height - int_of_nat(idx);
+                list<int> filter = filter_idx(xs, 0, (eq)(bucket_id));
+                list<int> map_filter = map((extract_row)(cht_height), filter);
+                list<int> xs_transpose = transpose(xs, backend_capacity, cht_height);
+
+                // Proof that length(map_filter) == backend_capacity
+                mul_equal(cht_height, backend_capacity, length(xs));
+                permutation_split_to_count(xs, nat_of_int(backend_capacity), cht_height);
+                integer_copies_val(bucket_id, nat_of_int(cht_height - 1), backend_capacity, xs);
+                filter_idx_length_count_equiv(xs, 0, (eq)(bucket_id));
+                map_preserves_length((extract_row)(cht_height), filter);
+                
+                // Proof that map_filter is a permutation
+                permutation_from_filter_idx(xs, nat_of_int(backend_capacity), backend_capacity, cht_height, bucket_id, 0);
+                sub_permutation_complete(map_filter);
+
+                // Prove the equivalency with the transpose
+                transpose_row_col_idx_equiv(xs, backend_capacity, cht_height, (eq)(bucket_id));
+                take_length(xs_transpose);
+
+                // Recursive call
+                cht_end(xs, backend_capacity, cht_height, idx_pred);
+        }
+    }
 
 @*/
 
@@ -428,7 +464,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
                 ints(permutations, cht_height*backend_capacity, ?p_in) &*&
                 true == forall(split(p_in, nat_of_int(i), cht_height), is_permutation) &*&
                 true == is_sub_permutation(chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
-                true == forall(zip_with_index(chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, cht_height)); @*/
+                true == forall(zip_index(chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, cht_height)); @*/
         {
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
@@ -439,14 +475,14 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             permutations[i * cht_height + j] = (int)permut;
 
             //@ pair<int,int> new_elem = pair(j, permut);
-            //@ chunk_update_unrelevant(p_in, update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j, i * cht_height + j, permut);
-            //@ split_update_unrelevant(p_in, update(i * cht_height + j, permut, p_in), nat_of_int(i), cht_height, i * cht_height + j, permut);
+            //@ chunk_update_unrelevant(p_in, i * cht_height, i * cht_height + j, i * cht_height + j, permut);
+            //@ split_update_unrelevant(p_in, nat_of_int(i), cht_height, i * cht_height + j, permut);
 
             //@ list<int> chunk = chunk(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
             //@ list<int> chunk_append = append(chunk, cons(snd(new_elem), nil));
-            //@ list< pair<int, int> > chunk_append_ziped = zip_with_index(chunk_append);
+            //@ list< pair<int, int> > chunk_append_ziped = zip_index(chunk_append);
 
-            //@ list< pair<int, int> > chunk_ziped = zip_with_index(chunk);
+            //@ list< pair<int, int> > chunk_ziped = zip_index(chunk);
             //@ list< pair<int, int> > chunk_ziped_append = append(chunk_ziped, cons(new_elem, nil));
 
             // Length of chunk
@@ -454,7 +490,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ length_append(chunk, cons(snd(new_elem), nil));
 
             // Append rule for zip_with_index
-            //@ append_to_zip(chunk, snd(new_elem));
+            //@ zip_index_append(chunk, snd(new_elem));
             //@ assert (chunk_append_ziped == chunk_ziped_append);
 
             // Preservation of fixpoint
@@ -465,16 +501,16 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ assert (true == forall(chunk_append_ziped, (is_modulo_permutation)(offset, shift, cht_height)));
 
             // Arithmetic bounds
-            //@ zip_with_index_bounds(chunk_append);
+            //@ zip_index_bounds(chunk_append);
             //@ lt_le_lt(map(fst, chunk_append_ziped), length(chunk_append), cht_height);
             //@ modulo_permutation_bounds(chunk_append_ziped, offset, shift, cht_height);
 
             // No duplicates guarantee
-            //@ zip_no_dups(chunk_append);
+            //@ zip_index_no_dups(chunk_append);
             //@ modulo_permutation_list(chunk_append_ziped, offset, shift, cht_height);
 
             // Prove invariant
-            //@ unzip(chunk_append);
+            //@ zip_index_unzip(chunk_append);
             //@ chunk_append(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
         }
 
@@ -698,16 +734,10 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     //@ list < list<int> > cht_rows = split(map(fst, vals), nat_of_int(cht_height), backend_capacity);
     //@ list < list<int> > cht_invar = cht_invariant(p_transpose, length(p_transpose), backend_capacity, cht_height, nat_of_int(cht_height));
     //@ split_varlim_split_equiv(map(fst, vals), n, backend_capacity, nat_of_int(cht_height));
-    
-
-
-    // @ forall2_prop_eq(cht_rows, cht_invar, is_permutation);
+    //@ cht_end(p_final, backend_capacity, cht_height, nat_of_int(cht_height));
+    //@ map_preserves_length(fst, vals);
+    //@ forall2_prop_eq(cht_rows, cht_invar, is_permutation);
     //@ assert (true == valid_cht(vals, backend_capacity, cht_height));
-
-     
-    // Must prove that each element of cht_invar is a permutation of 0...(C-1)
-    // cht_invar[bucket_id] == map(  (extract_column)(backend_capacity) , filter_idx(p_transpose, 0, (eq)(bucket_id)) )
-
 
     // Free memory
     free(next);
@@ -786,7 +816,8 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             true == dchain_allocated_fp(filter, nth((hash%cht_height) * backend_capacity + i, map(fst, cht))) &*&
             length(cht) == backend_capacity * cht_height &*&
             dchain_index_range_fp(filter) == backend_capacity &*&
-            0 < cht_height &*& 0 < backend_capacity &*& 0 <= hash;
+            0 < cht_height &*& 0 < backend_capacity &*& 0 <= hash &*&
+            0 <= i &*& i < backend_capacity;
         ensures
             cht_choose(hash, cht, filter) == nth((hash%cht_height) * backend_capacity + i, map(fst, cht));
     {
@@ -847,27 +878,23 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
         uint32_t *candidate;
         vector_borrow(cht, (int)candidate_idx, (void **)&candidate);
 
-        //@ list< list< pair<uint32_t,real> > > permuts = split(values, nat_of_int(cht_height), backend_capacity);
-        //@ list< pair<uint32_t,real> > candidate_chunk = chunk(values, start * backend_capacity, (start+1) * backend_capacity);
+        //@ list<uint32_t> map_values = map(fst, values);
+        //@ list< list<uint32_t> > permuts = split(map_values, nat_of_int(cht_height), backend_capacity);
+        //@ list<uint32_t> candidate_chunk = chunk(map_values, start * backend_capacity, (start+1) * backend_capacity);
 
-        // Proof that 0 <= map(fst, values)[candiadate_idx] < backend_capacity
-        //@ length_split(values, nat_of_int(cht_height), backend_capacity);
-        //@ forall_nth(permuts, is_permutation_map_fst, start);
-        //@ split_chunk_equiv(values, nat_of_int(cht_height), backend_capacity, start);
-        //@ assert (true == is_permutation_map_fst(candidate_chunk));
-        //@ is_permutation_map_fst_extract(candidate_chunk, map(fst, candidate_chunk));
-        //@ map_preserves_length(fst, candidate_chunk);
-        //@ chunk_length(values, start * backend_capacity, (start+1) * backend_capacity);
-        //@ forall_nth(map(fst, candidate_chunk), (ge)(0), i);
-        //@ forall_nth(map(fst, candidate_chunk), (lt)(backend_capacity), i);
-        //@ chunk_to_source(values, start * backend_capacity, (start+1) * backend_capacity, i);
-        //@ nth_map(i, fst, candidate_chunk);
-        //@ assert (fst(nth(candidate_idx, values)) < backend_capacity);
+        // Proof that 0 <= map_values[candidate_idx] < backend_capacity
+        //@ map_preserves_length(fst, values);
+        //@ length_split(map_values, nat_of_int(cht_height), backend_capacity);
+        //@ forall_nth(permuts, is_permutation, start);
+        //@ split_chunk_equiv(map_values, nat_of_int(cht_height), backend_capacity, start);
+        //@ assert (true == is_permutation(candidate_chunk));
+        //@ forall_nth(candidate_chunk, (ge)(0), i);
+        //@ forall_nth(candidate_chunk, (lt)(backend_capacity), i);
+        //@ chunk_to_source(map_values, start * backend_capacity, (start+1) * backend_capacity, i);
         //@ nth_map(candidate_idx, fst, values);
-        //@ assert (nth(candidate_idx, map(fst, values)) < backend_capacity);
-        //@ assert (0 <= nth(candidate_idx, map(fst, values)));
+        //@ assert (0 <= nth(candidate_idx, map_values));
+        //@ assert (nth(candidate_idx, map_values) < backend_capacity);
 
-        ////@ update_id(candidate_idx, values);
         //@ forall_nth(values, is_one, candidate_idx);
         if (dchain_is_index_allocated(active_backends, (int)*candidate)) {
             *chosen_backend = (int)*candidate;
