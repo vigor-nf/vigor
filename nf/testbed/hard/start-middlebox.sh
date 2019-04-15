@@ -11,7 +11,7 @@
 #     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "~/vnds/nat"
 # $2: The scenario, one of the following:
 #     "mg-1p": Measure throughput: find the rate at which the middlebox
-#              starts loosing 1% of packets.
+#              starts losing 1% of packets.
 #     "mg-existing-flows-latency": Measure the forwarding latency for existing
 #                                  flows.
 #     "mg-new-flows-latency": Measure the forwarding latency for new flows.
@@ -86,8 +86,8 @@ else
 
     # Run the app in the background
     # The arguments are not always necessary, but they'll be ignored if unneeded
-    (bash ./bench/run-dpdk.sh $SIMPLE_SCENARIO "$MIDDLEBOX" \
-        "--expire $EXPIRATION_TIME --max-flows 65535 --starting-port 1" \
+    (bash ./bench/run-middlebox.sh $SIMPLE_SCENARIO "$MIDDLEBOX" \
+        "--expire $EXPIRATION_TIME" \
         0<&- &>"$LOG_FILE") &
 
     # Wait for it to have started

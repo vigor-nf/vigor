@@ -11,5 +11,5 @@ fi
 if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     echo "no need to kill netfilter"
 else
-    sudo pkill -9 nat
+    sudo killall -9 nat lb bridge policer
 fi

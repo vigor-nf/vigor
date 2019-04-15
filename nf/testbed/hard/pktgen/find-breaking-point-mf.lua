@@ -1,5 +1,5 @@
 -- Run search to find the point at which the middle box start
--- loosing 1% of the packets
+-- losing 1% of the packets
 
 package.path = package.path ..";?.lua;test/?.lua;app/?.lua;../?.lua"
 
