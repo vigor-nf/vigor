@@ -2,7 +2,7 @@
 # See http://dpdk.org/doc/quick-start
 
 # DPDK release to install
-DPDK_RELEASE=16.07
+DPDK_RELEASE=17.11
 
 
 pushd $HOME >> /dev/null

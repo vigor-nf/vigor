@@ -5,8 +5,10 @@
 #ifndef KLEE_VERIFICATION
 
 #include <assert.h>
+#include <stdalign.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MALLOC_MEM_SIZE 80000000
@@ -18,11 +20,16 @@ extern void free(void *ptr);
 
 void *malloc(size_t size)
 {
-	static char malloc_mem[MALLOC_MEM_SIZE];
+	static char malloc_mem[MALLOC_MEM_SIZE] __attribute__ ((aligned (alignof(max_align_t))));
 	static size_t malloc_index;
 
 	if (malloc_index + size >= MALLOC_MEM_SIZE) {
 		abort();
+	}
+
+	/* Ensure that memory blocks are aligned */
+	if ((size % alignof(max_align_t)) != 0) {
+		size += alignof(max_align_t) - (size % alignof(max_align_t));
 	}
 
 	void *ret = &malloc_mem[malloc_index];

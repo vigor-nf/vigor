@@ -9,7 +9,7 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
-local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+local DST_MAC		= "90:e2:ba:55:14:64" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
 local SRC_IP_BASE	= "192.168.6.5" -- actual address will be SRC_IP_BASE + random(0, flows)
 local DST_IP		= "192.168.4.10"
 local SRC_PORT		= 234

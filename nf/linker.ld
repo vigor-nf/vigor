@@ -1,19 +1,37 @@
 ENTRY(start)
 
-SECTIONS {
+SECTIONS
+{
     . = 1M;
 
     .boot :
     {
-        /* ensure that the multiboot header is at the beginning */
         *(.multiboot_header)
     }
 
     .text :
     {
-        *(.text)
+        *(.text*)
+
+        KEEP(*(.init))
+        KEEP(*(.fini))
+
+        /* .ctors */
+        *crtbegin.o(.ctors)
+        *crtbegin?.o(.ctors)
+        *(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors)
+        *(SORT(.ctors.*))
+        *(.ctors)
+
+        /* .dtors */
+        *crtbegin.o(.dtors)
+        *crtbegin?.o(.dtors)
+        *(EXCLUDE_FILE(*crtend?.o *crtend.o) .dtors)
+        *(SORT(.dtors.*))
+        *(.dtors)
     }
 
+/*
     .ctors :
     {
         __CTORS_START = .;
@@ -22,4 +40,5 @@ SECTIONS {
 
     }
     __CTORS_END = .;
+*/
 }

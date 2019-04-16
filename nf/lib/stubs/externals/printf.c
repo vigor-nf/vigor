@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 
+#include "lib/kernel/dsos_serial.h"
 #include "lib/kernel/dsos_vga.h"
 
 // ntoa conversion buffer size, this must be big enough to hold
@@ -725,6 +726,13 @@ int printf(const char* format, ...)
 }
 
 int vprintf(const char *fmt, va_list va)
+{
+    char buffer[1];
+    return _vsnprintf(_out_char, buffer, (unsigned int)-1, fmt, va);
+    return 0;
+}
+
+int vprintf1(const char *fmt, va_list va)
 {
     char buffer[1];
     return _vsnprintf(_out_char, buffer, (unsigned int)-1, fmt, va);

@@ -5,6 +5,7 @@
 #include "dsos_pci.h"
 #include "dsos_portio.h"
 #include "dsos_vga.h"
+#include "dsos_serial.h"
 
 static const unsigned int MAX_PCI_DEVICES = 32;
 
@@ -18,8 +19,11 @@ static const uint32_t PCI_BAR_BASE = 4;
 static const uint16_t PCI_INVALID_VENDOR_ID = 0xFFFF;
 
 static const uint32_t PCI_VENDOR_REGISTER = 0;
+static const uint32_t PCI_STATUS_COMMAND_REGISTER = 1;
 static const uint32_t PCI_CLASS_CODE_REGISTER = 2;
 static const uint32_t PCI_SUBSYSTEM_REGISTER = 11;
+
+static const uint32_t PCI_COMMAND_MASTER = 4;
 
 /* Read a PCI configuration register */
 static uint32_t dsos_read_pci_reg(uint32_t bus, uint32_t dev, uint32_t function, uint32_t reg)
@@ -64,13 +68,14 @@ static void dsos_pci_read_resource(uint32_t bus, uint32_t dev, uint32_t function
 
 	if ((orig_value & 1) == 0) {
 		/* Memory mapped resource, ignore the lowest 4 bits */
-		out->start = (void *)(orig_value & 0xFFFFFFF0ul);
-		out->size = (size_t)((~(read_value & 0xFFFFFFF0ul)) + 1);
+		out->start = (void *)(uintptr_t)(orig_value & 0xFFFFFFF0ul);
+		out->size = (size_t)(uint32_t)((~(read_value & 0xFFFFFFF0ul)) + 1);
 		out->is_mem = true;
+
 	} else {
 		/* I/O mapped resource, ignore the lowest 2 bits */
-		out->start = (void *)(orig_value & 0xFFFFFFFCul);
-		out->size = (size_t)((~(read_value & 0xFFFFFFFCul)) + 1);
+		out->start = (void *)(uintptr_t)(orig_value & 0xFFFFFFFCul);
+		out->size = (size_t)(uint32_t)((~(read_value & 0xFFFFFFFCul)) + 1);
 		out->is_mem = false;
 	}
 }
@@ -105,6 +110,11 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	for (uint32_t i = 0; i < PCI_NUM_RESOURCES; i++) {
 		dsos_pci_read_resource(bus, dev, 0, i, &(out->resources[i]));
 	}
+
+	/* Enable bus mastering (igb_uio does this) */
+	uint32_t status_command_reg = dsos_read_pci_reg(bus, dev, 0, PCI_STATUS_COMMAND_REGISTER);
+	status_command_reg |= PCI_COMMAND_MASTER;
+	dsos_write_pci_reg(bus, dev, 0, PCI_STATUS_COMMAND_REGISTER, status_command_reg);
 
 	return 1;
 }
@@ -159,20 +169,20 @@ struct dsos_pci_nic *dsos_pci_find_nics(int *n)
 
 void dsos_pci_print_nic_info(struct dsos_pci_nic *nic)
 {
-	dsos_vga_write_str("Vendor ID: ");
-	dsos_vga_write_int(nic->vendor_id);
+	dsos_serial_write_str("Vendor ID: ");
+	dsos_serial_write_int(nic->vendor_id);
 
-	dsos_vga_write_str("\nDevice ID: ");
-	dsos_vga_write_int(nic->device_id);
+	dsos_serial_write_str("\nDevice ID: ");
+	dsos_serial_write_int(nic->device_id);
 
-	dsos_vga_write_str("\nSubsystem ID: ");
-	dsos_vga_write_int(nic->subsystem_id);
+	dsos_serial_write_str("\nSubsystem ID: ");
+	dsos_serial_write_int(nic->subsystem_id);
 
-	dsos_vga_write_str("\nSubsystem vendor ID: ");
-	dsos_vga_write_int(nic->subsystem_vendor_id);
+	dsos_serial_write_str("\nSubsystem vendor ID: ");
+	dsos_serial_write_int(nic->subsystem_vendor_id);
 
-	dsos_vga_write_str("\nClass code: ");
-	dsos_vga_write_int(nic->class_code);
+	dsos_serial_write_str("\nClass code: ");
+	dsos_serial_write_int(nic->class_code);
 
-	dsos_vga_write_char('\n');
+	dsos_serial_write_char('\n');
 }

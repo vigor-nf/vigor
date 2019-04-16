@@ -9,12 +9,12 @@ struct vga_char {
 	uint8_t color_code;
 };
 
-static volatile struct vga_char (*const VGA_BUFFER)[VGA_WIDTH] =
-	(volatile struct vga_char (*const)[VGA_WIDTH])0xb8000;
+static volatile struct vga_char (*volatile const VGA_BUFFER)[VGA_WIDTH] =
+	(volatile struct vga_char (*volatile const)[VGA_WIDTH])0xb8000;
 static int VGA_COLUMN_POS = 0;
 
 /* Yellow foreground, black background */
-static const uint8_t VGA_COLOR_CODE = 14;
+#define VGA_COLOR_CODE 14
 
 static void dsos_vga_clear_row(int row)
 {

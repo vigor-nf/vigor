@@ -190,6 +190,7 @@ lcore_main(void)
     uint16_t actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
 
     if (actual_rx_len != 0) {
+      // NF_INFO("Got packet!");
       uint16_t dst_device = nf_core_process(buf, VIGOR_NOW);
 
       if (dst_device == VIGOR_DEVICE) {

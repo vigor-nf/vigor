@@ -38,4 +38,4 @@ fi
 
 ssh $TESTER_HOST "bash ~/scripts/init-network-$1/tester.sh"
 
-. ./init-network-$1/$2/middlebox.sh
+# . ./init-network-$1/$2/middlebox.sh

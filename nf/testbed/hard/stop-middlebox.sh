@@ -11,5 +11,5 @@ fi
 if [ "$MIDDLEBOX" = "netfilter" ]; then
     echo "no need to kill netfilter"
 else
-    sudo pkill -9 nat
+    sudo pkill -9 nat qemu-system-x86_64
 fi

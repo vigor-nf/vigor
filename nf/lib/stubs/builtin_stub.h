@@ -4,10 +4,21 @@
 
 
 // Pretend we support those
+#ifndef __SSE3__
 #define __SSE3__
+#endif
+
+#ifndef __SSSE3__
 #define __SSSE3__
+#endif
+
+#ifndef __SSE4_1__
 #define __SSE4_1__
+#endif
+
+#ifndef __SSE4_2__
 #define __SSE4_2__
+#endif
 
 
 // Pretend that everything is known to be a compile-time constant, so DPDK uses less fancy tricks
@@ -25,6 +36,8 @@
 // idem than add, but with sub
 #define __sync_fetch_and_sub(ptr, value) (*(ptr) -= (value))
 
+// We are single threaded, no need to support thread-local storage
+#define __thread
 
 // Despite it being called test_and_set, GCC docs describe it as "not a traditional test-and-set operation, but rather an atomic exchange operation"
 static inline int32_t stub_test_and_set(volatile int32_t* ptr, int32_t value)

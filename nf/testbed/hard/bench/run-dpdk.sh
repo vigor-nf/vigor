@@ -28,7 +28,7 @@ pushd $2 >> /dev/null
 
   echo "[bench] Running $2..."
   if [ $1 = "loopback" ]; then
-      sudo ./build/nat -c 0x01 -n 2 -- --wan 0 --lan-dev 1 \
+      sudo taskset -c 8 ./build/nat -n 2 -- --wan 0 --lan-dev 1 \
           $3 \
           --extip $MB_IP_EXTERNAL \
           --eth-dest 0,$TESTER_MAC_EXTERNAL --eth-dest 1,$TESTER_MAC_INTERNAL

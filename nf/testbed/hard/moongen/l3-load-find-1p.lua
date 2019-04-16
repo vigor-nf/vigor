@@ -9,7 +9,7 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
-local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+local DST_MAC		= "90:e2:ba:55:14:64" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
 local SRC_IP_BASE	= "192.168.6.5" -- actual address will be SRC_IP_BASE + random(0, flows)
 local DST_IP		= "192.168.4.10"
 local SRC_PORT		= 234
@@ -42,7 +42,8 @@ function master(args)
 	end
 	local minRate = 10
 	local rate = minRate + (maxRate - minRate)/2
-	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+	-- for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+	for _,nflws in pairs({20}) do
 		-- Heatup phase
 		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
 		setRate(txDev:getTxQueue(0), args.size, minRate);
@@ -51,7 +52,7 @@ function master(args)
 		printf("heatup results: %d sent, %f loss", snt, (snt-rcv)/snt);
 		if (rcv < snt/100) then
 			printf("unsuccessfull exiting");
-			return	
+			return
 		end
 		mg.waitForTasks()
 		local steps = 11;
@@ -64,7 +65,7 @@ function master(args)
 			local packetsSent
 			local packetsRecv
 			local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, nflws, args.timeout)
-			local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(1), rxDev:getRxQueue(1), args.size, args.flows, args.timeout)
+			-- local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(1), rxDev:getRxQueue(1), args.size, args.flows, args.timeout)
 			packetsSent, packetsRecv = loadTask:wait()
 			local loss = (packetsSent - packetsRecv)/packetsSent
 			printf("total: %d flows, %d rate, %d sent, %f lost",
@@ -117,7 +118,7 @@ function loadSlave(queue, rxDev, size, flows, duration)
 			local pkt = buf:getUdpPacket()
 			-- pkt.ip4.src:set(baseIP + counter)
 			pkt.ip4.src:set(baseIP)
-			-- pkt.udp.src = (baseSRCP + counter)
+			-- pkt.udp.src = (baseSRCP)
 			pkt.udp.dst = (baseDSTP + counter)
 			counter = incAndWrap(counter, flows)
 		end

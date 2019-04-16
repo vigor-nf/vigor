@@ -4,6 +4,6 @@
 #include <stdnoreturn.h>
 
 /* Halt the machine (spin endlessly) */
-extern noreturn void dsos_halt(void);
+extern noreturn void dsos_halt(void) __attribute__((used));
 
 #endif

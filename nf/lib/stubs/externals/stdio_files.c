@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include <endian.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -614,7 +615,7 @@ stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 					resource_format = resource_io_format;
 
 					strcat(uio_name, "/portio/port0/start");
-					snprintf(portio_start_buf, sizeof(portio_start_buf), "%d\n", devs[n].resources[i].start);
+					snprintf(portio_start_buf, sizeof(portio_start_buf), PRIuPTR "\n", (uintptr_t)devs[n].resources[i].start);
 					stub_add_file(stub_pci_file(dev, strdup(uio_name)), strdup(portio_start_buf));
 				}
 
