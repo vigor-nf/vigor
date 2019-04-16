@@ -123,7 +123,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             case cons(h1, t1):
                 switch(l2) {
                     case nil:
-                    case cons(h2, t2): 
+                    case cons(h2, t2):
                         forall_nth(l1, (eq)(val), 0);
                         forall_nth(l2, (eq)(val), 0);
                         forall2_eq_cst(t1, t2, val);
@@ -194,14 +194,14 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void next_invariant_update(list<int> p_transpose, int limit, int cht_height, nat idx, int bucket_id)
-        requires    
-            nth(limit, p_transpose) == bucket_id &*& 
+        requires
+            nth(limit, p_transpose) == bucket_id &*&
             0 <= bucket_id &*& bucket_id < cht_height &*&
             0 <= limit &*& limit < length(p_transpose) &*&
-            int_of_nat(idx) <= cht_height; 
+            int_of_nat(idx) <= cht_height;
         ensures
             (cht_height - int_of_nat(idx) <= bucket_id)
-                ?   next_invariant(p_transpose, limit + 1, cht_height, idx) == 
+                ?   next_invariant(p_transpose, limit + 1, cht_height, idx) ==
                     update(bucket_id - (cht_height - int_of_nat(idx)), nth(bucket_id - (cht_height - int_of_nat(idx)), next_invariant(p_transpose, limit, cht_height, idx)) + 1, next_invariant(p_transpose, limit, cht_height, idx))
                 :   next_invariant(p_transpose, limit + 1, cht_height, idx) == next_invariant(p_transpose, limit, cht_height, idx);
     {
@@ -213,7 +213,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 list<int> lim_p_transpose = take(limit, p_transpose);
                 list<int> cur_list = filter_transpose(p_transpose, limit, diff);
                 list<int> new_elem = cons(nth(limit, p_transpose), nil);
-                
+
                 // Prove the property for the head
                 take_plus_one(limit, p_transpose);
                 filter_idx_length_count_equiv(lim_p_transpose, 0, (eq)(diff));
@@ -221,7 +221,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                     filter_idx_count_append(lim_p_transpose, new_elem, 0, (eq)(diff));
                 } else{
                     filter_idx_count_append(lim_p_transpose, new_elem, 0, (eq)(diff));
-                } 
+                }
 
                 // Recursive call
                 next_invariant_update(p_transpose, limit, cht_height, idx_pred, bucket_id);
@@ -241,32 +241,10 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         }
     }
 
-    lemma void count_to_mem<t>(list<t> xs, t val)
-        requires    count(xs, (eq)(val)) == 0;
-        ensures     false == mem(val, xs);
-    {
-        switch(xs) {
-            case nil:
-            case cons(x0, xs0):
-                count_zero_mem(xs, (eq)(val), x0);
-                count_to_mem(xs0, val);
-        }
-    }
-
-    lemma void mem_index<t>(list<t> xs, int i, t val)
-        requires    nth(i, xs) == val &*& 0 <= i &*& i < length(xs);
-        ensures     true == mem(val, xs);
-    {
-        switch(xs) {
-            case nil:
-            case cons(x0, xs0): if (i > 0) mem_index(xs0, i - 1, val);
-        }
-    }
-
     fixpoint list< list<int> > cht_invariant(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx) {
         switch(idx) {
             case zero: return nil;
-            case succ(idx_pred): return cons( map((extract_column)(backend_capacity), filter_transpose(p_transpose, limit, cht_height - int_of_nat(idx))), cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx_pred));
+            case succ(idx_pred): return cons( map((extract_col)(backend_capacity), filter_transpose(p_transpose, limit, cht_height - int_of_nat(idx))), cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx_pred));
         }
     }
 
@@ -290,14 +268,14 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 assert (take(0, p_transpose) == nil);
                 assert(count(nil, (eq)(cht_height - int_of_nat(idx))) == 0);
                 filter_idx_length_count_equiv(take(0, p_transpose), 0, (eq)(cht_height - int_of_nat(idx)));
-                map_preserves_length((extract_column)(cht_height), filter_transpose(p_transpose, 0, cht_height - int_of_nat(idx)));
+                map_preserves_length((extract_col)(cht_height), filter_transpose(p_transpose, 0, cht_height - int_of_nat(idx)));
                 cht_invariant_init(p_transpose, backend_capacity, cht_height, idx_pred);
         }
     }
 
     lemma void cht_invariant_val(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx, int i)
         requires    0 <= i &*& i < int_of_nat(idx) &*& int_of_nat(idx) <= cht_height;
-        ensures     nth(i, cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx)) == map((extract_column)(backend_capacity), filter_transpose(p_transpose, limit, i + (cht_height - int_of_nat(idx))));
+        ensures     nth(i, cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx)) == map((extract_col)(backend_capacity), filter_transpose(p_transpose, limit, i + (cht_height - int_of_nat(idx))));
     {
         switch(idx) {
             case zero:
@@ -306,15 +284,15 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void cht_invariant_update(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx, int bucket_id, int i, int j)
-        requires    
-            nth(limit, p_transpose) == bucket_id &*& limit == i * backend_capacity + j &*& 
+        requires
+            nth(limit, p_transpose) == bucket_id &*& limit == i * backend_capacity + j &*&
             0 <= i &*& 0 <= j &*& j < backend_capacity &*& 0 < backend_capacity &*&
             0 <= bucket_id &*& bucket_id < cht_height &*&
             0 <= limit &*& limit < length(p_transpose) &*&
-            int_of_nat(idx) <= cht_height; 
+            int_of_nat(idx) <= cht_height;
         ensures
             (cht_height - int_of_nat(idx) <= bucket_id)
-                ?   cht_invariant(p_transpose, limit + 1, backend_capacity, cht_height, idx) == 
+                ?   cht_invariant(p_transpose, limit + 1, backend_capacity, cht_height, idx) ==
                     update(bucket_id - (cht_height - int_of_nat(idx)), append(nth(bucket_id - (cht_height - int_of_nat(idx)), cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx)), cons(j, nil)), cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx))
                 :   cht_invariant(p_transpose, limit + 1, backend_capacity, cht_height, idx) == cht_invariant(p_transpose, limit, backend_capacity, cht_height, idx);
     {
@@ -326,18 +304,18 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 list<int> lim_p_transpose = take(limit, p_transpose);
                 list<int> cur_list = filter_transpose(p_transpose, limit, diff);
                 int new_elem = nth(limit, p_transpose);
-                
+
                 // Prove the property for the head
                 take_plus_one(limit, p_transpose);
                 filter_idx_length_count_equiv(lim_p_transpose, 0, (eq)(diff));
                 if (bucket_id == diff) {
                     take_plus_one(limit, p_transpose);
                     filter_idx_include_last(lim_p_transpose, 0, (eq)(diff), new_elem);
-                    map_append((extract_column)(backend_capacity), filter_transpose(p_transpose, limit, cht_height - int_of_nat(idx)), cons(limit, nil));
-                    extract_column_val(backend_capacity, limit, i, j);
+                    map_append((extract_col)(backend_capacity), filter_transpose(p_transpose, limit, cht_height - int_of_nat(idx)), cons(limit, nil));
+                    extract_col_val(backend_capacity, limit, i, j);
                 } else{
                     filter_idx_drop_last(lim_p_transpose, 0, (eq)(diff), new_elem);
-                } 
+                }
 
                 // Recursive call
                 cht_invariant_update(p_transpose, limit, backend_capacity, cht_height, idx_pred, bucket_id, i, j);
@@ -355,7 +333,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             case cons(h1, t1):
                 switch(l2) {
                     case nil:
-                    case cons(h2, t2): 
+                    case cons(h2, t2):
                         forall2_nth(l1, l2, eq, 0);
                         forall2_eq(t1, t2, val);
                 }
@@ -371,7 +349,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             case cons(h1, t1):
                 switch(l2) {
                     case nil:
-                    case cons(h2, t2): 
+                    case cons(h2, t2):
                         forall_nth(l2, fp, 0);
                         forall2_prop_eq(t1, t2, fp);
                 }
@@ -389,13 +367,13 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void permutation_from_filter_idx(list<int> xs, nat nb_split, int nb_split_base, int n, int bucket_id, int idx)
-        requires    
+        requires
             true == forall(split(xs, nb_split, n), is_permutation) &*&
             length(xs) == int_of_nat(nb_split) * n &*& int_of_nat(nb_split) <= nb_split_base &*&
-            0 <= bucket_id &*& bucket_id < n &*& 
+            0 <= bucket_id &*& bucket_id < n &*&
             idx == (nb_split_base - int_of_nat(nb_split)) * n &*& 0 <= nb_split_base &*& 0 <= idx &*&
             0 < n &*& n <= length(xs);
-        ensures     
+        ensures
             true == is_sub_permutation(map( (extract_row)(n) , filter_idx(xs, idx, (eq)(bucket_id)) ), nb_split_base);
     {
         switch(nb_split) {
@@ -406,7 +384,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                     length_drop(n, xs);
                     mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
                     mul_equal(n, int_of_nat(nb_split_pred), length(xs) - n);
-                    permutation_from_filter_idx(drop(n, xs), nb_split_pred, nb_split_base, n, bucket_id, idx + n);                
+                    permutation_from_filter_idx(drop(n, xs), nb_split_pred, nb_split_base, n, bucket_id, idx + n);
                 }
 
                 list<int> ret_xs = drop(n, xs);
@@ -447,18 +425,18 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 assert (true == forall(map_filter_first_chunk, (lt)(idx/n + 1)));
                 forall_nth(map_filter_first_chunk, (lt)((idx/n) + 1), 0);
                 assert(map_new_idx < idx/n + 1);
-                
+
                 // Prove that map_new_idx isn't in map_ret_recursive
                 no_dups_ge(map_ret_recursive, idx/n + 1, map_new_idx);
                 assert (true == no_dups(append(map_filter_first_chunk, map_ret_recursive)));
                 map_append((extract_row)(n), filter_first_chunk, ret_recursive);
                 assert (append(map_filter_first_chunk, map_ret_recursive) == map((extract_row)(n), append(filter_first_chunk, ret_recursive)) );
-            
+
                 // Append rule for filter_idx
                 filter_idx_append(first_chunk, ret_xs, idx, (eq)(bucket_id));
                 assert (filter_idx(append(first_chunk, ret_xs), idx, (eq)(bucket_id)) == append(filter_first_chunk, ret_recursive));
-                
-                // Prove bounds                
+
+                // Prove bounds
                 filter_idx_ge(first_chunk, idx, (eq)(bucket_id));
                 forall_nth(filter_first_chunk, (ge)(idx), 0);
                 assert (new_idx >= 0);
@@ -479,7 +457,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     }
 
     lemma void cht_end(list<int> xs, int backend_capacity, int cht_height, nat idx)
-        requires    
+        requires
             true == forall(split(xs, nat_of_int(backend_capacity), cht_height), is_permutation) &*&
             length(xs) == backend_capacity * cht_height &*&
             0 < backend_capacity &*& 0 < cht_height &*&
@@ -489,7 +467,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     {
         switch(idx) {
             case zero:
-            case succ(idx_pred): 
+            case succ(idx_pred):
                 int bucket_id = cht_height - int_of_nat(idx);
                 list<int> filter = filter_idx(xs, 0, (eq)(bucket_id));
                 list<int> map_filter = map((extract_row)(cht_height), filter);
@@ -501,7 +479,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 integer_copies_val(bucket_id, nat_of_int(cht_height - 1), backend_capacity, xs);
                 filter_idx_length_count_equiv(xs, 0, (eq)(bucket_id));
                 map_preserves_length((extract_row)(cht_height), filter);
-                
+
                 // Proof that map_filter is a permutation
                 permutation_from_filter_idx(xs, nat_of_int(backend_capacity), backend_capacity, cht_height, bucket_id, 0);
                 sub_permutation_complete(map_filter);
@@ -759,7 +737,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ forall_nth(n_in, (ge)(0), bucket_id);
             next[bucket_id] += 1;
 
-            // Proofq that the invariant on next is preserved 
+            // Proofq that the invariant on next is preserved
             //@ list<int> n_in_update = update(bucket_id, next[bucket_id], n_in);
             //@ forall_update(n_in, (ge)(0), bucket_id, next[bucket_id]);
             //@ forall_update(n_in, (le)(backend_capacity), bucket_id, next[bucket_id]);
@@ -778,7 +756,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             vector_return(cht, (int)(backend_capacity * ((uint32_t)bucket_id) + ((uint32_t)priority)), (void *)value);
             //@ forall_update(vals_in, is_one, backend_capacity * bucket_id + priority, pair(j, 1.0));
             //@ update_update_rewrite(pair(j, 1.0), backend_capacity * bucket_id + priority, old_val, vals_in);
-            
+
             // Variables
             //@ list< pair<uint32_t, real> > vals_in_update = update(backend_capacity * bucket_id + priority, pair(j, 1.0), vals_in);
             //@ list<uint32_t> map_vals_in = map(fst, vals_in);
@@ -804,14 +782,14 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ assert (chunk_vals_update == append(chunk_vals, cons(j, nil)));
 
             // Proof that cht_invar_update == update(bucket_id, append(cht_invar[bucket_id], cons(j, nil)), cht_invar)
-            //@ list<uint32_t> indexes = map((extract_column)(backend_capacity), filter_bucket);
-            //@ list<uint32_t> indexes_update = map((extract_column)(backend_capacity), filter_bucket_update);
+            //@ list<uint32_t> indexes = map((extract_col)(backend_capacity), filter_bucket);
+            //@ list<uint32_t> indexes_update = map((extract_col)(backend_capacity), filter_bucket_update);
             //@ cht_invariant_update(p_transpose, limit, backend_capacity, cht_height, nat_of_int(cht_height), bucket_id, i, j);
             //@ cht_invariant_val(p_transpose, limit, backend_capacity, cht_height, nat_of_int(cht_height), bucket_id);
             //@ cht_invariant_val(p_transpose, limit_update, backend_capacity, cht_height, nat_of_int(cht_height), bucket_id);
             //@ assert (indexes_update == append(indexes, cons(j, nil)));
-           
-            // Proof that the invariant on cht is preserved 
+
+            // Proof that the invariant on cht is preserved
             //@ forall2_nth(cht_split, cht_invar, eq, bucket_id);
             //@ assert(chunk_vals_update == indexes_update);
             //@ forall2_update(cht_split, cht_invar, eq, bucket_id, nth(bucket_id, cht_split_update), nth(bucket_id, cht_invar_update));
