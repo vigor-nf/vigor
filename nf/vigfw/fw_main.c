@@ -63,16 +63,17 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
   NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
 
-  struct FlowId id = {
-    .src_port = tcpudp_header->src_port,
-    .dst_port = tcpudp_header->dst_port,
-    .src_ip = ipv4_header->src_addr,
-    .dst_ip = ipv4_header->dst_addr,
-    .protocol = ipv4_header->next_proto_id,
-  };
-
   uint16_t dst_device;
   if (in_port == config.wan_device) {
+    // Inverse the src and dst for the "reply flow"
+    struct FlowId id = {
+      .src_port = tcpudp_header->dst_port,
+      .dst_port = tcpudp_header->src_port,
+      .src_ip = ipv4_header->dst_addr,
+      .dst_ip = ipv4_header->src_addr,
+      .protocol = ipv4_header->next_proto_id,
+    };
+
     uint32_t dst_device_long;
     if (!flow_manager_get_refresh_flow(flow_manager, &id,
                                        now, &dst_device_long)) {
@@ -81,6 +82,13 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
     }
     dst_device = dst_device_long;
   } else {
+    struct FlowId id = {
+      .src_port = tcpudp_header->src_port,
+      .dst_port = tcpudp_header->dst_port,
+      .src_ip = ipv4_header->src_addr,
+      .dst_ip = ipv4_header->dst_addr,
+      .protocol = ipv4_header->next_proto_id,
+    };
     flow_manager_allocate_or_refresh_flow(flow_manager, &id, in_port, now);
     dst_device = config.wan_device;
   }
