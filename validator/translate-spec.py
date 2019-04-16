@@ -75,6 +75,8 @@ def renderExpr(expr):
         return expr.id
     elif isinstance(expr, ast.Num):
         return expr.n
+    elif isinstance(expr, ast.Ellipsis):
+        return '_'
     elif isinstance(expr, ast.Call):
         if isHeaderConstructor(expr):
             return renderHeaderConstructor(expr)
@@ -98,7 +100,7 @@ def renderExpr(expr):
         assert len(expr.comparators) == 1
         right = renderExpr(expr.comparators[0])
         if   isinstance(relation, ast.Lt): sign = '<'
-        elif   isinstance(relation, ast.LtE): sign = '<='
+        elif isinstance(relation, ast.LtE): sign = '<='
         elif isinstance(relation, ast.Eq): sign = '=='
         elif isinstance(relation, ast.NotEq): sign = '!='
         elif isinstance(relation, ast.Gt): sign = '>'
@@ -337,6 +339,16 @@ elif 'nat' in pythonSpecFname:
     typeConstructors = {'FlowIdc' : 'FlowIdi',
                         'emap' : 'emap<FlowIdi>'}
     stateObjects = {'flow_emap' : emap}
+    stateVars = list(stateObjects.keys())
+    globalVars = stateVars.copy()
+elif 'fw' in pythonSpecFname:
+    objConstructors = {'flow_emap.get_key' : {'constructor' : 'FlowIdc',
+                                              'type' : 'FlowIdi',
+                                              'fields' : ['sp', 'dp', 'sip', 'dip', 'prot']}}
+    typeConstructors = {'FlowIdc' : 'FlowIdi',
+                        'emap' : 'emap<FlowIdi>'}
+    stateObjects = {'flow_emap' : emap,
+                    'int_devices' : vector}
     stateVars = list(stateObjects.keys())
     globalVars = stateVars.copy()
 

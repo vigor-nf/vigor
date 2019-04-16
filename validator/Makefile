@@ -1,7 +1,7 @@
 # allow the use of extglob in paths
 SHELL = /bin/bash -O extglob -c
 
-all: validator.byte nat_fspec.cma bridge_fspec.cma balancer_fspec.cma policer_fspec.cma
+all: validator.byte nat_fspec.cma bridge_fspec.cma balancer_fspec.cma policer_fspec.cma fw_fspec.cma
 
 validator.byte: .PHONY
 	corebuild -no-hygiene -use-menhir -lib dynlink -lib str validator.byte -use-ocamlfind -cflag -unsafe-string
@@ -37,6 +37,10 @@ validate-balancer: clean
 validate-policer: clean
 	python3 translate-spec.py policer-spec.py policer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
+
+validate-fw: clean
+	python3 translate-spec.py fw-spec.py fw_forwarding_property.tmpl
+	./test_all.sh ../nf/vigfw/klee-last out ../nf fw_fspec.cma
 
 # Regression test suite
 test-results/%.done: regression-tests/%
