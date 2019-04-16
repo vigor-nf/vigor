@@ -1,3 +1,6 @@
+# allow the use of extglob in paths
+SHELL = /bin/bash -O extglob -c
+
 all: validator.byte nat_fspec.cma bridge_fspec.cma balancer_fspec.cma policer_fspec.cma
 
 validator.byte: .PHONY
@@ -41,3 +44,6 @@ test-results/%.done: regression-tests/%
 	touch $@
 
 check: $(patsubst regression-tests/%,test-results/%.done,$(wildcard regression-tests/*))
+
+loc-spec:
+	cloc --by-file !(translate-spec).py
