@@ -20,7 +20,7 @@ if received_on_port == EXT_DEVICE:
     else:
         return ([],[])
 else:
-    internal_flow = flowIdc(h3.src_port, h3.dst_port, h2.saddr, h2.daddr, h2.npid)
+    internal_flow = FlowIdc(h3.src_port, h3.dst_port, h2.saddr, h2.daddr, h2.npid)
     if flow_emap.has(internal_flow):
         fl_id = flow_emap.get(internal_flow)
         flow_emap.refresh_idx(fl_id, now)
