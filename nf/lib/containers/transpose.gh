@@ -80,26 +80,11 @@ lemma void extract_bounds(int nb_rows, int nb_cols, int n)
     div_mod_gt_0(n % nb_cols, n, nb_cols);
 }
 
-lemma void extract_row_val(int nb_cols, int n, int i, int j)
-    requires   
-        n == i * nb_cols + j &*&
-        0 <= n &*& 0 < nb_cols &*&
-        0 <= i &*& 0 <= j &*& j < nb_cols;
-    ensures    
-        extract_row(nb_cols, n) == i;
+lemma void extract_val(int nb_rows, int nb_cols, int i, int j)
+    requires    0 <= i &*& i < nb_rows &*& 0 <= j &*& j < nb_cols;
+    ensures     extract_row(nb_cols, i * nb_cols + j) == i &*& extract_col(nb_cols, i * nb_cols + j) == j;
 {
-    assume (extract_row(nb_cols, n) == i);
-}
-
-lemma void extract_col_val(int nb_cols, int n, int i, int j)
-    requires   
-        n == i * nb_cols + j &*&
-        0 <= n &*& 0 < nb_cols &*&
-        0 <= i &*& 0 <= j &*& j < nb_cols;
-    ensures    
-        extract_col(nb_cols, n) == j;
-{
-    assume (extract_col(nb_cols, n) == j);
+    assume (extract_row(nb_cols, i * nb_cols + j) == i && extract_col(nb_cols, i * nb_cols + j) == j);
 }
 
 lemma void extract_row_ge(int nb_cols, int val, list<int> xs)
@@ -263,8 +248,6 @@ lemma void transpose_twice_list<t>(list<t> xs, int nb_rows, int nb_cols)
 
 // ------------- transpose with filter_idx and count -------------
 
-fixpoint bool nth_list<t>(fixpoint(t, bool) fp, list<t> xs, int idx) { return fp(nth(idx, xs)); } 
-
 fixpoint bool eq_idx_transpose(int nb_rows, int nb_cols, int x, int y) {
     return y == extract_col(nb_cols, x) * nb_rows + extract_row(nb_cols, x);
 } 
@@ -286,6 +269,44 @@ lemma_auto(length(gen_idx_transpose(idxs, nb_rows, nb_cols))) void length_gen_id
     }   
 }
     
+lemma void gen_idx_transpose_extract(int nb_rows, int nb_cols, int x, int y)
+    requires    
+        true == eq_idx_transpose(nb_rows, nb_cols, x, y) &*&
+        0 < nb_rows &*& 0 < nb_cols &*&
+        0 <= x &*& x < nb_rows * nb_cols &*&
+        0 <= y &*& y < nb_rows * nb_cols;
+    ensures
+        extract_row(nb_cols, x) == extract_col(nb_rows, y) &*&
+        extract_col(nb_cols, x) == extract_row(nb_rows, y);
+{
+    int i = extract_row(nb_cols, x);
+    int j = extract_col(nb_cols, x);
+    extract_bounds(nb_rows, nb_cols, x);
+    extract_val(nb_cols, nb_rows, j, i);
+}
+    
+lemma void gen_idx_transpose_map_extract(list<int> idxs, int nb_rows, int nb_cols)
+    requires   
+        true == forall(idxs, (ge)(0)) &*& true == forall(idxs, (lt)(nb_rows * nb_cols)) &*&
+        0 < nb_rows &*& 0 < nb_cols;
+    ensures
+        map( (extract_row)(nb_cols) , idxs ) == map( (extract_col)(nb_rows) , gen_idx_transpose(idxs, nb_rows, nb_cols) ) &*&
+        map( (extract_col)(nb_cols) , idxs ) == map( (extract_row)(nb_rows) , gen_idx_transpose(idxs, nb_rows, nb_cols) );
+{
+    switch(idxs) {
+        case nil:
+        case cons(i0, is0):
+            gen_idx_transpose_map_extract(is0, nb_rows, nb_cols);
+        
+            int i = extract_row(nb_cols, i0);
+            int j = extract_col(nb_cols, i0);
+            extract_works(nb_rows, nb_cols, i0, i, j);
+
+            mul_bounds(j, nb_cols - 1, nb_rows, nb_rows);
+            gen_idx_transpose_extract(nb_rows, nb_cols, i0, j * nb_rows + i);
+    }
+}
+
 lemma void gen_idx_transpose_works(list<int> idxs, int nb_rows, int nb_cols)
     requires    true;
     ensures     true == forall2(idxs, gen_idx_transpose(idxs, nb_rows, nb_cols), (eq_idx_transpose)(nb_rows, nb_cols));
@@ -364,7 +385,7 @@ lemma void transpose_filter_idx_transfer<t>(list<t> xs, int nb_rows, int nb_cols
     filter_idx_nth_to_mem(transpose(xs, nb_rows, nb_cols), 0, fp, j * nb_rows + i);
 }
 
-lemma void transpose_filter_idx_length_helper<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp, list<int> idxs, list<int> idxs_transpose)
+lemma void transpose_filter_idx_helper<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp, list<int> idxs, list<int> idxs_transpose)
     requires    
         length(xs) == nb_rows * nb_cols &*& 0 < nb_rows &*& 0 < nb_cols &*&
         length(idxs) == length(idxs_transpose) &*&
@@ -380,7 +401,7 @@ lemma void transpose_filter_idx_length_helper<t>(list<t> xs, int nb_rows, int nb
             switch(idxs_transpose) {
                 case nil:
                 case cons(i0_transpose, is0_transpose):
-                    transpose_filter_idx_length_helper(xs, nb_rows, nb_cols, fp, is0, is0_transpose);
+                    transpose_filter_idx_helper(xs, nb_rows, nb_cols, fp, is0, is0_transpose);
 
                     int i = extract_row(nb_cols, i0);
                     int j = extract_col(nb_cols, i0);
@@ -411,7 +432,7 @@ lemma void transpose_filter_idx_length_leq<t>(list<t> xs, int nb_rows, int nb_co
     gen_idx_transpose_works(idxs, nb_rows, nb_cols);
     assert (true == forall2(idxs, idxs_transpose, (eq_idx_transpose)(nb_rows, nb_cols)));
 
-    transpose_filter_idx_length_helper(xs, nb_rows, nb_cols, fp, idxs, idxs_transpose);
+    transpose_filter_idx_helper(xs, nb_rows, nb_cols, fp, idxs, idxs_transpose);
 
     filter_idx_distinct(xs, 0, fp);
     assert (true == distinct(idxs));
@@ -453,22 +474,31 @@ lemma void transpose_preserves_integer_copies(list<int> xs, int nb_rows, int nb_
     }
 }
 
-lemma void transpose_row_col_idx_subset<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
-    requires
-        length(xs) == nb_rows * nb_cols &*& 0 < nb_rows &*& 0 < nb_cols;
-    ensures
-        true == subset(map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)), map((extract_col)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp)));
-{
-    assume (true == subset(map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)), map((extract_col)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp))));
-}
-
-lemma void transpose_col_row_idx_subset<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
-    requires
-        length(xs) == nb_rows * nb_cols &*& 0 < nb_rows &*& 0 < nb_cols;
-    ensures
+lemma void transpose_extract_filter_idx_subset<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
+    requires    
+        length(xs) == nb_rows * nb_cols &*& 
+        0 < nb_rows &*& 0 < nb_cols;
+    ensures     
+        true == subset(map((extract_row)(nb_cols) , filter_idx(xs, 0, fp)), map((extract_col)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp))) &*&
         true == subset(map((extract_col)(nb_cols) , filter_idx(xs, 0, fp)), map((extract_row)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp)));
 {
-    assume (true == subset(map((extract_col)(nb_cols) , filter_idx(xs, 0, fp)), map((extract_row)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp))));
+    list<t> xs_transpose = transpose(xs, nb_rows, nb_cols);
+    list<int> filter_xs_transpose = filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp);
+    
+    list<int> idxs = filter_idx(xs, 0, fp);
+    filter_idx_ge(xs, 0, fp);
+    filter_idx_lt(xs, 0, fp);
+    subset_refl(filter_idx(xs, 0, fp));
+
+    list<int> idxs_transpose = gen_idx_transpose(idxs, nb_rows, nb_cols);
+    gen_idx_transpose_works(idxs, nb_rows, nb_cols);
+
+    transpose_filter_idx_helper(xs, nb_rows, nb_cols, fp, idxs, idxs_transpose);
+    assert (true == subset(idxs_transpose, filter_xs_transpose));
+    
+    subset_map(idxs_transpose, filter_xs_transpose, (extract_col)(nb_rows));
+    subset_map(idxs_transpose, filter_xs_transpose, (extract_row)(nb_rows));
+    gen_idx_transpose_map_extract(idxs, nb_rows, nb_cols);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_

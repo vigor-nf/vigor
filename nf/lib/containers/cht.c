@@ -286,7 +286,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
     lemma void cht_invariant_update(list<int> p_transpose, int limit, int backend_capacity, int cht_height, nat idx, int bucket_id, int i, int j)
         requires
             nth(limit, p_transpose) == bucket_id &*& limit == i * backend_capacity + j &*&
-            0 <= i &*& 0 <= j &*& j < backend_capacity &*& 0 < backend_capacity &*&
+            0 <= i &*& i < cht_height &*& 0 <= j &*& j < backend_capacity &*&
             0 <= bucket_id &*& bucket_id < cht_height &*&
             0 <= limit &*& limit < length(p_transpose) &*&
             int_of_nat(idx) <= cht_height;
@@ -312,7 +312,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                     take_plus_one(limit, p_transpose);
                     filter_idx_include_last(lim_p_transpose, 0, (eq)(diff), new_elem);
                     map_append((extract_col)(backend_capacity), filter_transpose(p_transpose, limit, cht_height - int_of_nat(idx)), cons(limit, nil));
-                    extract_col_val(backend_capacity, limit, i, j);
+                    extract_val(cht_height, backend_capacity, i, j);
                 } else{
                     filter_idx_drop_last(lim_p_transpose, 0, (eq)(diff), new_elem);
                 }
@@ -487,8 +487,8 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
         list<int> map_xs_transpose = map((extract_col)(nb_rows) , filter_xs_transpose);
 
         transpose_filter_idx_length(xs, nb_rows, nb_cols, fp);
-        transpose_row_col_idx_subset(xs, nb_rows, nb_cols, fp);
-        transpose_col_row_idx_subset(xs_transpose, nb_cols, nb_rows, fp);
+        transpose_extract_filter_idx_subset(xs, nb_rows, nb_cols, fp);
+        transpose_extract_filter_idx_subset(xs_transpose, nb_cols, nb_rows, fp);
         transpose_twice_list(xs, nb_rows, nb_cols);
         map_preserves_length((extract_row)(nb_cols), filter_xs);
         map_preserves_length((extract_col)(nb_rows), filter_xs_transpose);
