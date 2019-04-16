@@ -67,17 +67,17 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
             true == forall(map(fst, xs), (ge)(0)) &*&
             true == forall(map(snd, xs), (lt)(cht_height)) &*&
             true == forall(map(snd, xs), (ge)(0)) &*&
-            true == no_dups(map(fst, xs)) &*&
+            true == distinct(map(fst, xs)) &*&
             0 <= offset &*& offset < cht_height &*&
             0 <= shift &*& shift < cht_height &*&
             0 < cht_height &*& true == are_coprime(shift, cht_height);
         ensures
-            true == no_dups(map(snd, xs));
+            true == distinct(map(snd, xs));
     {
         switch(xs) {
                 case nil:
                     assert map(snd, xs) == nil;
-                    assert (true == no_dups(map(snd, xs)));
+                    assert (true == distinct(map(snd, xs)));
                 case cons(x0, xs0):
                     modulo_permutation_list(xs0, offset, shift, cht_height);
                     modulo_permutation_list_inner(xs0, x0, offset, shift, cht_height);
@@ -427,8 +427,8 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 assert(map_new_idx < idx/n + 1);
 
                 // Prove that map_new_idx isn't in map_ret_recursive
-                no_dups_ge(map_ret_recursive, idx/n + 1, map_new_idx);
-                assert (true == no_dups(append(map_filter_first_chunk, map_ret_recursive)));
+                distinct_ge(map_ret_recursive, idx/n + 1, map_new_idx);
+                assert (true == distinct(append(map_filter_first_chunk, map_ret_recursive)));
                 map_append((extract_row)(n), filter_first_chunk, ret_recursive);
                 assert (append(map_filter_first_chunk, map_ret_recursive) == map((extract_row)(n), append(filter_first_chunk, ret_recursive)) );
 
@@ -454,6 +454,52 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 assert (true == forall(append(map_filter_first_chunk, map_ret_recursive), (ge)(0)));
                 assert (true == forall(append(map_filter_first_chunk, map_ret_recursive), (lt)(nb_split_base)));
         }
+    }
+
+    lemma void extract_col_bounds(list<int> xs, int nb_rows, int nb_cols)
+        requires
+            true == forall(xs, (ge)(0)) &*& true == forall(xs, (lt)(nb_rows * nb_cols)) &*&
+            0 < nb_rows &*& 0 < nb_cols;
+        ensures
+            true == forall(map((extract_col)(nb_cols), xs) , (ge)(0)) &*&
+            true == forall(map((extract_col)(nb_cols), xs) , (lt)(nb_cols));
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0):
+                extract_col_bounds(xs0, nb_rows, nb_cols);
+                extract_bounds(nb_rows, nb_cols, x0);
+        }
+    }
+
+    lemma void transpose_row_col_idx_equiv<t>(list<t> xs, int nb_rows, int nb_cols, fixpoint (t, bool) fp)
+        requires
+            length(xs) == nb_rows * nb_cols &*& 0 < nb_rows &*& 0 < nb_cols &*&
+            true == is_permutation(map((extract_row)(nb_cols) , filter_idx(xs, 0, fp))) &*&
+            length(filter_idx(xs, 0, fp)) == nb_rows;
+        ensures
+            true == is_permutation(map((extract_col)(nb_rows) , filter_idx(transpose(xs, nb_rows, nb_cols), 0, fp)));
+    {
+        list<t> xs_transpose = transpose(xs, nb_rows, nb_cols);
+        list<int> filter_xs = filter_idx(xs, 0, fp);
+        list<int> filter_xs_transpose = filter_idx(xs_transpose, 0, fp);
+        list<int> map_xs = map((extract_row)(nb_cols) , filter_xs);
+        list<int> map_xs_transpose = map((extract_col)(nb_rows) , filter_xs_transpose);
+
+        transpose_filter_idx_length(xs, nb_rows, nb_cols, fp);
+        transpose_row_col_idx_subset(xs, nb_rows, nb_cols, fp);
+        transpose_col_row_idx_subset(xs_transpose, nb_cols, nb_rows, fp);
+        transpose_twice_list(xs, nb_rows, nb_cols);
+        map_preserves_length((extract_row)(nb_cols), filter_xs);
+        map_preserves_length((extract_col)(nb_rows), filter_xs_transpose);
+        set_eq_same_len_distinct_both(map_xs, map_xs_transpose);
+        assert (true == distinct(map_xs_transpose));
+
+        filter_idx_ge(xs_transpose, 0, fp);
+        filter_idx_lt(xs_transpose, 0, fp);
+        extract_col_bounds(filter_xs_transpose, nb_cols, nb_rows);
+        assert (true == forall(map_xs_transpose, (ge)(0)));
+        assert (true == forall(map_xs_transpose, (lt)(nb_rows)));
     }
 
     lemma void cht_end(list<int> xs, int backend_capacity, int cht_height, nat idx)
@@ -584,7 +630,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ modulo_permutation_bounds(chunk_append_ziped, offset, shift, cht_height);
 
             // No duplicates guarantee
-            //@ zip_index_no_dups(chunk_append);
+            //@ zip_index_distinct(chunk_append);
             //@ modulo_permutation_list(chunk_append_ziped, offset, shift, cht_height);
 
             // Prove invariant

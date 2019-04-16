@@ -683,16 +683,16 @@ lemma void integers_list_bounds(nat cnt, int index)
     }
 }
 
-lemma void integers_list_no_dups(nat cnt, int index)
+lemma void integers_list_distinct(nat cnt, int index)
     requires    true;
-    ensures     true == no_dups(integers_list(cnt, index));
+    ensures     true == distinct(integers_list(cnt, index));
 {
     switch(cnt) {
         case zero:
         case succ(cnt_pred): 
-            integers_list_no_dups(cnt_pred, index + 1);
+            integers_list_distinct(cnt_pred, index + 1);
             integers_list_bounds(cnt_pred, index + 1);
-            no_dups_ge(integers_list(cnt_pred, index + 1), index + 1, index);
+            distinct_ge(integers_list(cnt_pred, index + 1), index + 1, index);
     }
 }
 
@@ -779,12 +779,12 @@ lemma void zip_index_bounds<t>(list<t> xs)
     integers_list_bounds(nat_of_int(length(xs)), 0);
 }
 
-lemma void zip_index_no_dups<t>(list<t> xs)
+lemma void zip_index_distinct<t>(list<t> xs)
     requires    true;
-    ensures     true == no_dups(map(fst, zip_index(xs)));
+    ensures     true == distinct(map(fst, zip_index(xs)));
 {
     zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
-    integers_list_no_dups(nat_of_int(length(xs)), 0);
+    integers_list_distinct(nat_of_int(length(xs)), 0);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_

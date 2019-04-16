@@ -11,13 +11,13 @@
 // ------------- is_permutation -------------
 
 fixpoint bool is_permutation(list<int> xs) {
-    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && no_dups(xs);
+    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && distinct(xs);
 }
 
 // ------------- is_sub_permutation -------------
 
 fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
-    return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && no_dups(xs);
+    return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && distinct(xs);
 }
 
 lemma void sub_permutation_complete(list<int> xs)
@@ -39,15 +39,15 @@ lemma void take_preserves_mem<t>(list<t> tail, t head, int i)
     }
 }
 
-lemma void take_preserves_no_dups<t>(list<t> xs, int i)
-    requires    true == no_dups(xs) &*& 0 <= i;
-    ensures     true == no_dups(take(i, xs));
+lemma void take_preserves_distinct<t>(list<t> xs, int i)
+    requires    true == distinct(xs) &*& 0 <= i;
+    ensures     true == distinct(take(i, xs));
 {
     switch(xs) {
         case nil:
         case cons(x0, xs0):
             if (i > 0) {
-                take_preserves_no_dups(xs0, i - 1);
+                take_preserves_distinct(xs0, i - 1);
                 cons_take_take_cons(x0, xs0, i - 1);
                 take_preserves_mem(xs0, x0, i - 1);
             } else {
@@ -72,7 +72,7 @@ lemma void sub_permutation_take(list<int> xs, int max_val, int i)
                 cons_take_take_cons(x0, xs0, i - 1);
                 forall_append(take(i - 1, xs0), cons(x0, nil), (lt)(max_val));
                 forall_append(take(i - 1, xs0), cons(x0, nil), (ge)(max_val));
-		        take_preserves_no_dups(xs, i);
+		        take_preserves_distinct(xs, i);
             }
             
     }
@@ -110,15 +110,15 @@ lemma void mem_count_bound<t>(list<t> xs, t elem)
     }
 }
 
-lemma void count_no_dups<t>(list<t> xs, t elem)
-    requires    true == no_dups(xs);
+lemma void count_distinct<t>(list<t> xs, t elem)
+    requires    true == distinct(xs);
     ensures     count(xs, (eq)(elem)) <= 1;
 {
     switch(xs) {
         case nil:
         case cons(x0, xs0):
             if (x0 != elem) {
-                count_no_dups(xs0, elem);
+                count_distinct(xs0, elem);
             } else {
                 assert (false == mem(elem, xs0));
                 mem_count_zero(xs0, elem);
@@ -159,7 +159,7 @@ lemma void permutation_exists(list<int> xs, int x)
     integers_list_subset(xs, 0, length(xs));
     val_integers_list(nat_of_int(length(xs)), 0, x);
     permutation_exists_helper(xs, integers, length(xs), x);
-    count_no_dups(xs, x);
+    count_distinct(xs, x);
     mem_count_bound(xs, x);
 }
 
