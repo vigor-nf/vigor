@@ -266,8 +266,9 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
 
   uint16_t dst_device = (uint16_t)forward_to;
 
+#ifdef KLEE_VERIFICATION
   concretize_devices(&dst_device, rte_eth_dev_count());
-
+#endif //KLEE_VERIFICATION
   return dst_device;
 }
 
