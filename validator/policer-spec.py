@@ -3,9 +3,12 @@ LAN_DEVICE = 0
 WAN_DEVICE = 1
 BURST = 125000
 RATE = 12500
+WORD_SIZE = 5
+ETHER_IP_HDRLEN = 34
 
 h2 = pop_header(ipv4, on_mismatch=([],[]))
-if h2.vihl & 0xf < 5:
+# malformed ipv4 header
+if (h2.vihl & 0xf < 5 or packet_size - ETHER_IP_HDRLEN < ((h2.vihl & 0xf) - 5)*WORD_SIZE):
     return ([],[])
 h1 = pop_header(ether, on_mismatch=([],[]))
 
