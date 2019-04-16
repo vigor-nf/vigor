@@ -5,6 +5,8 @@ BURST = 125000
 RATE = 12500
 
 h2 = pop_header(ipv4, on_mismatch=([],[]))
+if h2.vihl & 0xf < 5:
+    return ([],[])
 h1 = pop_header(ether, on_mismatch=([],[]))
 
 if EXP_TIME <= now:
@@ -26,6 +28,7 @@ else:
                 dyn_vals = vector_set(dyn_vals, flow_idx, DynamicValuec(bucket_size, now))
                 return ([LAN_DEVICE], [ether(h1),ipv4(h2)])
             else:
+                dyn_vals = vector_set(dyn_vals, flow_idx, DynamicValuec(bucket_size, now))
                 return ([],[])
         else:
             if not emap_full(flow_emap):

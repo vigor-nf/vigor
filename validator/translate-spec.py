@@ -222,6 +222,13 @@ def translateObjAssignment(binding, body, declaredVars):
     translate(body, declaredVars)
     indentPrint("}")
 
+def endsWithReturn(exprList):
+    for e in exprList:
+        for ee in ast.walk(e):
+            if isinstance(e, ast.Return):
+                return True
+    return False
+
 def translate(exprList, declaredVars):
     global indentLevel
     indentLevel += 1
@@ -252,9 +259,17 @@ def translate(exprList, declaredVars):
         elif isinstance(expr, ast.If):
             indentPrint("if ({}) {{".format(renderExpr(expr.test)))
             translate(expr.body, declaredVars.copy())
-            indentPrint("} else {")
-            translate(expr.orelse, declaredVars.copy())
-            indentPrint("}")
+            if expr.orelse:
+                indentPrint("} else {")
+                translate(expr.orelse, declaredVars.copy())
+                indentPrint("}")
+            elif endsWithReturn(expr.body):
+                indentPrint("} else {")
+                translate(exprList, declaredVars.copy())
+                indentPrint("}")
+                break
+            else:
+                indentPrint("}")
         elif isinstance(expr, ast.Assert):
             indentPrint("assert {};".format(renderExpr(expr.test)))
         elif isinstance(expr, ast.Return):
