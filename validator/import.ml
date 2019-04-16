@@ -722,6 +722,9 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     when (String.equal f "Ule") ->
     (*FIXME: get the actual type*)
     {v=Bop (Le,(get_sexp_value_raw lhs Uunknown ~at),(get_sexp_value_raw rhs Uunknown ~at));t}
+  | Sexp.List [Sexp.Atom "Ult"; lhs; Sexp.List [Sexp.Atom "w64"; Sexp.Atom "10"]] ->
+    (* HACK: this is the time being compared to 10LL, so put LL there *)
+    {v=Bop (Lt,(get_sexp_value_raw lhs Sunknown ~at), {v=Int 10;t=Sint64});t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Ult") ->
     {v=Bop (Lt,(get_sexp_value_raw lhs Uunknown ~at),(get_sexp_value_raw rhs Uunknown ~at));t}
