@@ -39,6 +39,11 @@ int policer_expire_entries(uint64_t time) {
                                  min_time);
 }
 
+bool
+dyn_val_condition(void* key, int index, void* state) {
+  return ((struct DynamicValue*) key)->bucket_time <= recent_time();
+}
+
 bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
   int index = -1;
   int present = map_get(dynamic_ft->dyn_map, &dst, &index);
@@ -47,11 +52,6 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
 
     struct DynamicValue* value = 0;
     vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
-
-    //HACK/FIXME: this should be in the loop invariant
-#ifdef KLEE_VERIFICATION
-    klee_assume(value->bucket_time <= time);
-#endif//KLEE_VERIFICATION
 
     value->bucket_size +=
         (time - value->bucket_time) * config.rate;
