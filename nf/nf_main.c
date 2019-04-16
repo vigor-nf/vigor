@@ -182,6 +182,7 @@ lcore_main(void)
       } else if (dst_device == FLOOD_FRAME) {
         flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
       } else {
+        concretize_devices(&dst_device, rte_eth_dev_count());
         nf_send_packet(mbuf, dst_device);
       }
     }
