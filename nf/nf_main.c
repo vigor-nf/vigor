@@ -202,11 +202,6 @@ main(int argc, char* argv[])
   argc -= ret;
   argv += ret;
 
-#ifdef KLEE_VERIFICATION
-  // Attach stub driver (note that hardware stub is autodetected, no need to attach)
-  stub_driver_attach();
-#endif
-
   // NF-specific config
   nf_config_init(argc, argv);
   nf_print_config();
