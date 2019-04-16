@@ -31,7 +31,8 @@
 
 MIDDLEBOX=$1
 SCENARIO=$2
-RESULTS_FILE=$3
+NF_TYPE=$3
+RESULTS_FILE=$4
 
 if [ -z $MIDDLEBOX ]; then
     echo "[run] No middlebox specified" 1>&2
@@ -56,26 +57,46 @@ fi
 
 case $SCENARIO in
     "mg-1p")
-        LUA_SCRIPT="l3-load-find-1p.lua"
+
+        case $NF_TYPE in
+	    "NAT"|"LB"|"Pol")	
+        	LUA_SCRIPT="l3-load-find-1p.lua"
+	        ;;
+
+     	    "Br")
+                LUA_SCRIPT="l2-load-find-1p.lua"
+                ;;
+            
+             *)
+	     	echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
+		exit 10
+   		;;
+        esac
+
         echo "[bench] Benchmarking throughput..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 5000 -u 5 -t 20 1 0"
+        echo "LUA SCRIPT is $LUA_SCRIPT" 
+       	exit 10
+	ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 5000 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-find-mg-1p.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-find-mg-1p.txt"
-    ;;
+        ;;
+
     "mg-existing-flows-latency")
         LUA_SCRIPT="l3-latency-light.lua"
         echo "[bench] Benchmarking throughput..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
-    ;;
+        ;;
+
     "mg-new-flows-latency")
         LUA_SCRIPT="l3-latency-light.lua"
         echo "[bench] Benchmarking throughput..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
-    ;;
+        ;;
+
     "loopback"|"1p")
         LUA_SCRIPT="regular-with-bin-mf.lua"
         if [ $SCENARIO = "1p" ]; then
