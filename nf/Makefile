@@ -195,4 +195,5 @@ loc-dsos:
 	echo 'todo'
 
 loc-libvig:
-	cloc $(LIBVIG_SRC)
+	cloc --force-lang 'Pig Latin',gh  $(LIBVIG_SRC) lib/containers/*.gh
+	@echo 'NOTE: C comments + Pig Latin == VeriFast annotations'
