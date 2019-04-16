@@ -17,7 +17,6 @@
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/time_stub_control.h"
-#  include "lib/stubs/driver_stub.h"
 #  include "lib/stubs/hardware_stub.h"
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
