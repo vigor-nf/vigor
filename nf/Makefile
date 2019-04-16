@@ -177,3 +177,17 @@ verify-hardware: $(AUTO_GEN_FILES)
 	$(OPT_COMMAND)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
+
+
+# ################# #
+# LoC count targets #
+# ################# #
+
+sloccount: all
+	sloccount $(SRCS-y) $(AUTO_GEN_FILES)
+
+sloccount-dpdk:
+	sloccount $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
+
+sloccount-dsos:
+	echo 'todo'
