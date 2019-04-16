@@ -3,27 +3,27 @@ EXP_TIME = 10
 h = pop_header(ether, on_mismatch=([],[]))
 
 if EXP_TIME <= now:
-    dyn_emap = emap_expire_all(dyn_emap, now - EXP_TIME)
+    dyn_emap.expire_all(now - EXP_TIME)
 
-if emap_has(dyn_emap, h.saddr):
-    dyn_emap = emap_refresh_idx(dyn_emap, emap_get(dyn_emap, h.saddr), now)
+if dyn_emap.has(h.saddr):
+    dyn_emap.refresh_idx(dyn_emap.get(h.saddr), now)
 else:
-    if not emap_full(dyn_emap):
+    if not dyn_emap.full():
         idx = the_index_allocated
-        dyn_emap = emap_add(dyn_emap, h.saddr, idx, now)
-        dyn_vals = vector_set(dyn_vals, idx, DynamicValuec(received_on_port))
+        dyn_emap.add(h.saddr, idx, now)
+        dyn_vals.set(idx, DynamicValuec(received_on_port))
 
 static_key = StaticKeyc(h.daddr, received_on_port)
-if emap_has(stat_emap, static_key):
-    output_port = emap_get(stat_emap, static_key)
+if stat_emap.has(static_key):
+    output_port = stat_emap.get(static_key)
     if output_port == -2 or output_port == received_on_port:
         return ([],[])
     else:
         return ([output_port], [ether(h)])
 else:
-    if emap_has(dyn_emap, h.daddr):
-        idx = emap_get(dyn_emap, h.daddr)
-        forward_to = vector_get(dyn_vals, idx)
+    if dyn_emap.has(h.daddr):
+        idx = dyn_emap.get(h.daddr)
+        forward_to = dyn_vals.get(idx)
         if (forward_to.output_port == received_on_port):
             return ([],[])
         else:
