@@ -551,7 +551,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         true == forall(old_values, is_one); @*/
 /*@ ensures
         vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
-        (result == 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
+        (result != 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
 {
 
     //@ mul_bounds(sizeof(int), sizeof(int), cht_height, MAX_CHT_HEIGHT);
@@ -564,7 +564,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     // Generate the permutations of 0..(cht_height - 1) for each backend
     int *permutations = malloc(sizeof(int) * (int)(cht_height * backend_capacity));
     if (permutations == 0) {
-        return 1;
+        return 0;
     }
 
     for (uint32_t i = 0; i < backend_capacity; ++i)
@@ -654,7 +654,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     int *next = malloc(sizeof(int) * (int)(cht_height));
     if (next == 0) {
         free(permutations);
-        return 1;
+        return 0;
     }
 
     //@ open ints(next, cht_height, ?n0);
@@ -866,7 +866,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     // Free memory
     free(next);
     free(permutations);
-    return 0;
+    return 1;
 }
 
 /*@

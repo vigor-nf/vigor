@@ -44,7 +44,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         true == forall(old_values, is_one); @*/
 /*@ ensures
         vectorp<uint32_t>(cht, u_integer, ?values, addrs) &*&
-        (result == 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
+        (result != 0 ? true == valid_cht(values, backend_capacity, cht_height) : emp); @*/
 
 int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, struct DoubleChain *active_backends, uint32_t cht_height, uint32_t backend_capacity, int *chosen_backend);
 /*@ requires vectorp<uint32_t>(cht, u_integer, ?values, ?addrs) &*&
