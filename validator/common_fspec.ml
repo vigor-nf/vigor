@@ -292,8 +292,7 @@ let map_alloc_spec map_specs =
                     Ptr (Ptr map_struct)];
    extra_ptr_types = [];
    lemmas_before = [
-     tx_bl
-       ("\n\
+     (fun _ -> "/*@\n\
         switch(map_allocation_order) {\n" ^
         (String.concat ~sep:"" (List.mapi map_specs ~f:(fun i {typ;_} ->
              " case " ^ (string_of_int i) ^
@@ -318,7 +317,7 @@ let map_alloc_spec map_specs =
            )) ) ^
           "default:\n\
             assert false;\n\
-        }\n");
+        }\n@*/") ;
    ];
    lemmas_after = [
      (fun {tmp_gen;_} ->
@@ -362,9 +361,7 @@ let vector_alloc_spec vector_specs =
                     Ptr (Ptr vector_struct)];
    extra_ptr_types = [];
    lemmas_before = [
-     tx_bl
-       (
-        "\n\
+     (fun _ -> "/*@\n\
         switch(vector_allocation_order) {\n" ^
         (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;_} ->
              " case " ^ (string_of_int i) ^ ":\n\
@@ -380,7 +377,7 @@ let vector_alloc_spec vector_specs =
            )) ) ^
           "default:\n\
             assert false;\n\
-        }\n");
+        }\n@*/");
      (fun {args;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
@@ -1002,13 +999,13 @@ let dchain_allocate_new_index_spec dchain_specs =
      (fun {args;_} ->
         "time_for_allocated_index = " ^ (List.nth_exn args 2) ^
         ";\n");
-     on_rez_nz
-       (fun params ->
+     (fun params ->
+          "/*@ if(" ^ params.ret_name ^ " != 0) " ^ 
           "{\n allocate_preserves_index_range(" ^
           (params.tmp_gen "cur_ch") ^
           ", *" ^
           (List.nth_exn params.args 1) ^ ", " ^
-          (List.nth_exn params.args 2) ^ ");\n}");
+          (List.nth_exn params.args 2) ^ ");\n} @*/");
      (fun params ->
         "//@ allocate_keeps_high_bounded(" ^
         (params.tmp_gen "cur_ch") ^
