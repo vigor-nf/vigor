@@ -1177,7 +1177,6 @@ let gen_preamble nf_loop containers =
 #include \"lib/containers/double-chain.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
-  (In_channel.read_all "preamble_hide.tmpl") ^
   "enum LMA_enum {" ^ (String.concat ~sep:", " lma_literals) ^
   ", LMA_INVALID};\n" ^
   "void to_verify()\n\
