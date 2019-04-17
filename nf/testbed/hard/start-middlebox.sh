@@ -72,7 +72,7 @@ else
             ;;
         "1p"|"loopback"|"mg-1p"|"mg-existing-flows-latency")
             SIMPLE_SCENARIO="loopback"
-            EXPIRATION_TIME=60
+            EXPIRATION_TIME=60000000000
             ;;
         "rr"|"passthrough")
             SIMPLE_SCENARIO="rr"
@@ -91,5 +91,5 @@ else
         0<&- &>"$LOG_FILE") &
 
     # Wait for it to have started
-    sleep 60
+    sleep 20
 fi
