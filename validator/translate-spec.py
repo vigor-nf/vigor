@@ -290,7 +290,7 @@ def translate(exprList, declaredVars):
             indentPrint(genOutcome(expr.value))
         elif isinstance(expr, ast.Expr):
             indentPrint(renderExpr(expr.value) + ';')
-        elif isinstance(expr, ast.Break):
+        elif isinstance(expr, ast.Pass):
             indentPrint('assume(false); //Ignore this case')
         elif isinstance(expr, ast.Import):
             for alias in expr.names:

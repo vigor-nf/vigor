@@ -6,4 +6,4 @@ if EXP_TIME <= now:
 if dyn_emap.has(h.saddr):
     dyn_emap.refresh_idx(dyn_emap.get(h.saddr), now)
 else:
-    break
+    pass

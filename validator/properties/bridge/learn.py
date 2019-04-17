@@ -4,7 +4,7 @@ h = pop_header(ether, on_mismatch=([],[]))
 if EXP_TIME <= now:
     dyn_emap.expire_all(now - EXP_TIME)
 if dyn_emap.has(h.saddr):
-    break
+    pass
 elif not dyn_emap.full():
     idx = the_index_allocated
     dyn_emap.add(h.saddr, idx, now)
