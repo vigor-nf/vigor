@@ -644,7 +644,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         //@ list< list<int> > perms = split(p_in, nat_of_int(i), cht_height);
         //@ list< int > new_elem = chunk(p_in, i * cht_height, i * cht_height + cht_height);
         //@ mul_bounds(cht_height, cht_height, i + 1, backend_capacity);
-        //@ split_append(p_in, nat_of_int(i + 1), nat_of_int(i), cht_height);
+        //@ split_append(p_in, nat_of_int(i), cht_height);
         //@ mul_nonnegative(i, cht_height);
         //@ chunk_length(p_in, i * cht_height, i * cht_height + cht_height);
         //@ sub_permutation_complete(new_elem);

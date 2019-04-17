@@ -608,20 +608,21 @@ lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j)
     chunk_to_source(xs, n * j, n * (j+1), i);
 }
 
-lemma void split_append<t>(list<t> xs, nat nb_split, nat nb_split_pred, int n)
-    requires    nb_split == succ(nb_split_pred) &*& int_of_nat(nb_split) * n <= length(xs) &*& 0 < n;
-    ensures     split(xs, nb_split, n) == append(split(xs, nb_split_pred, n), cons(chunk(xs, n * int_of_nat(nb_split_pred), n * int_of_nat(nb_split_pred) + n), nil));
+lemma void split_append<t>(list<t> xs, nat nb_split, int n)
+    requires    int_of_nat(succ(nb_split)) * n <= length(xs) &*& 0 < n;
+    ensures     split(xs, succ(nb_split), n) == append(split(xs, nb_split, n), cons(chunk(xs, n * int_of_nat(nb_split), n * (int_of_nat(nb_split) + 1)), nil));
 {
-    switch(nb_split_pred) {
+    switch(nb_split) {
         case zero:
-            split_chunk_equiv(xs, nb_split, n, 0); 
-        case succ(nb_split_pred_pred):
-            mul_mono_strict(1, int_of_nat(nb_split), n);
+            split_chunk_equiv(xs, succ(nb_split), n, 0); 
+        case succ(nb_split_pred):
+            mul_mono_strict(1, int_of_nat(succ(nb_split)), n);
             length_drop(n, xs);
-            mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
-            split_append(drop(n, xs), nb_split_pred, nb_split_pred_pred, n);
+            mul_subst(int_of_nat(nb_split) + 1, int_of_nat(succ(nb_split)), n);
+            split_append(drop(n, xs), nb_split_pred, n);
 
-            assume (split(xs, nb_split, n) == append(split(xs, nb_split_pred, n), cons(chunk(xs, n * int_of_nat(nb_split_pred), n * int_of_nat(nb_split_pred) + n), nil)));
+            mul_bounds(1, int_of_nat(nb_split), n, n);
+            chunk_shift(xs, n * int_of_nat(nb_split), n * (int_of_nat(nb_split) + 1), n);
     }
 }
 
@@ -653,8 +654,6 @@ fixpoint list<int> integers_list(nat cnt, int index) {
         case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
     }
 }
-
-
 
 lemma_auto(length(integers_list(cnt, index))) void length_integers_list(nat cnt, int index) 
     requires    true;
