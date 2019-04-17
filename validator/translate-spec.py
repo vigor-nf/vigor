@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import ast
 import sys
+import os
 
 protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
@@ -20,6 +21,7 @@ stateVars = []
 indentLevel = 0
 indentWidth = 2
 
+importSearchDirs = [os.getcwd()] # Add the current directory
 vfSpecFile = None
 
 def indentPrint(text):
@@ -291,7 +293,10 @@ def translate(exprList, declaredVars):
         elif isinstance(expr, ast.Import):
             for alias in expr.names:
                 assert alias.asname == None
-                translateSpec(alias.name + '.py')
+                for d in importSearchDirs:
+                    if os.path.isfile(d + alias.name + '.py'):
+                        translateSpec(alias.name + '.py')
+                        break
         elif isinstance(expr, ast.ImportFrom):
             assert expr.module == 'state'
             for alias in expr.names:
@@ -355,8 +360,10 @@ elif 'fw' in pythonSpecFname:
                     'int_devices' : vector}
 
 def translateSpec(pythonSpecFname_):
+    global importSearchDirs
     specRaw = open(pythonSpecFname_).read()
     specAst = ast.parse(specRaw)
+    importSearchDirs.append(os.path.split(pythonSpecFname_)[0])
     return translate(specAst.body, [])
 
 vfSpecFile = open(vfSpecFname, "w")
