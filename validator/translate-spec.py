@@ -121,8 +121,8 @@ def renderExpr(expr):
     elif isinstance(expr, ast.BoolOp):
         left = renderExpr(expr.values[0])
         right = renderExpr(expr.values[1])
-        if   isinstance(expr.op, ast.And): sign = '&&'
-        elif isinstance(expr.op, ast.Or): sign = '||'
+        if   isinstance(expr.op, ast.And): sign = ' && '
+        elif isinstance(expr.op, ast.Or): sign = ' || '
         else: sign = '???'
         return "(" + (sign.join(map(renderExpr, expr.values))) + ")"
     elif isinstance(expr, ast.List):
