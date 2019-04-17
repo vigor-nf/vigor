@@ -418,6 +418,8 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 filter_idx_lt(first_chunk, idx, (eq)(bucket_id));
                 list_unit_length(map_filter_first_chunk);
                 forall_nth(filter_first_chunk, (lt)(idx + n), 0);
+                filter_idx_ge(first_chunk, idx, (eq)(bucket_id));
+                forall_nth(filter_first_chunk, (ge)(idx), 0);
                 div_lt(new_idx, nb_split_base - int_of_nat(nb_split) + 1, n);
                 div_exact(nb_split_base - int_of_nat(nb_split) + 1, n);
                 div_exact(nb_split_base - int_of_nat(nb_split), n);
@@ -437,8 +439,6 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 assert (filter_idx(append(first_chunk, ret_xs), idx, (eq)(bucket_id)) == append(filter_first_chunk, ret_recursive));
 
                 // Prove bounds
-                filter_idx_ge(first_chunk, idx, (eq)(bucket_id));
-                forall_nth(filter_first_chunk, (ge)(idx), 0);
                 assert (new_idx >= 0);
 
                 forall_nth(filter_first_chunk, (lt)(idx + n), 0);

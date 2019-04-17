@@ -57,7 +57,7 @@ lemma void take_preserves_distinct<t>(list<t> xs, int i)
 }
 
 lemma void sub_permutation_take(list<int> xs, int max_val, int i)
-    requires    true == is_sub_permutation(xs, max_val) &*& 0 <= i;
+    requires    true == is_sub_permutation(xs, max_val) &*& 0 <= i &*& i < length(xs);
     ensures     true == is_sub_permutation(take(i, xs), max_val);
 {
     switch(xs) {
@@ -68,7 +68,8 @@ lemma void sub_permutation_take(list<int> xs, int max_val, int i)
             	assert (true == is_sub_permutation(take(i, xs), max_val));
             } else {
                 sub_permutation_take(xs0, max_val, i - 1);
-                assume (take(i, xs) == append(take(i - 1, xs0), cons(x0, nil)));
+                take_plus_one(i - 1, xs0);
+
                 cons_take_take_cons(x0, xs0, i - 1);
                 forall_append(take(i - 1, xs0), cons(x0, nil), (lt)(max_val));
                 forall_append(take(i - 1, xs0), cons(x0, nil), (ge)(max_val));
