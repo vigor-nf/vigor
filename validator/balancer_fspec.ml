@@ -28,8 +28,8 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "
                   "backend_capacity", UInt32;
                   "flow_capacity", UInt32;
                   "cht_height", UInt32;
-                  "", EMap ("LoadBalancedFlow", "flow_to_flow_id", "flow_heap", "flow_chain");
-                  "", EMap ("ip_addr", "ip_to_backend_id", "backend_ips", "active_backends");
+                  "flow_emap", EMap ("LoadBalancedFlow", "flow_to_flow_id", "flow_heap", "flow_chain");
+                  "backend_ip_emap", EMap ("ip_addr", "ip_to_backend_id", "backend_ips", "active_backends");
                  ]
 
 let records = String.Map.of_alist_exn
@@ -46,7 +46,9 @@ struct
   let finishing_fun = "loop_invariant_consume"
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
-  let user_check_for_complete_iteration = In_channel.read_all "balancer_forwarding_property.tmpl"
+  let user_check_for_complete_iteration =
+    (abstract_state_capture containers) ^
+    (In_channel.read_all "balancer_forwarding_property.tmpl")
 end
 
 (* Register the module *)

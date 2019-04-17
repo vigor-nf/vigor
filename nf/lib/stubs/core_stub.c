@@ -235,16 +235,6 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 }
 
 void
-rte_pktmbuf_free(struct rte_mbuf* m)
-{
-	klee_assert(m != NULL);
-
-	packet_free(m->buf_addr);
-	stub_core_mbuf_free(m);
-}
-
-
-void
 stub_core_mbuf_free(struct rte_mbuf* mbuf)
 {
 	// Undo our pseudo-chain trickery (see stub_core_mbuf_create)

@@ -142,7 +142,7 @@ rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
 
 	set_packet_receive_success(klee_int("received_a_packet"));
 
-  bool received = packet_receive(port_id, &(**rx_pkts).buf_addr, &(**rx_pkts).data_len);
+  bool received = packet_receive(port_id, &(**rx_pkts).buf_addr, &(**rx_pkts).pkt_len);
   return received;
 }
 

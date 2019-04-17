@@ -18,7 +18,7 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "capacity", UInt32;
                   "stat_capacity", UInt32;
                   "dev_count", UInt32;
-                  "", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
+                  "dyn_emap", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
 let records = String.Map.of_alist_exn
     ["ether_addr", ether_addr_struct;
@@ -34,7 +34,9 @@ struct
   let finishing_fun = "loop_invariant_consume"
   let eventproc_iteration_begin = "loop_invariant_produce"
   let eventproc_iteration_end = "loop_invariant_consume"
-  let user_check_for_complete_iteration = In_channel.read_all "bridge_forwarding_property.tmpl"
+  let user_check_for_complete_iteration =
+    (abstract_state_capture containers) ^
+    (In_channel.read_all "bridge_forwarding_property.tmpl")
 end
 
 (* Register the module *)

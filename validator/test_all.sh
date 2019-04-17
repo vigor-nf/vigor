@@ -94,7 +94,7 @@ if [ -z "$WORK_DIR" ]; then
     echo " spec-dir - the root directory of the project. Necessary to find"
     echo "            the include files."
     echo " plugin - the validator plugin file - OCaml dynamic module,"
-    echo "          should have a cmo extension. E.g. nat_fspec.cmo"
+    echo "          should have a cma extension. E.g. nat_fspec.cma"
     echo " test# - optional number of the prefix file to run. If abscent"
     echo "         the validator will run all the prefixes in the given"
     echo "         directory."
@@ -108,9 +108,7 @@ if [ $? != 0 ]; then exit 1; fi
 mkdir -p $WORK_DIR
 rm -f $REPORT_FNAME
 
-FILES=$KLEE_OUT_DIR/call-pre*.txt
-
-TOT_FILES=$(ls -l $FILES | wc -l)
+TOT_FILES=$(find $KLEE_OUT_DIR/ -name 'call-pre*.txt' | wc -l)
 
 export -f validate_file
 export -f analyze_result
@@ -127,7 +125,7 @@ export BASE_DIR
 # executing this file on a container looses the $SHELL value in parallel
 export SHELL=/bin/bash
 if [ -z "$SINGLE_TEST" ]; then
-    parallel validate_file ::: $KLEE_OUT_DIR/call-pre*.txt
+    find $KLEE_OUT_DIR/ -name 'call-pre*.txt' | parallel validate_file
 else
     PADDED=`printf %06d $SINGLE_TEST`
     validate_file $KLEE_OUT_DIR/call-prefix$PADDED.txt

@@ -1,5 +1,14 @@
 This repository contains the Vigor verification toolchain, along with the verified NAT ("VigNAT") and some experiments.
 
+# Prerequisites
+
+The install script assumes you are using Ubuntu 16.04, though Debian may also work. You could also install the dependencies manually.
+
+To run verification with hardware models, you need a lot of RAM (100+ GB).
+
+To run the NAT (but not to verify it), you need to set up hugepages for DPDK; see the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#linux-gsg-hugepages).
+
+
 # Dependencies
 
 Our dependencies, in the same GitHub organization, are modified versions of [KLEE](https://github.com/vignat/klee),

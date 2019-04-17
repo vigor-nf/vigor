@@ -49,6 +49,12 @@ concretize_devices(uint16_t *device, uint16_t count) {
 
 	for(unsigned d = 0; d < count; d++) if (*device == d) { *device = d; break; }
 }
+#else
+static inline void
+concretize_devices(uint16_t *device, uint16_t count) {
+    (void)(device);
+    (void)(count);
+}
 #endif//KLEE_VERIFICATION
 
 

@@ -109,7 +109,7 @@ let common_fun_types =
                   lemmas_before = [];
                   lemmas_after = [];};
    "packet_receive", {ret_type = Static Boolean;
-                      arg_types = stt [Uint16; Ptr (Ptr Sint8); Ptr Uint16];
+                      arg_types = stt [Uint16; Ptr (Ptr Sint8); Ptr Uint32];
                       extra_ptr_types = [];
                       lemmas_before = [];
                       lemmas_after = [
@@ -259,9 +259,10 @@ let common_fun_types =
                                 lemmas_after = [];};
    "packet_state_total_length", {ret_type = Static Void;
                                  arg_types = stt [Ptr Sint8;
-                                                  Ptr Uint16];
+                                                  Ptr Uint32];
                                  extra_ptr_types = [];
-                                 lemmas_before = [];
+                                 lemmas_before = [(fun {args;} ->
+                                   "packet_size = *" ^ (List.nth_exn args 1) ^ ";\n")];
                                  lemmas_after = [];};
    "packet_free", {ret_type = Static Void;
                    arg_types = stt [Ptr Sint8;];
@@ -291,8 +292,7 @@ let map_alloc_spec map_specs =
                     Ptr (Ptr map_struct)];
    extra_ptr_types = [];
    lemmas_before = [
-     tx_bl
-       ("\n\
+     (fun _ -> "/*@\n\
         switch(map_allocation_order) {\n" ^
         (String.concat ~sep:"" (List.mapi map_specs ~f:(fun i {typ;_} ->
              " case " ^ (string_of_int i) ^
@@ -312,12 +312,12 @@ let map_alloc_spec map_specs =
              ")(a) \
               {\
               call();\
-              }\n
+              }\n\
               break;\n"
            )) ) ^
           "default:\n\
             assert false;\n\
-        }\n");
+        }\n@*/") ;
    ];
    lemmas_after = [
      (fun {tmp_gen;_} ->
@@ -361,9 +361,7 @@ let vector_alloc_spec vector_specs =
                     Ptr (Ptr vector_struct)];
    extra_ptr_types = [];
    lemmas_before = [
-     tx_bl
-       (
-        "\n\
+     (fun _ -> "/*@\n\
         switch(vector_allocation_order) {\n" ^
         (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;_} ->
              " case " ^ (string_of_int i) ^ ":\n\
@@ -379,7 +377,7 @@ let vector_alloc_spec vector_specs =
            )) ) ^
           "default:\n\
             assert false;\n\
-        }\n");
+        }\n@*/");
      (fun {args;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
@@ -1001,13 +999,13 @@ let dchain_allocate_new_index_spec dchain_specs =
      (fun {args;_} ->
         "time_for_allocated_index = " ^ (List.nth_exn args 2) ^
         ";\n");
-     on_rez_nz
-       (fun params ->
+     (fun params ->
+          "/*@ if(" ^ params.ret_name ^ " != 0) " ^ 
           "{\n allocate_preserves_index_range(" ^
           (params.tmp_gen "cur_ch") ^
           ", *" ^
           (List.nth_exn params.args 1) ^ ", " ^
-          (List.nth_exn params.args 2) ^ ");\n}");
+          (List.nth_exn params.args 2) ^ ");\n} @*/");
      (fun params ->
         "//@ allocate_keeps_high_bounded(" ^
         (params.tmp_gen "cur_ch") ^
@@ -1176,7 +1174,6 @@ let gen_preamble nf_loop containers =
 #include \"lib/containers/double-chain.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
-  (In_channel.read_all "preamble_hide.tmpl") ^
   "enum LMA_enum {" ^ (String.concat ~sep:", " lma_literals) ^
   ", LMA_INVALID};\n" ^
   "void to_verify()\n\
@@ -1185,6 +1182,7 @@ let gen_preamble nf_loop containers =
    uint16_t received_on_port;\n\
    int the_index_allocated = -1;\n\
    int64_t time_for_allocated_index = 0;\n\
+   uint32_t packet_size = 0;\n\
    bool a_packet_received = false;\n" ^
   (String.concat ~sep:"" (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
        match ctyp with
@@ -1248,6 +1246,37 @@ let gen_vector_params containers records =
       | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;entry_type=String.Map.find_exn records typ}
       | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32}
       | _ -> None)
+
+let abstract_state_capture containers =
+  (String.concat ~sep:"" (List.mapi containers ~f:(fun i (name,t) ->
+       match t with
+       | Map (typ, _, _) -> "assert mapp<" ^ (ityp_name typ) ^ ">(" ^
+                            name ^ "_ptr, _, _, _, mapc(_, ?" ^
+                            ("final_" ^ name) ^ ", _));\n" ^
+                            "list<pair<" ^ (ityp_name typ) ^ ", int> > " ^ name ^ " = initial_" ^ name ^ ";\n"
+       | Vector (typ, _, _) -> "assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
+                               name ^ "_ptr, _, ?" ^
+                               ("finalizing_final_" ^ name) ^ ", _);\n" ^
+                               "vector<" ^ (ityp_name typ) ^ "> " ^ name ^ " = vector(" ^ "initial_" ^ name ^ ");\n" ^
+                               "vector<" ^ (ityp_name typ) ^ "> final_" ^ name ^
+                               " = vector(" ^ "finalizing_final_" ^ name ^ ");\n"
+       | CHT (_, _) -> "assert vectorp<uint32_t>(" ^
+                       name ^ "_ptr, _, ?" ^
+                       ("final_" ^ name) ^ ", _);\n" ^
+                       "list<pair<uint32_t, real> > " ^ name ^ " = " ^ "initial_" ^ name ^ ";\n"
+       | DChain _ -> "assert double_chainp(?" ^ "final_" ^ name ^ ", " ^
+                     name ^ "_ptr);\n" ^
+                     "dchain " ^ name ^ " = " ^ ("initial_" ^ name) ^ ";\n"
+       | Int
+       | UInt
+       | UInt32 -> ""
+       | EMap (typ, m, v, h) -> "emap<" ^ (ityp_name typ) ^ "> " ^ name ^
+                                " = emap<" ^ (ityp_name typ) ^ ">(" ^ m ^
+                                ", initial_" ^ v ^ ", " ^ h ^ ");\n" ^
+                                "emap<" ^ (ityp_name typ) ^ "> final_" ^ name ^
+                                " = emap<" ^ (ityp_name typ) ^ ">(final_" ^ m ^
+                                ", finalizing_final_" ^ v ^ ", final_" ^ h ^ ");\n"
+     )))
 
 let fun_types containers records =
   String.Map.of_alist_exn
