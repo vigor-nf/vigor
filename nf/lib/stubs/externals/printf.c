@@ -107,6 +107,7 @@ static inline void _out_char(char character, void* buffer, unsigned int idx, uns
   (void)buffer; (void)idx; (void)maxlen;
   if (character) {
     dsos_vga_write_char(character);
+    dsos_serial_write_char(character);
   }
 }
 

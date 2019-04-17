@@ -1,12 +1,11 @@
 #include "dsos_tsc.h"
+#include <x86intrin.h>
 
 #ifndef KLEE_VERIFICATION
 
 uint64_t dsos_rdtsc(void)
 {
-	uint64_t ret;
-	asm volatile ("rdtsc" : "=A"(ret));
-	return ret;
+	return __rdtsc();
 }
 
 #else // KLEE_VERIFICATION

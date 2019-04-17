@@ -93,6 +93,7 @@ DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_mempool/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_mbuf/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_pci/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_ring/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/mempool/ring/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/bus/pci/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/bus/pci/linux/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/*.c)
@@ -108,6 +109,7 @@ STUBS_SRCS += $(wildcard $(STUBS_DIR)/externals/*.c)
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/hardware_stub.c, $(STUBS_SRCS))
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/driver_stub.c, $(STUBS_SRCS))
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/dpdk_low_level_stub.c, $(STUBS_SRCS))
+STUBS_SRCS := $(filter-out $(STUBS_DIR)/dpdk_mempool_singleton.c, $(STUBS_SRCS))
 
 KERNEL_SRCS := $(wildcard $(KERNEL_DIR)/*.c)
 
@@ -144,7 +146,8 @@ LDFLAGS = -T $(LINKER_SCRIPT) -nostdlib -Wl,--nmagic
 LIBS = -lgcc
 
 QEMUFLAGS = -enable-kvm -cdrom $(ISO) -cpu host -m 1G
-QEMUFLAGS += -curses
+#QEMUFLAGS += -curses
+QEMUFLAGS += -nographic
 QEMUFLAGS += -device vfio-pci,host=06:00.0
 QEMUFLAGS += -device vfio-pci,host=06:00.1
 # QEMUFLAGS += -no-hpet -nodefaults -no-acpi -vga std
@@ -164,8 +167,8 @@ run: $(ISO)
 
 # Launch QEMU and attach debugger
 debug: $(ISO)
-	@$(QEMU) -s -S $(QEMUFLAGS) -nographic > /dev/null 2>&1 &
-	@gdb -ex "set arch i386:x86-64:intel" \
+	@sudo $(QEMU) -s -S $(QEMUFLAGS) > /dev/null 2>&1 &
+	@sudo gdb -ex "set arch i386:x86-64:intel" \
 		-ex "target remote localhost:1234" \
 		-ex "symbol-file $(BINARY)" \
 		-ex "hb main" \
@@ -178,7 +181,7 @@ debug: $(ISO)
 		-ex "b abort" \
 		-ex "b __assert_fail"
 
-	@kill `pidof qemu-system-x86_64`
+	@sudo kill `pidof qemu-system-x86_64`
 
 iso: $(ISO)
 

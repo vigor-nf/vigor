@@ -182,7 +182,6 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
                   count <= length(dchain_get_expired_indexes_fp(ch, time));
       @*/
   {
-    printf("Expiring one flow\n");
     /*@ mvc_coherent_bounds(cur_m, cur_v, cur_ch);
       @*/
     //@ dchain_oldest_allocated(cur_ch);

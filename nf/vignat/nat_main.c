@@ -46,19 +46,15 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	struct ipv4_hdr* ipv4_header = nf_get_mbuf_ipv4_header(mbuf);
 	if (ipv4_header == NULL) {
 		NF_DEBUG("Not IPv4, dropping");
-		printf("Not IPv4, dropping\n");
 		return mbuf->port;
 	}
 
 	struct tcpudp_hdr* tcpudp_header = nf_get_ipv4_tcpudp_header(ipv4_header);
 	if (tcpudp_header == NULL) {
 		NF_DEBUG("Not TCP/UDP, dropping");
-		printf("Not TCP/UDP, dropping\n");
 		return mbuf->port;
 	}
 
-	// printf("Src IP %"PRIu32", port: %" PRIu16 "\n", ipv4_header->src_addr, tcpudp_header->src_port);
-	// printf("Dst IP %"PRIu32", port: %" PRIu16 "\n", ipv4_header->dst_addr, tcpudp_header->dst_port);
 	static int packet_count = 0;
 	packet_count++;
 
@@ -77,7 +73,6 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
           internal_flow.dst_port != tcpudp_header->src_port ||
           internal_flow.protocol != ipv4_header->next_proto_id) {
         NF_DEBUG("Spoofing attempt, dropping.");
-        printf("Spoofing attempt, dropping.\n");
         return mbuf->port;
       }
 
@@ -86,7 +81,6 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 			dst_device = internal_flow.internal_device;
 		} else {
 			NF_DEBUG("Unknown flow, dropping");
-			printf("Unknown flow, dropping\n");
 			return mbuf->port;
 		}
 	} else {
@@ -108,11 +102,9 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
     static int flow_counter = 0;
 		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
 			NF_DEBUG("New flow");
-			printf("New flow %d, packet %d\n", flow_counter++, packet_count);
 
 			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &external_port)) {
 				NF_DEBUG("No space for the flow, dropping");
-				printf("No space for the flow, dropping\n");
 				return mbuf->port;
 			}
 		}
