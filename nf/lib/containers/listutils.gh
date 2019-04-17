@@ -207,10 +207,13 @@ fixpoint option<int> index_of_fp<t>(list<t> xs, int idx, fixpoint (t,bool) fp) {
 }
 
 lemma void index_of_fp_exists<t>(list<t> xs, int idx, fixpoint (t,bool) fp, int i)
-    requires    true == forall(take(i, xs), (sup)((eq)(false), fp)) &*& true == fp(nth(i, xs));
+    requires    true == forall(take(i, xs), (sup)((eq)(false), fp)) &*& true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
     ensures     index_of_fp(xs, idx, fp) == some(idx + i);
 {
-    assume (index_of_fp(xs, idx, fp) == some(idx + i));
+    switch(xs) {
+        case nil:
+        case cons(x0, xs0): if (i > 0) index_of_fp_exists(xs0, idx + 1, fp, i - 1);
+    }
 }
 
 // ------------- integer_copies -------------
@@ -651,6 +654,8 @@ fixpoint list<int> integers_list(nat cnt, int index) {
     }
 }
 
+
+
 lemma_auto(length(integers_list(cnt, index))) void length_integers_list(nat cnt, int index) 
     requires    true;
     ensures     length(integers_list(cnt, index)) == int_of_nat(cnt);
@@ -680,6 +685,19 @@ lemma void integers_list_bounds(nat cnt, int index)
         case succ(cnt_pred): 
             integers_list_bounds(cnt_pred, index + 1);
             ge_le_ge(integers_list(cnt_pred, index + 1), index + 1, index);
+    }
+}
+
+lemma void integers_list_append(nat cnt1, nat cnt2, int index)
+    requires    true;
+    ensures     integers_list( nat_of_int( int_of_nat(cnt1) + int_of_nat(cnt2) ) , index) == append( integers_list(cnt1, index) , integers_list(cnt2, index + int_of_nat(cnt1)));
+{
+    switch(cnt1) {
+        case zero: 
+        case succ(cnt1_pred): 
+            integers_list_append(cnt1_pred, cnt2, index + 1);
+            assert (int_of_nat(cnt1) + int_of_nat(cnt2) == int_of_nat(cnt1_pred) + int_of_nat(cnt2) + 1);
+            assert (nat_of_int(int_of_nat(cnt1) + int_of_nat(cnt2)) == succ(nat_of_int(int_of_nat(cnt1_pred) + int_of_nat(cnt2))));
     }
 }
 
@@ -723,6 +741,34 @@ fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
     }
 }
 
+lemma_auto(length(zip(xs, ys))) void length_zip<t1, t2>(list<t1> xs, list<t2> ys)
+    requires    length(xs) == length(ys);
+    ensures     length(zip(xs, ys)) == length(xs);
+{
+    switch(xs) {
+        case nil: 
+        case cons(x0, xs0): 
+            switch(ys) {
+                case nil: 
+                case cons(y0, ys0): length_zip(xs0, ys0);
+            }
+    }
+}
+
+lemma_auto(nth(i, zip(xs, ys))) void val_zip<t1, t2>(list<t1> xs, list<t2> ys, int i)
+    requires    0 <= i && i < length(xs) && length(xs) == length(ys);
+    ensures     nth(i, zip(xs, ys)) == pair(nth(i, xs), nth(i, ys));
+{
+    switch(xs) {
+        case nil: 
+        case cons(x0, xs0): 
+            switch(ys) {
+                case nil: 
+                case cons(y0, ys0): if (i > 0) val_zip(xs0, ys0, i - 1);
+            }
+    }
+}
+
 lemma void zip_unzip_fst<t1, t2>(list<t1> xs, list<t2> ys)
     requires    length(xs) == length(ys);
     ensures     xs == map(fst, zip(xs, ys));
@@ -751,40 +797,70 @@ lemma void zip_unzip_snd<t1, t2>(list<t1> xs, list<t2> ys)
     }
 }
 
+lemma void zip_append<t1, t2>(list<t1> xs1, list<t2> ys1, list<t1> xs2, list<t2> ys2)
+    requires    length(xs1) == length(ys1) &*& length(xs2) == length(ys2);
+    ensures     zip(append(xs1, xs2), append(ys1, ys2)) == append(zip(xs1, ys1), zip(xs2, ys2));
+{
+    switch(xs1) {
+        case nil: length_0_nil(ys1);
+        case cons(x0, xs0): 
+            switch(ys1) {
+                case nil: 
+                case cons(y0, ys0): zip_append(xs0, ys0, xs2, ys2);
+            }
+    }
+}
+
 // ------------- zip_index -------------
 
-fixpoint list< pair<int, t> > zip_index<t>(list<t> xs) {
-    return zip(integers_list(nat_of_int(length(xs)), 0) , xs);
+fixpoint list< pair<int, t> > zip_index<t>(list<t> xs, int idx) {
+    return zip(integers_list(nat_of_int(length(xs)), idx) , xs);
 }
 
-lemma void zip_index_unzip<t>(list<t> xs)
+lemma_auto(length(zip_index(xs, idx))) void length_zip_index<t>(list<t> xs, int idx)
     requires    true;
-    ensures     xs == map(snd, zip_index(xs));
+    ensures     length(zip_index(xs, idx)) == length(xs);
 {
-    zip_unzip_snd(integers_list(nat_of_int(length(xs)), 0), xs);
+    length_zip(integers_list(nat_of_int(length(xs)), 0) , xs);
 }
 
-lemma void zip_index_append<t>(list<t> xs, t x) 
-    requires    true;
-    ensures     append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil)));
+lemma_auto(nth(i, zip_index(xs, idx))) void val_zip_index<t>(list<t> xs, int idx, int i)
+    requires    0 <= i && i < length(xs);
+    ensures     nth(i, zip_index(xs, idx)) == pair(i + idx, nth(i, xs));
 {
-    assume (append(zip_index(xs), cons(pair(length(xs),x), nil)) == zip_index(append(xs, cons(x, nil))));
-} 
-
-lemma void zip_index_bounds<t>(list<t> xs) 
-    requires    true;
-    ensures     true == forall( map(fst, zip_index(xs)), (ge)(0) ) &*& true == forall( map(fst, zip_index(xs)), (lt)(length(xs)) );
-{
-    zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
-    integers_list_bounds(nat_of_int(length(xs)), 0);
+    val_zip(integers_list(nat_of_int(length(xs)), 0) , xs, i);
+    val_integers_list(nat_of_int(length(xs)), idx, i);
 }
 
-lemma void zip_index_distinct<t>(list<t> xs)
+lemma void zip_index_unzip<t>(list<t> xs, int idx)
     requires    true;
-    ensures     true == distinct(map(fst, zip_index(xs)));
+    ensures     xs == map(snd, zip_index(xs, idx));
 {
-    zip_unzip_fst(integers_list(nat_of_int(length(xs)), 0) , xs);
-    integers_list_distinct(nat_of_int(length(xs)), 0);
+    zip_unzip_snd(integers_list(nat_of_int(length(xs)), idx), xs);
+}
+
+lemma void zip_index_append<t>(list<t> xs, list<t> ys) 
+    requires    true;
+    ensures     zip_index(append(xs, ys), 0) == append(zip_index(xs, 0), zip_index(ys, length(xs)));
+{
+    integers_list_append(nat_of_int(length(xs)), nat_of_int(length(ys)), 0);
+    zip_append(integers_list(nat_of_int(length(xs)), 0), xs, integers_list(nat_of_int(length(ys)), length(xs)), ys);
+}
+
+lemma void zip_index_bounds<t>(list<t> xs, int idx) 
+    requires    true;
+    ensures     true == forall( map(fst, zip_index(xs, idx)), (ge)(idx) ) &*& true == forall( map(fst, zip_index(xs, idx)), (lt)(idx + length(xs)) );
+{
+    zip_unzip_fst(integers_list(nat_of_int(length(xs)), idx) , xs);
+    integers_list_bounds(nat_of_int(length(xs)), idx);
+}
+
+lemma void zip_index_distinct<t>(list<t> xs, int idx)
+    requires    true;
+    ensures     true == distinct(map(fst, zip_index(xs, idx)));
+{
+    zip_unzip_fst(integers_list(nat_of_int(length(xs)), idx) , xs);
+    integers_list_distinct(nat_of_int(length(xs)), idx);
 }
 
 #endif //_LISTUTILS_GH_INCLUDED_

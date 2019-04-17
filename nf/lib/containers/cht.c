@@ -447,7 +447,7 @@ static uint64_t loop(uint64_t k, uint64_t capacity)
                 div_exact(nb_split_base, n);
                 div_lt(new_idx, nb_split_base, n);
                 div_ge(0, new_idx, n);
-                div_zero(n);
+                div_rem_nonneg(0, n);
 
                 forall_append(map_filter_first_chunk, map_ret_recursive, (ge)(0));
                 forall_append(map_filter_first_chunk, map_ret_recursive, (lt)(n));
@@ -588,7 +588,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
                 ints(permutations, cht_height*backend_capacity, ?p_in) &*&
                 true == forall(split(p_in, nat_of_int(i), cht_height), is_permutation) &*&
                 true == is_sub_permutation(chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
-                true == forall(zip_index(chunk(p_in, i * cht_height, i * cht_height + j)), (is_modulo_permutation)(offset, shift, cht_height)); @*/
+                true == forall(zip_index(chunk(p_in, i * cht_height, i * cht_height + j), 0), (is_modulo_permutation)(offset, shift, cht_height)); @*/
         {
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
@@ -604,9 +604,9 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
 
             //@ list<int> chunk = chunk(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
             //@ list<int> chunk_append = append(chunk, cons(snd(new_elem), nil));
-            //@ list< pair<int, int> > chunk_append_ziped = zip_index(chunk_append);
+            //@ list< pair<int, int> > chunk_append_ziped = zip_index(chunk_append, 0);
 
-            //@ list< pair<int, int> > chunk_ziped = zip_index(chunk);
+            //@ list< pair<int, int> > chunk_ziped = zip_index(chunk, 0);
             //@ list< pair<int, int> > chunk_ziped_append = append(chunk_ziped, cons(new_elem, nil));
 
             // Length of chunk
@@ -614,7 +614,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ length_append(chunk, cons(snd(new_elem), nil));
 
             // Append rule for zip_with_index
-            //@ zip_index_append(chunk, snd(new_elem));
+            //@ zip_index_append(chunk, cons(snd(new_elem), nil));
             //@ assert (chunk_append_ziped == chunk_ziped_append);
 
             // Preservation of fixpoint
@@ -625,16 +625,16 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             //@ assert (true == forall(chunk_append_ziped, (is_modulo_permutation)(offset, shift, cht_height)));
 
             // Arithmetic bounds
-            //@ zip_index_bounds(chunk_append);
+            //@ zip_index_bounds(chunk_append, 0);
             //@ lt_le_lt(map(fst, chunk_append_ziped), length(chunk_append), cht_height);
             //@ modulo_permutation_bounds(chunk_append_ziped, offset, shift, cht_height);
 
             // No duplicates guarantee
-            //@ zip_index_distinct(chunk_append);
+            //@ zip_index_distinct(chunk_append, 0);
             //@ modulo_permutation_list(chunk_append_ziped, offset, shift, cht_height);
 
             // Prove invariant
-            //@ zip_index_unzip(chunk_append);
+            //@ zip_index_unzip(chunk_append, 0);
             //@ chunk_append(update(i * cht_height + j, permut, p_in), i * cht_height, i * cht_height + j);
         }
 

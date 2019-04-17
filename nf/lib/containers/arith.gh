@@ -1,13 +1,6 @@
 #ifndef ARITH_GH
 #define ARITH_GH
 
-lemma void div_zero(int a)
-    requires    0 < a;
-    ensures     0/a == 0;
-{
-    assume (0/a == 0);
-}
-
 lemma void div_exact(int a, int b)
     requires    0 <= a &*& 0 < b;
     ensures     a*b/b == a;

@@ -84,7 +84,14 @@ lemma void extract_val(int nb_rows, int nb_cols, int i, int j)
     requires    0 <= i &*& i < nb_rows &*& 0 <= j &*& j < nb_cols;
     ensures     extract_row(nb_cols, i * nb_cols + j) == i &*& extract_col(nb_cols, i * nb_cols + j) == j;
 {
-    assume (extract_row(nb_cols, i * nb_cols + j) == i && extract_col(nb_cols, i * nb_cols + j) == j);
+    int n = i * nb_cols + j;
+
+    mul_bounds(i, nb_rows - 1, nb_cols, nb_cols);
+    div_rem_nonneg(n, nb_cols);
+    div_exact(i + 1, nb_cols);
+    div_lt(n, i + 1, nb_cols);
+    div_exact(i, nb_cols);
+    div_ge(i * nb_cols, n, nb_cols);
 }
 
 lemma void extract_row_ge(int nb_cols, int val, list<int> xs)
