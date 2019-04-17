@@ -1,3 +1,4 @@
+from state import flow_emap, flow_id_to_backend_id, backends, backend_ip_emap, cht
 EXP_TIME = 10
 BACKEND_EXP_TIME = 60
 EXT_PORT = 0

@@ -15,6 +15,7 @@ vector = {'name' : 'vector',
 headerStack = 'recv_headers'
 dummyCnt = 0
 objects = {}
+stateVars = []
 
 indentLevel = 0
 indentWidth = 2
@@ -239,7 +240,7 @@ def endsWithReturn(exprList):
     return False
 
 def translate(exprList, declaredVars):
-    global indentLevel
+    global indentLevel, stateVars
     indentLevel += 1
     while exprList:
         [expr, *exprList] = exprList
@@ -287,7 +288,15 @@ def translate(exprList, declaredVars):
             indentPrint(renderExpr(expr.value) + ';')
         elif isinstance(expr, ast.Import):
             for alias in expr.names:
+                assert alias.asname == None
                 translateSpec(alias.name + '.py')
+        elif isinstance(expr, ast.ImportFrom):
+            assert expr.module == 'state'
+            for alias in expr.names:
+                assert alias.asname == None
+                assert alias.name in stateObjects
+                stateVars.append(alias.name)
+                declaredVars.append(alias.name)
         else:
             indentPrint ("Unrecognized construct {}".format(ast.dump(expr)))
     indentLevel -= 1
@@ -301,13 +310,11 @@ if 'bridge' in pythonSpecFname:
                                          'fields' : ['output_port']}}
     typeConstructors = {'StaticKeyc' : 'StaticKeyi'}
     stateObjects = {'dyn_emap' : emap,
-                    'dyn_vals' : vector}
-    stateVars = list(stateObjects.keys())
+                    'dyn_vals' : vector,
+                    'stat_emap' : emap}
     indentPrint("dchain stat_chain; //dummy")
     indentPrint("emap<StaticKeyi> stat_emap = emap(initial_st_map, initial_st_vec, stat_chain);")
-    globalVars = stateVars.copy()
-    globalVars.append('stat_emap')
-    stateObjects['stat_emap'] = emap
+    indentPrint("emap<StaticKeyi> final_stat_emap = emap(initial_st_map, initial_st_vec, stat_chain);")
 elif 'lb' in pythonSpecFname:
     objConstructors = {'backends.get' : {'constructor' : 'LoadBalancedBackendc',
                                          'type' : 'LoadBalancedBackendi',
@@ -319,8 +326,6 @@ elif 'lb' in pythonSpecFname:
                     'backends' : vector,
                     'backend_ip_emap' : emap,
                     'cht' : None}
-    stateVars = list(stateObjects.keys())
-    globalVars = stateVars.copy()
 elif 'policer' in pythonSpecFname:
     objConstructors = {'dyn_vals.get' : {'constructor' : 'DynamicValuec',
                                          'type' : 'DynamicValuei',
@@ -328,8 +333,6 @@ elif 'policer' in pythonSpecFname:
     typeConstructors = {'DynamicValuec' : 'DynamicValuei'}
     stateObjects = {'flow_emap' : emap,
                     'dyn_vals' : vector}
-    stateVars = list(stateObjects.keys())
-    globalVars = stateVars.copy()
 elif 'nat' in pythonSpecFname:
     objConstructors = {'flow_emap.get_key' : {'constructor' : 'FlowIdc',
                                               'type' : 'FlowIdi',
@@ -337,8 +340,6 @@ elif 'nat' in pythonSpecFname:
     typeConstructors = {'FlowIdc' : 'FlowIdi',
                         'emap' : 'emap<FlowIdi>'}
     stateObjects = {'flow_emap' : emap}
-    stateVars = list(stateObjects.keys())
-    globalVars = stateVars.copy()
 elif 'fw' in pythonSpecFname:
     objConstructors = {'flow_emap.get_key' : {'constructor' : 'FlowIdc',
                                               'type' : 'FlowIdi',
@@ -347,13 +348,11 @@ elif 'fw' in pythonSpecFname:
                         'emap' : 'emap<FlowIdi>'}
     stateObjects = {'flow_emap' : emap,
                     'int_devices' : vector}
-    stateVars = list(stateObjects.keys())
-    globalVars = stateVars.copy()
 
 def translateSpec(pythonSpecFname_):
     specRaw = open(pythonSpecFname_).read()
     specAst = ast.parse(specRaw)
-    translate(specAst.body, globalVars)
+    return translate(specAst.body, [])
 
 vfSpecFile = open(vfSpecFname, "w")
 indentPrint("bit_and_hack();")

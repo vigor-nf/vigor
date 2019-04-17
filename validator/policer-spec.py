@@ -1,3 +1,4 @@
+from state import flow_emap, dyn_vals
 EXP_TIME = 10
 LAN_DEVICE = 0
 WAN_DEVICE = 1

@@ -1,3 +1,4 @@
+from state import dyn_emap, stat_emap, dyn_vals
 EXP_TIME = 10
 
 h = pop_header(ether, on_mismatch=([],[]))

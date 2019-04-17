@@ -1,3 +1,4 @@
+from state import flow_emap, int_devices
 EXP_TIME = 10
 EXT_DEVICE = 1
 
