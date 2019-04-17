@@ -27,7 +27,7 @@
 #           Tester sends packets to server, which are modified by the middlebox;
 #           there are two subnets, tester-middlebox and middlebox-server.
 #           a.k.a. request/response
-# $3: The type of NF, either NAT/Br/LB/Pol.
+# $3: The type of NF, either NAT/Br/LB/Pol/FW
 #     For running programs such as netfilter please provide the NF it is being used as a baseline for:.
 
 MIDDLEBOX=$1
