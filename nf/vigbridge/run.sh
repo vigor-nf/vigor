@@ -17,7 +17,7 @@ set -x
 # List of config variables for NAT to run - see lib/nat_config.c 
 
 if [ $SCENARIO = "loopback" ]; then
-    sudo taskset -c 8 ./build/bridge -n 2 -- --capacity 32768 \
+    sudo taskset -c 8 ./build/bridge -n 2 -- --capacity 65536 \
 	  $PARAMS
 else
     echo "[bench] ERROR: non-loopback is not supported" 1>&2
