@@ -74,8 +74,6 @@ case $SCENARIO in
         esac
 
         echo "[bench] Benchmarking throughput..."
-        echo "LUA SCRIPT is $LUA_SCRIPT" 
-       	exit 10
 	ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 5000 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-find-mg-1p.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-find-mg-1p.txt"
