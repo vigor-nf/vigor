@@ -182,6 +182,7 @@ def isPopHeader(expr):
 
 def translatePopHeader(binding, body, declaredVars):
     global headerStack, dummyCnt, objects
+    prevHeaderStack = headerStack
     indentPrint("switch({}) {{\n".format(headerStack))
     onMismatch = genOutcome(binding.value.keywords[0].value)
     indentPrint("case nil: {}".format(onMismatch))
@@ -204,6 +205,7 @@ def translatePopHeader(binding, body, declaredVars):
     indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdrName, hdrName))
     indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(fieldInstances)))
     translate(body, declaredVars)
+    headerStack = prevHeaderStack
     indentPrint("}}}")
 
 def objConstructKey(call):
@@ -293,10 +295,14 @@ def translate(exprList, declaredVars):
         elif isinstance(expr, ast.Import):
             for alias in expr.names:
                 assert alias.asname == None
+                found = False
                 for d in importSearchDirs:
-                    if os.path.isfile(d + alias.name + '.py'):
-                        translateSpec(alias.name + '.py')
+                    path = os.path.join(d, alias.name + '.py')
+                    if os.path.isfile(path):
+                        translateSpec(path)
+                        found = True
                         break
+                assert found, alias.name + ' file not found'
         elif isinstance(expr, ast.ImportFrom):
             assert expr.module == 'state'
             for alias in expr.names:
