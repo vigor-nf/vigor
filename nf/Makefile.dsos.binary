@@ -20,6 +20,7 @@ CONTAINERS_DIR = lib/containers
 STUBS_DIR = lib/stubs
 KERNEL_DIR = lib/kernel
 NAT_DIR = vignat
+BRIDGE_DIR = vigbridge
 NOP_DIR = unverified-nop
 
 # NAT
@@ -28,6 +29,12 @@ NAT_SOURCES += $(NAT_DIR)/nat_config.c
 NAT_SOURCES += $(NAT_DIR)/nat_flow.c
 NAT_SOURCES += $(NAT_DIR)/nat_flowmanager.c
 
+# Bridge
+BRIDGE_SOURCES  = $(BRIDGE_DIR)/bridge_main.c
+BRIDGE_SOURCES += $(BRIDGE_DIR)/bridge_config.c
+BRIDGE_SOURCES += $(BRIDGE_DIR)/bridge_data.c
+
+#NOP
 NOP_SOURCES = $(NOP_DIR)/nop_main.c
 NOP_SOURCES += $(NOP_DIR)/nat_config.c
 
@@ -121,7 +128,7 @@ KERNEL_DEFS := -DDSOS_DEBUG
 # OTHER_INCLUDES := -I include --include include/misc_defs.h
 OTHER_INCLUDES := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
 
-C_SRCS = $(NAT_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS) map_test.c flow.c
+C_SRCS = $(BRIDGE_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS) map_test.c flow.c
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
 BOOT_SRCS = $(KERNEL_DIR)/asm/multiboot_header.asm $(KERNEL_DIR)/asm/boot.asm
