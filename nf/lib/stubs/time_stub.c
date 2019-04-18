@@ -53,37 +53,6 @@ vigor_time_t get_start_time_internal(void) {
 
 vigor_time_t get_start_time(void) {return get_start_time_internal();}
 
-time_t time(time_t *timer)
-{
-    assert(0);
-}
-
-int clock_gettime(clockid_t clk_id, struct timespec *tp)
-{
-    // Others not implemented
-    if(clk_id != CLOCK_MONOTONIC && clk_id != CLOCK_MONOTONIC_RAW) {
-      return -1;
-    }
-
-    uint64_t tsc = dsos_rdtsc();
-    uint64_t freq = dsos_tsc_get_freq();
-
-
-#ifdef KLEE_VERIFICATION
-    // HACK: Verifast doesn't like the division
-    // even though there is no reason why it shouldn't
-    // be correct since it's just scaling the TSC by a constant.
-    // Maybe some more lemmas are needed.
-    tp->tv_sec = tsc / freq;
-    tp->tv_nsec = tsc; //FIXME: modulo 1000000000, etc, use a proper formula;
-#else//KLEE_VERIFICATION
-    tp->tv_nsec = (tsc * 1000000000 / freq) % 1000000000;
-    tp->tv_sec = tsc / freq;
-#endif//KLEE_VERIFICATION
-
-    return 0;
-}
-
 vigor_time_t recent_time(void) {
   // Don't trace this function, it only reterns the last result of current_time
   return last_time;

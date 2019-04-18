@@ -128,6 +128,7 @@ DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_neon.c, $(
 STUBS_SRCS := $(wildcard $(STUBS_DIR)/*.c)
 STUBS_SRCS += $(wildcard $(STUBS_DIR)/externals/*.c)
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/packet-io-stub.c, $(STUBS_SRCS))
+STUBS_SRCS := $(filter-out $(STUBS_DIR)/time_stub.c, $(STUBS_SRCS))
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/hardware_stub.c, $(STUBS_SRCS))
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/driver_stub.c, $(STUBS_SRCS))
 STUBS_SRCS := $(filter-out $(STUBS_DIR)/dpdk_low_level_stub.c, $(STUBS_SRCS))
