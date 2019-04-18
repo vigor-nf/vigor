@@ -14,11 +14,8 @@ h1 = pop_header(ether, on_mismatch=([],[]))
 
 packet_flow = LoadBalancedFlowc(h2.saddr, h2.daddr, h3.src_port, h3.dst_port, h2.npid)
 if received_on_port == EXT_PORT:
-    if flow_emap.has(packet_flow):
-        backend_id = flow_id_to_backend_id.get(flow_emap.get(packet_flow))
-        if backend_ip_emap.has_idx(backend_id):
-            pass
-    if (backend_ip_emap.exists_with_cht(cht, _LoadBalancedFlow_hash(packet_flow)) and
+    if (not flow_emap.has(packet_flow) and
+        backend_ip_emap.exists_with_cht(cht, _LoadBalancedFlow_hash(packet_flow)) and
         not flow_emap.full()):
         bknd = backend_ip_emap.choose_with_cht(cht, _LoadBalancedFlow_hash(packet_flow))
         idx = the_index_allocated

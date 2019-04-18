@@ -1,5 +1,6 @@
 from state import flow_emap
 EXP_TIME = 10
+EXT_IP_ADDR = ext_ip
 EXT_PORT = 1
 if a_packet_received and EXP_TIME <= now:
     flow_emap.expire_all(now - EXP_TIME)
