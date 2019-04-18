@@ -177,7 +177,7 @@ void read_static_ft_from_file() {
 
 #else//KLEE_VERIFICATION
 
-void read_static_ft_from_file() {
+static void read_static_ft_from_file() {
   if (config.static_config_fname[0] == '\0') {
     // No static config
     allocate_static_ft(1);
@@ -287,10 +287,52 @@ void read_static_ft_from_file() {
   fclose(cfg_file);
 }
 
+struct {
+  const char mac_addr[18];
+  const int device_from;
+  const int device_to;
+} static_rules[] = {
+  { "00:00:00:00:00:00", 0, 0 },
+};
+
+static void read_static_ft_from_array() {
+  unsigned number_of_entries = sizeof(static_rules) / sizeof(static_rules[0]);
+
+  // Make sure the hash table is occupied only by 50%
+  unsigned capacity = number_of_entries * 2;
+  if (CAPACITY_UPPER_LIMIT <= capacity) {
+    rte_exit(EXIT_FAILURE, "Too many static rules (%d), max: %d",
+             number_of_entries, CAPACITY_UPPER_LIMIT/2);
+  }
+  allocate_static_ft(capacity);
+  int count = 0;
+
+  for (int idx = 0; idx < number_of_entries; idx++) {
+    struct StaticKey* key = 0;
+    vector_borrow(static_ft.keys, count, (void**)&key);
+
+    int result = cmdline_parse_etheraddr(NULL, static_rules[idx].mac_addr,
+                                     &key->addr,
+                                     sizeof(struct ether_addr));
+    if (result < 0) {
+      NF_INFO("Invalid MAC address: %s, skip",
+              static_rules[idx].mac_addr);
+      continue;
+    }
+
+    // Now everything is alright, we can add the entry
+    key->device = static_rules[idx].device_from;
+    map_put(static_ft.map, &key->addr, static_rules[idx].device_to);
+    vector_return(static_ft.keys, count, key);
+    ++count;
+    assert(count < capacity);
+  }
+}
+
 #endif//KLEE_VERIFICATION
 
 void nf_core_init(void) {
-  read_static_ft_from_file();
+  read_static_ft_from_array();
 
   unsigned capacity = config.dyn_capacity;
   int happy = map_allocate(ether_addr_eq, ether_addr_hash,
