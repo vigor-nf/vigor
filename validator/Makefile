@@ -28,22 +28,22 @@ validate-nat: clean
 	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cma
 
 validate-bridge: clean
-	$(SPEC ?= bridge-spec.py)
+	$(eval SPEC ?= bridge-spec.py)
 	python3 translate-spec.py $(SPEC) bridge_forwarding_property.tmpl
 	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cma
 
 validate-balancer: clean
-	$(SPEC ?= lb-spec.py)
+	$(eval SPEC ?= lb-spec.py)
 	python3 translate-spec.py $(SPEC) balancer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cma
 
 validate-policer: clean
-	$(SPEC ?= policer-spec.py)
+	$(eval SPEC ?= policer-spec.py)
 	python3 translate-spec.py $(SPEC) policer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
 validate-fw: clean
-	$(SPEC ?= fw-spec.py)
+	$(eval SPEC ?= fw-spec.py)
 	python3 translate-spec.py $(SPEC) fw_forwarding_property.tmpl
 	./test_all.sh ../nf/vigfw/klee-last out ../nf fw_fspec.cma
 
