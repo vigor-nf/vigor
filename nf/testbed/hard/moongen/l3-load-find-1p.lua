@@ -9,15 +9,20 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
-local DST_MAC		= "90:e2:ba:55:14:64" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE	= "192.168.6.5" -- actual address will be SRC_IP_BASE + random(0, flows)
-local DST_IP		= "192.168.4.10"
-local SRC_PORT		= 234
-local DST_PORT		= 319
+-- icnalsp3s3 - icnalsp3s4
+-- local DST_MAC		= "90:e2:ba:55:14:64" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+
+-- icnalsp3s2 - icnalsp3s1
+local DST_MAC			= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+
+local SRC_IP_BASE		= "192.160.0.1 " -- actual address will be SRC_IP_BASE + random(0, flows)
+local DST_IP			= "192.168.4.10"
+local SRC_PORT			= 234
+local DST_PORT			= 319
 
 function configure(parser)
 	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
-	parser:argument("txDev", "Device to transmit from."):convert(tonumber)
+	parser:argument("txDev", "Device to transmit from."):convert(tonumber)  --For LB sending from here is sending heartbeats
 	parser:argument("rxDev", "Device to receive from."):convert(tonumber)
 	parser:option("-r --rate", "Transmit rate in Mbit/s."):default(10000):convert(tonumber)
 	parser:option("-f --flows", "Number of flows (randomized source IP)."):default(4):convert(tonumber)
@@ -42,8 +47,9 @@ function master(args)
 	end
 	local minRate = 10
 	local rate = minRate + (maxRate - minRate)/2
-	-- for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
-	for _,nflws in pairs({20}) do
+	local num_backends = 20
+-- 	for _,nflws in pairs({100}) do
+ 	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
 		-- Heatup phase
 		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
 		setRate(txDev:getTxQueue(0), args.size, minRate);
@@ -51,8 +57,8 @@ function master(args)
 		local snt, rcv = loadTask:wait()
 		printf("heatup results: %d sent, %f loss", snt, (snt-rcv)/snt);
 		if (rcv < snt/100) then
-			printf("unsuccessfull exiting");
-			return
+			printf("unsuccessful exiting");
+			return	
 		end
 		mg.waitForTasks()
 		local steps = 11;
@@ -117,9 +123,9 @@ function loadSlave(queue, rxDev, size, flows, duration)
 		for i, buf in ipairs(bufs) do
 			local pkt = buf:getUdpPacket()
 			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.ip4.src:set(baseIP)
-			-- pkt.udp.src = (baseSRCP)
-			pkt.udp.dst = (baseDSTP + counter)
+			pkt.ip4.src:set(baseIP + counter)
+			-- pkt.udp.src = (baseSRCP + counter)
+			-- pkt.udp.dst = (baseDSTP + counter)
 			counter = incAndWrap(counter, flows)
 		end
 		-- UDP checksums are optional, so using just IPv4 checksums would be sufficient here
@@ -136,34 +142,3 @@ function loadSlave(queue, rxDev, size, flows, duration)
 	fileRxCtr:finalize()
 	return txCtr.total, rxCtr.total
 end
-
-function timerSlave(txQueue, rxQueue, size, flows, duration)
-	if size < 84 then
-		log:warn("Packet size %d is smaller than minimum timestamp size 84. Timestamped packets will be larger than load packets.", size)
-		size = 84
-	end
-	local finished = timer:new(duration)
-	local timestamper = ts:newUdpTimestamper(txQueue, rxQueue)
-	local hist = hist:new()
-	local counter = 0
-	local rateLimit = timer:new(0.001)
-	local baseIP = parseIPAddress(SRC_IP_BASE)
-	local baseSRCP = SRC_PORT
-	while finished:running() and mg.running() do
-		hist:update(timestamper:measureLatency(size, function(buf)
-			fillUdpPacket(buf, size)
-			local pkt = buf:getUdpPacket()
-			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.ip4.src:set(baseIP)
-			pkt.udp.src = (baseSRCP + counter)
-			counter = incAndWrap(counter, flows)
-		end))
-		rateLimit:wait()
-		rateLimit:reset()
-	end
-	-- print the latency stats after all the other stuff
-	mg.sleepMillis(300)
-	hist:print()
-	hist:save("latency-histogram.csv")
-end
-

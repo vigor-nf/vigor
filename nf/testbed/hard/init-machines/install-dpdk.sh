@@ -20,10 +20,10 @@ if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != $DPDK_RELEASE ]; then
     fi
 
     # Download DPDK
-    wget http://static.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz
-    tar xf dpdk-$DPDK_RELEASE.tar.xz
+    wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
+    tar xf dpdk.tar.xz
     mv dpdk-$DPDK_RELEASE dpdk
-    rm dpdk-$DPDK_RELEASE.tar.xz
+    rm dpdk.tar.xz
 
     # Compile it
     cd dpdk

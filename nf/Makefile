@@ -52,19 +52,19 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 
 ### VeriFast verification ###
 # we use DPDK stubs in there (e.g. rte_config.h)
-verifast:
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
-		$(SELF_DIR)/lib/containers/double-chain-impl.c \
-		$(SELF_DIR)/lib/containers/double-chain.c \
-		$(SELF_DIR)/lib/containers/map-impl.c \
-		$(SELF_DIR)/lib/containers/double-map.c \
-		$(SELF_DIR)/lib/containers/vector.c \
-		$(SELF_DIR)/lib/containers/cht.c \
-		$(SELF_DIR)/lib/containers/map.c \
-		$(SELF_DIR)/lib/coherence.c \
-		$(SELF_DIR)/lib/expirator.c \
-		$(SELF_DIR)/lib/packet-io.c
+LIBVIG_SRC := $(SELF_DIR)/lib/containers/double-chain-impl.c \
+              $(SELF_DIR)/lib/containers/double-chain.c \
+              $(SELF_DIR)/lib/containers/map-impl.c \
+              $(SELF_DIR)/lib/containers/double-map.c \
+              $(SELF_DIR)/lib/containers/vector.c \
+              $(SELF_DIR)/lib/containers/cht.c \
+              $(SELF_DIR)/lib/containers/map.c \
+              $(SELF_DIR)/lib/coherence.c \
+              $(SELF_DIR)/lib/expirator.c \
+              $(SELF_DIR)/lib/packet-io.c
 
+verifast:
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared $(LIBVIG_SRC)
 
 ### KLEE verification ###
 
@@ -214,3 +214,23 @@ verify-dsos: verify-dsos-nf.bc
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
+
+
+# ################# #
+# LoC count targets #
+# ################# #
+
+# cloc instead of sloccount because the latter does not report comments, and all VeriFast annotations are comments
+
+loc: all
+	cloc $(SRCS-y) $(AUTO_GEN_FILES)
+
+loc-dpdk:
+	cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
+
+loc-dsos:
+	echo 'todo'
+
+loc-libvig:
+	cloc --force-lang 'Pig Latin',gh  $(LIBVIG_SRC) lib/containers/*.gh
+	@echo 'NOTE: C comments + Pig Latin == VeriFast annotations'

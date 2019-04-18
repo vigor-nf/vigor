@@ -19,4 +19,10 @@ vigor_time_t current_time(void);
 //@ requires last_time(?x);
 //@ ensures result >= 0 &*& x <= result &*& last_time(result);
 
+/**
+   Returns the last result of current_time. must only be called after
+   current_time was invoked at least once.
+ */
+vigor_time_t recent_time(void);
+
 #endif//NF_TIME_H_INCLUDED

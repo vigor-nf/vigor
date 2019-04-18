@@ -314,11 +314,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
     return in_port;
   }
 
-  uint16_t dst_device = (uint16_t)forward_to;
-
-  concretize_devices(&dst_device, rte_eth_dev_count());
-
-  return dst_device;
+  return forward_to;
 }
 
 void nf_config_init(int argc, char** argv) {

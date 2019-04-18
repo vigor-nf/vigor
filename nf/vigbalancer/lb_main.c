@@ -76,6 +76,8 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
 	struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now);
 
+  concretize_devices(&backend.nic, rte_eth_dev_count());
+
   if (backend.nic != 0) { // If not dropped
     ipv4_header->dst_addr = backend.ip;
     ether_header->s_addr = config.device_macs[backend.nic];

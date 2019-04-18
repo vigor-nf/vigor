@@ -19,44 +19,11 @@ type blemma_params = {args: string list;
 type lemma = (lemma_params -> string)
 type blemma = (blemma_params -> string)
 
-let tx_l str = (fun _ -> "/*@ " ^ str ^ " @*/" )
-let tx_bl str = (fun _ -> "/*@ " ^ str ^ " @*/" )
-
-
-let on_rez_nonzero str = (fun params ->
-    "/*@ if(" ^ params.ret_name ^ "!=0) " ^ str ^ "@*/")
-
-let on_rez_nz f = (fun params ->
-    "/*@ if(" ^ params.ret_name ^ "!=0) " ^ (f params) ^ " @*/")
-
-let rec render_deep_assignment {lhs;rhs} =
-  match rhs.t with
-  | Str (_,fields) ->
-    String.concat ~sep: "\n"
-      (List.map fields
-         ~f:(fun (name,t) ->
-             render_deep_assignment {lhs={v=Str_idx (lhs, name);t};
-                                     rhs={v=Str_idx (rhs, name);t}}))
-  | Unknown -> "";
-  | Array _ -> begin match rhs.v with
-      | Array cells -> "umemcpy(" ^ (render_tterm lhs) ^ ", "
-                       ^ (render_tterm rhs) ^ ", " ^
-                       (Int.to_string (List.length cells)) ^ ");"
-      | _ -> failwith ("Trying to assign a nonarray: " ^ (render_tterm rhs))
-    end
-  | _ -> (render_tterm lhs) ^ " = " ^
-         (render_tterm rhs) ^ ";"
-
-let deep_copy (var : var_spec) =
-  (render_deep_assignment {lhs={v=Id var.name;t=var.value.t};
-                             rhs=var.value}) ^
-  "\n"
-
 let rec self_dereference tterm tmpgen =
   match tterm.v with
   | Id x -> begin match tterm.t with
       | Ptr _ ->
-        ("//@ assert *&" ^ x ^ "|-> ?" ^
+         ("//@ assert *&" ^ x ^ "|-> ?" ^
          (tmpgen ("pp" ^ x) ^ ";"),
          {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
       | _ -> ("", tterm)
@@ -72,25 +39,26 @@ let rec self_dereference tterm tmpgen =
     (binding,{v=Deref x;t=tterm.t})
   | _ -> failwith ("unhandled in self_deref: " ^ (render_tterm tterm))
 
-let rec innermost_dereference tterm tmpgen =
-  match tterm.v with
-  | Str_idx ({v=Deref {v=Id x;t=_};t=_},fname) ->
-    let tmpname = (tmpgen ("stp" ^ x ^ "_" ^ fname)) in
-    ("//@ assert " ^ (render_tterm tterm) ^ " |-> ?" ^
-     tmpname ^ ";",
-     {v=Id tmpname;t=tterm.t})
-  | Addr x ->
-    let (binding, x) = innermost_dereference x tmpgen in
-    (binding, {v=Addr x;t=tterm.t})
-  | Deref x ->
-    let (binding, x) = innermost_dereference x tmpgen in
-    (binding, {v=Deref x;t=tterm.t})
-  | Str_idx (x,fname) ->
-    let (binding, x) = innermost_dereference x tmpgen in
-    (binding, {v=Str_idx (x,fname);t=tterm.t})
-  | _ -> failwith ("unhandled in inn_deref: " ^ (render_tterm tterm) ^ " : " ^ (ttype_to_str tterm.t))
-
 let generate_2step_dereference tterm tmpgen =
+  let rec innermost_dereference tterm tmpgen =
+    match tterm.v with
+    | Str_idx ({v=Deref {v=Id x;t=_};t=_},fname) ->
+      let tmpname = (tmpgen ("stp" ^ x ^ "_" ^ fname)) in
+      ("//@ assert " ^ (render_tterm tterm) ^ " |-> ?" ^
+       tmpname ^ ";",
+       {v=Id tmpname;t=tterm.t})
+    | Addr x ->
+      let (binding, x) = innermost_dereference x tmpgen in
+      (binding, {v=Addr x;t=tterm.t})
+    | Deref x ->
+      let (binding, x) = innermost_dereference x tmpgen in
+      (binding, {v=Deref x;t=tterm.t})
+    | Str_idx (x,fname) ->
+      let (binding, x) = innermost_dereference x tmpgen in
+      (binding, {v=Str_idx (x,fname);t=tterm.t})
+    | _ -> failwith ("unhandled in inn_deref: " ^ (render_tterm tterm) ^ " : " ^ (ttype_to_str tterm.t))
+  in
+
   let rec tterm_has_no_derefs = function
   | {v=Deref _;t=_} -> false
   | {v=Str_idx (x, _);t=_} -> tterm_has_no_derefs x
@@ -116,9 +84,6 @@ type type_set = Static of ttype | Dynamic of (string*ttype) list
 
 let stt types =
   List.map types ~f:(fun t -> Static t)
-
-let estt ex_ptrs =
-  List.map ex_ptrs ~f:(fun (name,t) -> (name,Static t))
 
 type fun_spec = {ret_type: type_set; arg_types: type_set list;
                  extra_ptr_types: (string * type_set) list;

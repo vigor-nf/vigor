@@ -51,3 +51,4 @@ nat/testbed/hard/util/plot/*.png
 /nf/*/*_state.h
 /nf/*/*_state.c
 .DS_Store
+*.swp

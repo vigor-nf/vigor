@@ -33,7 +33,7 @@ size_t global_read_length = 0;
     chars((int8_t*)p + borrowed_len(missing_chunks), length(unread), unread);
   @*/
 
-void packet_state_total_length(void* p, uint16_t* len)
+void packet_state_total_length(void* p, uint32_t* len)
 /*@ requires packetp(p, ?unread, nil) &*&
              *len |-> length(unread); @*/
 /*@ ensures packetp(p, unread, nil) &*&

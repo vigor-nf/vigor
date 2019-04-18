@@ -40,3 +40,25 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 void umemcpy(void *array, void *array0, size_t count);
     //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
     //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);
+
+/*@ predicate hide_is_map_keys_equality<t>(map_keys_equality* fun,
+                                           predicate (void*;t) keyp) =
+      is_map_keys_equality<t>(fun, keyp);
+ @*/
+
+/*@ predicate hide_is_map_key_hash<t>(map_key_hash* fun,
+                                      predicate (void*;t) keyp,
+                                      fixpoint (t,int) hsh) =
+      is_map_key_hash<t>(fun, keyp, hsh);
+ @*/
+
+/*@ predicate hide_mapp<t>(struct Map* p,
+                           predicate (void*;t) kp,
+                           fixpoint (t,int) hsh,
+                           fixpoint (t,int,bool) recp,
+                           mapi<t> m) = mapp<t>(p, kp, hsh, recp, m); @*/
+
+/*@ predicate hide_vector<t>(struct Vector* vector,
+                             predicate (void*;t) entp,
+                             list<pair<t, real> > values,
+                             list<void*> addrs) = vectorp<t>(vector, entp, values, addrs); @*/

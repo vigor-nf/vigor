@@ -17,7 +17,7 @@ struct lb_config {
 	uint32_t flow_capacity;
 
 	// Expiration time of flows in seconds
-	uint32_t flow_expiration_time;
+	uint64_t flow_expiration_time;
 
   // The maximum number of backends we can ballance at the same time
   uint32_t backend_capacity;

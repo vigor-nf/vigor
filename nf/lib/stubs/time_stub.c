@@ -83,3 +83,8 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
 
     return 0;
 }
+
+vigor_time_t recent_time(void) {
+  // Don't trace this function, it only reterns the last result of current_time
+  return last_time;
+}

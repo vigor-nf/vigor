@@ -17,7 +17,6 @@
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/time_stub_control.h"
-#  include "lib/stubs/driver_stub.h"
 #  include "lib/stubs/hardware_stub.h"
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
@@ -189,6 +188,7 @@ lcore_main(void)
       } else if (dst_device == FLOOD_FRAME) {
         flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
       } else {
+        concretize_devices(&dst_device, rte_eth_dev_count());
         nf_send_packet(mbuf, dst_device);
       }
     }
@@ -208,11 +208,6 @@ MAIN(int argc, char* argv[])
   }
   argc -= ret;
   argv += ret;
-
-#ifdef KLEE_VERIFICATION
-  // Attach stub driver (note that hardware stub is autodetected, no need to attach)
-  stub_driver_attach();
-#endif
 
   // NF-specific config
   nf_config_init(argc, argv);
