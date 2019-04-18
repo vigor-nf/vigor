@@ -10,7 +10,7 @@
 /*@
   inductive emap<T> = emap(list<pair<T, int> > m, list<pair<T, real> > v, dchain ch);
 
-  fixpoint emap<T> emap_expire_all<T>(emap<T> em, time_t t) {
+  fixpoint emap<T> emap_expire_all<T>(emap<T> em, vigor_time_t t) {
     switch(em) { case emap(m, v, ch):
       return emap(map_erase_all_fp(m, vector_get_values_fp(v, dchain_get_expired_indexes_fp(ch, t))),
                   vector_erase_all_fp(v, dchain_get_expired_indexes_fp(ch, t)),
@@ -30,7 +30,7 @@
     }
   }
 
-  fixpoint emap<T> emap_refresh_idx<T>(emap<T> em, int i, time_t t) {
+  fixpoint emap<T> emap_refresh_idx<T>(emap<T> em, int i, vigor_time_t t) {
     switch(em) { case emap(m, v, ch):
       return emap(m, v, dchain_rejuvenate_fp(ch, i, t));
     }
@@ -56,7 +56,7 @@
     }
   }
 
-  fixpoint emap<T> emap_add<T>(emap<T> em, T k, int i, time_t t) {
+  fixpoint emap<T> emap_add<T>(emap<T> em, T k, int i, vigor_time_t t) {
     switch(em) { case emap(m, v, ch):
       return emap(map_put_fp(m, k, i), update(i, pair(k, 0.75), v), dchain_allocate_fp(ch, i, t));
     }

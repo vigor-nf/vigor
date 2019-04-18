@@ -9,7 +9,7 @@
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
-#include "nat_flow.h"
+#include "flow.h.gen.h"
 #include "nat_flowmanager.h"
 #include "nat_config.h"
 #include "lib/nf_forward.h"
@@ -34,46 +34,53 @@ void nf_core_init()
 	}
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 {
+  const int in_port = mbuf->port;
 	NF_DEBUG("It is %" PRId64, now);
 
 	flow_manager_expire(flow_manager, now);
 	NF_DEBUG("Flows have been expired");
 
-	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
-	struct ipv4_hdr* ipv4_header = nf_get_mbuf_ipv4_header(mbuf);
-	if (ipv4_header == NULL) {
+  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
 		NF_DEBUG("Not IPv4, dropping");
-		return mbuf->port;
-	}
+		return in_port;
+  }
+  uint8_t* ip_options;
+  bool wellformed = true;
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
+  if (!wellformed) {
+		NF_DEBUG("Malformed IPv4, dropping");
+		return in_port;
+  }
+  assert(ipv4_header != NULL);
 
-	struct tcpudp_hdr* tcpudp_header = nf_get_ipv4_tcpudp_header(ipv4_header);
-	if (tcpudp_header == NULL) {
+  if (!nf_has_tcpudp_header(ipv4_header) ||
+      packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
-		return mbuf->port;
+		return in_port;
 	}
+	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(mbuf_pkt(mbuf));
+  assert(tcpudp_header != NULL);
 
-	static int packet_count = 0;
-	packet_count++;
-
-	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, mbuf->port);
+	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
 
 	uint16_t dst_device;
-	if (mbuf->port == config.wan_device) {
-		NF_DEBUG("Device %" PRIu16 " is external", mbuf->port);
+	if (in_port == config.wan_device) {
+		NF_DEBUG("Device %" PRIu16 " is external", in_port);
 
     struct FlowId internal_flow;
 		if (flow_manager_get_external(flow_manager, tcpudp_header->dst_port, now, &internal_flow)) {
 			NF_DEBUG("Found internal flow.");
-      flow_log_id(&internal_flow);
+      log_FlowId(&internal_flow);
 
       if (internal_flow.dst_ip != ipv4_header->src_addr ||
           internal_flow.dst_port != tcpudp_header->src_port ||
           internal_flow.protocol != ipv4_header->next_proto_id) {
         NF_DEBUG("Spoofing attempt, dropping.");
-        return mbuf->port;
+        return in_port;
       }
 
 			ipv4_header->dst_addr = internal_flow.src_ip;
@@ -81,7 +88,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 			dst_device = internal_flow.internal_device;
 		} else {
 			NF_DEBUG("Unknown flow, dropping");
-			return mbuf->port;
+			return in_port;
 		}
 	} else {
     struct FlowId id = {
@@ -90,22 +97,22 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
       .src_ip = ipv4_header->src_addr,
       .dst_ip = ipv4_header->dst_addr,
       .protocol = ipv4_header->next_proto_id,
-      .internal_device = mbuf->port
+      .internal_device = in_port
     };
 
     NF_DEBUG("For id:");
-    flow_log_id(&id);
+    log_FlowId(&id);
 
-		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", mbuf->port, config.wan_device);
+		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config.wan_device);
 
     uint16_t external_port;
     static int flow_counter = 0;
 		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
 			NF_DEBUG("New flow");
 
-			if (!flow_manager_allocate_flow(flow_manager, &id, mbuf->port, now, &external_port)) {
+			if (!flow_manager_allocate_flow(flow_manager, &id, in_port, now, &external_port)) {
 				NF_DEBUG("No space for the flow, dropping");
-				return mbuf->port;
+				return in_port;
 			}
 		}
 
@@ -135,41 +142,3 @@ void nf_config_cmdline_print_usage(void) {
 void nf_print_config() {
   nat_print_config(&config);
 }
-
-#ifdef KLEE_VERIFICATION
-#include "nat_loop.h"
-
-void nf_loop_iteration_begin(unsigned lcore_id,
-                             time_t time) {
-  loop_iteration_begin(flow_manager_get_in_table(flow_manager),
-                       flow_manager_get_in_vec(flow_manager),
-                       flow_manager_get_chain(flow_manager),
-                       lcore_id, time,
-                       config.max_flows,
-                       config.start_port,
-                       config.external_addr);
-}
-
-void nf_add_loop_iteration_assumptions(unsigned lcore_id,
-                                       time_t time) {
-  loop_iteration_assumptions(flow_manager_get_in_table(flow_manager),
-                             flow_manager_get_in_vec(flow_manager),
-                             flow_manager_get_chain(flow_manager),
-                             lcore_id, time,
-                             config.max_flows,
-                             config.start_port,
-                             config.external_addr);
-}
-
-void nf_loop_iteration_end(unsigned lcore_id,
-                           time_t time) {
-  loop_iteration_end(flow_manager_get_in_table(flow_manager),
-                     flow_manager_get_in_vec(flow_manager),
-                     flow_manager_get_chain(flow_manager),
-                     lcore_id, time,
-                     config.max_flows,
-                     config.start_port,
-                     config.external_addr);
-}
-#endif
-

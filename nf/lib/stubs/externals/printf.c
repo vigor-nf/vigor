@@ -700,7 +700,7 @@ int sprintf(char* buffer, const char* format, ...)
   return ret;
 }
 
-int snprintf(char* buffer, unsigned int count, const char* format, ...)
+int snprintf(char* buffer, unsigned long count, const char* format, ...)
 {
   va_list va;
   va_start(va, format);
@@ -709,7 +709,7 @@ int snprintf(char* buffer, unsigned int count, const char* format, ...)
   return ret;
 }
 
-int vsnprintf(char* buffer, unsigned int count, const char* format, va_list va)
+int vsnprintf(char* buffer, unsigned long count, const char* format, va_list va)
 {
   return _vsnprintf(_out_buffer, buffer, count, format, va);
 }

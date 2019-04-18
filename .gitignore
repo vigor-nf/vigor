@@ -5,6 +5,7 @@
 *~
 *.aux
 *.cmo
+*.cma
 *.byte
 #*
 *#
@@ -43,4 +44,10 @@ nat/testbed/hard/util/plot/*.txt
 /nat/testbed/hard/util/plot/.RData
 nat/testbed/hard/util/plot/*.png
 /nat/testbed/hard/util/plot/.Rhistory
+/nf/*/*.gen.h
+/nf/*/*.gen.c
+/nf/*/*_loop.h
+/nf/*/*_loop.c
+/nf/*/*_state.h
+/nf/*/*_state.c
 .DS_Store

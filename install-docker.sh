@@ -7,7 +7,7 @@ set -euxo pipefail
 
 VNDSDIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 KERNEL_VER=$(uname -r | sed 's/-generic//')
-IMAGE_NAME='vigor'
+IMAGE_NAME='vigor-deps-proto'
 
 
 # Make sure we have the Linux headers

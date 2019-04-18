@@ -3,7 +3,7 @@
 #include "lib/stubs/containers/double-chain-stub-control.h"
 
 int expire_items(struct DoubleChain* chain, struct DoubleMap* map,
-                 time_t time) {
+                 vigor_time_t time) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)chain, "chain");
   klee_trace_param_u64((uint64_t)map, "map");
@@ -20,7 +20,7 @@ int expire_items(struct DoubleChain* chain, struct DoubleMap* map,
 int expire_items_single_map(struct DoubleChain* chain,
                             struct Vector* vector,
                             struct Map* map,
-                            time_t time) {
+                            vigor_time_t time) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)chain, "chain");
   klee_trace_param_u64((uint64_t)vector, "vector");

@@ -1,25 +1,13 @@
-all: validator.byte nat_fspec.cmo bridge_fspec.cmo balancer_fspec.cmo
+all: validator.byte nat_fspec.cma bridge_fspec.cma balancer_fspec.cma policer_fspec.cma
 
 validator.byte: .PHONY
 	corebuild -no-hygiene -use-menhir -lib dynlink -lib str validator.byte -use-ocamlfind -cflag -unsafe-string
 
-nat_fspec.cmo: _build/nat_fspec.cmo
-	cp _build/nat_fspec.cmo ./
+%.cma: _build/common_fspec.cmo _build/%.cmo
+	ocamlc -a $^ -o $@
 
-bridge_fspec.cmo: _build/bridge_fspec.cmo
-	cp _build/bridge_fspec.cmo ./
-
-balancer_fspec.cmo: _build/balancer_fspec.cmo
-	cp _build/balancer_fspec.cmo ./
-
-_build/nat_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlink -lib str nat_fspec.cmo -cflag -unsafe-string
-
-_build/bridge_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlink -lib str bridge_fspec.cmo -cflag -unsafe-string
-
-_build/balancer_fspec.cmo: .PHONY
-	corebuild -no-hygiene -lib dynlinc balancer_fspec.cmo -cflag -unsafe-string
+_build/%.cmo: .PHONY
+	corebuild -no-hygiene -lib dynlink -lib str $(notdir $@) common_fspec.ml -cflag -unsafe-string
 
 .PHONY:
 
@@ -27,17 +15,21 @@ clean:
 	rm -rf out
 	rm -rf _build
 	find -iname '*.cmo' -delete
+	find -iname '*.cma' -delete
 	find -iname '*.log' -delete
 	rm -f validator.byte
 
 validate-nat: clean
-	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cmo
+	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cma
 
 validate-bridge: clean
-	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cmo
+	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cma
 
 validate-balancer: clean
-	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cmo
+	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cma
+
+validate-policer: clean
+	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
 validate-nat-dsos: clean
 	./test_all.sh ../nf/klee-last out ../nf nat_fspec.cmo

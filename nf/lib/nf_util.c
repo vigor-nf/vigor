@@ -15,34 +15,17 @@
 
 #include "nf_util.h"
 
+void* chunks_borrowed[MAX_N_CHUNKS];
+size_t chunks_borrowed_num = 0;
 
-struct ether_hdr*
-nf_get_mbuf_ether_header(struct rte_mbuf* mbuf)
+uint32_t global_packet_type = 0;
+
+bool
+nf_has_tcpudp_header(struct ipv4_hdr* header)
 {
-	return rte_pktmbuf_mtod(mbuf, struct ether_hdr*);
-}
-
-// TODO for consistency it'd be nice if this took an ether_hdr as argument, or if they all took rte_mbuf
-struct ipv4_hdr*
-nf_get_mbuf_ipv4_header(struct rte_mbuf* mbuf)
-{
-	struct ether_hdr* ether_header = nf_get_mbuf_ether_header(mbuf);
-	if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
-		return NULL;
-	}
-
-	return rte_pktmbuf_mtod_offset(mbuf, struct ipv4_hdr*, sizeof(struct ether_hdr));
-}
-
-struct tcpudp_hdr*
-nf_get_ipv4_tcpudp_header(struct ipv4_hdr* header)
-{
-	if (header->next_proto_id != IPPROTO_TCP && header->next_proto_id != IPPROTO_UDP) {
-		return NULL;
-	}
-
-	uint8_t offset = (header->version_ihl & IPV4_HDR_IHL_MASK) * IPV4_IHL_MULTIPLIER;
-	return (struct tcpudp_hdr*)((unsigned char*) header + offset);
+  // NOTE: Use non-short-circuiting version of OR, so that symbex doesn't fork
+  //       since here we only care of it's UDP or TCP, not if it's a specific one
+  return header->next_proto_id == IPPROTO_TCP | header->next_proto_id == IPPROTO_UDP;
 }
 
 void
@@ -50,6 +33,7 @@ nf_set_ipv4_checksum(struct ipv4_hdr* header)
 {
 	// TODO: See if can be offloaded to hardware
 	header->hdr_checksum = 0;
+	return;// FIXME: Get the checksum back!
 
 	if (header->next_proto_id == IPPROTO_TCP) {
 		struct tcp_hdr* tcp_header = (struct tcp_hdr*)(header + 1);
@@ -61,6 +45,8 @@ nf_set_ipv4_checksum(struct ipv4_hdr* header)
 		udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(header, udp_header);
 	}
 
+  // FIXME: this is misleading. we don't really compute any checksum here,
+  // see rte_ipv4_udptcp_cksum and rte_ipv4_udptcp_cksum, they return 0!
 	header->hdr_checksum = rte_ipv4_cksum(header);
 }
 
@@ -82,7 +68,7 @@ char*
 nf_mac_to_str(struct ether_addr* addr)
 {
 	// format is xx:xx:xx:xx:xx:xx\0
-	uint16_t buffer_size = 6 * 2 + 5 + 1;
+	uint16_t buffer_size = 6 * 2 + 5 + 1; //FIXME: why dynamic alloc here?
 	char* buffer = (char*) calloc(buffer_size, sizeof(char));
 	if (buffer == NULL) {
 		rte_exit(EXIT_FAILURE, "Out of memory in nf_mac_to_str!");
@@ -97,7 +83,7 @@ nf_ipv4_to_str(uint32_t addr)
 {
 	// format is xxx.xxx.xxx.xxx\0
 	uint16_t buffer_size = 4 * 3 + 3 + 1;
-	char* buffer = (char*) calloc(buffer_size, sizeof(char));
+	char* buffer = (char*) calloc(buffer_size, sizeof(char)); //FIXME: why dynamic alloc here?
 	if (buffer == NULL) {
 		rte_exit(EXIT_FAILURE, "Out of memory in nf_ipv4_to_str!");
 	}

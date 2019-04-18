@@ -9,9 +9,8 @@
 #define ETHER_TYPE_IPv4 0x0800
 #define ETHER_MAX_LEN 1518
 
-
 struct ether_addr {
-	uint8_t addr_bytes[6];
+  uint8_t addr_bytes[6];
 };
 
 struct ether_hdr {

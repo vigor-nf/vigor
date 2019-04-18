@@ -9,7 +9,7 @@ type bop = Eq | Le | Lt | Ge | Gt
 
 
 type ttype = | Ptr of ttype
-             | Array of ttype * int
+             | Array of ttype
              | Sint64
              | Sint32
              | Sint16
@@ -33,6 +33,7 @@ type term = Bop of bop*tterm*tterm
           | Apply of string*tterm list
           | Id of string
           | Struct of string*var_spec list
+          | Array of tterm list
           | Int of int
           | Bool of bool
           | Not of tterm
@@ -51,7 +52,7 @@ type eq_condition = {lhs: tterm; rhs: tterm} [@@deriving sexp]
 
 let rec ttype_to_str = function
   | Ptr c_type -> ttype_to_str c_type ^ "*"
-  | Array (a_type, _) -> ttype_to_str a_type ^ "[]"
+  | Array a_type -> ttype_to_str a_type  ^ "[]" (* Verifast does not like this: "[]" *)
   | Sint64 -> "int64_t" | Sint32 -> "int32_t" | Sint16 -> "int16_t" | Sint8 -> "int8_t"
   | Uint64 -> "uint64_t"| Uint32 -> "uint32_t"
   | Uint16 -> "uint16_t" | Uint8 -> "uint8_t"
@@ -137,6 +138,7 @@ let int_type_postfix = function
   | _ -> ""
 
 let rec render_tterm (t:tterm) =
+  let term_type = t.t in
   match t.v with
   | Bop (op, lhs, rhs) -> "(" ^ (render_tterm lhs) ^
                           " " ^ (render_bop op) ^ " " ^
@@ -149,6 +151,10 @@ let rec render_tterm (t:tterm) =
     "{" ^ (String.concat ~sep:", "
              (List.map fields ~f:(fun {name;value} ->
                   "." ^ name ^ " = " ^ (render_tterm value)))) ^
+    "}"
+  | Array cells ->
+    "{" ^ (String.concat ~sep:", "
+             (List.map cells ~f:render_tterm)) ^
     "}"
   | Int 0 -> if (t.t = Boolean) then "false" else ("0"^ (int_type_postfix t.t))
   | Int 1 -> if (t.t = Boolean) then "true" else ("1"^ (int_type_postfix t.t))
@@ -165,6 +171,8 @@ let rec render_tterm (t:tterm) =
   | Str_idx ({v=Deref {v=Id x;t=_};t=_},field_name) -> x ^ "->" ^ field_name
   | Str_idx ({v=Deref x;_},field_name) -> "(" ^ (render_tterm x) ^ ")->" ^ field_name
   | Str_idx (t,field_name) -> "(" ^ (render_tterm t) ^ ")." ^ field_name
+  | Deref {v=Bop (Add, t, {v=Int idx;t=Uint32});t=Array term_type} ->
+    "(" ^ (render_tterm t) ^ ")[" ^ (string_of_int idx) ^"]"
   | Deref t -> "*(" ^ (render_tterm t) ^ ")"
   | Fptr f -> f
   | Addr t -> "&(" ^ (render_tterm t) ^ ")"
@@ -204,6 +212,9 @@ let rec term_eq a b =
   | Cast (ctypea,terma), Cast (ctypeb,termb) -> (ctypea = ctypeb) && (term_eq terma.v termb.v)
   | Undef, Undef -> true
   | Utility ua, Utility ub -> term_utility_eq ua ub
+  | Array cells_a, Array cells_b ->
+    ((List.length cells_a) = (List.length cells_b)) &&
+    (List.for_all2_exn cells_a cells_b ~f:(fun a b -> term_eq a.v b.v))
   | _, _ -> false
 
 let rec call_recursively_on_tterm (f:tterm -> tterm option) tterm =
@@ -218,6 +229,8 @@ let rec call_recursively_on_tterm (f:tterm -> tterm option) tterm =
         | Struct (name,fds) ->
           Struct (name,List.map fds ~f:(fun field ->
               {field with value = call_recursively_on_tterm f field.value}))
+        | Array cells ->
+          Array (List.map cells ~f:(call_recursively_on_tterm f))
         | Int i -> Int i
         | Bool b -> Bool b
         | Not x -> Not (call_recursively_on_tterm f x)
@@ -240,9 +253,14 @@ let call_recursively_on_term (f:term -> term option) tterm =
       | Some v -> Some {v;t}
       | None -> None) tterm
 
-let simplify_tterm tterm =
+let rec simplify_tterm tterm =
+  (* printf "simplify_tterm %s\n" (render_tterm tterm); *)
   call_recursively_on_term (function
+      | Bop (Add, {v=Int x;t=xt}, rhs) when x < 0 ->
+        Some (Bop (Sub, rhs, {v=Int (-x);t=xt}))
       | Deref {t=_;v=Addr x} -> Some x.v
+      | Cast (t1, ({v=Cast(t2, _);t=_} as sub)) when t1 = t2 ->
+        Some (simplify_tterm sub).v
       | Str_idx ({v=Struct (_,fields);
                   t=_},
                  fname) ->
@@ -259,6 +277,8 @@ let rec replace_tterm old_tt new_tt tterm =
   | Bop (opa, lhs, rhs) -> {v=Bop (opa, replace_tterm old_tt new_tt lhs, replace_tterm old_tt new_tt rhs);t=tterm.t}
   | Apply (f, args) -> {v=Apply(f, List.map args ~f:(replace_tterm old_tt new_tt));t=tterm.t}
   | Struct (name, fields) -> {v=Struct (name, List.map fields ~f:(fun fi -> {fi with value = replace_tterm old_tt new_tt fi.value}));t=tterm.t}
+  | Array cells -> {v=Array (List.map cells ~f:(replace_tterm old_tt new_tt));
+                    t=tterm.t}
   | Not tt -> {v=Not (replace_tterm old_tt new_tt tt);t=tterm.t}
   | Str_idx (term, field) -> {v=Str_idx (replace_tterm old_tt new_tt term, field);t=tterm.t}
   | Deref tt -> {v=Deref (replace_tterm old_tt new_tt tt);t=tterm.t}
@@ -277,7 +297,8 @@ let rec append_id_in_term_id_starting_with prefix suffix term = match term with
   | Bop (opa, lhs, rhs) -> Bop(opa, append_id_in_tterm_id_starting_with prefix suffix lhs, append_id_in_tterm_id_starting_with prefix suffix rhs)
   | Apply (f, args) -> Apply(f, List.map args ~f:(append_id_in_tterm_id_starting_with prefix suffix))
   | Id x -> if String.is_prefix x ~prefix:prefix then Id (x ^ suffix) else Id x
-  | Struct _ -> failwith "not supported here, too lazy"
+  | Struct _
+  | Array _ -> failwith "not supported here, too lazy"
   | Int _ -> term
   | Bool _ -> term
   | Not tt -> Not (append_id_in_tterm_id_starting_with prefix suffix tt)
@@ -313,6 +334,8 @@ let rec fix_type_of_id_in_tterm (vars: var_spec list) tterm ~cast =
   | Struct (name, fields) ->
     {v=Struct(name, List.map fields ~f:(fun vs ->
          {vs with value=fix_type_of_id_in_tterm vars vs.value ~cast}));t=tterm.t}
+  | Array cells ->
+    {v=Array (List.map cells ~f:(fix_type_of_id_in_tterm vars ~cast));t=tterm.t}
   | Int _ -> tterm
   | Bool _ -> tterm
   | Not tt -> {v=Not (fix_type_of_id_in_tterm vars tt ~cast);t=tterm.t}
@@ -336,6 +359,8 @@ let rec collect_nodes f tterm =
     | Struct (_,fields) ->
       List.join (List.map fields ~f:(fun {name=_;value} ->
           collect_nodes f value))
+    | Array cells ->
+      List.join (List.map cells ~f:(collect_nodes f))
     | Int _ -> []
     | Bool _ -> []
     | Not x -> collect_nodes f x
@@ -358,6 +383,7 @@ let rec is_const term =
   | Id _ -> false
   | Struct (_,fields) -> List.for_all fields
                            ~f:(fun field -> is_constt field.value)
+  | Array cells -> List.for_all cells ~f:is_constt
   | Int _ -> true
   | Bool _ -> true
   | Not t -> is_constt t

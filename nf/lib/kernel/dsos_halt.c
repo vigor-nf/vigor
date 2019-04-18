@@ -1,5 +1,5 @@
 #ifdef KLEE_VERIFICATION
-#include <stdlib.h>
+#  include <stdlib.h>
 #endif
 
 #include "dsos_halt.h"
@@ -7,15 +7,15 @@
 void dsos_halt(void)
 {
 
-#ifndef KLEE_VERIFICATION
+#ifdef KLEE_VERIFICATION
 
-	while(1) {
-		asm volatile("hlt");
-	}
+  exit(1); // One does not just calls "halt" if nothing bad happened
 
-#else
+#else//KLEE_VERIFICATION
 
-	exit(0);
+  while(1) {
+    asm volatile("hlt");
+  }
 
-#endif
+#endif//KLEE_VERIFICATION
 }

@@ -3,18 +3,8 @@
 #include <string.h>
 #include "lib/stubs/core_stub.h"
 #include "lib/containers/emap.h"
-
-int flow_consistency(void* key_a, void* key_b, int index, void* value)
-/*@ requires true; @*/
-/*@ ensures true; @*/
-{
-   return 0;
-}
-
-void flood(struct rte_mbuf *m, uint8_t skip_device,
-           uint8_t nb_devices);
-//@ requires mbufp(m,_);
-//@ ensures true;
+#include "lib/packet-io.h"
+#include "lib/packet-headers.h"
 
 // VeriFast can't deal with bitwise AND, so we hardcode known cases.
 /*@
@@ -50,4 +40,3 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 void umemcpy(void *array, void *array0, size_t count);
     //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
     //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);
-

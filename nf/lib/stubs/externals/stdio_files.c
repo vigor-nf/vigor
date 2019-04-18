@@ -1,7 +1,7 @@
 #include "lib/stubs/externals/externals_stub.h"
 #include "lib/stubs/hardware_stub.h"
 
-#include "kernel/dsos_pci.h"
+#include "lib/kernel/dsos_pci.h"
 
 #include <dirent.h>
 #include <endian.h>
@@ -17,7 +17,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 #define PCI_MAX_RESOURCE 6
 
@@ -291,9 +295,6 @@ read(int fd, void *buf, size_t count)
 ssize_t
 pread(int fd, void *buf, size_t count, off_t offset)
 {
-	klee_assert(FILES[fd].pos != POS_UNOPENED);
-	klee_assert(FILES[fd].kind == KIND_FILE);
-
 	if (fd == MSR_FD) {
 		// MSR_PLATFORM_INFO
 		klee_assert(offset == 0xCE);
@@ -302,6 +303,9 @@ pread(int fd, void *buf, size_t count, off_t offset)
 		*((uint64_t *) buf) = (33ULL << 8);
 		return 8;
 	}
+
+	klee_assert(FILES[fd].pos != POS_UNOPENED);
+	klee_assert(FILES[fd].kind == KIND_FILE);
 
 	klee_assert(count == 1);
 
@@ -602,7 +606,7 @@ stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 			if (devs[n].resources[i].start == NULL) {
 				// No resource actually present
 				strncat(resource_content, "0x0000000000000000 0x0000000000000000 0x0000000000000000\n",
-					sizeof(resource_content));
+					sizeof(resource_content) - 1);
 			} else {
 				char resource_line_content[180];
 				char resource_name[20];
@@ -623,7 +627,7 @@ stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 						stub_pci_addr((size_t) devs[n].resources[i].start),
 						stub_pci_addr((size_t) devs[n].resources[i].start + devs[n].resources[i].size - 1));
 
-				strncat(resource_content, resource_line_content, sizeof(resource_content));
+				strncat(resource_content, resource_line_content, sizeof(resource_content) - 1);
 
 				snprintf(resource_name, sizeof(resource_name), "resource%d", i);
 
@@ -689,6 +693,19 @@ stub_stdio_files_init(struct dsos_pci_nic *devs, int n)
 	// Other devices
 	stub_add_file("/dev/zero", ""); // HACK as long as it's not read, we can pretend it doesn't contain anything
 }
+
+#if (defined VIGOR_STUB_HARDWARE) && !(defined DSOS)
+__attribute__((constructor(150))) // High prio, must execute after other stuff since it relies on hardware stubs
+void
+stub_stdio_files_init_constructor(void)
+{
+	int num_devs;
+	struct dsos_pci_nic *devs;
+
+	devs = stub_hardware_get_nics(&num_devs);
+        stub_stdio_files_init(devs, num_devs);
+}
+#endif// (defined VIGOR_STUB_HARDWARE) && !(defined DSOS)
 
 // Helper methods - not part of the external stubs
 

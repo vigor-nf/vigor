@@ -18,6 +18,8 @@ NF_DEVICES ?= 2
 # If KLEE_BUILD_PATH is not defined (such as in the paths saved by install.sh),
 # try to compute it based on KLEE_INCLUDE.
 KLEE_BUILD_PATH ?= $(KLEE_INCLUDE)/../build
+KLEE_UCLIBC ?= $(KLEE_INCLUDE)/../../klee-uclibc
+
 
 # DPDK stuff
 include $(RTE_SDK)/mk/rte.vars.mk
@@ -34,7 +36,8 @@ SRCS-y := $(SELF_DIR)/nf_main.c \
           $(SELF_DIR)/lib/containers/map.c $(SELF_DIR)/lib/containers/map-impl.c \
           $(SELF_DIR)/lib/containers/double-map.c \
           $(SELF_DIR)/lib/containers/vector.c \
-          $(SELF_DIR)/lib/containers/cht.c
+          $(SELF_DIR)/lib/containers/cht.c \
+          $(SELF_DIR)/lib/packet-io.c
 # NF specific source
 SRCS-y += $(NF_FILES)
 
@@ -60,8 +63,7 @@ verifast:
 		$(SELF_DIR)/lib/containers/map.c \
 		$(SELF_DIR)/lib/coherence.c \
 		$(SELF_DIR)/lib/expirator.c \
-		$(SELF_DIR)/vignat/nat_flow.c \
-		$(SELF_DIR)/vigbridge/bridge_data.c
+		$(SELF_DIR)/lib/packet-io.c
 
 
 ### KLEE verification ###
@@ -74,6 +76,16 @@ VERIF_FLAGS := -c -g -emit-llvm -fsanitize=signed-integer-overflow
 VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE)
 # ...and the DPDK cmdline library
 VERIF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
+
+# NF args for the verification
+NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
+
+# Convert the bash-style NF arguments (nf --no-shconf -- -n 3 -m 6) into
+# C-style char*[] comma separated list
+# of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for DSOS to put
+# into argv at compilation time.
+dquote=\"
+NF_ARGUMENTS_MACRO=-DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),$(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS))\"
 
 # Defines. TODO remove _GNU_SOURCE from here, #define it in files
 VERIF_DEFS := -D_GNU_SOURCE -DKLEE_VERIFICATION
@@ -90,7 +102,9 @@ VERIF_FILES += ../lib/stubs/containers/map-stub.c ../lib/stubs/containers/double
                ../lib/stubs/containers/double-chain-stub.c \
                ../lib/stubs/containers/vector-stub.c \
                ../lib/stubs/containers/cht-stub.c \
-               ../lib/stubs/containers/expirator-stub.c
+               ../lib/stubs/containers/expirator-stub.c \
+               ../lib/stubs/dpdk/rte_ethdev.c \
+               ../lib/stubs/packet-io-stub.c
 # Specific NF stubs
 VERIF_FILES += $(NF_VERIF_FILES)
 # Environment stubs
@@ -149,21 +163,25 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 # KLEE verification
 # if something takes longer than expected, try --max-solver-time=3 --debug-report-symbdex (to avoid symbolic indices)
 VERIF_COMMAND := /usr/bin/time -v \
-                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs
-# NF args for the verification
-NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
+                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
 
+clean: clean-gen
+clean-gen:
+	rm -f $(AUTO_GEN_FILES)
 
-verify-dpdk:
+verify-dpdk-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stub headers
 	$(COMPILE_COMMAND) $(VERIF_DEFS) -DVIGOR_STUB_DPDK $(VERIF_INCLUDES) -I $(SELF_DIR)/lib/stubs/dpdk $(VERIF_FILES) $(VERIF_FLAGS)
 	$(LINK_COMMAND)
 	$(OPT_COMMAND)
+
+verify-dpdk: verify-dpdk-nf.bc $(AUTO_GEN_FILES)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
-verify-driver:
+verify-driver: $(AUTO_GEN_FILES)
+	echo "verify-driver is not supported anymore"
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub driver
 	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_DRIVER $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/driver_stub.c $(VERIF_FLAGS)
@@ -172,11 +190,27 @@ verify-driver:
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
-verify-hardware:
+verify-hardware-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
 	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_HARDWARE $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(VERIF_FLAGS)
 	$(LINK_COMMAND)
 	$(OPT_COMMAND)
+
+verify-hardware: verify-hardware-nf.bc
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
+	
+verify-dsos-nf.bc: $(AUTO_GEN_FILES)
+	$(CLEAN_COMMAND)
+	# Use DPDK stuff + stub hardware
+	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DVIGOR_STUB_HARDWARE -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(SELF_DIR)/lib/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
+	ar x $(KLEE_UCLIBC)/lib/libc.a
+	rm -f sleep.os vfprintf.os socket.os exit.os fflush.os fflush_unlocked.os
+	llvm-link -o nf_raw.bc  *.os *.bc
+	$(OPT_COMMAND)
+
+verify-dsos: verify-dsos-nf.bc
+	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
+	$(CLEAN_COMMAND)
+

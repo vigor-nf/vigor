@@ -13,6 +13,9 @@ typedef bool map_entry_condition(void* key, int index);
 
 struct Map {
   void* keyp[NUM_ELEMS];
+  void* key_copyp[NUM_ELEMS];
+  char key_copies[NUM_ELEMS*PREALLOC_SIZE];
+  int unallocated_start;
   int allocated_index[NUM_ELEMS];
   int key_deleted[NUM_ELEMS];
   int next_unclaimed_entry;

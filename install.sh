@@ -53,12 +53,12 @@ if [ "$OS" = 'windows' ]; then
   sudo apt install "linux-headers-4.4.0-43-generic"
   export RTE_KERNELDIR="/usr/src/linux-headers-4.4.0-43-generic/"
 elif [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
+  KERNEL_VER=$(uname -r | sed 's/-generic//')
   if [ "$OS" = 'docker' ]; then
       echo "Warning: the host($HOST_KERNEL_VER) and guest($KERNEL_VER)\
           OS kernels must be somewhat compatible (because the guest uses the host kernel)"
   fi
 
-  KERNEL_VER=$(uname -r | sed 's/-generic//')
   sudo apt-get install -y "linux-headers-$KERNEL_VER"
   sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
@@ -148,6 +148,9 @@ opam install ocamlfind camlp4 -y
 ### Validator dependencies
 opam install ocamlfind core sexplib menhir -y
 
+# Codegenerator dependencies
+opam install goblint-cil -y
+
 
 ### Z3 v4.5
 
@@ -178,7 +181,7 @@ popd
 
 ### VeriFast
 
-git clone --depth 1 --branch export_path_conditions https://github.com/vignat/verifast "$BUILDDIR/verifast"
+git clone --depth 1 https://github.com/vignat/verifast "$BUILDDIR/verifast"
 pushd "$BUILDDIR/verifast/src"
   make verifast # should be just "make" but the verifast checks fail due to a non auto lemma
   echo 'PATH='"$BUILDDIR/verifast/bin"':$PATH' >> "$PATHSFILE"

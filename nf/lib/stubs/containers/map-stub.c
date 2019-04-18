@@ -22,8 +22,10 @@ int map_allocate(map_keys_equality* keq, map_key_hash* khash,
     klee_assert((*map_out) != NULL);
     for (int n = 0; n < NUM_ELEMS; ++n) {
       (*map_out)->keyp[n] = NULL;
+      (*map_out)->key_copyp[n] = NULL;
       (*map_out)->key_deleted[n] = 0;
     }
+    (*map_out)->unallocated_start = 0;
     (*map_out)->next_unclaimed_entry = 0;
     (*map_out)->keq = keq;
     (*map_out)->capacity = capacity;
@@ -42,11 +44,13 @@ void map_reset(struct Map* map) {
   //Do not trace. This function is an internal knob of the model.
   for (int n = 0; n < NUM_ELEMS; ++n) {
     map->keyp[n] = NULL;
+    map->key_copyp[n] = NULL;
     map->key_deleted[n] = 0;
     map->allocated_index[n] = klee_int("map_allocated_index");
   }
   map->next_unclaimed_entry = 0;
   map->occupancy = map->backup_occupancy;
+  map->unallocated_start = 0;
 }
 
 static
@@ -81,6 +85,7 @@ void map_set_layout(struct Map* map,
   map->nested_key_field_count = nested_key_fields_count;
   map->key_size = calculate_str_size(key_fields,
                                      key_fields_count);
+  klee_assert(map->key_size < PREALLOC_SIZE);
   map->has_layout = 1;
   map->key_type = key_type;
 }
@@ -93,17 +98,21 @@ void map_set_entry_condition(struct Map* map, map_entry_condition* cond) {
 #define TRACE_KEY_FIELDS(key, map)                                      \
   {                                                                     \
     for (int i = 0; i < map->key_field_count; ++i) {                    \
-      klee_trace_param_ptr_field(key,                                   \
-                                 map->key_fields[i].offset,             \
-                                 map->key_fields[i].width,              \
-                                 map->key_fields[i].name);              \
+      klee_trace_param_ptr_field_arr_directed(key,                      \
+                                              map->key_fields[i].offset, \
+                                              map->key_fields[i].width, \
+                                              map->key_fields[i].count, \
+                                              map->key_fields[i].name,  \
+                                              TD_BOTH);                 \
     }                                                                   \
     for (int i = 0; i < map->nested_key_field_count; ++i) {            \
-      klee_trace_param_ptr_nested_field(key,                            \
-                                        map->key_nests[i].base_offset,  \
-                                        map->key_nests[i].offset,       \
-                                        map->key_nests[i].width,        \
-                                        map->key_nests[i].name);        \
+      klee_trace_param_ptr_nested_field_arr_directed(key,               \
+                                                     map->key_nests[i].base_offset, \
+                                                     map->key_nests[i].offset, \
+                                                     map->key_nests[i].width, \
+                                                     map->key_nests[i].count, \
+                                                     map->key_nests[i].name, \
+                                                     TD_BOTH);          \
     }                                                                   \
   }
 
@@ -119,7 +128,7 @@ int map_get(struct Map* map, void* key, int* value_out) {
   klee_trace_param_ptr(value_out, sizeof(int), "value_out");
   TRACE_KEY_FIELDS(key, map);
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {
-    if (map->keq(key, map->keyp[n])) {
+    if (map->keq(key, map->key_copyp[n])) {
       if (map->key_deleted[n]) {
         return 0;
       } else {
@@ -134,9 +143,13 @@ int map_get(struct Map* map, void* key, int* value_out) {
     ++map->next_unclaimed_entry;
     map->key_deleted[n] = 0;
     map->keyp[n] = key;
+    map->key_copyp[n] = map->key_copies + map->unallocated_start;
+    map->unallocated_start += map->key_size;
+    memcpy(map->key_copyp[n], key, map->key_size);
     map->allocated_index[n] = klee_int("allocated_index");
     if (map->ent_cond) {
       klee_assume(map->ent_cond(map->keyp[n], map->allocated_index[n]));
+      klee_assume(map->ent_cond(map->key_copyp[n], map->allocated_index[n]));
     }
     *value_out = map->allocated_index[n];
     return 1;
@@ -161,7 +174,7 @@ void map_put(struct Map* map, void* key, int value) {
   }
   map->occupancy += 1;
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {
-    if (map->keq(key, map->keyp[n])) {
+    if (map->keq(key, map->key_copyp[n])) {
       klee_assert(map->key_deleted[n] && "Duplicate key, otherwise");
       map->key_deleted[n] = 0;
       map->allocated_index[n] = value;
@@ -173,6 +186,9 @@ void map_put(struct Map* map, void* key, int value) {
   ++map->next_unclaimed_entry;
   map->key_deleted[n] = 0;
   map->keyp[n] = key;
+  map->key_copyp[n] = map->key_copies + map->unallocated_start;
+  map->unallocated_start += map->key_size;
+  memcpy(map->key_copyp[n], key, map->key_size);
   map->allocated_index[n] = value;
 }
 
@@ -190,7 +206,7 @@ void map_erase(struct Map* map, void* key, void** trash) {
 
   map->occupancy -= 1;
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {
-    if (map->keq(key, map->keyp[n])) {
+    if (map->keq(key, map->key_copyp[n])) {
       //It is important to differentiate the case
       // when that the key was deleted from the map, 
       // as opposed to never existed on the first place.
@@ -205,6 +221,9 @@ void map_erase(struct Map* map, void* key, void** trash) {
   int n = map->next_unclaimed_entry;
   ++map->next_unclaimed_entry;
   map->keyp[n] = key;
+  map->key_copyp[n] = map->key_copies + map->unallocated_start;
+  map->unallocated_start += map->key_size;
+  memcpy(map->key_copyp[n], key, map->key_size);
   map->key_deleted[n] = 1;
 }
 

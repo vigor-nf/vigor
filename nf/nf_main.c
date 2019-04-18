@@ -13,6 +13,7 @@
 #include "lib/nf_log.h"
 #include "lib/nf_time.h"
 #include "lib/nf_util.h"
+#include "lib/packet-io.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/time_stub_control.h"
@@ -21,24 +22,29 @@
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
 
+#ifdef DSOS
+#  define MAIN nf_main
+#else//DSOS
+#  define MAIN main
+#endif//DSOS
+
 #include <inttypes.h>
 
 #ifdef KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN \
     unsigned _vigor_lcore_id = rte_lcore_id(); \
-    time_t _vigor_start_time = start_time(); \
+    vigor_time_t _vigor_start_time = start_time(); \
     int _vigor_loop_termination = klee_int("loop_termination"); \
     unsigned VIGOR_DEVICES_COUNT;                                       \
     klee_possibly_havoc(&VIGOR_DEVICES_COUNT, sizeof(VIGOR_DEVICES_COUNT), "VIGOR_DEVICES_COUNT"); \
-    time_t VIGOR_NOW;                                                   \
+    vigor_time_t VIGOR_NOW;                                                   \
     klee_possibly_havoc(&VIGOR_NOW, sizeof(VIGOR_NOW), "VIGOR_NOW");    \
     unsigned VIGOR_DEVICE;                                              \
     klee_possibly_havoc(&VIGOR_DEVICE, sizeof(VIGOR_DEVICE), "VIGOR_DEVICE"); \
     unsigned _d;                                                        \
     klee_possibly_havoc(&_d, sizeof(_d), "_d");                         \
     while(klee_induce_invariants() & _vigor_loop_termination) { \
-      nf_add_loop_iteration_assumptions(_vigor_lcore_id, _vigor_start_time); \
-      nf_loop_iteration_begin(_vigor_lcore_id, _vigor_start_time);      \
+      nf_loop_iteration_border(_vigor_lcore_id, _vigor_start_time);      \
       VIGOR_NOW = current_time(); \
       /* concretize the device to avoid leaking symbols into DPDK */ \
       VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
@@ -47,12 +53,12 @@
       stub_hardware_receive_packet(VIGOR_DEVICE);
 #define VIGOR_LOOP_END                                \
       stub_hardware_reset_receive(VIGOR_DEVICE);          \
-      nf_loop_iteration_end(_vigor_lcore_id, VIGOR_NOW);  \
+      nf_loop_iteration_border(_vigor_lcore_id, VIGOR_NOW);  \
       }
 #else//KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN \
     while (1) { \
-      time_t VIGOR_NOW = current_time(); \
+      vigor_time_t VIGOR_NOW = current_time(); \
       unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count(); \
       for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
 #  define VIGOR_LOOP_END } }
@@ -68,12 +74,21 @@ static const uint16_t TX_QUEUES_COUNT = 1;
 static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
 
-// Clone pool for flood()
-static struct rte_mempool* clone_pool;
+void
+flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices) {
+  rte_mbuf_refcnt_set(frame, nb_devices - 1);
+  int total_sent = 0;
+  for (uint16_t device = 0; device < nb_devices; device++) {
+    if (device == skip_device) continue;
+    total_sent += rte_eth_tx_burst(device, 0, &frame, 1);
+  }
+  if (total_sent != nb_devices - 1) {
+    rte_pktmbuf_free(frame);
+  }
+}
 
 // Buffer count for mempools
 static const unsigned MEMPOOL_BUFFER_COUNT = 256;
-
 
 // --- Initialization ---
 static int
@@ -84,6 +99,7 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   // device_conf passed to rte_eth_dev_configure cannot be NULL
   struct rte_eth_conf device_conf;
   memset(&device_conf, 0, sizeof(struct rte_eth_conf));
+  device_conf.rxmode.hw_strip_crc = 1;
 
   // Configure the device
   retval = rte_eth_dev_configure(
@@ -145,30 +161,6 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   return 0;
 }
 
-
-// Flood method for the bridge
-#ifdef KLEE_VERIFICATION
-void flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices); // defined in stubs
-#else
-void
-flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices) {
-  for (uint16_t device = 0; device < nb_devices; device++) {
-    if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
-      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
-    }
-    uint16_t actual_tx_len = rte_eth_tx_burst(device, 0, &copy, 1);
-
-    if (actual_tx_len == 0) {
-      rte_pktmbuf_free(copy);
-    }
-  }
-  rte_pktmbuf_free(frame);
-}
-#endif//!KLEE_VERIFICATION
-
-
 // --- Per-core work ---
 
 static void
@@ -186,22 +178,18 @@ lcore_main(void)
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
   VIGOR_LOOP_BEGIN
-    struct rte_mbuf* buf = NULL;
-    uint16_t actual_rx_len = rte_eth_rx_burst(VIGOR_DEVICE, 0, &buf, 1);
 
-    if (actual_rx_len != 0) {
-      // NF_INFO("Got packet!");
-      uint16_t dst_device = nf_core_process(buf, VIGOR_NOW);
+    struct rte_mbuf* mbuf;
+    if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
+      uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
+      nf_return_all_chunks(mbuf_pkt(mbuf));
 
       if (dst_device == VIGOR_DEVICE) {
-        rte_pktmbuf_free(buf);
+        nf_free_packet(mbuf);
       } else if (dst_device == FLOOD_FRAME) {
-        flood(buf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
+        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
       } else {
-        uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &buf, 1);
-        if (actual_tx_len == 0) {
-          rte_pktmbuf_free(buf);
-        }
+        nf_send_packet(mbuf, dst_device);
       }
     }
   VIGOR_LOOP_END
@@ -211,7 +199,7 @@ lcore_main(void)
 // --- Main ---
 
 int
-nf_main(int argc, char* argv[])
+MAIN(int argc, char* argv[])
 {
   // Initialize the Environment Abstraction Layer (EAL)
   int ret = rte_eal_init(argc, argv);
@@ -242,19 +230,6 @@ nf_main(int argc, char* argv[])
   );
   if (mbuf_pool == NULL) {
     rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: %s\n", rte_strerror(rte_errno));
-  }
-
-  // Create another pool for the flood() cloning
-  clone_pool = rte_pktmbuf_pool_create(
-    "clone_pool", // name
-     MEMPOOL_BUFFER_COUNT, // #elements
-     0, // cache size (same remark as above)
-     0, // application private data size
-     RTE_MBUF_DEFAULT_BUF_SIZE, // data buffer size
-     rte_socket_id() // socket ID
-  );
-  if (clone_pool == NULL) {
-    rte_exit(EXIT_FAILURE, "Cannot create mbuf clone pool: %s\n", rte_strerror(rte_errno));
   }
 
   // Initialize all devices

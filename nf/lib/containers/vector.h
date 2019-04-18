@@ -19,13 +19,6 @@ struct Vector;
     return update(index, pair(fst(nth(index, vector)), 1.0), vector);
   }
 
-  predicate vector_accp<t>(struct Vector* vector,
-                           predicate (void*;t) entp,
-                           list<pair<t, real> > values,
-                           list<void*> addrs,
-                           int accessed_idx,
-                           void* entry);
-
   fixpoint list<pair<t, real> > vector_erase_all_fp<t>(list<pair<t, real> > vector,
                                                        list<int> indices) {
     switch(indices) {
@@ -94,6 +87,15 @@ struct Vector;
    fixpoint bool is_one<t>(pair<t,real> r) { return snd(r) == 1.0; }
   @*/
 
+/*@
+  lemma_auto void forall_is_one_update<t>(list<pair<t, real> > lst, int i, t v)
+  requires true == forall(lst, is_one);
+  ensures true == forall(update(i, pair(v, 1.0), lst), is_one);
+  {
+    forall_update(lst, is_one, i, pair(v, 1.0));
+  }
+  @*/
+
 typedef void vector_init_elem/*@ <t> (predicate (void*;t) entp,
                                       int elem_size) @*/
                              (void* elem);
@@ -122,13 +124,17 @@ void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out);
              nth(index, values) == pair(?val, ?frac) &*&
              *val_out |-> _; @*/
 /*@ ensures *val_out |-> ?vo &*&
-            vector_accp<t>(vector, entp, values, addrs, index, vo) &*&
+            vectorp<t>(vector, entp, update(index, pair(val, 0.0), values), addrs) &*&
             vo == nth(index, addrs) &*&
-            [frac]entp(vo, val); @*/
+            (frac == 0.0 ? true : [frac]entp(vo, val)); @*/
 
 void vector_return/*@ <t> @*/(struct Vector* vector, int index, void* value);
-/*@ requires vector_accp<t>(vector, ?entp, ?values, ?addrs, index, value) &*&
-             [?frac]entp(value, ?v); @*/
-/*@ ensures vectorp<t>(vector, entp, update(index, pair(v, frac), values), addrs); @*/
+/*@ requires vectorp<t>(vector, ?entp, ?values, ?addrs) &*&
+             0 <= index &*& index < length(values) &*&
+             value == nth(index, addrs) &*&
+             [?frac]entp(value, ?v) &*&
+             nth(index, values) == pair(_, 0); @*/
+/*@ ensures vectorp<t>(vector, entp, update(index, pair(v, frac), values), addrs) &*&
+            (frac == 0 ? [0]entp(value, v) : true); @*/
 
 #endif//_VECTOR_H_INCLUDED_

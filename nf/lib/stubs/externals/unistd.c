@@ -6,7 +6,11 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 unsigned int
 sleep(unsigned int seconds)

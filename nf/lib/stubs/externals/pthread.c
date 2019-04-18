@@ -5,7 +5,9 @@
 
 #include <pthread.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#endif
 
 
 pthread_t

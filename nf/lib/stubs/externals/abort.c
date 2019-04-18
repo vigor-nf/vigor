@@ -3,22 +3,12 @@
 #include <stdlib.h>
 
 #include <dsos_halt.h>
-#include <dsos_vga.h>
+#include <stdio.h>
 
 void abort(void)
 {
-	dsos_vga_write_str("\n\nabort() called");
+	printf("\n\nabort() called");
 	dsos_halt();
 }
 
-#else
-
-#include <klee/klee.h>
-#include <stdlib.h>
-
-void abort(void)
-{
-	klee_abort();
-}
-
-#endif
+#endif //!KLEE_VERIFICATION

@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#endif
 
 
 int

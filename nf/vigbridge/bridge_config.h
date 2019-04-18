@@ -8,7 +8,7 @@
 
 struct bridge_config {
   // Expiration time of flows in seconds
-  uint32_t expiration_time;
+  uint64_t expiration_time;
 
   // Size of the dynamic filtering table
   uint32_t dyn_capacity;

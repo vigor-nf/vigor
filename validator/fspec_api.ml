@@ -38,7 +38,12 @@ let rec render_deep_assignment {lhs;rhs} =
              render_deep_assignment {lhs={v=Str_idx (lhs, name);t};
                                      rhs={v=Str_idx (rhs, name);t}}))
   | Unknown -> "";
-  | Array (_, s) -> "umemcpy(" ^ (render_tterm lhs) ^ ", " ^ (render_tterm rhs) ^ ", " ^ (Int.to_string s) ^ ");"
+  | Array _ -> begin match rhs.v with
+      | Array cells -> "umemcpy(" ^ (render_tterm lhs) ^ ", "
+                       ^ (render_tterm rhs) ^ ", " ^
+                       (Int.to_string (List.length cells)) ^ ");"
+      | _ -> failwith ("Trying to assign a nonarray: " ^ (render_tterm rhs))
+    end
   | _ -> (render_tterm lhs) ^ " = " ^
          (render_tterm rhs) ^ ";"
 
@@ -49,9 +54,13 @@ let deep_copy (var : var_spec) =
 
 let rec self_dereference tterm tmpgen =
   match tterm.v with
-  | Id x -> ("//@ assert *&" ^ x ^ "|-> ?" ^
-             (tmpgen ("pp" ^ x) ^ ";"),
-             {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
+  | Id x -> begin match tterm.t with
+      | Ptr _ ->
+        ("//@ assert *&" ^ x ^ "|-> ?" ^
+         (tmpgen ("pp" ^ x) ^ ";"),
+         {v=Id (tmpgen ("pp" ^ x));t=tterm.t})
+      | _ -> ("", tterm)
+      end
   | Str_idx (x,fname) ->
     let (binding, x) = self_dereference x tmpgen in
     (binding,{v=Str_idx (x,fname);t=tterm.t})
@@ -115,7 +124,7 @@ type fun_spec = {ret_type: type_set; arg_types: type_set list;
                  extra_ptr_types: (string * type_set) list;
                  lemmas_before: blemma list; lemmas_after: lemma list;}
 
-let time_t = Sint64
+let vigor_time_t = Sint64
 
 module type Spec =
 sig

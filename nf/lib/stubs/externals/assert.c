@@ -2,19 +2,11 @@
 #ifndef KLEE_VERIFICATION
 
 #include "dsos_halt.h"
-#include "dsos_vga.h"
+#include <stdio.h>
 
 extern void __assert_fail(const char *msg, const char *file, int line, const char *func)
 {
-	dsos_vga_write_str("\n\nAssertion failed: ");
-	dsos_vga_write_str(msg);
-	dsos_vga_write_str(" (");
-	dsos_vga_write_str(file);
-	dsos_vga_write_str(": ");
-	dsos_vga_write_int(line);
-	dsos_vga_write_str(": ");
-	dsos_vga_write_str(func);
-	dsos_vga_write_str(")");
+  printf("\n\nAssertion failed: %s (%s: %d: %s", msg, file, line, func);
 
 	dsos_halt();
 }

@@ -13,13 +13,18 @@
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 extern struct dsos_pci_nic *PCI_DEVICES;
 extern int NUM_PCI_DEVICES;
 
 FILE* fopencookie_ret = NULL;
 
+#ifdef DSOS
 int vprintf1(const char *fmt, va_list va);
 
 int
@@ -28,6 +33,7 @@ fflush(FILE* stream)
 	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
 	return 0;
 }
+#endif//DSOS
 
 int
 vfprintf(FILE* stream, const char* format, _G_va_list __arg)
