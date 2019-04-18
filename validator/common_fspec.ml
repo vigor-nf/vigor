@@ -1152,7 +1152,10 @@ let cht_fill_cht_spec =
                 Static Sint32;
                 Static Sint32];
    extra_ptr_types = [];
-   lemmas_before = [];
+   lemmas_before = [(fun {args;} ->
+       "//@ div_rem(" ^ (List.nth_exn args 1) ^
+       ", " ^ (List.nth_exn args 1) ^ ");\n"
+     )];
    lemmas_after = []}
 
 let gen_lma_literals containers =
