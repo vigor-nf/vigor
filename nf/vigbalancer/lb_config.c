@@ -55,22 +55,22 @@ void lb_config_init(struct lb_config* config,
       case 's':
         config->backend_capacity =
           nf_util_parse_int(optarg, "backend-capacity", 10, '\0');
-        if (config->flow_capacity <= 0) {
-          PARSE_ERROR("Flow capacity must be strictly positive.\n");
+        if (config->backend_capacity <= 0) {
+          PARSE_ERROR("Backend capacity must be strictly positive.\n");
         }
         break;
 
       case 'h':
         config->cht_height = nf_util_parse_int(optarg, "cht-height", 10, '\0');
-        if (config->flow_capacity <= 0) {
-          PARSE_ERROR("Flow capacity must be strictly positive.\n");
+        if (config->cht_height <= 0) {
+          PARSE_ERROR("CHT height must be strictly positive.\n");
         }
         break;
 
       case 't':
         config->backend_expiration_time = nf_util_parse_int(optarg, "backend-expiration", 10, '\0');
-        if (config->flow_expiration_time == 0) {
-          PARSE_ERROR("Flow expiration time must be strictly positive.\n");
+        if (config->backend_expiration_time == 0) {
+          PARSE_ERROR("Backend expiration time must be strictly positive.\n");
         }
         break;
 
@@ -118,6 +118,8 @@ void lb_print_config(struct lb_config* config)
 
 	NF_INFO("Flow expiration time: %" PRIu32 "ns", config->flow_expiration_time);
 	NF_INFO("Flow capacity: %" PRIu32, config->flow_capacity);
+	NF_INFO("Backend expiration time: %" PRIu32 "ns", config->backend_expiration_time);
+	NF_INFO("Backend capacity: %" PRIu32, config->backend_capacity);
 
 	NF_INFO("\n--- --- ------ ---\n");
 }
