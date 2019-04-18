@@ -1,6 +1,6 @@
 // #include "permutations.gh"
 
-/*
+/*@
 
     // ------------- is_permutation -------------
 
@@ -61,7 +61,7 @@
                     forall_append(take(i - 1, xs0), cons(x0, nil), (ge)(max_val));
                     take_preserves_distinct(xs, i);
                 }
-                
+
         }
     }
 
@@ -115,9 +115,9 @@
     }
 
     lemma void permutation_exists_helper(list<int> xs, list<int> integers, int max_val, int x)
-        requires    
+        requires
             true == is_sub_permutation(xs, max_val) &*& 0 < max_val &*&
-            0 <= x &*& x < max_val &*& length(xs) == length(integers) &*& 
+            0 <= x &*& x < max_val &*& length(xs) == length(integers) &*&
             true == subset(xs, integers) &*& true == mem(x, integers);
         ensures
             true == mem(x, xs);
@@ -156,18 +156,18 @@
     {
         switch(val) {
             case zero:permutation_exists(xs, 0);
-            case succ(val_pred): 
+            case succ(val_pred):
                 permutation_exists(xs, int_of_nat(val));
                 permutation_to_count(xs, val_pred);
         }
     }
 
     lemma void permutation_split_to_count(list<int> xs, nat nb_split, int n)
-        requires    
+        requires
             true == forall(split(xs, nb_split, n), is_permutation) &*&
             length(xs) == int_of_nat(nb_split) * n &*&
             0 < n &*& n <= length(xs);
-        ensures     
+        ensures
             true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs);
     {
         switch(nb_split) {
@@ -178,7 +178,7 @@
                     length_drop(n, xs);
                     mul_subst(int_of_nat(nb_split_pred) + 1, int_of_nat(nb_split), n);
                     mul_equal(n, int_of_nat(nb_split_pred), length(xs) - n);
-                    permutation_split_to_count(drop(n, xs), nb_split_pred, n);            
+                    permutation_split_to_count(drop(n, xs), nb_split_pred, n);
                 }
 
                 list<int> ret_xs = drop(n, xs);
@@ -191,4 +191,4 @@
         }
     }
 
-*/
+@*/

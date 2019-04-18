@@ -1,6 +1,6 @@
 // #include "modulo.gh"
 
-/*
+/*@
 
     lemma void div_mod(int g, int k, int l)
     requires g == (k % l) &*& l > 0;
@@ -378,4 +378,4 @@
         }
     }
 
-*/
+@*/

@@ -1,6 +1,6 @@
 // #include "arith.gh"
 
-/*
+/*@
 
     lemma void mul_equal(int a, int b, int c)
         requires    0 <= a &*& 0 < b &*& 0 <= c &*& a * b == c;
@@ -83,4 +83,4 @@
     {
     }
 
-*/
+@*/

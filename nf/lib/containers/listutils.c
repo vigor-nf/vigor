@@ -1,6 +1,6 @@
 // #include "listutils.gh"
 
-/*
+/*@
     // ------------- filter_idx -------------
 
     lemma void filter_idx_length_count_equiv<t>(list<t> xs, int idx, fixpoint (t, bool) fp)
@@ -9,7 +9,7 @@
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): filter_idx_length_count_equiv(xs0, idx + 1, fp); 
+            case cons(x0, xs0): filter_idx_length_count_equiv(xs0, idx + 1, fp);
         }
     }
 
@@ -19,7 +19,7 @@
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 filter_idx_ge(xs0, idx + 1, fp);
                 ge_le_ge(filter_idx(xs0, idx + 1, fp), idx + 1, idx);
         }
@@ -41,7 +41,7 @@
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 forall_nth(xs, (ge)(low_bound), 0);
                 mem_ge(xs0, low_bound, x);
         }
@@ -58,7 +58,7 @@
                 filter_idx_ge(xs0, idx + 1, fp);
                 if (fp(x0)) {
                     mem_ge(filter_idx(xs0, idx + 1, fp), idx + 1, idx);
-                } 
+                }
         }
     }
 
@@ -78,7 +78,7 @@
     {
         switch(xs) {
             case nil: filter_idx_length_count_equiv(ys, idx, fp);
-            case cons(x0, xs0): filter_idx_count_append(xs0, ys, idx + 1, fp); 
+            case cons(x0, xs0): filter_idx_count_append(xs0, ys, idx + 1, fp);
         }
     }
 
@@ -87,7 +87,7 @@
         ensures     filter_idx(xs, idx, fp) == filter_idx(append(xs, cons(x, nil)), idx, fp);
     {
         switch(xs) {
-            case nil: 
+            case nil:
             case cons(x0, xs0): filter_idx_drop_last(xs0, idx + 1, fp, x);
         }
     }
@@ -97,12 +97,12 @@
         ensures     append(filter_idx(xs, idx, fp), cons(idx + length(xs), nil)) == filter_idx(append(xs, cons(x, nil)), idx, fp);
     {
         switch(xs) {
-            case nil: 
+            case nil:
             case cons(x0, xs0): filter_idx_include_last(xs0, idx + 1, fp, x);
         }
     }
 
-    lemma void filter_idx_nth_to_mem<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i) 
+    lemma void filter_idx_nth_to_mem<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i)
         requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
         ensures     true == mem(i + idx, filter_idx(xs, idx, fp));
     {
@@ -112,13 +112,13 @@
         }
     }
 
-    lemma void filter_idx_mem_to_nth<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i) 
+    lemma void filter_idx_mem_to_nth<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i)
         requires    true == mem(i + idx, filter_idx(xs, idx, fp)) &*& 0 <= i &*& i < length(xs);
         ensures     true == fp(nth(i, xs));
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 if (i > 0) filter_idx_mem_to_nth(xs0, idx + 1, fp, i - 1);
                 else {
                     filter_idx_ge(xs0, idx + 1, fp);
@@ -138,7 +138,7 @@
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 if (i > 0) {
                     count_idx(xs0, fp, i - 1);
                 } else {
@@ -153,7 +153,7 @@
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 if (i > 0) {
                     count_nonnegative(take(i - 1, xs0), fp);
                     filter_idx_fst(xs0, idx + 1, fp, i - 1);
@@ -165,12 +165,12 @@
         requires
             count(take(i, xs), fp) == count &*& true == fp(nth(i, xs)) &*&
             0 <= count &*& 0 <= i &*& i < length(xs);
-        ensures     
+        ensures
             nth(count, filter_idx(xs, idx, fp)) == i + idx;
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 if (i > 0) {
                     if (fp(x0)) {
                         count_idx(take(i, xs), fp, 0);
@@ -302,7 +302,7 @@
             length_drop(begin, xs);
             nth_drop(i, begin, xs);
         }
-        
+
     }
 
     lemma void chunk_update_unrelevant<t>(list<t> xs, int begin, int end, int i, t val)
@@ -341,11 +341,11 @@
     {
         switch(n) {
             case zero:
-            case succ(n_pred_bis): 
+            case succ(n_pred_bis):
         }
     }
 
-    lemma void repeat_nth<t>(t elem, nat n, int i) 
+    lemma void repeat_nth<t>(t elem, nat n, int i)
         requires    0 <= i &*& i < int_of_nat(n);
         ensures     nth(i, repeat(elem, n)) == elem;
     {
@@ -366,7 +366,7 @@
     {
         switch(limits) {
             case nil:
-            case cons(l0, ls0): 
+            case cons(l0, ls0):
                 mul_equal(n, length(limits), length(xs));
                 length_drop(n, xs);
                 mul_subst (length(ls0), length(limits) - 1, n);
@@ -375,7 +375,7 @@
     }
 
     lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits)
-        requires    
+        requires
             true == forall(limits, (eq)(0)) &*&
             0 <= n &*& n * length(limits) == length(xs);
         ensures
@@ -384,7 +384,7 @@
         switch(limits) {
             case nil:
                 assert (length(xs) == 0);
-            case cons(l0, ls0):            
+            case cons(l0, ls0):
                 mul_equal(n, length(limits), length(xs));
                 length_drop(n, xs);
                 mul_subst (length(ls0), length(limits) - 1, n);
@@ -409,11 +409,11 @@
     }
 
     lemma void split_varlim_update<t>(list<t> xs, int n, list<int> limits1, list<int> limits2, int i)
-        requires    
-            0 <= i &*& i < length(limits1) &*& 
+        requires
+            0 <= i &*& i < length(limits1) &*&
             limits2 == update(i, nth(i, limits2), limits1) &*&
             nth(i, limits1) != nth(i, limits2);
-        ensures     
+        ensures
             split_varlim(xs, n, limits2) == update(i, nth(i, split_varlim(xs, n, limits2)), split_varlim(xs, n, limits1));
     {
         switch(limits1) {
@@ -426,13 +426,13 @@
     }
 
     lemma void split_varlim_update_unrelevant<t>(list<t> xs1, list<t> xs2, list<int> limits, int n, int i, int j, t new_val)
-        requires    
+        requires
             xs2 == update(n * j + i, new_val, xs1) &*& nth(n * j + i, xs2) == new_val &*& nth(j, limits) <= i &*&
             true == forall(limits, (ge)(0)) &*& true == forall(limits, (le)(n)) &*&
             length(xs1) == n * length(limits) &*&
             0 <= i &*& i < n &*&
             0 <= j &*& j < length(limits);
-        ensures     
+        ensures
             split_varlim(xs1, n, limits) == split_varlim(xs2, n, limits);
     {
         switch(limits) {
@@ -451,7 +451,7 @@
                     assert( length(ls0) == length(limits) - 1);
                     mul_subst(length(ls0), length(limits) - 1, n);
                     split_varlim_update_unrelevant(drop(n, xs1), drop(n, xs2), ls0, n, i, j - 1, new_val);
-                    
+
                     take_update_unrelevant(l0, n * j + i, new_val, xs1);
                 } else {
                     take_update_unrelevant(l0, i, new_val, xs1);
@@ -466,7 +466,7 @@
     {
         switch(limits) {
             case nil:
-            case cons(l0, ls0): 
+            case cons(l0, ls0):
                 forall_nth(limits, (eq)(n), 0);
                 switch(nb_split) {
                     case zero:
@@ -497,7 +497,7 @@
     {
         switch(nb_split) {
             case zero:
-            case succ(nb_split_pred): 
+            case succ(nb_split_pred):
                 mul_mono(1, int_of_nat(nb_split), n);
                 if (i > 0) {
                     length_drop(n, xs);
@@ -557,7 +557,7 @@
     {
         switch(nb_split) {
             case zero:
-                split_chunk_equiv(xs, succ(nb_split), n, 0); 
+                split_chunk_equiv(xs, succ(nb_split), n, 0);
             case succ(nb_split_pred):
                 mul_mono_strict(1, int_of_nat(succ(nb_split)), n);
                 length_drop(n, xs);
@@ -591,7 +591,7 @@
 
     // ------------- integers_list -------------
 
-    lemma_auto(length(integers_list(cnt, index))) void length_integers_list(nat cnt, int index) 
+    lemma_auto(length(integers_list(cnt, index))) void length_integers_list(nat cnt, int index)
         requires    true;
         ensures     length(integers_list(cnt, index)) == int_of_nat(cnt);
     {
@@ -617,7 +617,7 @@
     {
         switch(cnt) {
             case zero:
-            case succ(cnt_pred): 
+            case succ(cnt_pred):
                 integers_list_bounds(cnt_pred, index + 1);
                 ge_le_ge(integers_list(cnt_pred, index + 1), index + 1, index);
         }
@@ -628,8 +628,8 @@
         ensures     integers_list( nat_of_int( int_of_nat(cnt1) + int_of_nat(cnt2) ) , index) == append( integers_list(cnt1, index) , integers_list(cnt2, index + int_of_nat(cnt1)));
     {
         switch(cnt1) {
-            case zero: 
-            case succ(cnt1_pred): 
+            case zero:
+            case succ(cnt1_pred):
                 integers_list_append(cnt1_pred, cnt2, index + 1);
                 assert (int_of_nat(cnt1) + int_of_nat(cnt2) == int_of_nat(cnt1_pred) + int_of_nat(cnt2) + 1);
                 assert (nat_of_int(int_of_nat(cnt1) + int_of_nat(cnt2)) == succ(nat_of_int(int_of_nat(cnt1_pred) + int_of_nat(cnt2))));
@@ -642,7 +642,7 @@
     {
         switch(cnt) {
             case zero:
-            case succ(cnt_pred): 
+            case succ(cnt_pred):
                 integers_list_distinct(cnt_pred, index + 1);
                 integers_list_bounds(cnt_pred, index + 1);
                 distinct_ge(integers_list(cnt_pred, index + 1), index + 1, index);
@@ -670,10 +670,10 @@
         ensures     length(zip(xs, ys)) == length(xs);
     {
         switch(xs) {
-            case nil: 
-            case cons(x0, xs0): 
+            case nil:
+            case cons(x0, xs0):
                 switch(ys) {
-                    case nil: 
+                    case nil:
                     case cons(y0, ys0): length_zip(xs0, ys0);
                 }
         }
@@ -684,10 +684,10 @@
         ensures     nth(i, zip(xs, ys)) == pair(nth(i, xs), nth(i, ys));
     {
         switch(xs) {
-            case nil: 
-            case cons(x0, xs0): 
+            case nil:
+            case cons(x0, xs0):
                 switch(ys) {
-                    case nil: 
+                    case nil:
                     case cons(y0, ys0): if (i > 0) val_zip(xs0, ys0, i - 1);
                 }
         }
@@ -699,7 +699,7 @@
     {
         switch(xs) {
             case nil:
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 switch(ys) {
                     case nil:
                     case cons(y0, ys0): zip_unzip_fst(xs0, ys0);
@@ -713,7 +713,7 @@
     {
         switch(xs) {
             case nil: length_0_nil(ys);
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 switch(ys) {
                     case nil:
                     case cons(y0, ys0): zip_unzip_snd(xs0, ys0);
@@ -727,16 +727,16 @@
     {
         switch(xs1) {
             case nil: length_0_nil(ys1);
-            case cons(x0, xs0): 
+            case cons(x0, xs0):
                 switch(ys1) {
-                    case nil: 
+                    case nil:
                     case cons(y0, ys0): zip_append(xs0, ys0, xs2, ys2);
                 }
         }
     }
 
     // ------------- zip_index -------------
-    
+
     lemma_auto(length(zip_index(xs, idx))) void length_zip_index<t>(list<t> xs, int idx)
         requires    true;
         ensures     length(zip_index(xs, idx)) == length(xs);
@@ -759,7 +759,7 @@
         zip_unzip_snd(integers_list(nat_of_int(length(xs)), idx), xs);
     }
 
-    lemma void zip_index_append<t>(list<t> xs, list<t> ys) 
+    lemma void zip_index_append<t>(list<t> xs, list<t> ys)
         requires    true;
         ensures     zip_index(append(xs, ys), 0) == append(zip_index(xs, 0), zip_index(ys, length(xs)));
     {
@@ -767,7 +767,7 @@
         zip_append(integers_list(nat_of_int(length(xs)), 0), xs, integers_list(nat_of_int(length(ys)), length(xs)), ys);
     }
 
-    lemma void zip_index_bounds<t>(list<t> xs, int idx) 
+    lemma void zip_index_bounds<t>(list<t> xs, int idx)
         requires    true;
         ensures     true == forall( map(fst, zip_index(xs, idx)), (ge)(idx) ) &*& true == forall( map(fst, zip_index(xs, idx)), (lt)(idx + length(xs)) );
     {
@@ -783,4 +783,4 @@
         integers_list_distinct(nat_of_int(length(xs)), idx);
     }
 
-*/
+@*/

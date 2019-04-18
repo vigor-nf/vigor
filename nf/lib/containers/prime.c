@@ -1,6 +1,6 @@
 // #include "prime.gh"
 
-/*
+/*@
 
     // Assumption !
     lemma void prime_is_coprime_with_anything(int prime, int n)
@@ -32,7 +32,7 @@
         requires
             0 < k &*& k < m &*&
             0 < s &*& s < m &*&
-            0 < m &*& 
+            0 < m &*&
             (k % m != 0) &*& true == are_coprime(s, m);
         ensures
             (k * s) % m != 0;
@@ -43,8 +43,8 @@
     // Assumption !
     lemma void modulo_mul_split(int a, int b, int m)
         requires
-            0 <= a &*& 0 <= b &*& 
-            0 < m &*& 
+            0 <= a &*& 0 <= b &*&
+            0 < m &*&
             (b - a) % m != 0;
         ensures
             b % m != a % m;
@@ -52,12 +52,12 @@
         assume (b % m != a % m);
     }
 
-    lemma void modulo_permutation(int mul, int mod, int a, int b) 
-        requires 
+    lemma void modulo_permutation(int mul, int mod, int a, int b)
+        requires
             0 <= a &*& a < mod &*&
             0 <= b &*& b < mod &*&
             0 < mul &*& mul < mod &*&
-            0 < mod &*& a != b &*& 
+            0 < mod &*& a != b &*&
             true == are_coprime(mul, mod);
         ensures
             (mul * a) % mod != (mul * b) % mod;
@@ -81,4 +81,4 @@
         }
     }
 
-*/
+@*/
