@@ -51,25 +51,25 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 
 ### VeriFast verification ###
 # we use DPDK stubs in there (e.g. rte_config.h)
-verifast:
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
-		$(SELF_DIR)/lib/containers/arith.c \
-		$(SELF_DIR)/lib/containers/modulo.c \
-		$(SELF_DIR)/lib/containers/double-chain-impl.c \
-		$(SELF_DIR)/lib/containers/double-chain.c \
-		$(SELF_DIR)/lib/containers/map-impl.c \
-		$(SELF_DIR)/lib/containers/double-map.c \
-		$(SELF_DIR)/lib/containers/vector.c \
-		$(SELF_DIR)/lib/containers/prime.c \
-		$(SELF_DIR)/lib/containers/listutils.c \
-		$(SELF_DIR)/lib/containers/transpose.c \
-		$(SELF_DIR)/lib/containers/permutations.c \
-		$(SELF_DIR)/lib/containers/cht.c \
-		$(SELF_DIR)/lib/containers/map.c \
-		$(SELF_DIR)/lib/coherence.c \
-		$(SELF_DIR)/lib/expirator.c \
-		$(SELF_DIR)/lib/packet-io.c
+LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
+              $(SELF_DIR)/lib/containers/modulo.c \
+              $(SELF_DIR)/lib/containers/double-chain-impl.c \
+              $(SELF_DIR)/lib/containers/double-chain.c \
+              $(SELF_DIR)/lib/containers/map-impl.c \
+              $(SELF_DIR)/lib/containers/double-map.c \
+              $(SELF_DIR)/lib/containers/vector.c \
+              $(SELF_DIR)/lib/containers/prime.c \
+              $(SELF_DIR)/lib/containers/listutils.c \
+              $(SELF_DIR)/lib/containers/transpose.c \
+              $(SELF_DIR)/lib/containers/permutations.c \
+              $(SELF_DIR)/lib/containers/cht.c \
+              $(SELF_DIR)/lib/containers/map.c \
+              $(SELF_DIR)/lib/coherence.c \
+              $(SELF_DIR)/lib/expirator.c \
+              $(SELF_DIR)/lib/packet-io.c
 
+verifast:
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared $(LIBVIG_SRC)
 
 ### KLEE verification ###
 
@@ -158,7 +158,7 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 # KLEE verification
 # if something takes longer than expected, try --max-solver-time=3 --debug-report-symbdex (to avoid symbolic indices)
 VERIF_COMMAND := /usr/bin/time -v \
-                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs
+                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
 # NF args for the verification
 NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
 
@@ -175,15 +175,6 @@ verify-dpdk: $(AUTO_GEN_FILES)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
-verify-driver: $(AUTO_GEN_FILES)
-	$(CLEAN_COMMAND)
-	# Use DPDK stuff + stub driver
-	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_DRIVER $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/driver_stub.c $(VERIF_FLAGS)
-	$(LINK_COMMAND)
-	$(OPT_COMMAND)
-	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
-	$(CLEAN_COMMAND)
-
 verify-hardware: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
@@ -192,3 +183,23 @@ verify-hardware: $(AUTO_GEN_FILES)
 	$(OPT_COMMAND)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
+
+
+# ################# #
+# LoC count targets #
+# ################# #
+
+# cloc instead of sloccount because the latter does not report comments, and all VeriFast annotations are comments
+
+loc: all
+	cloc $(SRCS-y) $(AUTO_GEN_FILES)
+
+loc-dpdk:
+	cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
+
+loc-dsos:
+	echo 'todo'
+
+loc-libvig:
+	cloc --force-lang 'Pig Latin',gh  $(LIBVIG_SRC) lib/containers/*.gh
+	@echo 'NOTE: C comments + Pig Latin == VeriFast annotations'

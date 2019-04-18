@@ -25,11 +25,4 @@ bool flow_manager_get_internal(struct FlowManager* manager,
 bool flow_manager_get_external(struct FlowManager* manager,
                                uint16_t external_port, vigor_time_t time,
                                struct FlowId* out_flow);
-
-#ifdef KLEE_VERIFICATION
-struct DoubleChain** flow_manager_get_chain(struct FlowManager* manager);
-struct Map** flow_manager_get_in_table(struct FlowManager* manager);
-struct Vector** flow_manager_get_in_vec(struct FlowManager* manager);
-#endif
-
 #endif //_FLOWMANAGER_H_INCLUDED_

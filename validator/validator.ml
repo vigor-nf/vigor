@@ -49,7 +49,7 @@ let load_plug fname =
       | (Dynlink.Error err) as e ->
         print_endline ("ERROR loading plugin: " ^ (Dynlink.error_message err) );
         raise e
-      | _ -> failwith "Unknow error while loading plugin"
+      | e -> raise e (* failwith "Unknow error while loading plugin" *)
     end
 
 let () =

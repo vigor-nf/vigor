@@ -8,6 +8,7 @@
 #include <rte_mempool.h>
 #include <rte_memory.h>
 
+#include "lib/packet-io.h"
 #include "lib/stubs/core_stub.h"
 
 #ifdef KLEE_VERIFICATION
@@ -66,6 +67,13 @@ rte_mbuf_raw_alloc(struct rte_mempool* mp)
 // free is called by user code, raw_free by stubs
 //void
 //rte_pktmbuf_free(struct rte_mbuf* m);
+static void
+rte_pktmbuf_free(struct rte_mbuf* m)
+{
+    klee_assert(m != NULL);
+    packet_free(m->buf_addr);
+}
+
 
 static void
 rte_mbuf_raw_free(struct rte_mbuf* m)
@@ -84,5 +92,12 @@ rte_pktmbuf_priv_size(struct rte_mempool *mp)
 {
 	return 0; // see pool_create
 }
+
+static void
+rte_mbuf_refcnt_set(struct rte_mbuf *m, uint16_t new_value) 
+{
+    m->refcnt = new_value;
+}
+
 
 #endif

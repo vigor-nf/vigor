@@ -7,7 +7,7 @@ let containers = ["fm", Map ("FlowId", "max_flows", "");
                   "start_port", Int;
                   "ext_ip", UInt32;
                   "nat_device", UInt32;
-                  "", EMap ("FlowId", "fm", "fv", "heap")]
+                  "flow_emap", EMap ("FlowId", "fm", "fv", "heap")]
 
 let loop_header_fname = "nat_loop.h"
 let state_header_fname = "nat_state.h"

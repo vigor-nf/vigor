@@ -5,6 +5,7 @@
 
 #include "lib/stubs/core_stub.h"
 #include "lib/packet-io.h"
+#include "lib/stubs/packet-io-stub-control.h"
 
 #include <klee/klee.h>
 
@@ -16,7 +17,11 @@ struct rte_eth_link {
 	uint16_t link_status  : 1;
 };
 
-struct rte_eth_conf { /* Nothing */ };
+struct rte_eth_conf {
+	struct { uint8_t hw_strip_crc; } rxmode; 
+
+	/* Don't care about other members */
+};
 struct rte_eth_rxconf {
 	uint16_t rx_free_thresh;
 	// we don't care about other members
@@ -135,7 +140,9 @@ rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
 	struct rte_mempool* pool = devices_rx_mempool[port_id];
 	stub_core_mbuf_create(port_id, pool, rx_pkts);
 
-  bool received = packet_receive(port_id, &(**rx_pkts).buf_addr, &(**rx_pkts).data_len);
+	set_packet_receive_success(klee_int("received_a_packet"));
+
+  bool received = packet_receive(port_id, &(**rx_pkts).buf_addr, &(**rx_pkts).pkt_len);
   return received;
 }
 

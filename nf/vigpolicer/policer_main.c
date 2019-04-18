@@ -28,15 +28,20 @@ struct policer_config config;
 struct State* dynamic_ft;
 
 int policer_expire_entries(uint64_t time) {
-  if (time < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate)
+  if (time < config.burst / config.rate)
     return 0;
 
-  // OK because time >= config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate >= 0
-  uint64_t min_time = time - config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate;
+  // OK because time >= config.burst / config.rate >= 0
+  uint64_t min_time = time - config.burst / config.rate;
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
                                  dynamic_ft->dyn_map,
                                  min_time);
+}
+
+bool
+dyn_val_condition(void* key, int index, void* state) {
+  return ((struct DynamicValue*) key)->bucket_time <= recent_time();
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
@@ -49,7 +54,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
 
     value->bucket_size +=
-        (time - value->bucket_time) * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+        (time - value->bucket_time) * config.rate;
     if (value->bucket_size > config.burst) {
       value->bucket_size = config.burst;
     }

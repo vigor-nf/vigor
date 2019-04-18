@@ -9,7 +9,7 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "capacity", UInt32;
                   "stat_capacity", UInt32;
                   "dev_count", UInt32;
-                  "", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
+                  "dyn_emap", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
 let loop_header_fname = "bridge_loop.h"
 let state_header_fname = "bridge_state.h"
