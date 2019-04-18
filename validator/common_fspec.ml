@@ -1145,7 +1145,7 @@ let cht_find_preferred_available_backend_spec =
    lemmas_after = [];}
 
 let cht_fill_cht_spec =
-  {ret_type = Static Void;
+  {ret_type = Static Sint32;
    arg_types = [Static (Ptr vector_struct);
                 Static Sint32;
                 Static Sint32];
