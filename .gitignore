@@ -47,3 +47,4 @@ nat/testbed/hard/util/plot/*.png
 /nf/*/*_loop.c
 /nf/*/*_state.h
 /nf/*/*_state.c
+*.swp
