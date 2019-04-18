@@ -10,7 +10,7 @@
 
 SCENARIO=$1
 CONFIG_FILE=$2
-PARAMS=$3
+EXP_TIME=$3
 
 . $CONFIG_FILE
 set -x 
@@ -18,7 +18,7 @@ set -x
 
 if [ $SCENARIO = "loopback" ]; then
     sudo taskset -c 8 ./build/bridge -n 2 -- --capacity 65536 \
-	  $PARAMS
+	  --expire $EXP_TIME
 else
     echo "[bench] ERROR: non-loopback is not supported" 1>&2
     exit 1

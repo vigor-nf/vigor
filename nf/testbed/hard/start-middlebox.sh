@@ -87,7 +87,7 @@ else
     # Run the app in the background
     # The arguments are not always necessary, but they'll be ignored if unneeded
     (bash ./bench/run-middlebox.sh $SIMPLE_SCENARIO "$MIDDLEBOX" \
-        "--expire $EXPIRATION_TIME" \
+        "$EXPIRATION_TIME" \
         0<&- &>"$LOG_FILE") &
 
     # Wait for it to have started

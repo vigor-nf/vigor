@@ -10,7 +10,7 @@
 
 SCENARIO=$1
 CONFIG_FILE=$2
-PARAMS=$3
+EXP_TIME=$3
 
 . $CONFIG_FILE
 set -x 
@@ -21,7 +21,7 @@ if [ $SCENARIO = "loopback" ]; then
         --max-flows 65535 --starting-port 1 \
 	--extip $MB_IP_EXTERNAL \
         --eth-dest 0,$TESTER_MAC_EXTERNAL --eth-dest 1,$TESTER_MAC_INTERNAL \
-	$PARAMS
+	--expire $EXP_TIME
 else
     echo "[bench] ERROR:non-loopback is not supported"1>&2
     exit 1
