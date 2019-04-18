@@ -59,12 +59,16 @@ case $SCENARIO in
     "mg-1p")
 
         case $NF_TYPE in
-	    "NAT"|"Pol"|"FW")	
+	    "NAT"|"FW")	
         	LUA_SCRIPT="l4-load-find-1p.lua"
 	        ;;
 
      	    "LB")
                 LUA_SCRIPT="l3-lb-load-find-1p.lua"
+                ;;
+     	    
+	    "Pol")
+                LUA_SCRIPT="l3-load-find-1p.lua"
                 ;;
             
      	    "Br")
