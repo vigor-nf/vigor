@@ -1,4 +1,4 @@
-// #include "permutations.gh"
+//@ #include "permutations.gh"
 
 /*@
 

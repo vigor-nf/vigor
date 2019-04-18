@@ -1,4 +1,4 @@
-// #include "arith.gh"
+//@ #include "arith.gh"
 
 /*@
 

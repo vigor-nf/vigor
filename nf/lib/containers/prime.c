@@ -1,4 +1,4 @@
-// #include "prime.gh"
+//@ #include "prime.gh"
 
 /*@
 
