@@ -55,9 +55,12 @@ NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include-fixed
 NF_INCLUDES += -I /usr/include/x86_64-linux-gnu
 NF_INCLUDES += -I /usr/include
 
-# NF_ARGUMENTS=-DNF_ARGUMENTS='"vignat", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--expire", "60000000000", "--starting-port", "0", "--max-flows", "65536", "--extip", "0.0.0.0", "--eth-dest", "0,01:23:45:67:89:00", "--eth-dest", "1,01:23:45:67:89:01"'
+# icnalsp3s2
+# NF_ARGUMENTS=-DNF_ARGUMENTS='"vignat", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--expire", "60000000000", "--starting-port", "0", "--max-flows", "65536", "--extip", "192.168.4.2", "--eth-dest", "0,01:23:45:67:89:00", "--eth-dest", "1,01:23:45:67:89:01"'
+# icnalsp3s3
+NF_ARGUMENTS=-DNF_ARGUMENTS='"vignat", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--expire", "60000000000", "--starting-port", "256", "--max-flows", "65536", "--extip", "192.168.4.2", "--eth-dest", "0,90:E2:BA:55:15:5C", "--eth-dest", "1,90:E2:BA:55:15:5D"'
 
-NF_ARGUMENTS=-DNF_ARGUMENTS='"vigbridge", "--no-shconf", "--", "--expire", "60000000000", "--capacity", "65536"'
+# NF_ARGUMENTS=-DNF_ARGUMENTS='"vigbridge", "--no-shconf", "--", "--expire", "60000000000", "--capacity", "65536"'
 
 
 NF_DEFS += $(NF_ARGUMENTS)
@@ -144,7 +147,7 @@ KERNEL_DEFS := -DDSOS_DEBUG
 # OTHER_INCLUDES := -I include --include include/misc_defs.h
 OTHER_INCLUDES := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
 
-C_SRCS = $(BRIDGE_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
+C_SRCS = $(NAT_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
 BOOT_SRCS = $(KERNEL_DIR)/asm/multiboot_header.asm $(KERNEL_DIR)/asm/boot.asm
