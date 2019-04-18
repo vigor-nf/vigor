@@ -59,15 +59,19 @@ case $SCENARIO in
     "mg-1p")
 
         case $NF_TYPE in
-	    "NAT"|"LB"|"Pol"|"FW")	
+	    "NAT"|"Pol"|"FW")	
         	LUA_SCRIPT="l3-load-find-1p.lua"
 	        ;;
 
+     	    "LB")
+                LUA_SCRIPT="l3-lb-load-find-1p.lua"
+                ;;
+            
      	    "Br")
                 LUA_SCRIPT="l2-load-find-1p.lua"
                 ;;
             
-             *)
+            *)
 	     	echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
 		exit 10
    		;;
