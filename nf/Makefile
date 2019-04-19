@@ -52,11 +52,17 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 
 ### VeriFast verification ###
 # we use DPDK stubs in there (e.g. rte_config.h)
-LIBVIG_SRC := $(SELF_DIR)/lib/containers/double-chain-impl.c \
+LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
+              $(SELF_DIR)/lib/containers/modulo.c \
+              $(SELF_DIR)/lib/containers/double-chain-impl.c \
               $(SELF_DIR)/lib/containers/double-chain.c \
               $(SELF_DIR)/lib/containers/map-impl.c \
               $(SELF_DIR)/lib/containers/double-map.c \
               $(SELF_DIR)/lib/containers/vector.c \
+              $(SELF_DIR)/lib/containers/prime.c \
+              $(SELF_DIR)/lib/containers/listutils.c \
+              $(SELF_DIR)/lib/containers/transpose.c \
+              $(SELF_DIR)/lib/containers/permutations.c \
               $(SELF_DIR)/lib/containers/cht.c \
               $(SELF_DIR)/lib/containers/map.c \
               $(SELF_DIR)/lib/coherence.c \

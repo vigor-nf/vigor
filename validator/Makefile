@@ -23,26 +23,31 @@ clean:
 	rm -f validator.byte
 
 validate-nat: clean
-	python3 translate-spec.py nat-spec.py forwarding_property.tmpl
+	$(eval SPEC ?= nat-spec.py)
+	python3 translate-spec.py $(SPEC) forwarding_property.tmpl
 	./test_all.sh ../nf/vignat/klee-last out ../nf nat_fspec.cma
 
 validate-bridge: clean
-	python3 translate-spec.py bridge-spec.py bridge_forwarding_property.tmpl
+	$(eval SPEC ?= bridge-spec.py)
+	python3 translate-spec.py $(SPEC) bridge_forwarding_property.tmpl
 	./test_all.sh ../nf/vigbridge/klee-last out ../nf bridge_fspec.cma
 
 validate-balancer: clean
-	python3 translate-spec.py lb-spec.py balancer_forwarding_property.tmpl
+	$(eval SPEC ?= lb-spec.py)
+	python3 translate-spec.py $(SPEC) balancer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigbalancer/klee-last out ../nf balancer_fspec.cma
 
 validate-policer: clean
-	python3 translate-spec.py policer-spec.py policer_forwarding_property.tmpl
+	$(eval SPEC ?= policer-spec.py)
+	python3 translate-spec.py $(SPEC) policer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
 validate-nat-dsos: clean
 	./test_all.sh ../nf/klee-last out ../nf nat_fspec.cmo
 
 validate-fw: clean
-	python3 translate-spec.py fw-spec.py fw_forwarding_property.tmpl
+	$(eval SPEC ?= fw-spec.py)
+	python3 translate-spec.py $(SPEC) fw_forwarding_property.tmpl
 	./test_all.sh ../nf/vigfw/klee-last out ../nf fw_fspec.cma
 
 # Regression test suite
