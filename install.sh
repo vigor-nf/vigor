@@ -86,7 +86,6 @@ pushd "$BUILDDIR"
         patch -p1 < "$p"
       done
 
-      make config T=x86_64-native-linuxapp-gcc
       make install -j T=x86_64-native-linuxapp-gcc DESTDIR=.
 
       echo "$DPDK_RELEASE" > .version
