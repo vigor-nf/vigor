@@ -23,5 +23,5 @@ uint64_t dsos_tsc_get_freq(void)
 {
   /* Completely arbitrary but ok. TODO: Find a reliable way to get it from
      hardware */
-  return 3599910000;
+  return 3292182000ul;
 }

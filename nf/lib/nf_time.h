@@ -6,7 +6,7 @@
 // so even #ifdef-ing the time.h inclusion out doesn't work
 #define vigor_time_t int64_t
 
-#define VIGOR_TIME_SECONDS_MULTIPLIER (1000000000l)
+#define VIGOR_TIME_SECONDS_MULTIPLIER (1000000000ul)
 
 //@ predicate last_time(vigor_time_t t);
 

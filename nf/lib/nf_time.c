@@ -22,8 +22,9 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
       return -1;
     }
 
-    uint64_t tsc = dsos_rdtsc();
-    uint64_t freq = dsos_tsc_get_freq();
+    __uint128_t tsc = dsos_rdtsc();
+    __uint128_t freq = dsos_tsc_get_freq();
+    uint64_t time_ns = (uint64_t) (tsc * 1000000000ul / freq);
 
 
 #ifdef KLEE_VERIFICATION
@@ -34,8 +35,8 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp)
     tp->tv_sec = tsc / freq;
     tp->tv_nsec = tsc; //FIXME: modulo 1000000000, etc, use a proper formula;
 #else//KLEE_VERIFICATION
-    tp->tv_nsec = (tsc * 1000000000 / freq) % 1000000000;
-    tp->tv_sec = tsc / freq;
+    tp->tv_nsec = time_ns % 1000000000ul;
+    tp->tv_sec = time_ns / 1000000000ul;
 #endif//KLEE_VERIFICATION
 
     return 0;
@@ -48,7 +49,7 @@ vigor_time_t current_time(void)
 {
   struct timespec tp;
   clock_gettime(CLOCK_MONOTONIC, &tp);
-  last_time = tp.tv_sec * 1000000000 + tp.tv_nsec;
+  last_time = tp.tv_sec * 1000000000ul + tp.tv_nsec;
   return last_time;
 }
 
