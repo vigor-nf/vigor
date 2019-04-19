@@ -105,9 +105,8 @@ void policer_config_cmdline_print_usage(void)
          " default: %" PRIu32 ".\n"
          "\t--burst <size>: policer burst size in bytes,"
          " default: %" PRIu32 ".\n"
-         "\t--capacity <n>: dynamic mac learning table capacity,"
-         " default: %" PRIu32 ".\n"
-         "\t--config <fname>: static filtering table configuration file.\n",
+         "\t--capacity <n>: policer table capacity,"
+         " default: %" PRIu32 ".\n",
          DEFAULT_LAN,
          DEFAULT_WAN,
          DEFAULT_RATE,
