@@ -10,7 +10,7 @@
 struct FlowManager;
 
 struct FlowManager* flow_manager_allocate(uint16_t fw_device,
-                                          uint32_t expiration_time,
+                                          uint64_t expiration_time,
                                           uint64_t max_flows);
 
 void flow_manager_allocate_or_refresh_flow(struct FlowManager* manager,
