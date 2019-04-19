@@ -23,6 +23,7 @@ NAT_DIR = vignat
 BRIDGE_DIR = vigbridge
 POLICER_DIR = vigpolicer
 NOP_DIR = unverified-nop
+FIREWALL_DIR = vigfw
 
 # NAT
 NAT_SOURCES := $(NAT_DIR)/nat_main.c \
@@ -44,6 +45,13 @@ POLICER_SOURCES := $(POLICER_DIR)/policer_main.c \
 	$(POLICER_DIR)/policer_state.c \
 	$(POLICER_DIR)/dynamic_value.h.gen.c \
 	$(POLICER_DIR)/ip_addr.h.gen.c
+
+# Firewall
+FIREWALL_SOURCES := $(FIREWALL_DIR)/fw_main.c \
+	$(FIREWALL_DIR)/fw_config.c \
+    $(FIREWALL_DIR)/flow.h.gen.c \
+    $(FIREWALL_DIR)/fw_flowmanager.c \
+    $(FIREWALL_DIR)/fw_state.c
 
 #NOP
 NOP_SOURCES = $(NOP_DIR)/nop_main.c
@@ -73,8 +81,13 @@ NF_INCLUDES += -I /usr/include
 # NF_ARGUMENTS=-DNF_ARGUMENTS='"vigbridge", "--no-shconf", "--", "--expire", "60000000000", "--capacity", "65536"'
 
 # VigPolicer
-NF_ARGUMENTS=-DNF_ARGUMENTS='"policer", "--no-shconf", "--", "--lan", "1", "--wan", "0", "--rate", "12500", "--burst", "125000", "--capacity", "65536"'
+# NF_ARGUMENTS=-DNF_ARGUMENTS='"policer", "--no-shconf", "--", "--lan", "1", "--wan", "0", "--rate", "12500", "--burst", "125000", "--capacity", "65536"'
 
+# VigFw
+NF_ARGUMENTS=-DNF_ARGUMENTS='"fw", "--no-shconf", "--", "--eth-dest", "1,90:E2:BA:55:15:5D", "--eth-dest", "0,90:E2:BA:55:15:5C", "--expire", "10000000000", "--max-flows", "65536", "--wan", "1"'
+
+# VigBalancer
+# NF_ARGUMENTS=-DNF_ARGUMENTS='"lb", "--no-shconf", "--", "--backend", "0,90:E2:BA:55:15:5C", "--flow-expiration", "60000000000", "--flow-capacity", "65536", "--backend-capacity", "20", "--cht-height", "100", "--backend-expiration", "60000000000"'
 
 NF_DEFS += $(NF_ARGUMENTS)
 
@@ -160,7 +173,7 @@ KERNEL_DEFS := -DDSOS_DEBUG
 # OTHER_INCLUDES := -I include --include include/misc_defs.h
 OTHER_INCLUDES := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
 
-C_SRCS = $(POLICER_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
+C_SRCS = $(FIREWALL_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
 BOOT_SRCS = $(KERNEL_DIR)/asm/multiboot_header.asm $(KERNEL_DIR)/asm/boot.asm
