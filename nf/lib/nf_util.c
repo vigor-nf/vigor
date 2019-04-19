@@ -29,25 +29,45 @@ nf_has_tcpudp_header(struct ipv4_hdr* header)
 }
 
 void
-nf_set_ipv4_checksum(struct ipv4_hdr* header)
+nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* header)
 {
-	// TODO: See if can be offloaded to hardware
+	/*
+		https://doc.dpdk.org/guides/prog_guide/mbuf_lib.html#meta-information
+
+		In order to use hardware offloading of header checksum we need to set
+		a few parameters in the mbuf structure before sending the packet.
+
+		We need to set
+			* the IPv4 checksum to 0
+			* the l2 length to the size of the Ethernet header
+			* the l3 length to the size of the IPv4 header
+			* the offloading flags to PKT_TX_IPV4 | PKT_TX_IP_CKSUM ORed with
+				either PKT_TX_TCP_CKSUM or PKT_TX_UDP_CKSUM depending on the type
+				of the packet (setting both all the time doesn't work, the NIC
+				will not send the packet)
+			* the TCP/UDP header to the IPv4 pseudoheader checksum
+
+		If any of these are wrong the NIC will not send the packet
+
+		The NIC itself and the tx queue need to be configured for this as well,
+		see nf_init_device.
+	*/
+
 	header->hdr_checksum = 0;
-// 	return;// FIXME: Get the checksum back!
+
+    mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
+    mbuf->l2_len = sizeof(struct ether_hdr);
+    mbuf->l3_len = sizeof(struct ipv4_hdr);
 
 	if (header->next_proto_id == IPPROTO_TCP) {
 		struct tcp_hdr* tcp_header = (struct tcp_hdr*)(header + 1);
-		tcp_header->cksum = 0;
-		tcp_header->cksum = rte_ipv4_udptcp_cksum(header, tcp_header);
+		tcp_header->cksum = rte_ipv4_phdr_cksum(header, mbuf->ol_flags);
+		mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
 	} else if (header->next_proto_id == IPPROTO_UDP) {
 		struct udp_hdr * udp_header = (struct udp_hdr*)(header + 1);
-		udp_header->dgram_cksum = 0;
-		udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(header, udp_header);
+		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(header, mbuf->ol_flags);
+		mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
 	}
-
-  // FIXME: this is misleading. we don't really compute any checksum here,
-  // see rte_ipv4_udptcp_cksum and rte_ipv4_udptcp_cksum, they return 0!
-	header->hdr_checksum = rte_ipv4_cksum(header);
 }
 
 uintmax_t

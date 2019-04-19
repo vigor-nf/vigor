@@ -80,7 +80,7 @@ bool ether_to_ipv4_constraint(void* arg) {
 
 bool nf_has_tcpudp_header(struct ipv4_hdr* header);
 
-void nf_set_ipv4_checksum(struct ipv4_hdr* header);
+void nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* header);
 
 uintmax_t nf_util_parse_int(const char* str, const char* name,
                             int base, char next);
