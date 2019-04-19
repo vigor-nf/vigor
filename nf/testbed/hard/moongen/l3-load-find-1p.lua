@@ -43,7 +43,6 @@ function master(args)
 	local minRate = 10
 	local rate = minRate + (maxRate - minRate)/2
 	local num_backends = 20
--- 	for _,nflws in pairs({100}) do
  	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
 		-- Heatup phase
 		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
