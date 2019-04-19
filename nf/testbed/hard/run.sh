@@ -59,7 +59,7 @@ case $SCENARIO in
     "mg-1p")
 
         case $NF_TYPE in
-	    "NAT"|"FW")	
+	    "NAT"|"FW"|"NOP")	
         	LUA_SCRIPT="l4-load-find-1p.lua"
 	        ;;
 
@@ -90,7 +90,7 @@ case $SCENARIO in
     "mg-new-flows-latency")
         
 	case $NF_TYPE in
-	    "NAT"|"Pol")	
+	    "NAT"|"Pol"|"NOP")	
         	LUA_SCRIPT="l3-latency-light.lua"
 	        ;;
 
