@@ -16,21 +16,39 @@ fixpoint bool common_divide(int quotient1, int quotient2, int divisor) {
     return divide(quotient1, divisor) && divide(quotient2, divisor);
 } 
 
+fixpoint bool no_divisors_upto(int x, nat bound) {
+   switch(bound) {
+     case zero: return true;
+     case succ(bound_pred):
+       return bound_pred == zero
+           ? true
+           : !divide(x, int_of_nat(bound)) && no_divisors_upto(x, bound_pred);
+   }
+}
+
 fixpoint bool is_prime_div(int x, nat divisor) {
     switch(divisor) {
         case zero: return false;
         case succ(divisor_pred):
             return divisor_pred == zero 
                 ? false
-                : divisor_pred == succ(zero) 
-                    ? !divide(x, int_of_nat(divisor))
-                    : !divide(x, int_of_nat(divisor)) && is_prime_div(x, divisor_pred);
+                : divide(x, int_of_nat(divisor)) && no_divisors_upto(x, divisor_pred);
     }
 
 }
 
 fixpoint bool is_prime(int x) {
     return is_prime_div(x, nat_of_int(x));
+}
+
+fixpoint bool no_codivisors_upto(int x, int y, nat bound) {
+   switch(bound) {
+     case zero: return true;
+     case succ(bound_pred):
+       return bound_pred == zero
+           ? true
+           : !common_divide(x, y, int_of_nat(bound)) && no_codivisors_upto(x, y, bound_pred);
+   }
 }
 
 fixpoint bool are_coprime_div(int x, int y, nat divisor) {
@@ -40,8 +58,8 @@ fixpoint bool are_coprime_div(int x, int y, nat divisor) {
             return divisor_pred == zero
                 ? false
                 : divisor_pred == succ(zero)
-                    ? !common_divide(x, y, int_of_nat(divisor))
-                    : !common_divide(x, y, int_of_nat(divisor)) && are_coprime_div(x, y, divisor_pred);
+                    ? false
+                : common_divide(x, y, int_of_nat(divisor)) && no_codivisors_upto(x, y, divisor_pred);
     }
 
 }

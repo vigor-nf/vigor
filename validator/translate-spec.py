@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import ast
 import sys
+import os
 
 protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
@@ -20,6 +21,7 @@ stateVars = []
 indentLevel = 0
 indentWidth = 2
 
+importSearchDirs = [os.getcwd()] # Add the current directory
 vfSpecFile = None
 
 def indentPrint(text):
@@ -119,8 +121,8 @@ def renderExpr(expr):
     elif isinstance(expr, ast.BoolOp):
         left = renderExpr(expr.values[0])
         right = renderExpr(expr.values[1])
-        if   isinstance(expr.op, ast.And): sign = '&&'
-        elif isinstance(expr.op, ast.Or): sign = '||'
+        if   isinstance(expr.op, ast.And): sign = ' && '
+        elif isinstance(expr.op, ast.Or): sign = ' || '
         else: sign = '???'
         return "(" + (sign.join(map(renderExpr, expr.values))) + ")"
     elif isinstance(expr, ast.List):
@@ -180,6 +182,7 @@ def isPopHeader(expr):
 
 def translatePopHeader(binding, body, declaredVars):
     global headerStack, dummyCnt, objects
+    prevHeaderStack = headerStack
     indentPrint("switch({}) {{\n".format(headerStack))
     onMismatch = genOutcome(binding.value.keywords[0].value)
     indentPrint("case nil: {}".format(onMismatch))
@@ -202,6 +205,7 @@ def translatePopHeader(binding, body, declaredVars):
     indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdrName, hdrName))
     indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(fieldInstances)))
     translate(body, declaredVars)
+    headerStack = prevHeaderStack
     indentPrint("}}}")
 
 def objConstructKey(call):
@@ -286,10 +290,19 @@ def translate(exprList, declaredVars):
             indentPrint(genOutcome(expr.value))
         elif isinstance(expr, ast.Expr):
             indentPrint(renderExpr(expr.value) + ';')
+        elif isinstance(expr, ast.Pass):
+            indentPrint('assume(false); //Ignore this case')
         elif isinstance(expr, ast.Import):
             for alias in expr.names:
                 assert alias.asname == None
-                translateSpec(alias.name + '.py')
+                found = False
+                for d in importSearchDirs:
+                    path = os.path.join(d, alias.name + '.py')
+                    if os.path.isfile(path):
+                        translateSpec(path)
+                        found = True
+                        break
+                assert found, alias.name + ' file not found'
         elif isinstance(expr, ast.ImportFrom):
             assert expr.module == 'state'
             for alias in expr.names:
@@ -353,8 +366,10 @@ elif 'fw' in pythonSpecFname:
                     'int_devices' : vector}
 
 def translateSpec(pythonSpecFname_):
+    global importSearchDirs
     specRaw = open(pythonSpecFname_).read()
     specAst = ast.parse(specRaw)
+    importSearchDirs.append(os.path.split(pythonSpecFname_)[0])
     return translate(specAst.body, [])
 
 vfSpecFile = open(vfSpecFname, "w")

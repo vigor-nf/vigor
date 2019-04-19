@@ -11,10 +11,11 @@ NF_FILES := lb_main.c lb_balancer.c lb_config.c lb_flow.h.gen.c lb_backend.h.gen
 NF_VERIF_FILES := lb_loop.c
 
 # Verification arguments
+# CHT height must be a prime number
 NF_VERIF_ARGS := --flow-expiration 10 \
                  --flow-capacity 65536 \
                  --backend-capacity 20 \
-                 --cht-height 100 \
+                 --cht-height 97 \
                  --backend-expiration 60
 
 AUTO_GEN_FILES := lb_flow.h.gen.c lb_flow.h.gen.h \
