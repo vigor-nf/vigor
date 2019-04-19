@@ -270,6 +270,8 @@ let split_assignments assignments =
          symbolic)
       | Bop (Sub, {v=Id _;t=_}, _) ->
         (assignment::concrete,symbolic)
+      | Bop (Sub, {v=Int _;t=_}, _) ->
+        (assignment::concrete,symbolic)
       | Struct (_, []) -> (* printf "skipping empty assignment: %s = %s" *)
         (*  (render_tterm assignment.lhs) *)
         (*  (render_tterm assignment.rhs); *)
