@@ -14,5 +14,6 @@ if received_on_port != EXT_DEVICE:
     return ([EXT_DEVICE],[ether(h1, saddr=..., daddr=...),
                           ipv4(h2, cksum=...),
                           tcpudp(h3)])
+    pass # Ignore the state change
 else:
     pass
