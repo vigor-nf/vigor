@@ -44,7 +44,7 @@ function master(args)
 	for _,nflws in pairs({1000,10000,20000,30000,40000,50000,60000,64000}) do
 		-- IMPORTANT: For this experiment to run correctly expiry time(s) > max(nflws)/default_rate
 		-- Heatup phase
-		printf("Heating up backends");
+		printf("Heating up backends. No packets will be received");
 		local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, NUM_BACKENDS, args.upheat,SRC_IP_BASE_BACKENDS)
 		mg.waitForTasks()
 		
@@ -60,7 +60,7 @@ function master(args)
 		end
 		mg.waitForTasks()
 		-- Testing phase
-		printf("Setting up %d backends",NUM_BACKENDS);
+		printf("Setting up %d backends. No packets will be received",NUM_BACKENDS);
 		local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, NUM_BACKENDS, args.upheat,SRC_IP_BASE_BACKENDS)
 		mg.waitForTasks()
 		local loadTask = mg.startTask("loadSlave", rxDev:getTxQueue(0), txDev, args.size, nflws, args.timeout, SRC_IP_BASE_BACK_FLWS)
