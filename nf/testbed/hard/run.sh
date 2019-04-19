@@ -87,17 +87,36 @@ case $SCENARIO in
         ssh $TESTER_HOST "sudo rm mf-find-mg-1p.txt"
         ;;
 
-    "mg-existing-flows-latency")
-        LUA_SCRIPT="l3-latency-light.lua"
-        echo "[bench] Benchmarking throughput..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0"
+    "mg-new-flows-latency")
+        
+	case $NF_TYPE in
+	    "NAT"|"FW"|"Pol")	
+        	LUA_SCRIPT="l3-latency-light.lua"
+	        ;;
+
+     	    "LB")
+                LUA_SCRIPT="l3-lb-latency-light.lua"
+                ;;
+            
+     	    "Br")
+                LUA_SCRIPT="l2-latency-light.lua"
+                ;;
+            
+            *)
+	     	echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
+		exit 10
+   		;;
+        esac
+
+        echo "[bench] Benchmarking latency..."
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 1000 -u 5 -t 5 1 0"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
         ;;
 
-    "mg-new-flows-latency")
+    "mg-existing-flows-latency")
         LUA_SCRIPT="l3-latency-light.lua"
-        echo "[bench] Benchmarking throughput..."
+        echo "[bench] Benchmarking latency..."
         ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 100 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"

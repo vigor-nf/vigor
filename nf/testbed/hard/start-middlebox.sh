@@ -68,11 +68,11 @@ else
     case $SCENARIO in
         "mg-new-flows-latency")
             SIMPLE_SCENARIO="loopback"
-            EXPIRATION_TIME=2
+            EXPIRATION_TIME=1000000000 #One second
             ;;
         "1p"|"loopback"|"mg-1p"|"mg-existing-flows-latency")
             SIMPLE_SCENARIO="loopback"
-            EXPIRATION_TIME=60000000000
+            EXPIRATION_TIME=60000000000 #One minute
             ;;
         "rr"|"passthrough")
             SIMPLE_SCENARIO="rr"
