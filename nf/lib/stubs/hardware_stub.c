@@ -113,12 +113,12 @@ stub_device_start(struct stub_device* dev)
 	bool received = klee_int("received");
 	set_packet_receive_success(received);
 	//need it forward, to make sure packet_receive args are the same in both calls
-	uint16_t packet_length = sizeof(struct stub_mbuf_content); //TODO: make length symbolic
+	uint32_t packet_length = sizeof(struct stub_mbuf_content); //TODO: make length symbolic
 	//uint16_t data_length = klee_int("data_len");
 	//klee_assume(packet_length <= 90); //Make sure it fits 1 mbuf
 	//klee_assume(data_length <= packet_length);
 	//klee_assume(sizeof(struct ether_hdr) <= data_length);
-	uint16_t data_len = packet_length;
+	uint32_t data_len = packet_length;
 	if (!received) {
 		// no packet
 		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
@@ -841,10 +841,6 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
         DEV_REG(dev, 0x06010) = 0; // TDH
         // Make sure we have enough space
         uint32_t tdt = new_value;
-	if (tdt == 0) {
-		// No? Probably this is not to send a packet, then.
-		return new_value;
-	}
 
         // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
         // (which the NIC reads to know how to send a packet)
@@ -881,6 +877,17 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	// 43-45: Reserved
 	// 46-63: Payload length (== buffer length in our case)
 	uint64_t buf_props = descr[1];
+
+        // VVV just the 0 in new_value doesn't work anymore
+        // On the other side, apparently this descriptor type
+        // breaks, if it is not send
+	if ( ! ( GET_BIT(buf_props, 20) == 1 &&
+                 GET_BIT(buf_props, 21) == 1 &&
+	         GET_BIT(buf_props, 22) == 0 &&
+                 GET_BIT(buf_props, 23) == 0 )) {
+		// No? Probably this is not to send a packet, then.
+		return new_value;
+	}
 
 	uint16_t buf_len = buf_props & 0xFF;
 
