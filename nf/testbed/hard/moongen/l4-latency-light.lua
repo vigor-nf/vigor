@@ -61,7 +61,7 @@ function master(args)
 		printf("total: %d flows, %f latency (+-%f)",
 			nflws, latency, stdev);
 		mg.waitForTasks()
-		if (0 < loss) then
+		if (0.0001 < loss) then
 			printf("loss: %f --> queuing latency measurement is not representative", loss)
 		else
 			file:write(nflws .. " " .. args.rate .. " " .. latency .. " " .. stdev .. "\n")
