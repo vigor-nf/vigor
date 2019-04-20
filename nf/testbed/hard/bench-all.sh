@@ -1,15 +1,36 @@
 #!/bin/bash
 
+# Parameter which decides which NFs must be run. Can be either "Vigor" or "Baselines" or "All"
+NF_LIST=$1 
+
 # Initialize the machines, i.e. software+scripts
 . ./init-machines.sh
 # Clean first, just in case
 . ./clean.sh
 
 VNDS_PREFIX="$HOME/projects/Vigor/vnds/nf"
-
+CLICK_PREFIX="$HOME/projects/Vigor/fastclick/conf/vnds-baselines"
 NOW=$(date +"%d.%m.%Y_%H_%M")
 
-MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw")
+
+case $NF_LIST in 
+	"Vigor")
+		MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw" )
+		;;
+	
+	"Baselines")
+		MIDDLEBOXES=("$CLICK_PREFIX/click-nat" "$CLICK_PREFIX/click-nop" "$CLICK_PREFIX/click-bridge" "$CLICK_PREFIX/click-fw" )
+		;;
+		
+	"All")
+		MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw" )
+		;;
+	*)
+		echo "[bench] Unknown parameter passed. Please pass one of Vigor/Baselines/All"
+	        exit 1
+		;;
+esac	
+
 SCENARIOS=("mg-new-flows-latency" "mg-1p")
 declare -A NF_TYPES
 NF_TYPES[$VNDS_PREFIX/vignat]=NAT
@@ -18,6 +39,10 @@ NF_TYPES[$VNDS_PREFIX/vigbalancer]=LB
 NF_TYPES[$VNDS_PREFIX/vigpolicer]=Pol
 NF_TYPES[$VNDS_PREFIX/vigfw]=FW
 NF_TYPES[$VNDS_PREFIX/unverified-nop]=NOP
+NF_TYPES[$CLICK_PREFIX/click-nat]=NAT
+NF_TYPES[$CLICK_PREFIX/click-bridge]=Br
+NF_TYPES[$CLICK_PREFIX/click-nop]=NOP
+NF_TYPES[$CLICK_PREFIX/click-fw]=FW
 
 
 mkdir -p $NOW
@@ -27,6 +52,10 @@ for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
     # but unfortunately it does for the old ones, so to not try this for those)
     . ./init.sh $MIDDLEBOX "mg-1p"
     NF_TYPE=${NF_TYPES[$MIDDLEBOX]}
+    if [ -z $NF_TYPE ]; then
+	    echo "[bench] NF_TYPE unspecified for $MIDDLEBOX"
+	    exit 1
+    fi
 
     for SCENARIO in ${SCENARIOS[@]}; do
 	echo "Benching Middlebox $MIDDLEBOX in Scenario $SCENARIO"
