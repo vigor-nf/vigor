@@ -1,4 +1,5 @@
 //@ #include "permutations.gh"
+//@ #include "listutils-lemmas.gh"
 
 /*@
 
