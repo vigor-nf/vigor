@@ -10,6 +10,7 @@
 #include <rte_mbuf_ptype.h>
 #include <rte_memory.h>
 #include <rte_mempool.h>
+#include <rte_ethdev.h>
 
 #ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
@@ -248,3 +249,12 @@ stub_core_mbuf_free(struct rte_mbuf* mbuf)
 
 	rte_mbuf_raw_free(mbuf);
 }
+
+void rte_eth_dev_info_get(uint16_t port_id, struct rte_eth_dev_info *dev_info) {
+    //Support hardware checksum offloading
+    dev_info->tx_offload_capa =
+        DEV_TX_OFFLOAD_IPV4_CKSUM |
+        DEV_TX_OFFLOAD_TCP_CKSUM |
+        DEV_TX_OFFLOAD_UDP_CKSUM;
+}
+

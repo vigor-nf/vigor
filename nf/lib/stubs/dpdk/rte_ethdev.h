@@ -9,6 +9,10 @@
 
 #include <klee/klee.h>
 
+// Checksum offload flags
+#define DEV_TX_OFFLOAD_IPV4_CKSUM  0x00000002
+#define DEV_TX_OFFLOAD_UDP_CKSUM   0x00000004
+#define DEV_TX_OFFLOAD_TCP_CKSUM   0x00000008
 
 struct rte_eth_link {
 	uint32_t link_speed;
@@ -17,8 +21,18 @@ struct rte_eth_link {
 	uint16_t link_status  : 1;
 };
 
+/**
+ * A structure used to configure the TX features of an Ethernet port.
+ */
+struct rte_eth_txmode {
+    // Hardware offload for checksums
+	uint64_t offloads;
+    // we don't care about other members
+};
+
 struct rte_eth_conf {
 	struct { uint8_t hw_strip_crc; } rxmode; 
+        struct rte_eth_txmode txmode;
 
 	/* Don't care about other members */
 };
@@ -26,7 +40,23 @@ struct rte_eth_rxconf {
 	uint16_t rx_free_thresh;
 	// we don't care about other members
 };
-struct rte_eth_txconf { /* Nothing */ };
+
+struct rte_eth_txconf {
+    // Hardware offload for checksums
+	uint64_t offloads;
+	// we don't care about other members
+};
+
+
+
+/**
+ * Ethernet device information
+ */
+struct rte_eth_dev_info {
+	/* Device per port TX offload capabilities. */
+	uint64_t tx_offload_capa;
+        // We don't care about other members
+};
 
 // Sanity checks
 // Documentation of rte_ethdev indicates the configure/tx/rx/started order
@@ -68,7 +98,9 @@ rte_eth_tx_queue_setup(uint16_t port_id, uint16_t tx_queue_id,
 	klee_assert(!devices_tx_setup[port_id]);
 	klee_assert(tx_queue_id == 0); // we only support that
 	klee_assert(socket_id == 0); // same
-	klee_assert(tx_conf == NULL); // same
+        klee_assert(tx_conf != NULL); // same
+	klee_assert(tx_conf->offloads ==
+                    (DEV_TX_OFFLOAD_UDP_CKSUM | DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM)); // same
 
 	devices_tx_setup[port_id] = true;
 	return 0;
@@ -183,3 +215,13 @@ rte_pktmbuf_clone(struct rte_mbuf* frame, struct rte_mempool* clone_pool) {
   packet_clone(frame->buf_addr, &copy->buf_addr);
   return copy;
 }
+/**
+ * Retrieve the contextual information of an Ethernet device.
+ *
+ * @param port_id
+ *   The port identifier of the Ethernet device.
+ * @param dev_info
+ *   A pointer to a structure of type *rte_eth_dev_info* to be filled with
+ *   the contextual information of the Ethernet device.
+ */
+void rte_eth_dev_info_get(uint16_t port_id, struct rte_eth_dev_info *dev_info);

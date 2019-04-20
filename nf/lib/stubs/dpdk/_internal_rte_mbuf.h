@@ -80,10 +80,10 @@ struct rte_mbuf {
 	struct rte_mempool *pool;
 	struct rte_mbuf *next;
 //	union {
-		uint64_t tx_offload;
+//		uint64_t tx_offload;
 //		struct {
-//			uint64_t l2_len:7;
-//			uint64_t l3_len:9;
+			uint64_t l2_len;//:7;
+			uint64_t l3_len;//:9;
 //			uint64_t l4_len:8;
 //			uint64_t tso_segsz:16;
 //			uint64_t outer_l3_len:9;

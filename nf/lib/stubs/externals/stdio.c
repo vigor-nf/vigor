@@ -39,7 +39,9 @@ int
 vfprintf(FILE* stream, const char* format, _G_va_list __arg)
 {
 	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
+#ifdef DSOS
 	vprintf1(format, __arg);
+#endif//DSOS
 
 	return 0; // OK, whatever
 }
