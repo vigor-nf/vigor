@@ -13,5 +13,5 @@ else
   sudo ${RTE_SDK}/usertools/dpdk-devbind.py -b $KERN_NIC_DRIVER $MB_PCI_INTERNAL $MB_PCI_EXTERNAL $MB_PCI_TO_SRV && echo "OK"
 fi
 
-echo "[clean] Killing the NAT on middlebox..."
-sudo pkill -9 nat
+echo "[clean] Killing middlebox..."
+sudo killall -9 nat lb bridge policer click fw nop
