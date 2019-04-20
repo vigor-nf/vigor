@@ -41,7 +41,8 @@ int policer_expire_entries(vigor_time_t time) {
 
 bool
 dyn_val_condition(void* key, int index, void* state) {
-  return ((struct DynamicValue*) key)->bucket_time <= recent_time();
+  return 0 < ((struct DynamicValue*) key)->bucket_time AND
+      ((struct DynamicValue*) key)->bucket_time <= recent_time();
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
