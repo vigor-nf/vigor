@@ -506,6 +506,9 @@ let traverse_globals (f : file) : unit =
   let def_headers = ref [] in
   List.iter (fun g ->
     match g with
+    (* if we expand this, bad stuff happens *)
+    | GCompTag (_, loc) when loc.file = "/usr/include/x86_64-linux-gnu/bits/types.h" ->
+      ()
     | GCompTag (ifo, loc) ->
       let header_fname = loc.file ^ ".gen.h" in
       let impl_fname = loc.file ^ ".gen.c" in

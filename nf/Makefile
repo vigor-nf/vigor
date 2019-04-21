@@ -60,8 +60,8 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/containers/double-map.c \
               $(SELF_DIR)/lib/containers/vector.c \
               $(SELF_DIR)/lib/containers/prime.c \
-              $(SELF_DIR)/lib/containers/listutils.c \
-              $(SELF_DIR)/lib/containers/transpose.c \
+              $(SELF_DIR)/lib/containers/listutils-lemmas.c \
+              $(SELF_DIR)/lib/containers/transpose-lemmas.c \
               $(SELF_DIR)/lib/containers/permutations.c \
               $(SELF_DIR)/lib/containers/cht.c \
               $(SELF_DIR)/lib/containers/map.c \
@@ -139,10 +139,10 @@ VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h --include=rte_config.h
 # Files for DPDK
 # Low-level stubs for specific functions
 VERIF_DPDK_FILES := ../lib/stubs/dpdk_low_level_stub.c
-# Replacement for the mempool containr
-VERIF_DPDK_FILES += ../lib/stubs/dpdk_mempool_singleton.c
 # Platform-independent and Linux-specific EAL
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
+# Default ring mempool driver
+VERIF_DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 # Other libraries, except acl and distributor which use CPU intrinsics (there is a generic version of distributor, but we don't need it),
 # and power has been broken for a while: http://dpdk.org/ml/archives/dev/2016-February/033152.html
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power)/*.c
@@ -171,7 +171,11 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 VERIF_COMMAND := /usr/bin/time -v \
                  klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
 
-clean: clean-gen
+clean: clean-gen clean-verify
+
+clean-verify:
+	$(CLEAN_COMMAND)
+
 clean-gen:
 	rm -f $(AUTO_GEN_FILES)
 

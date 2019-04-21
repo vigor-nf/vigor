@@ -63,6 +63,7 @@
 #  define VIGOR_LOOP_END } }
 #endif//KLEE_VERIFICATION
 
+
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;
@@ -146,18 +147,13 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   }
 
   // Allocate and set up RX queues
-  // with rx_free_thresh = 1 so that internal descriptors are replenished always,
-  // i.e. 1 mbuf is taken (for RX) from the pool and 1 is put back (when freeing),
-  //      at each iteration, which avoids havocing problems
-  struct rte_eth_rxconf rx_conf = {0};
-  rx_conf.rx_free_thresh = 1;
   for (int rxq = 0; rxq < RX_QUEUES_COUNT; rxq++) {
     retval = rte_eth_rx_queue_setup(
       device,
       rxq,
       RX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      &rx_conf,
+      NULL, // default config
       mbuf_pool
     );
     if (retval != 0) {
@@ -197,7 +193,6 @@ lcore_main(void)
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
   VIGOR_LOOP_BEGIN
-
     struct rte_mbuf* mbuf;
     if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
       uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
