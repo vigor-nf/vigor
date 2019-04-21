@@ -177,7 +177,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		tcpudp_header->dst_port = flow->id.src_port;
 
 		// Checksum
-		nf_set_ipv4_checksum(ipv4_header);
+		nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
 
 		return flow->internal_device;
 	} else {
@@ -232,7 +232,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		tcpudp_header->src_port = flow->external_port;
 
 		// Checksum
-		nf_set_ipv4_checksum(ipv4_header);
+		nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
 
 		return config.wan_device;
 	}
