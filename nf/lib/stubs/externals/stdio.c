@@ -39,9 +39,9 @@ int
 vfprintf(FILE* stream, const char* format, _G_va_list __arg)
 {
 	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
-#ifdef DSOS
+#if (defined DSOS) && (!defined KLEE_VERIFICATION)
 	vprintf1(format, __arg);
-#endif//DSOS
+#endif//(defined DSOS) && (!defined KLEE_VERIFICATION)
 
 	return 0; // OK, whatever
 }

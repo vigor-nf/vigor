@@ -27,16 +27,18 @@ int main(void)
 
 	static const int argc = (sizeof(argv) / sizeof(argv[0])) - 1;
 
+#ifndef KLEE_VERIFICATION
 	dsos_serial_init();
+#endif//!KLEE_VERIFICATION
 
 	int num_devs;
 	struct dsos_pci_nic *devs;
 
 #ifdef VIGOR_STUB_HARDWARE
 	devs = stub_hardware_get_nics(&num_devs);
-#else
+#else//VIGOR_STUB_HARDWARE
 	devs = dsos_pci_find_nics(&num_devs);
-#endif
+#endif//VIGOR_STUB_HARDWARE
 
 	if (devs == NULL) {
 		printf("Error getting PCI devices\n");
@@ -47,7 +49,7 @@ int main(void)
 
 #ifndef KLEE_VERIFICATION
 	_init();
-#endif
+#endif//!KLEE_VERIFICATION
 
 	// do_map_test();
 
