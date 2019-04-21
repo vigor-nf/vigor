@@ -1,47 +1,130 @@
 global start
 extern main
 extern dsos_halt
-extern printf
-extern mystery2
-extern dsos_vga_write_char
 
-; This is the bootstrap code of DSOS. At a high level it does the following:
+; We claim that executing the code in this file leads to one and only one of 3
+; outcomes:
+;   1. the CPU halts;
+;   2. the CPU raises a triple fault exception and resets;
+;   3. the main() function is invoked and all of the following conditions are satisfied:
+;       - The CPU supports the following features
+;           - CPUID
+;           - Long mode (64-bit mode)
+;           - MMX
+;           - SSE
+;           - SSE2
+;           - SSE3
+;           - SSSE3
+;           - SSE4.1
+;           - SSE4.2
+;           - POPCNT
+;           - AVX
+;           - AES
+;           - PCLMUL
+;           - FSGSBASE
+;           - RDRND
+;           - F16C
+;           - CMPXCHG16B
+;           - X87 FPU
+;           - FXSR
+;           - PAE
+;           - 1GiB pages
+;       - 64-bit mode is enabled and CS is a 64-bit read/execute code segment with DPL = 0
+;       - All other segment selectors are set to the null segment
+;       - Paging is enabled and the first 4 GiB of memory are identity-mapped with RWX permissions
+;       - SSE and AVX are enabled
+;       - 1 MiB of read-write memory is allocated for the stack
+;       - The IDT is invalid so that every interrupt or exception causes a triple fault (CPU reset)
+;       - The stack is 16-byte aligned before main() is invoked
 ;
-;   - Checks that the CPU supports the features we need
-;   - Enables paging and identity maps the first 4GB of memory
-;   - Switches to 64-bit mode
-;   - Enables SSE support
-;
-; After initialization it jumps to the C main function which should never
-; return
-;
-; All references to book chapters are to the Intel x86 manual unless otherwise
-; noted
+;   We assume that:
+;       - GRUB maps the entire executable in valid memory backed by RAM
+;           (and not by e.g. device memory) correctly according to the ELF
+;           format specification
+;       - The entire software stack uses no more than 1 MiB of stack space
+;       - GRUB sets up the machine according to the Multiboot2 specification:
+;           - The CPU is in protected mode (PE bit set in CR0)
+;           - Paging is disabled (PG bit clear in CR0)
+;           - CS is a 32-bit (D flag set) read/execute code segment with an offset of 0 and a limit of 0xffffffff
+;           - DS, ES, FS, GS, SS are a 32-bit (B flag set) read/write data segment with an offset of 0 and a limit of 0xffffffff
+;           - The A20 gate is enabled
+;           - Virtual 8086 mode is off (VM flag in EFLAGS is clear)
+;           - The interrupt flag in EFLAGS is clear
+;       - All device memory is inside the lowest 4 GiB of memory
+
 
 section .text
-
 BITS 32
-; This is the entry point of DSOS. The bootloader will jump here when it's done
+
+; This is the entry point of DSOS, execution starts here
 start:
+    ; We must first check that the CPU features that we require are supported.
+    ; Because we need to use the CPUID instruction to perform these checks, the
+    ; first step we must take is to ensure that the CPU supports the CPUID
+    ; instruction.
+    ;
+    ; The CPUID instruction is supported only if software can clear and set the
+    ; ID flag (bit 21) in the EFLAGS register [Instruction set reference, CPUID].
+    ;
+    ; It is not possible to read or write the value of the EFLAGS register directly.
+    ; Instead software must use the LAHF, SAHF, PUSHF, PUSHFD, POPF, and POPFD
+    ; instructions. LAHF, SAHF, PUSHF, and POPF only operate on the lower 16 bits
+    ; of the EFLAGS register, and therefore can't be used to operate on the ID
+    ; flag (bit 21). Instead we have to use the PUSHFD and POPFD because they
+    ; can operate on the entire EFLAGS register. PUSHFD pushes the entire EFLAGS
+    ; register on the stack, and POPFD pops a 32-bit value into EFLAGS, and can
+    ; change the value of the ID flag [7.3.13.2 EFLAGS Transfer Instructions].
+    ;
+    ; Because PUSHFD and POPFD read and write memory at the address pointed to
+    ; by the stack pointer (ESP register), and pushing a 32-bit value to the stack
+    ; decrements the stack pointer by 4, we must ensure that th stack pointer
+    ; points to the bottom of a readable and writable region of memory at least
+    ; 4 bytes in size. We instruct the assembler to allocate 1MiB of space for
+    ; the stack and place the label stack_bottom at the highest address in that
+    ; region. Therefore by setting esp to stack_bottom we guarantee that pushfd
+    ; will not access invalid memory.
+    mov esp, stack_bottom
 
-    ; DSOS does not handle interrupts so disable them
-    cli
-
-    ; Initialize the stack (needed for pushfd/popfd)
-    mov esp, stack_top
-
-    ; Volume 1 - 19.1: Using the CPUID instruction
-    ; If we can set and clear the ID bit in EFLAGS (bit 21) then CPUID is
-    ; supported. We want to use CPUID to check for other features so this is
-    ; required
-
-    ; Read the value of eflags
+    ; We assume that we are in protected mode with a 32-bit code segment,
+    ; and that we are not in virtual-8086 mode, therefore the current
+    ; operand-size attribute is 32. We assume that paging is disabled so PUSHFD
+    ; cannot generate a page fault. We assume that the stack segment has a base
+    ; of 0 and a limit of 0xffffffff so PUSHFD cannot cause the stack pointer
+    ; to fall outside the stack segment boundary.
+    ;
+    ; This instruction decrements the stack pointer by 4 and writes the entire
+    ; contents of EFLAGS at the address pointed to by the stack pointer.
     pushfd
+
+    ; After executing pushfd, esp points to a valid location in memory that contains
+    ; the value of the EFLAGS register. We assume that the stack segment is a
+    ; 32-bit segment so the stack address size is 32-bit. The operand is a
+    ; 32-bit register so the operand size is 32 bit. Therefore this instruction
+    ; will read a 32-bit value from the memory adress pointed to by ESP and
+    ; write it in EAX, then increment the stack pointer by 4.
+    ; Because the stack segment has a base of 0 and a limit of 0xffffffff the
+    ; value of ESP after this instruction cannot be outside the stack segment
+    ; limit. Because paging is disabled this instruction cannot generate a page
+    ; fault.
     pop eax
 
-    ; Keep the old value around to compare later
+    ; This instruction copies ths value of the EAX register to the EBX register.
+    ;
+    ; This instruction does not access memory or any segment selectors or control
+    ; registers, and therefore cannot cause any exceptions.
     mov ebx, eax
-    ; Toggle the value of the ID bit (bit 21)
+
+    ; This instruction computes the bitwise XOR between the value of
+    ; the EAX register and the immediate 1 << 21. Constant expressions are
+    ; evaluated by the assembler so the CPU does not execute the right shift.
+    ; This will complement the value of the 21st bit of the EAX register, and
+    ; all other bits will be unaffected. Because EAX contains the value of the
+    ; EFLAGS register at the time PUSHFD was executed, after this instruction
+    ; EAX will contain the value of the EFLAGS register at the time PUSHFD was
+    ; executed with the ID flag (bit 21) complemented.
+    ;
+    ; This instruction does not access memory and therefore cannot cause any
+    ; exceptions.
     xor eax, 1 << 21
 
     ; Write the new value to EFLAGS
@@ -239,16 +322,26 @@ BITS 64
 
 
 section .bss
+; Stack space, statically allocated. We use stack_top to refer to the lowest
+; address because the stack grows towards lower memory addresses on x86 CPUs.
+; Conversely we use stack_bottom to refer to the highest memory address allocated
+; to the stack.
+stack_top:
+    ; We guarantee 1 MiB (2^20 bytes) of stack space
+    resb 1 << 20
 
-; Stack space, statically allocated
+; We guarantee that the stack pointer is aligned to 16 bytes before main() is
+; invoked. Therefore we instruct the assembler to align the top of the stack
+; to 16 bytes with the alignb instruction.
+;
+; alignb requires its first argument to be a power of 2, which we satisfy.
+; alignb works with respect to the start of the current section. We instruct the
+; linker to align the start of .bss to 4KiB, therefore the top of the stack is
+; correctly aligned
+;
+; (https://www.nasm.us/doc/nasmdoc4.html#section-4.11.13)
 alignb 16
 stack_bottom:
-    ; Since there is no virtual memory, we won't notice if the stack
-    ; overflows and corrupts data sitting above it so make it big just in case
-    ;
-    ; 16KiB of stack was a mistake
-    resb 1048576
-stack_top:
 
 
 ; ------------------------------------------------------------------------------
@@ -288,8 +381,6 @@ pdpt:
 
 ; ------------------------------------------------------------------------------
 section .rodata
-
-format_string: db `%lu\n`, 0
 
 ; Global descriptor table for 64-bit mode
 ; Volume 3 - 3.5.1: Segment Descriptor Tables
