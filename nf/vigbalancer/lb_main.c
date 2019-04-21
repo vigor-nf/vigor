@@ -82,6 +82,9 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
     ipv4_header->dst_addr = backend.ip;
     ether_header->s_addr = config.device_macs[backend.nic];
     ether_header->d_addr = backend.mac;
+
+    // Checksum
+    nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
   }
 
 	return backend.nic;
