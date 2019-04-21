@@ -2,6 +2,10 @@ NOP_DIR = unverified-nop
 NF_SOURCES = $(NOP_DIR)/nop_main.c \
 	$(NOP_DIR)/nat_config.c
 
-NF_ARGUMENTS=-DNF_ARGUMENTS='"nop", "--no-shconf", "--"'
+# icnalsp3s2
+# NF_ARGUMENTS=-DNF_ARGUMENTS='"nop", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--eth-dest", "0,01:23:45:67:89:00", "--eth-dest", "1,01:23:45:67:89:01"'
+
+# icnalsp3s3
+NF_ARGUMENTS=-DNF_ARGUMENTS='"nop", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--eth-dest", "0,90:E2:BA:55:15:5C", "--eth-dest", "1,90:E2:BA:55:15:5D"'
 
 include Makefile.dsos.binary
