@@ -9,8 +9,8 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
-local SRC_MAC_BASE      = "90:e2:ba:55:25"  -- One of the NICs
-local DST_MAC_BASE	= "80:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+local SRC_MAC_BASE      = 1
+local DST_MAC_BASE	= 68000 -- Greater than Max(nflws)
 local SRC_IP_BASE	= "10.0.0.1" -- actual address will be SRC_IP_BASE + random(0, flows)
 local DST_IP		= "192.168.4.10"
 local SRC_PORT		= 234
@@ -116,10 +116,9 @@ function loadSlave(queue, rxDev, size, flows, duration)
 		for i, buf in ipairs(bufs) do
 			local pkt = buf:getUdpPacket()
 			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.eth.src:set(counter+1)
+			pkt.eth.src:set(SRC_MAC_BASE+counter)
 			-- pkt.udp.src = (baseSRCP + counter)
-			pkt.eth.dst:set(counter+2)
-			counter = incAndWrap(counter, flows)
+			pkt.eth.dst:set(DST_MAC_BASE+counter)
 			counter = incAndWrap(counter, flows)
 		end
 		-- UDP checksums are optional, so using just IPv4 checksums would be sufficient here

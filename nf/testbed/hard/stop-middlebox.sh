@@ -11,5 +11,5 @@ fi
 if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     echo "no need to kill netfilter"
 else
-    sudo killall -9 nat lb bridge policer click fw qemu-system-x86_64
+    sudo killall -9 nat lb bridge policer click fw nop qemu-system-x86_64
 fi

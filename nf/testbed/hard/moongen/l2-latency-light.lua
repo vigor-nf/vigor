@@ -9,13 +9,16 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
-local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE_BACK	= "192.168.6.5" -- For Background Flows. actual address will be SRC_IP_BASE + random(0, flows)
-local SRC_IP_BASE_PROBE	= "10.0.0.1" -- For probe Flows. actual address will be SRC_IP_BASE + random(0, flows)
-local DST_IP		= "192.168.4.10"
-local SRC_PORT		= 234
-local DST_PORT		= 319
-local N_PROBE_FLOWS	= 1000
+local DST_MAC			= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+local SRC_IP 			= "10.0.0.1"
+local DST_IP			= "192.168.4.10"
+local SRC_PORT			= 234
+local DST_PORT			= 319
+local N_PROBE_FLOWS		= 1000
+local SRC_MAC_BASE_BACK		= 1
+local DST_MAC_BASE_BACK		= 65000 -- This is greater than max(nflws)
+local SRC_MAC_BASE_PROBE	= 1000000 
+local DST_MAC_BASE_PROBE	= 2000000
 
 function configure(parser)
 	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
@@ -92,17 +95,15 @@ function loadSlave(queue, rxDev, size, flows, duration)
 	local fileRxCtr = stats:newDevRxCounter("rxpkts", rxDev, "CSV", "rxpkts.csv")
 	local txCtr = stats:newDevTxCounter(flows .. " tx", queue, "nil")
 	local rxCtr = stats:newDevRxCounter(flows .. " rx", rxDev, "plain")
-	local baseIP = parseIPAddress(SRC_IP_BASE_BACK)
 	local baseSRCP = SRC_PORT
 	local baseDSTP = DST_PORT
 	while finished:running() and mg.running() do
 		bufs:alloc(size)
 		for i, buf in ipairs(bufs) do
 			local pkt = buf:getUdpPacket()
-			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.ip4.src:set(baseIP + counter)
-			-- pkt.udp.src = (baseSRCP + counter)
-			counter = incAndWrap(counter, flows)
+			pkt.eth.src:set(SRC_MAC_BASE_BACK+counter)
+			pkt.eth.dst:set(DST_MAC_BASE_BACK+counter)
+			counter = incAndWrap(counter,flows)
 		end
 		-- UDP checksums are optional, so using just IPv4 checksums would be sufficient here
 		bufs:offloadUdpChecksums()
@@ -127,17 +128,16 @@ function timerSlave(txQueue, rxQueue, size, nflows, duration)
 	local finished = timer:new(duration)
 	local timestamper = ts:newUdpTimestamper(txQueue, rxQueue)
 	local hist = hist:new()
-	local counter = 0
+	local counter = 0 
 	local rateLimit = timer:new(1/nflows) -- Expiry time set to 1s
-	local baseIP = parseIPAddress(SRC_IP_BASE_PROBE)
 	local baseSRCP = DST_PORT
 	while finished:running() and mg.running() do
 		hist:update(timestamper:measureLatency(size, function(buf)
 			fillUdpPacket(buf, size)
 			local pkt = buf:getUdpPacket()
-			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.ip4.src:set(baseIP + counter)
-			counter = incAndWrap(counter, nflows)
+			pkt.eth.src:set(SRC_MAC_BASE_PROBE+counter)
+			pkt.eth.dst:set(DST_MAC_BASE_PROBE+counter)
+			counter = incAndWrap(counter,nflows)
 		end))
 		rateLimit:wait()
 		rateLimit:reset()
