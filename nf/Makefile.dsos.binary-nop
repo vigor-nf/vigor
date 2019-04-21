@@ -2,4 +2,6 @@ NOP_DIR = unverified-nop
 NF_SOURCES = $(NOP_DIR)/nop_main.c \
 	$(NOP_DIR)/nat_config.c
 
+NF_ARGUMENTS=-DNF_ARGUMENTS='"nop"'
+
 include Makefile.dsos.binary
