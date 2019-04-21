@@ -841,6 +841,12 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
         DEV_REG(dev, 0x06010) = 0; // TDH
         // Make sure we have enough space
         uint32_t tdt = new_value;
+        // VVV after the mem-pool fix (commit 5471336bf9), this value changes from 1
+        // to 0 on sending a packet.
+//	if (tdt == 0) {
+//		// No? Probably this is not to send a packet, then.
+//		return new_value;
+//	}
 
         // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
         // (which the NIC reads to know how to send a packet)
@@ -890,6 +896,13 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	}
 
 	uint16_t buf_len = buf_props & 0xFF;
+        if ( !( GET_BIT(buf_props, 20) == 1 &&
+                GET_BIT(buf_props, 21) == 1 &&
+                GET_BIT(buf_props, 22) == 0 &&
+                GET_BIT(buf_props, 23) == 0) ) {
+            // Invalid descriptor type, assume it is not sending a packet
+            return new_value;
+        }
 
 	klee_assert(GET_BIT(buf_props, 18) == 0);
 	klee_assert(GET_BIT(buf_props, 19) == 0);
