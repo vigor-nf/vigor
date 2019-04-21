@@ -128,7 +128,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	ether_header->s_addr = config.device_macs[dst_device];
 	ether_header->d_addr = config.endpoint_macs[dst_device];
 
-	nf_set_ipv4_checksum(mbuf, ipv4_header);
+	nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
 
 	return dst_device;
 }

@@ -29,7 +29,7 @@ nf_has_tcpudp_header(struct ipv4_hdr* header)
 }
 
 void
-nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* header)
+nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4_header)
 {
 	/*
 		https://doc.dpdk.org/guides/prog_guide/mbuf_lib.html#meta-information
@@ -53,19 +53,19 @@ nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* header)
 		see nf_init_device.
 	*/
 
-	header->hdr_checksum = 0;
+  ip_header->hdr_checksum = 0;
 
-    mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
-    mbuf->l2_len = sizeof(struct ether_hdr);
-    mbuf->l3_len = sizeof(struct ipv4_hdr);
+  mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
+  mbuf->l2_len = sizeof(struct ether_hdr);
+  mbuf->l3_len = sizeof(struct ipv4_hdr);
 
-	if (header->next_proto_id == IPPROTO_TCP) {
-		struct tcp_hdr* tcp_header = (struct tcp_hdr*)(header + 1);
-		tcp_header->cksum = rte_ipv4_phdr_cksum(header, mbuf->ol_flags);
+	if (ip_header->next_proto_id == IPPROTO_TCP) {
+		struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
+		tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
 		mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
-	} else if (header->next_proto_id == IPPROTO_UDP) {
-		struct udp_hdr * udp_header = (struct udp_hdr*)(header + 1);
-		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(header, mbuf->ol_flags);
+	} else if (ip_header->next_proto_id == IPPROTO_UDP) {
+		struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
+		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
 		mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
 	}
 }
