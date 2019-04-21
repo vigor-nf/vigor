@@ -19,52 +19,6 @@ NF_DIR = .
 CONTAINERS_DIR = lib/containers
 STUBS_DIR = lib/stubs
 KERNEL_DIR = lib/kernel
-NAT_DIR = vignat
-BRIDGE_DIR = vigbridge
-POLICER_DIR = vigpolicer
-NOP_DIR = unverified-nop
-FIREWALL_DIR = vigfw
-BALANCER_DIR = vigbalancer
-
-# NAT
-NAT_SOURCES := $(NAT_DIR)/nat_main.c \
-	$(NAT_DIR)/nat_config.c \
-	$(NAT_DIR)/flow.h.gen.c \
-	$(NAT_DIR)/nat_state.c \
-	$(NAT_DIR)/nat_flowmanager.c
-
-# Bridge
-BRIDGE_SOURCES := $(BRIDGE_DIR)/bridge_main.c \
-	$(BRIDGE_DIR)/bridge_config.c \
-	$(BRIDGE_DIR)/bridge_state.c \
-	$(BRIDGE_DIR)/dyn_value.h.gen.c \
-	$(BRIDGE_DIR)/stat_key.h.gen.c
-
-# Policer
-POLICER_SOURCES := $(POLICER_DIR)/policer_main.c \
-	$(POLICER_DIR)/policer_config.c \
-	$(POLICER_DIR)/policer_state.c \
-	$(POLICER_DIR)/dynamic_value.h.gen.c \
-	$(POLICER_DIR)/ip_addr.h.gen.c
-
-# Firewall
-FIREWALL_SOURCES := $(FIREWALL_DIR)/fw_main.c \
-	$(FIREWALL_DIR)/fw_config.c \
-    $(FIREWALL_DIR)/flow.h.gen.c \
-    $(FIREWALL_DIR)/fw_flowmanager.c \
-    $(FIREWALL_DIR)/fw_state.c
-
-BALANCER_SOURCES := $(BALANCER_DIR)/lb_main.c \
-	$(BALANCER_DIR)/lb_balancer.c \
-	$(BALANCER_DIR)/lb_config.c \
-	$(BALANCER_DIR)/lb_flow.h.gen.c \
-	$(BALANCER_DIR)/lb_backend.h.gen.c \
-	$(BALANCER_DIR)/ip_addr.h.gen.c \
-	$(BALANCER_DIR)/lb_state.c
-
-#NOP
-NOP_SOURCES = $(NOP_DIR)/nop_main.c
-NOP_SOURCES += $(NOP_DIR)/nat_config.c
 
 NF_DEFS := -D_GNU_SOURCE
 # Distinguish this build from verify-hardware run
@@ -80,27 +34,9 @@ NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include-fixed
 NF_INCLUDES += -I /usr/include/x86_64-linux-gnu
 NF_INCLUDES += -I /usr/include
 
-# VigNAT
-# icnalsp3s2
-# NF_ARGUMENTS=-DNF_ARGUMENTS='"vignat", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--expire", "60000000000", "--starting-port", "0", "--max-flows", "65536", "--extip", "192.168.4.2", "--eth-dest", "0,01:23:45:67:89:00", "--eth-dest", "1,01:23:45:67:89:01"'
-# icnalsp3s3
-# NF_ARGUMENTS=-DNF_ARGUMENTS='"vignat", "--no-shconf", "--", "--lan-dev", "0", "--wan", "1", "--expire", "60000000000", "--starting-port", "256", "--max-flows", "65536", "--extip", "192.168.4.2", "--eth-dest", "0,90:E2:BA:55:15:5C", "--eth-dest", "1,90:E2:BA:55:15:5D"'
-
-# VigBridge
-# NF_ARGUMENTS=-DNF_ARGUMENTS='"vigbridge", "--no-shconf", "--", "--expire", "60000000000", "--capacity", "65536"'
-
-# VigPolicer
-# NF_ARGUMENTS=-DNF_ARGUMENTS='"policer", "--no-shconf", "--", "--lan", "1", "--wan", "0", "--rate", "12500", "--burst", "125000", "--capacity", "65536"'
-
-# VigFw
-# NF_ARGUMENTS=-DNF_ARGUMENTS='"fw", "--no-shconf", "--", "--eth-dest", "1,90:E2:BA:55:15:5D", "--eth-dest", "0,90:E2:BA:55:15:5C", "--expire", "10000000000", "--max-flows", "65536", "--wan", "1"'
-
-# VigBalancer
-NF_ARGUMENTS=-DNF_ARGUMENTS='"lb", "--no-shconf", "--", "--flow-expiration", "60000000000", "--flow-capacity", "65536", "--backend-capacity", "20", "--cht-height", "100", "--backend-expiration", "60000000000"'
-
 NF_DEFS += $(NF_ARGUMENTS)
 
-NF_SOURCES := $(NF_DIR)/nf_main.c \
+NF_COMMON_SOURCES := $(NF_DIR)/nf_main.c \
 	$(NF_DIR)/lib/nf_util.c \
 	$(NF_DIR)/lib/nf_time.c \
 	$(NF_DIR)/lib/packet-io.c \
@@ -184,7 +120,7 @@ KERNEL_DEFS := -DDSOS_DEBUG
 # OTHER_INCLUDES := -I include --include include/misc_defs.h
 OTHER_INCLUDES := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
 
-C_SRCS = $(BALANCER_SOURCES) $(NF_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
+C_SRCS = $(NF_SOURCES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
 BOOT_SRCS = $(KERNEL_DIR)/asm/multiboot_header.asm $(KERNEL_DIR)/asm/boot.asm
