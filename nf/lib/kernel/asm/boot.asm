@@ -25,10 +25,12 @@ extern dsos_halt
 ;           - RDRND
 ;           - F16C
 ;           - CMPXCHG16B
-;           - X87 FPU
+;           - x87 FPU
 ;           - FXSR
 ;           - PAE
 ;           - 1GiB pages
+;           - TSC
+;           - RDMSR and WRMSR
 ;       - 64-bit mode is enabled and CS is a 64-bit read/execute code segment with DPL = 0
 ;       - All other segment selectors are set to the null segment
 ;       - Paging is enabled and the first 4 GiB of memory are identity-mapped with RWX permissions
@@ -40,7 +42,8 @@ extern dsos_halt
 ;   We assume that:
 ;       - GRUB maps the entire executable in valid memory backed by RAM
 ;           (and not by e.g. device memory) correctly according to the ELF
-;           format specification
+;           format specification. The entire executable image is loaded in the
+;           lowest 4GiB of memory
 ;       - The entire software stack uses no more than 1 MiB of stack space
 ;       - GRUB sets up the machine according to the Multiboot2 specification:
 ;           - The CPU is in protected mode (PE bit set in CR0)
@@ -50,7 +53,7 @@ extern dsos_halt
 ;           - The A20 gate is enabled
 ;           - Virtual 8086 mode is off (VM flag in EFLAGS is clear)
 ;           - The interrupt flag in EFLAGS is clear
-;       - All device memory is inside the lowest 4 GiB of memory
+;       - All the memory-mapped registers of the NICs are mapped in the lowest 4 GiB of memory
 
 
 section .text
@@ -108,7 +111,7 @@ start:
     ; fault.
     pop eax
 
-    ; This instruction copies ths value of the EAX register to the EBX register.
+    ; This instruction copies the value of the EAX register to the EBX register.
     ;
     ; This instruction does not access memory or any segment selectors or control
     ; registers, and therefore cannot cause any exceptions.
@@ -127,95 +130,199 @@ start:
     ; exceptions.
     xor eax, 1 << 21
 
-    ; Write the new value to EFLAGS
+    ; The next two instructions will push the value of EFLAGS with the ID flag
+    ; complmented to the stack and pop it into the EFLAGS register. If after
+    ; re-reading the value of EFLAGS the change will have persisted, the CPU
+    ; supports CPUID.
     push eax
     popfd
 
-    ; Read the value back. If the change has persisted then CPUID is supported
+    ; Read the value of EFLAGS back into EAX by pushing it on the stack and
+    ; popping it into EAX, as before.
     pushfd
     pop eax
 
-    ; If these two registers are equal CPUID is not supported
+    ; EBX contains the original value of EFLAGS, whereas EAX contains the value
+    ; we just read back after attempting to set the value of the ID flag.
+    ; Because the only bit that we modified before writing to EFLAGS with POPFD
+    ; is the ID flag, EAX and EBX have the same value if and only if CPUID is not
+    ; supported. The branch to unsupported_cpu, which halts the machine, is taken
+    ; if and only if EAX and EBX have the same value, therefore it is taken if
+    ; and only if CPUID is not supported.
     cmp eax, ebx
     jz .unsupported_cpu
 
 
-    ; --------------------------------------------------------------------------
-
-    ; Check for SSE4.2 support. DPDK requires it starting from version 17.08
-    ; https://doc.dpdk.org/guides-18.02/rel_notes/release_17_08.html
-
-    ; Volume 1 - 12.12.3: Checking for SSE4.2 Support
-    mov eax, 0x1
+    ; Next we must use CPUID to check that the CPU supports all the features we
+    ; require, and halt the system if it does not. The value of EAX (and
+    ; sometimes ECX) controls what set of information the CPU will return
+    ; (called the CPUID leaf). Leaves below 0x40000000 are called basic
+    ; information leaves, whereas leaves above 0x80000000 are called extended
+    ; function information leaves.
+    ;
+    ; CPUID leaves above 2 and below 0x80000000 are visible only when
+    ; IA32_MISC_ENABLE[bit 22] has its default value of 0. When this bit is set,
+    ; CPUID.0H:EAX (EAX in CPUID leaf 0x0), which indicates the maximum supported
+    ; basic information leaf, will be 2. Because we need to query information in
+    ; some leaves between 2 and 0x80000000, we must check that the maximum
+    ; supported basic information leaf is greater than 2.
+    ;
+    ; This instruction zeros the EAX register because the XOR of any value with
+    ; itself is always 0.
+    xor eax, eax
     cpuid
 
-    ; All these flags must be set
 
-    ; CPUID.01H:EDX.SSE[bit 25]
-    ; CPUID.01H:EDX.SSE2[bit 26]
-    mov eax, (1 << 25) | (1 << 26)
-    and edx, eax
-    cmp edx, eax
-    jnz .unsupported_cpu
-
-    ; CPUID.01H:ECX.SSE3[bit 0]
-    ; CPUID.01H:ECX.SSSE3[bit 9]
-    ; CPUID.01H:ECX.SSE4_1[bit 19]
-    ; CPUID.01H:ECX.SSE4_2[bit 20]
-    ; CPUID.01H:ECX.POPCNT[bit 23]
-    ; CPUID.01H:ECX.XSAVE[bit 26] = 0
-    mov eax, (1 << 0) | (1 << 9) | (1 << 19) | (1 << 20) | (1 << 23) | (1 << 26)
-    and ecx, eax
-    cmp ecx, eax
-    jnz .unsupported_cpu
-
-
-    ; --------------------------------------------------------------------------
-
-    ; Check if the CPU supports 64-bit mode
-
-    ; AMD64 Architecture Programmer's Manual, Volume 2 - 14.8: Long-Mode
-    ; Initialization Example
-
-    ; Check what is the highest CPUID extended function input that the CPU
-    ; understands. If it's not at least 0x80000001, then the CPU doesn't
-    ; support 64-bit mode
-    mov eax, 0x80000000
-    cpuid
-    cmp eax, 0x80000000
+    ; The branch is taken if and only if eax <= 2, and therefore it is taken if
+    ; and only if the maximum supported basic information leaf is 2 or less.
+    cmp eax, 2
     jbe .unsupported_cpu
 
-    ; CPUID.80000001H:EDX.LM [bit 29] indicates if the processor supports 64-bit
-    ; mode
+
+    ; Support for 64-bit mode (long mode) is indicated by
+    ; CPUID.80000001H:EDX.LM [bit 29] (bit 29 in EDX in CPUID leaf 0x80000001).
+    ; Because not all CPUs support this leaf, we must first check leaf
+    ; 0x80000000, which returns the maximum extended function leaf in EAX. This
+    ; value must be at least 0x80000001.
+    ;
+    ; Query leaf 0x80000000 to retrieve the maximum supported extended information
+    ; leaf
+    mov eax, 0x80000000
+    cpuid
+
+
+    ; A processor where the returned value is not at least 0x80000001 does not
+    ; support leaf 0x80000001 and therefore does not support 64-bit mode, which
+    ; we require.
+    cmp eax, 0x80000001
+    jb .unsupported_cpu
+
+
+    ; We have ensured that the CPU supports at least leaf 0x80000001, therefore
+    ; querying that leaf will return a valid result. The CPU sets bit 29 in EDX
+    ; for this leaf if and only if it supports 64-bit mode.
     mov eax, 0x80000001
     cpuid
+
+
+    ; The bt instruction writes the bit in the first operand at the offset given
+    ; in the second operand to the carry flag. The JNC instruction branches if
+    ; and only if the carry flag is not set. Therefore the CPU will branch if
+    ; and only if the CPU does not support 64-bit mode.
     bt edx, 29
     jnc .unsupported_cpu
 
-    ; 1GB huge pages are not _really_ needed but they make our life easier
+
+    ; We also check that the CPU supports 1GiB pages.
     ; CPUID.80000001H:EDX.Page1GB [bit 26]
     bt edx, 26
     jnc .unsupported_cpu
 
 
-    ; --------------------------------------------------------------------------
+    ; Leaf 0x1 indicates support for a variety of CPU features which we require.
+    ; This leaf is always supported.
+    mov eax, 0x1
+    cpuid
 
-    ; Prepare for 64-bit mode
+
+    ; We require the following flags to be set:
     ;
-    ; Volume 3 - 9.8.5: Initializing IA-32e Mode
-    ; In order to enable 64-bit mode we first need to enable PAE and paging
+    ;   ECX.SSE3[bit 0] (support for SSE3)
+    ;   ECX.PCLMULQDQ[bit 1] (support for PCLMUL - carryless multiplication)
+    ;   ECX.SSSE3[bit 9] (support for SSSE3)
+    ;   ECX.CMPXCHG16B[bit 13] (support for CMPXCHG16B and CMPXCHG8B)
+    ;   ECX.SSE4.1[bit 19] (support for SSE4.1)
+    ;   ECX.SSE4.2[bit 20] (support for SSE4.2)
+    ;   ECX.POPCNT[bit 23] (support for the POPCNT instruction)
+    ;   ECX.AESNI[bit 25] (support for AES instructions)
+    ;   ECX.XSAVE[bit 26] (support for XSAVE/XRSTOR as well as XSETBV/XGETBV and XCR0)
+    ;
+    ; In order to check for the presence of multiple flags at once we initialize
+    ; the EAX register with the bitwise OR of all the flags we are checking, then
+    ; compute the bitwise AND of ECX and EAX. This will clear every bit in ECX
+    ; except the ones that we want to check. If the resulting value is different
+    ; from the mask in EAX then at least one of the flags that we are checking
+    ; is not set and the CPU does not support at least one of the features we
+    ; require.
+    ; As before, the assembler evaluates bitwise and simple arithmetic expressions
+    ; at assembly time.
+    mov eax, (1 << 0) | (1 << 1) | (1 << 9) | (1 << 13) | (1 << 19) | (1 << 20) | (1 << 23) | (1 << 25) | (1 << 26)
+    and ecx, eax
+    cmp ecx, eax
+    jnz .unsupported_cpu
 
-    ; Enable PAE by setting bit 5 of cr4
+
+    ;   EDX.FPU[bit 0] (support for the x87 FPU)
+    ;   EDX.TSC[bit 4] (support for the TSC/timestamp counter)
+    ;   EDX.MSR[bit 5] (support for reading and writing model-specific registers/MSRs)
+    ;   EDX.PAE[bit 6] (support for PAE - required for 64-bit mode)
+    ;   EDX.CX8[bit 8] (support for CMPXCHG8B)
+    ;   EDX.MMX[bit 23] (support for MMX)
+    ;   EDX.SSE[bit 25] (support for SSE)
+    ;   EDX.SSE2[bit 26] (support for SSE2)
+    mov eax, (1 << 0) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 8) | (1 << 23) | (1 << 25) | (1 << 26)
+    and edx, eax
+    cmp edx, eax
+    jnz .unsupported_cpu
+
+
+    ; Because execution has reached this point, we know that the CPU supports all the
+    ; features that we require.
+    ; According to section 9.8.5 - Initializing IA-32e Mode of the CPU manual
+    ; we need to follow these steps in order to switch to 64-bit mode.
+    ;
+    ; 1 - Starting from protected mode, disable paging. Because we assume that
+    ;   we are already in protected mode and that paging is disabled, this step
+    ;   is not needed.
+    ;
+    ; 2 - Enable physical-address extensions (PAE) by setting bit 5 in register CR4.
+    ;   Reading and writing this register is only possible at privilege level (CPL)
+    ;   0, which we assume.
+    ;
+    ; Bitwise ORing a register with a bit mask will set all the bits in that mask.
+    ; All other bits are unchanged.
     mov eax, cr4
     or eax, 1 << 5
     mov cr4, eax
 
-    ; Set up the top-level page table. We could have done this statically but
-    ; NASM complains...
+
+    ; 3 - Load CR3 with the physical base address of the top level page table.
     ;
-    ; We will populate the first entry of the top-level page table (PML4) with
-    ; a pointer to a 3rd level page table (PDPT)
-    ; See Volume 3 - 4.2 for the structure of the page tables
+    ; Even though DSOS does not make use of virtual memory, 64-bit mode still
+    ; requires that we set up paging and page tables. x86 CPUs use  4-level
+    ; hierarchical page tables in 64-bit mode and support page sizes of 4 KiB,
+    ; 2 MiB and 1 GiB. DSOS uses 1 GiB pages because they occupy the least amount
+    ; of space in the TLB for a given mapping size. We are not concerned with the
+    ; 1GiB granularity because DSOS does not use multiple address spaces or
+    ; memory protection.
+    ;
+    ; The top level (PML4) of a page table hierarchy is always required and each
+    ; of its entries references a page table of the second-highest level,
+    ; which in turn controls access to a 512 GiB region of the address space.
+    ; Because we assume that software will only access memory in the lowest 4 GiB, the
+    ; PML4 set up by DSOS will only have one valid entry - the first.
+    ;
+    ; The second-highest level (PDPT) of a page table hierarchy is also
+    ; required. Each entry controls access to a 1 GiB region of the address space.
+    ; If the page size flag (bit 7) of a PDPT entry is set, the entry maps a 1
+    ; GiB page, otherwise it references the next-lowest level of the page table
+    ; hierarchy. Because we assume that software never accesses any memory outside
+    ; of the first 4 GiB, DSOS will only set up the first 4 entries of its PDPT.
+    ; Each of those entries will map a 1 GiB page with all permissions.
+    ;
+    ; The following code sets up the first (and only) entry in DSOS' PML4.
+    ;   - Bits (M-1):12 of the PML4 entry (PML4E) must contain bits (M-1):12 of
+    ;       the base address of a 4 KiB-aligned PDPT, where M is at most 52
+    ;   - Bit 0 (P flag) must be set
+    ;   - Bit 1 (R/W flag) must be set to allow writes to the region of memory
+    ;       controlled by this entry. Because DSOS does not use memory protection
+    ;       this bit will be set.
+    ;   - All other bits will be set to 0.
+    ;
+    ; Because we instruct the assembler to place the PDPT at a 4 KiB aligned
+    ; address, and we assume that this address is located in the lowest 4 GiB of
+    ; memory (like the rest of the image), the value of the PML4E is equal to
+    ; the addrss of the PDPT bitwise ORed with 0x3.
 
     ; Pointer to the PDPT
     mov eax, pdpt
