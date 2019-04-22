@@ -19,7 +19,7 @@ case $NF_LIST in
 		;;
 	
 	"Baselines")
-		MIDDLEBOXES=("$CLICK_PREFIX/click-nat" "$CLICK_PREFIX/click-nop" "$CLICK_PREFIX/click-bridge" "$CLICK_PREFIX/click-fw" )
+		MIDDLEBOXES=("$CLICK_PREFIX/click-nat" "$CLICK_PREFIX/click-nop" "$CLICK_PREFIX/click-bridge" "$CLICK_PREFIX/click-fw" "$CLICK_PREFIX/click-lb" )
 		;;
 		
 	"All")
@@ -43,6 +43,7 @@ NF_TYPES[$CLICK_PREFIX/click-nat]=NAT
 NF_TYPES[$CLICK_PREFIX/click-bridge]=Br
 NF_TYPES[$CLICK_PREFIX/click-nop]=NOP
 NF_TYPES[$CLICK_PREFIX/click-fw]=FW
+NF_TYPES[$CLICK_PREFIX/click-lb]=LB
 
 
 mkdir -p $NOW
