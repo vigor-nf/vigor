@@ -53,21 +53,35 @@ nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4
 		see nf_init_device.
 	*/
 
-  ip_header->hdr_checksum = 0;
+  ip_header->hdr_checksum = 0; // Assumed by cksum calculation
 
-  mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
-  mbuf->l2_len = sizeof(struct ether_hdr);
-  mbuf->l3_len = sizeof(struct ipv4_hdr);
+  // HW Offload
+  // mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
+  // mbuf->l2_len = sizeof(struct ether_hdr);
+  // mbuf->l3_len = sizeof(struct ipv4_hdr);
 
 	if (ip_header->next_proto_id == IPPROTO_TCP) {
 		struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
-		tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-		mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
+		// HW Offload
+		// tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
+		// mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
+
+		// SW
+		tcp_header->cksum = 0; // Assumed by cksum calculation
+		tcp_header->cksum = rte_ipv4_udptcp_cksum(ip_header, tcp_header);
 	} else if (ip_header->next_proto_id == IPPROTO_UDP) {
 		struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
-		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-		mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
+		// HW Offload
+		// udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
+		// mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
+
+		// SW
+		udp_header->dgram_cksum = 0; // Assumed by cksum calculation
+		udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(ip_header, udp_header);
 	}
+
+	// SW
+	ip_header->hdr_checksum = rte_ipv4_cksum(ip_header);
 }
 
 uintmax_t
