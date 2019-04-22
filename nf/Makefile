@@ -59,8 +59,8 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/containers/double-map.c \
               $(SELF_DIR)/lib/containers/vector.c \
               $(SELF_DIR)/lib/containers/prime.c \
-              $(SELF_DIR)/lib/containers/listutils.c \
-              $(SELF_DIR)/lib/containers/transpose.c \
+              $(SELF_DIR)/lib/containers/listutils-lemmas.c \
+              $(SELF_DIR)/lib/containers/transpose-lemmas.c \
               $(SELF_DIR)/lib/containers/permutations.c \
               $(SELF_DIR)/lib/containers/cht.c \
               $(SELF_DIR)/lib/containers/map.c \

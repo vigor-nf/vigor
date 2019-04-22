@@ -5,6 +5,8 @@
 //@ #include "prime.gh"
 //@ #include "permutations.gh"
 //@ #include "transpose.gh"
+//@ #include "listutils-lemmas.gh"
+//@ #include "transpose-lemmas.gh"
 
 static uint64_t loop(uint64_t k, uint64_t capacity)
 //@ requires    0 < capacity &*& capacity < INT_MAX;

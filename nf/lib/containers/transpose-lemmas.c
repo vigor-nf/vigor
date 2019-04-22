@@ -1,4 +1,6 @@
 //@ #include "transpose.gh"
+//@ #include "transpose-lemmas.gh"
+//@ #include "listutils-lemmas.gh"
 
 /*@
 
