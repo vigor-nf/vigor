@@ -40,18 +40,11 @@ int main(void)
 	devs = dsos_pci_find_nics(&num_devs);
 #endif//VIGOR_STUB_HARDWARE
 
-	if (devs == NULL) {
-		printf("Error getting PCI devices\n");
-		return -1;
-	}
-
 	stub_stdio_files_init(devs, num_devs);
 
 #ifndef KLEE_VERIFICATION
 	_init();
 #endif//!KLEE_VERIFICATION
-
-	// do_map_test();
 
 	printf("Calling NF...\n");
 	nf_main(argc, argv);

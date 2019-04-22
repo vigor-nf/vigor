@@ -28,6 +28,5 @@ struct dsos_pci_nic {
 };
 
 extern struct dsos_pci_nic *dsos_pci_find_nics(int *n);
-extern void dsos_pci_print_nic_info(struct dsos_pci_nic *nic);
 
 #endif

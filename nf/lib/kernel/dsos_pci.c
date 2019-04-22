@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,13 +8,14 @@
 #include "dsos_vga.h"
 #include "dsos_serial.h"
 
-static const unsigned int MAX_PCI_DEVICES = 32;
+static const size_t MAX_PCI_DEVICES = 32;
 
-static const uint16_t PCI_ADDR_PORT = 0xcf8;
-static const uint16_t PCI_DATA_PORT = 0xcfc;
+static const uint16_t PCI_CONFIG_ADDRESS_PORT = 0xcf8;
+static const uint16_t PCI_CONFIG_DATA_PORT = 0xcfc;
 
 static const uint32_t PCI_NUM_BUSES = 256;
 static const uint32_t PCI_DEVICES_PER_BUS = 32;
+static const uint32_t PCI_FUNCTIONS_PER_DEVICE = 8;
 
 static const uint32_t PCI_BAR_BASE = 4;
 static const uint16_t PCI_INVALID_VENDOR_ID = 0xFFFF;
@@ -25,32 +27,69 @@ static const uint32_t PCI_SUBSYSTEM_REGISTER = 11;
 
 static const uint32_t PCI_COMMAND_MASTER = 4;
 
-/* Read a PCI configuration register */
+/*
+ * Taken from OpenBSD's reallocarray.c
+ *
+ * This is sqrt(SIZE_MAX+1), as s1*s2 <= SIZE_MAX
+ * if both s1 < MUL_NO_OVERFLOW and s2 < MUL_NO_OVERFLOW
+ *
+ * The purpose of this is macro is to check that a multiplication between two
+ * operands of type size_t will not overflow.
+ */
+#define MUL_NO_OVERFLOW	(((size_t)1) << (sizeof(size_t) * 4))
+
+/*
+ * A PCI configuration register is read by sending a 32-bit address to I/O port
+ * 0xCF8 (CONFIG_ADDRESS) and subsequently reading the 32-bit value from I/O
+ * port 0xCFC (CONFIG_DATA).
+ *
+ * The 31st bit of the address must be set to initiate a bus configuration transaction
+ * Bits 30 to 24 are reserved and read-only, set to 0 in this function
+ * Bits 23 to 16 choose a PCI bus on the system
+ * Bits 15 to 11 choose a PCI device on the bus
+ * Bits 10 to 8 choose a function in a device
+ * Bits 7 to 2 choose a register in the device's configuration space.
+ * Bits 1 and 0 must be 0.
+ *
+ * Writes to a non-existent device are silently dropped, reads from a non-existent
+ * device return all 1s.
+ */
 static uint32_t dsos_read_pci_reg(uint32_t bus, uint32_t dev, uint32_t function, uint32_t reg)
 {
+	assert(bus < PCI_NUM_BUSES);
+	assert(dev < PCI_DEVICES_PER_BUS);
+	assert(function < PCI_FUNCTIONS_PER_DEVICE);
+
 	uint32_t addr = (bus << 16) | (dev << 11) | (function << 8) |
-		(reg * 4) | 0x80000000ul;
+		(reg * 4) | (UINT32_C(1) << 31);
 
-	dsos_outl(addr, PCI_ADDR_PORT);
-	return dsos_inl(PCI_DATA_PORT);
-}
-
-/* Write a PCI configuration register */
-static void dsos_write_pci_reg(uint32_t bus, uint32_t dev, uint32_t function, uint32_t reg, uint32_t val)
-{
-	uint32_t addr = (bus << 16) | (dev << 11) | (function << 8) |
-		(reg * 4) | 0x80000000ul;
-
-	dsos_outl(addr, PCI_ADDR_PORT);
-	dsos_outl(val, PCI_DATA_PORT);
+	dsos_outl(addr, PCI_CONFIG_ADDRESS_PORT);
+	return dsos_inl(PCI_CONFIG_DATA_PORT);
 }
 
 /*
- * This reads the size of a memory/IO mapped resource in a convoluted way
- * because PCI. We have to write all 1s to the address register then read it back
- * and check how many LSBs are clear (after masking out the lowest 2 or 4 because
- * those are not part of the address). The region size is 2 ** the number of
- * clear bits. We also need to restore the original value of the register afterwards.
+ * In order to write to a configuration register the CPU must write the address
+ * to CONFIG_ADDRESS, and subsequently write the data to CONFIG_DATA.
+ */
+static void dsos_write_pci_reg(uint32_t bus, uint32_t dev, uint32_t function, uint32_t reg, uint32_t val)
+{
+	assert(bus < PCI_NUM_BUSES);
+	assert(dev < PCI_DEVICES_PER_BUS);
+	assert(function < PCI_FUNCTIONS_PER_DEVICE);
+
+	uint32_t addr = (bus << 16) | (dev << 11) | (function << 8) |
+		(reg * 4) | (UINT32_C(1) << 31);
+
+	dsos_outl(addr, PCI_CONFIG_ADDRESS_PORT);
+	dsos_outl(val, PCI_CONFIG_DATA_PORT);
+}
+
+/*
+ * In order to read a BAR we have to write all 1s to the address register then read
+ * it back and check how many LSBs are clear (after masking out the lowest 2 or
+ * 4 because those are not part of the address). The region size is 2 ** the
+ * number of clear bits. We also need to restore the original value of the
+ * register afterwards.
  *
  * See https://stackoverflow.com/questions/19006632/how-is-a-pci-pcie-bar-size-determined/39618552#39618552
  */
@@ -81,108 +120,161 @@ static void dsos_pci_read_resource(uint32_t bus, uint32_t dev, uint32_t function
 }
 
 /*
- * Probes a PCI device to check if it exists. If it does, returns 1 and fills
- * the data structure, otherwise returns 0.
+ * Probes the specified PCI device on the specified bus to check if it exists.
+ * If it does, returns 1 and fills the data structure with data read from the
+ * device, otherwise returns 0. We assume that each device is uniquely identified
+ * by the (bus, device) pair. The function assumes that out points to valid
+ * memory. We also assume that each PCI device has only one function.
  */
 static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *out)
 {
+	/*
+	 * Each PCI device provides 256 bytes of configuration registers that can
+	 * be read and written to by the CPU. Each register is 32-bit wide.
+	 *
+	 * The register at offset 0 contains the device ID in the upper 16 bits and
+	 * the vendor ID in the bottom 16 bits. These two numbers uniquely identify
+	 * a vendor and device type and are used by DPDK drivers to recognize
+	 * supported devices.
+	 */
 	uint32_t vendor_reg = dsos_read_pci_reg(bus, dev, 0, PCI_VENDOR_REGISTER);
 	uint16_t vendor_id = (uint16_t)(vendor_reg & 0xFFFF);
 	uint16_t device_id = (uint16_t)(vendor_reg >> 16);
 
-	/* Invalid vendor = device does not exist */
+	/*
+	 * 0xFFFF is an invalid vendor ID that will be returned when the Vendor ID
+	 * is read for a non-existing device. Therefore when this value is read the
+	 * device should be skipped. The function returns 0 because it didn't find
+	 * any device for this combination of (bus, dev)
+	 */
 	if (vendor_id == PCI_INVALID_VENDOR_ID) {
 		return 0;
 	}
 
+	/*
+	 * We assume that out points to invalid memory. Because PCI devices are
+	 * always little-endian, it is not necessary to perform byte-swapping.
+	 */
 	out->vendor_id = vendor_id;
 	out->device_id = device_id;
 
-	/* TODO: enumerate bridges recursively */
-
+	/*
+	 * Configuration register 11 contains the subsystem ID in the upper 16 bits
+	 * and the subsystem vendor ID in the lower 16 bits.
+	 */
 	uint32_t subsystem_reg = dsos_read_pci_reg(bus, dev, 0, PCI_SUBSYSTEM_REGISTER);
 	out->subsystem_id = (uint16_t)(subsystem_reg >> 16);
 	out->subsystem_vendor_id = (uint16_t)(subsystem_reg & 0xFFFF);
 
+	/*
+	 * Rgister 2 contains the device's class code (the type of function that the
+	 * device performs) in the top 8 bits.
+	 */
 	uint32_t class_code_reg = dsos_read_pci_reg(bus, dev, 0, PCI_CLASS_CODE_REGISTER);
 	out->class_code = class_code_reg >> 24;
 
-	for (uint32_t i = 0; i < PCI_NUM_RESOURCES; i++) {
+	/*
+	 * Each device has 6 base address registers (BARs) that hold addresses
+	 * belonging to the device. These addresses can be either in memory or in
+	 * port I/O space. We read the base address, type and size of each BAR into
+	 * out.
+	 */
+	for (uint32_t i = 0; i < (sizeof(out->resources) / sizeof(out->resources[0])); i++) {
 		dsos_pci_read_resource(bus, dev, 0, i, &(out->resources[i]));
 	}
 
-	/* Enable bus mastering (igb_uio does this) */
+	/*
+	 * We need to enable bus mastering for each device so that they are able
+	 * to initiate DMA transfers. This is requried for IXGBE to function properly.
+	 * Enabling bus mastering for a device is done by setting bit 2 in the command
+	 * register (register 1).
+	 */
 	uint32_t status_command_reg = dsos_read_pci_reg(bus, dev, 0, PCI_STATUS_COMMAND_REGISTER);
 	status_command_reg |= PCI_COMMAND_MASTER;
 	dsos_write_pci_reg(bus, dev, 0, PCI_STATUS_COMMAND_REGISTER, status_command_reg);
 
+	// Return 1 because a device was found.
 	return 1;
 }
 
 /*
  * Find all PCI devices (up to MAX_PCI_DEVICES) and read some information that
- * DPDK needs.
+ * DPDK needs from these devices.
+ * This function will either return a pointer to the start of an array of
+ * struct dsos_pci_nic or trigger an assertion failure. The int pointed to by n
+ * will be set to the number of valid entries in the array.
+ * Each element of the array will contain information about a PCI device on the
+ * system. PCI bus mastering will be enabled for every device on the system.
+ *
+ * We assume that there are no PCI bridges in the system, and therefore recursive
+ * enumeration of the PCI bus is not needed.
  */
-
 struct dsos_pci_nic *dsos_pci_find_nics(int *n)
 {
-	struct dsos_pci_nic *devs;
+	// Assert that the product will not overwlow
+	static_assert(MAX_PCI_DEVICES < MUL_NO_OVERFLOW, "MAX_PCI_DEVICES is too large");
+	static_assert(sizeof(struct dsos_pci_nic) < MUL_NO_OVERFLOW, "dsos_pci_nic is too large");
 
-	devs = malloc(MAX_PCI_DEVICES * sizeof(struct dsos_pci_nic));
-	if (devs == NULL) {
-		return NULL;
-	}
+	// malloc() can either return NULL or a pointer to valid memory
+	struct dsos_pci_nic *devs = malloc(MAX_PCI_DEVICES * sizeof(struct dsos_pci_nic));
+	assert(devs != NULL);
 
+	// We have already proven that MAX_PCI_DEVICES doesn't overflow and
+	// malloc has returned enough valid memory
 	memset(devs, 0, MAX_PCI_DEVICES * sizeof(struct dsos_pci_nic));
 
+	// Ensure that the counters cannot overflow
+	static_assert(MAX_PCI_DEVICES < UINT32_MAX, "MAX_PCI_DEVICES is too large");
+
+	// Because both operands are less than the square root of the maximum value
+	// of uint32_t the multiplication between them cannot overflow
+	static_assert(PCI_NUM_BUSES < UINT16_MAX, "PCI_NUM_BUSES is too large");
+	static_assert(PCI_DEVICES_PER_BUS < UINT16_MAX, "PCI_DEVICES_PER_BUS is too large");
+
+	// Ensure that we don't divide by 0
+	static_assert(PCI_DEVICES_PER_BUS != 0, "PCI_DEVICES_PER_BUS is zero");
+
+	// This loop executes for a fixed number of iterations, therefore it always
+	// terminates
+
 	int num_devices = 0;
-	uint32_t current_dev = 0;
-	uint32_t current_bus = 0;
+	for (uint32_t i = 0; i < PCI_NUM_BUSES * PCI_DEVICES_PER_BUS; i++) {
+		// Division and modulo by the same number creates a one-to-one mapping
+		// between i and (bus, current_dev)
+		uint32_t bus = i / PCI_DEVICES_PER_BUS;
+		uint32_t device = i % PCI_DEVICES_PER_BUS;
 
-	while (num_devices < MAX_PCI_DEVICES) {
-		struct dsos_pci_nic *p;
+		/*
+		 * Loop invariant: num_devices is equal to the number of devices that
+		 * have been found on the PCI bus so far, up to a maximum of
+		 * MAX_PCI_DEVICES.
+		 * Because num_devices can only be incremented if it is less than
+		 * MAX_PCI_DEVICES, and it can only be incremented by 1, it can never be
+		 * greater than MAX_PCI_DEVICES.
+		 *
+		 * Loop invariant: devs[0..num_devices] is valid and each entry is
+		 * filled in with information about a different PCI device. Whenever a
+		 * new PCI device is found, dsos_pci_probe_dev returns a non-zero result
+		 * and writes the information of the new device in devs[num_devices],
+		 * then num_devices is incremented. num_devices is not incremented under
+		 * any other circumstances. The value of (bus, device) never
+		 * repeats more than once, so each device is only scanned once
+		 */
 
-		int ret = dsos_pci_probe_dev(current_bus, current_dev, &devs[num_devices]);
-
-		if (ret != 0) {
-			/* A device was found */
-			num_devices++;
-		}
-
-		current_dev++;
-
-		if (current_dev >= PCI_DEVICES_PER_BUS) {
-			/* We have probed all the devices on this bus, move on to the next */
-			current_bus++;
-			current_dev = 0;
-		}
-
-		if (current_bus >= PCI_NUM_BUSES) {
-			/* We have probed all devices on all buses, exit */
-			break;
+		if (num_devices < MAX_PCI_DEVICES) {
+			// Because each (bus, device) pair occurs only once, each
+			// PCI device is only probed once
+			if (dsos_pci_probe_dev(bus, device, &devs[num_devices]) != 0) {
+				// A device was found
+				num_devices++;
+			}
 		}
 	}
 
+	/*
+	 * num_devices is equal to the number of devices that were found by scanning
+	 * the PCI bus, and so is *n.
+	 */
 	*n = num_devices;
 	return devs;
-}
-
-void dsos_pci_print_nic_info(struct dsos_pci_nic *nic)
-{
-	dsos_serial_write_str("Vendor ID: ");
-	dsos_serial_write_int(nic->vendor_id);
-
-	dsos_serial_write_str("\nDevice ID: ");
-	dsos_serial_write_int(nic->device_id);
-
-	dsos_serial_write_str("\nSubsystem ID: ");
-	dsos_serial_write_int(nic->subsystem_id);
-
-	dsos_serial_write_str("\nSubsystem vendor ID: ");
-	dsos_serial_write_int(nic->subsystem_vendor_id);
-
-	dsos_serial_write_str("\nClass code: ");
-	dsos_serial_write_int(nic->class_code);
-
-	dsos_serial_write_char('\n');
 }

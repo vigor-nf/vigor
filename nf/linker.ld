@@ -4,14 +4,14 @@ SECTIONS
 {
     . = 1M;
 
-    .boot :
+    .boot ALIGN(4K) :
     {
         *(.multiboot_header)
     }
 
-    .text :
+    .text ALIGN(4K) :
     {
-        *(.text*)
+        *(.text)
 
         KEEP(*(.init))
         KEEP(*(.fini))
@@ -31,14 +31,18 @@ SECTIONS
         *(.dtors)
     }
 
-/*
-    .ctors :
+    .data ALIGN(4K) :
     {
-        __CTORS_START = .;
-
-        *(.ctors)
-
+        *(.data)
     }
-    __CTORS_END = .;
-*/
+
+    .rodata ALIGN(4K) :
+    {
+        *(.rodata)
+    }
+
+    .bss ALIGN(4K) :
+    {
+        *(.bss)
+    }
 }
