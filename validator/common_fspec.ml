@@ -1132,6 +1132,15 @@ let map_size_spec =
    lemmas_before = [];
    lemmas_after = [];}
 
+let nf_set_ipv4_udptcp_checksum_spec =
+  {ret_type = Static Void;
+   arg_types = stt [Ptr ipv4_hdr_struct;
+                    Ptr tcpudp_hdr_struct;
+                    Ptr Sint8];
+   extra_ptr_types = [];
+   lemmas_before = [];
+   lemmas_after = [];}
+
 let cht_find_preferred_available_backend_spec =
   {ret_type = Static Sint32;
    arg_types = stt [Uint64;
@@ -1301,6 +1310,7 @@ let fun_types containers records =
      "map_erase", (map_erase_spec (gen_map_params containers records));
      "map_size", map_size_spec;
      "cht_fill_cht", cht_fill_cht_spec;
+     "nf_set_ipv4_udptcp_checksum", nf_set_ipv4_udptcp_checksum_spec;
      "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
      "vector_allocate", (vector_alloc_spec (gen_vector_params containers records));
      "vector_borrow",      (vector_borrow_spec (gen_vector_params containers records));
