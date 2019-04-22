@@ -74,7 +74,8 @@ nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_he
   ip_header->hdr_checksum = 0;
 
   // Make sure the packet pointer points to the TCPUDP continuation
-  assert((char*)packet == ((char*)l4_header + sizeof(struct tcpudp_hdr)));
+  void* payload = nf_borrow_next_chunk(packet, ip_header->total_length - sizeof(struct tcpudp_hdr));
+  assert((char*)payload == ((char*)l4_header + sizeof(struct tcpudp_hdr)));
   if (ip_header->next_proto_id == IPPROTO_TCP) {
     struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
     tcp_header->cksum = rte_ipv4_udptcp_cksum(ip_header, tcp_header);
