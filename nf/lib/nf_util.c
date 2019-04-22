@@ -62,18 +62,31 @@ nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void 
 	if (ip_header->next_proto_id == IPPROTO_TCP) {
 		struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
 		tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-		mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
+                mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
 	} else if (ip_header->next_proto_id == IPPROTO_UDP) {
 		struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
 		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-		mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
+                mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
 	}
 }
 
+#ifdef KLEE_VERIFICATION
+void
+nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
+  //klee_trace_ret();
+  //klee_trace_param_u64((uint64_t)ip_header, "ip_header");
+  //klee_trace_param_u64((uint64_t)l4_header, "l4_header");
+  //klee_trace_param_u64((uint64_t)packet, "packet");
+  //// Make sure the packet pointer points to the TCPUDP continuation
+  //void* payload = nf_borrow_next_chunk(packet, rte_be_to_cpu_16(ip_header->total_length) - sizeof(struct tcpudp_hdr));
+  //assert((char*)payload == ((char*)l4_header + sizeof(struct tcpudp_hdr)));
+  //ip_header->hdr_checksum = klee_int("checksum");
+}
+#else//KLEE_VERIFICATION
 void
 nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
   // Make sure the packet pointer points to the TCPUDP continuation
-  void* payload = nf_borrow_next_chunk(packet, ip_header->total_length - sizeof(struct tcpudp_hdr));
+  void* payload = nf_borrow_next_chunk(packet, rte_be_to_cpu_16(ip_header->total_length) - sizeof(struct tcpudp_hdr));
   assert((char*)payload == ((char*)l4_header + sizeof(struct tcpudp_hdr)));
 
   ip_header->hdr_checksum = 0; // Assumed by cksum calculation
@@ -88,6 +101,7 @@ nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_he
   }
   ip_header->hdr_checksum = rte_ipv4_cksum(ip_header);
 }
+#endif//KLEE_VERIFICATION
 
 
 uintmax_t

@@ -179,7 +179,7 @@ struct ipv4_hdr* nf_then_get_ipv4_header(void* p, uint8_t** ip_options,
       *ip_options = (uint8_t*)nf_borrow_next_chunk(p, ip_options_length);
     }
   }
-  if (unread_len < hdr->total_length - sizeof(struct ipv4_hdr)) {
+  if (unread_len < rte_be_to_cpu_16(hdr->total_length) - sizeof(struct ipv4_hdr)) {
       *wellformed = false;
   }
   return hdr;
