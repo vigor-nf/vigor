@@ -184,12 +184,13 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 	free(buf_symbol);
 
 	// Explicitly make the content symbolic - validator depends on an user_buf symbol for the proof
-	struct stub_mbuf_content* buf_content_symbol = (struct stub_mbuf_content*) malloc(sizeof(struct stub_mbuf_content));
+        klee_assert(sizeof(struct stub_mbuf_content) <= pool->elt_size);
+	struct stub_mbuf_content* buf_content_symbol = (struct stub_mbuf_content*) malloc(pool->elt_size);
 	if (buf_content_symbol == NULL) {
 		rte_pktmbuf_free(*mbufp);
 		return false;
 	}
-	klee_make_symbolic(buf_content_symbol, sizeof(struct stub_mbuf_content), "user_buf");
+	klee_make_symbolic(buf_content_symbol, pool->elt_size, "user_buf");
 	memcpy((char*) *mbufp + mbuf_size, buf_content_symbol, sizeof(struct stub_mbuf_content));
 	free(buf_content_symbol);
 
@@ -249,14 +250,4 @@ stub_core_mbuf_free(struct rte_mbuf* mbuf)
 
 	rte_mbuf_raw_free(mbuf);
 }
-
-#ifndef VIGOR_STUB_HARDWARE
-void rte_eth_dev_info_get(uint16_t port_id, struct rte_eth_dev_info *dev_info) {
-    //Support hardware checksum offloading
-    dev_info->tx_offload_capa =
-        DEV_TX_OFFLOAD_IPV4_CKSUM |
-        DEV_TX_OFFLOAD_TCP_CKSUM |
-        DEV_TX_OFFLOAD_UDP_CKSUM;
-}
-#endif//!VIGOR_STUB_HARDWARE
 

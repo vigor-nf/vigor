@@ -84,7 +84,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
     ether_header->d_addr = backend.mac;
 
     // Checksum
-    nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
+    nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
   }
 
 	return backend.nic;

@@ -29,7 +29,7 @@ nf_has_tcpudp_header(struct ipv4_hdr* header)
 }
 
 void
-nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4_header)
+nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4_header)
 {
 	/*
 		https://doc.dpdk.org/guides/prog_guide/mbuf_lib.html#meta-information
@@ -53,36 +53,41 @@ nf_set_ipv4_checksum(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4
 		see nf_init_device.
 	*/
 
-  ip_header->hdr_checksum = 0; // Assumed by cksum calculation
+  ip_header->hdr_checksum = 0;
 
-  // HW Offload
-  // mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
-  // mbuf->l2_len = sizeof(struct ether_hdr);
-  // mbuf->l3_len = sizeof(struct ipv4_hdr);
+  mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
+  mbuf->l2_len = sizeof(struct ether_hdr);
+  mbuf->l3_len = sizeof(struct ipv4_hdr);
 
 	if (ip_header->next_proto_id == IPPROTO_TCP) {
 		struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
-		// HW Offload
-		// tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-		// mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
-
-		// SW
-		tcp_header->cksum = 0; // Assumed by cksum calculation
-		tcp_header->cksum = rte_ipv4_udptcp_cksum(ip_header, tcp_header);
+		tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
+		mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
 	} else if (ip_header->next_proto_id == IPPROTO_UDP) {
 		struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
-		// HW Offload
-		// udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-		// mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
-
-		// SW
-		udp_header->dgram_cksum = 0; // Assumed by cksum calculation
-		udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(ip_header, udp_header);
+		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
+		mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
 	}
-
-	// SW
-	ip_header->hdr_checksum = rte_ipv4_cksum(ip_header);
 }
+
+void
+nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
+  // Make sure the packet pointer points to the TCPUDP continuation
+  assert((char*)packet == ((char*)l4_header + sizeof(struct tcpudp_hdr)));
+
+  ip_header->hdr_checksum = 0;
+  if (ip_header->next_proto_id == IPPROTO_TCP) {
+    struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
+    tcp_header->cksum = 0; // Assumed by cksum calculation
+    tcp_header->cksum = rte_ipv4_udptcp_cksum(ip_header, tcp_header);
+  } else if (ip_header->next_proto_id == IPPROTO_UDP) {
+    struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
+    udp_header->dgram_cksum = 0; // Assumed by cksum calculation
+    udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(ip_header, udp_header);
+  }
+  ip_header->hdr_checksum = rte_ipv4_cksum(ip_header);
+}
+
 
 uintmax_t
 nf_util_parse_int(const char* str, const char* name,
