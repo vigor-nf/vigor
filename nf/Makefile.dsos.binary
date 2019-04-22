@@ -146,7 +146,9 @@ NASMFLAGS = -felf64
 LDFLAGS = -T $(LINKER_SCRIPT) -nostdlib -Wl,--nmagic
 LIBS = -lgcc
 
-QEMUFLAGS = -enable-kvm -cdrom $(ISO) -cpu host -m 1G
+# migratable=off is needed otherwise the hypervisor won't report the TSC
+# frequency as invariant
+QEMUFLAGS = -enable-kvm -cdrom $(ISO) -cpu host,migratable=off -m 1G
 #QEMUFLAGS += -curses
 QEMUFLAGS += -nographic
 QEMUFLAGS += -device vfio-pci,host=06:00.0

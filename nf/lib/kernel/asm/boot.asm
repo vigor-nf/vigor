@@ -284,7 +284,7 @@ start:
     mov eax, 0x80000007
     cpuid
     bt edx, 8
-    ; jnc .unsupported_cpu
+    jnc .unsupported_cpu
 
 
     ; Because execution has reached this point, we know that the CPU supports all the
