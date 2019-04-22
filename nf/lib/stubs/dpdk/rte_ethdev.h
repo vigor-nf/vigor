@@ -9,11 +9,6 @@
 
 #include <klee/klee.h>
 
-// Checksum offload flags
-#define DEV_TX_OFFLOAD_IPV4_CKSUM  0x00000002
-#define DEV_TX_OFFLOAD_UDP_CKSUM   0x00000004
-#define DEV_TX_OFFLOAD_TCP_CKSUM   0x00000008
-
 struct rte_eth_link {
 	uint32_t link_speed;
 	uint16_t link_duplex  : 1;
@@ -25,8 +20,6 @@ struct rte_eth_link {
  * A structure used to configure the TX features of an Ethernet port.
  */
 struct rte_eth_txmode {
-    // Hardware offload for checksums
-	uint64_t offloads;
     // we don't care about other members
 };
 
@@ -42,8 +35,6 @@ struct rte_eth_rxconf {
 };
 
 struct rte_eth_txconf {
-    // Hardware offload for checksums
-	uint64_t offloads;
 	// we don't care about other members
 };
 
@@ -98,9 +89,7 @@ rte_eth_tx_queue_setup(uint16_t port_id, uint16_t tx_queue_id,
 	klee_assert(!devices_tx_setup[port_id]);
 	klee_assert(tx_queue_id == 0); // we only support that
 	klee_assert(socket_id == 0); // same
-        klee_assert(tx_conf != NULL); // same
-	klee_assert(tx_conf->offloads ==
-                    (DEV_TX_OFFLOAD_UDP_CKSUM | DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM)); // same
+        klee_assert(tx_conf == NULL); // same
 
 	devices_tx_setup[port_id] = true;
 	return 0;

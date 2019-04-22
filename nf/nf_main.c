@@ -94,29 +94,12 @@ static const unsigned MEMPOOL_BUFFER_COUNT = 256;
 static int
 nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
 {
-  struct rte_eth_dev_info device_info;
-  rte_eth_dev_info_get(device, &device_info);
-
-  /*
-    Not all NICs support checksum offloading, we need to make sure that ours
-    do before enabling this feature
-  */
-  if (!((device_info.tx_offload_capa & DEV_TX_OFFLOAD_IPV4_CKSUM) &&
-    (device_info.tx_offload_capa & DEV_TX_OFFLOAD_TCP_CKSUM) &&
-    (device_info.tx_offload_capa & DEV_TX_OFFLOAD_UDP_CKSUM))) {
-    // Checksum offloading not supported
-    return -1;
-  }
-
   int retval;
 
   // device_conf passed to rte_eth_dev_configure cannot be NULL
   struct rte_eth_conf device_conf;
   memset(&device_conf, 0, sizeof(struct rte_eth_conf));
   device_conf.rxmode.hw_strip_crc = 1;
-  // Enable TCP/IPv4/UDP checksum offloading
-  device_conf.txmode.offloads = DEV_TX_OFFLOAD_UDP_CKSUM |
-    DEV_TX_OFFLOAD_IPV4_CKSUM | DEV_TX_OFFLOAD_TCP_CKSUM;
 
   // Configure the device
   retval = rte_eth_dev_configure(
@@ -130,16 +113,13 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   }
 
   // Allocate and set up TX queues
-  struct rte_eth_txconf tx_conf = {0};
-  // Enable TCP/IPv4/UDP checksum offloading
-  tx_conf.offloads = device_conf.txmode.offloads;
   for (int txq = 0; txq < TX_QUEUES_COUNT; txq++) {
     retval = rte_eth_tx_queue_setup(
       device,
       txq,
       TX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      &tx_conf
+      NULL
     );
     if (retval != 0) {
       return retval;
