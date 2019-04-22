@@ -90,11 +90,11 @@ case $SCENARIO in
     "mg-new-flows-latency")
         
 	case $NF_TYPE in
-	    "Pol"|"NOP")	
+	    "Pol")	
         	LUA_SCRIPT="l3-latency-light.lua"
 	        ;;
 
-     	    "FW"|"NAT")
+     	    "FW"|"NAT"|"NOP")
                 LUA_SCRIPT="l4-latency-light.lua"
                 ;;
      	   
