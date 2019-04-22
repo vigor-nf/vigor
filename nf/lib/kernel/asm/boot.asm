@@ -22,7 +22,7 @@ extern dsos_halt
 ;           - AES
 ;           - PCLMUL
 ;           - FSGSBASE
-;           - RDRND
+;           - RDRAND
 ;           - F16C
 ;           - CMPXCHG16B
 ;           - x87 FPU
@@ -30,6 +30,7 @@ extern dsos_halt
 ;           - PAE
 ;           - 1GiB pages
 ;           - TSC
+;           - Invariant TSC
 ;           - RDMSR and WRMSR
 ;       - 64-bit mode is enabled and CS is a 64-bit read/execute code segment with DPL = 0
 ;       - All other segment selectors are set to the null segment
@@ -193,12 +194,13 @@ start:
 
     ; A processor where the returned value is not at least 0x80000001 does not
     ; support leaf 0x80000001 and therefore does not support 64-bit mode, which
-    ; we require.
-    cmp eax, 0x80000001
+    ; we require. Furthermore we require the TSC to be invariant, which is
+    ; signaled by a bit in leaf 0x80000007.
+    cmp eax, 0x80000007
     jb .unsupported_cpu
 
 
-    ; We have ensured that the CPU supports at least leaf 0x80000001, therefore
+    ; We have ensured that the CPU supports at least leaf 0x80000007, therefore
     ; querying that leaf will return a valid result. The CPU sets bit 29 in EDX
     ; for this leaf if and only if it supports 64-bit mode.
     mov eax, 0x80000001
@@ -236,6 +238,9 @@ start:
     ;   ECX.POPCNT[bit 23] (support for the POPCNT instruction)
     ;   ECX.AESNI[bit 25] (support for AES instructions)
     ;   ECX.XSAVE[bit 26] (support for XSAVE/XRSTOR as well as XSETBV/XGETBV and XCR0)
+    ;   ECX.AVX[bit 28] (AVX)
+    ;   ECX.F16C[bit 29] (F16C)
+    ;   ECX.RDRAND[bit 30] (RDRAND)
     ;
     ; In order to check for the presence of multiple flags at once we initialize
     ; the EAX register with the bitwise OR of all the flags we are checking, then
@@ -246,7 +251,7 @@ start:
     ; require.
     ; As before, the assembler evaluates bitwise and simple arithmetic expressions
     ; at assembly time.
-    mov eax, (1 << 0) | (1 << 1) | (1 << 9) | (1 << 13) | (1 << 19) | (1 << 20) | (1 << 23) | (1 << 25) | (1 << 26)
+    mov eax, (1 << 0) | (1 << 1) | (1 << 9) | (1 << 13) | (1 << 19) | (1 << 20) | (1 << 23) | (1 << 25) | (1 << 26) | (1 << 28) | (1 << 29) | (1 << 30)
     and ecx, eax
     cmp ecx, eax
     jnz .unsupported_cpu
@@ -258,12 +263,28 @@ start:
     ;   EDX.PAE[bit 6] (support for PAE - required for 64-bit mode)
     ;   EDX.CX8[bit 8] (support for CMPXCHG8B)
     ;   EDX.MMX[bit 23] (support for MMX)
+    ;   EDX.FXSR[bit 24] (support for FXSAVE/FXRSTOR)
     ;   EDX.SSE[bit 25] (support for SSE)
     ;   EDX.SSE2[bit 26] (support for SSE2)
-    mov eax, (1 << 0) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 8) | (1 << 23) | (1 << 25) | (1 << 26)
+    mov eax, (1 << 0) | (1 << 4) | (1 << 5) | (1 << 6) | (1 << 8) | (1 << 23) | (1 << 24) | (1 << 25) | (1 << 26)
     and edx, eax
     cmp edx, eax
     jnz .unsupported_cpu
+
+
+    ; CPUID.07H:EBX.FSGSBASE[bit 0] (support for RDFSBASE/RDGSBASE/WRFSBASE/WRGSBASE)
+    mov eax, 0x07
+    xor ecx, ecx
+    cpuid
+    bt ebx, 0
+    jnc .unsupported_cpu
+
+
+    ; CPUID.80000007H:EDX.Invariant TSC[bit 8] (TSC has constant frequency)
+    mov eax, 0x80000007
+    cpuid
+    bt edx, 8
+    jnc .unsupported_cpu
 
 
     ; Because execution has reached this point, we know that the CPU supports all the
@@ -321,72 +342,88 @@ start:
     ;
     ; Because we instruct the assembler to place the PDPT at a 4 KiB aligned
     ; address, and we assume that this address is located in the lowest 4 GiB of
-    ; memory (like the rest of the image), the value of the PML4E is equal to
-    ; the addrss of the PDPT bitwise ORed with 0x3.
-
-    ; Pointer to the PDPT
+    ; memory (like the rest of the executable image), the value of the PML4E is
+    ; equal to the addrss of the PDPT bitwise ORed with 0b11 (P and R/W flags).
+    ;
+    ; Load the address of the PDPT into EAX and set the present and writable
+    ; flags in it. Because the PML4 is initialized to 0, we only need to write
+    ; the lowest 32 bits of the first PML4E, the rest are already 0.
     mov eax, pdpt
-    ; Set present and writable bits for this page
-    and eax, 0xFFFFF000
     or eax, 0b11
+    ; Write to the first PML4E
     mov [pml4], eax
 
-    ; Load the address of the top-level page table into CR3 (we want the control
-    ; bits to be 0 so we mask them off)
+
+    ; The CR3 register references the PML4. Bits (M-1):12 point to the base
+    ; address of a 4 KiB-aligned PML4. All othr bits enable features that DSOS
+    ; does not require, and therefore they can be 0.
     mov eax, pml4
-    and eax, 0xFFFFF000
     mov cr3, eax
 
 
-    ; --------------------------------------------------------------------------
-
-    ; Enable 64-bit mode - Finally the fun part!
-    ; Volume 3 - 9.8.5: Initializing IA-32e Mode
-
-    ; Setting bit 8 in MSR 0xC0000080 (IA32_EFER) tells the processor to enable
-    ; 64-bit mode when we enable paging
+    ; 4 - Enable IA-32e mode by setting IA32_EFER.LME (bit 8) = 1
     ;
-    ; When using rdmsr/wrmsr, the number of the MSR goes in ecx and the value in
-    ; edx:eax
+    ; We have checked that the CPU supports reading and writing to MSRs and we
+    ; assume that we are executing at privilege level 0, therefore this
+    ; instruction will not cause any exceptions as long as we access valid MSRs.
+    ; Because we have ensured that the CPU supports 64-bit mode, IA32_EFER must
+    ; be a valid MSR.
+    ;
+    ; RDMSR reads the MSR specified in ECX into registers EDX:EAX.
     mov ecx, 0xC0000080
     rdmsr
+    ; Conversely WRMSR writes registers EDX:EAX into the MSR specified in ECX.
+    ; Because we don't modify EDX or any bits of EAX other than LME (bit 8), the
+    ; value we write to IA32_EFER is valid.
     or eax, 1 << 8
     wrmsr
 
-    ; Enable paging by setting bit 31 of cr0
+
+    ; 5 - Enable paging by setting CR0.PG (bit 31) = 1. All instructions
+    ; starting from the write to CR0 must be located in an identity mapped page.
+    ; Because all our pages are identity mappings, this requirement is satisfied.
     mov eax, cr0
     or eax, 1 << 31
     mov cr0, eax
 
 
-    ; Volume 3 - 9.8.5.1 IA-32e Mode System Data Structures
-    ; After enabling paging/64-bit mode we still need to load a 64-bit GDT.
-    ; Because the CPU caches segment selectors we also need to explicitly reload
-    ; the code segment by doing a far jump
-
-    ; Load the new GDT
+    ; After enabling 64-bit mode the CPU continues using the 32-bit Global
+    ; Descriptor Table (GDT). The GDT is a table of segment descriptor, a data
+    ; structure that controls segmentation. Even though segmentation is mostly
+    ; disabled in 64-bit mode, the code segment (CS) descriptor is still
+    ; important because it sets the CPU's execution mode (32 vs. 64 bit).
+    ; Therefore DSOS must load a new GDT that contains a 64-bit code segment.
+    ;
+    ; The LGDT instruction takes as operand the memory location of a GDT
+    ; descriptor, a data structure that contains the base address and size of
+    ; the GDT.
     lgdt [gdt64.descriptor]
 
-    ; Far jump to the other side...
+    ; Because the CPU caches segment descriptors in private registers, it is not
+    ; enough to load a new GDT. DSOS must also explicitly load the new CS
+    ; descriptor by setting the CS register. Unlike other segment registers, CS
+    ; cannot be loaded with the MOV instruction, but only with the JMP, CALL and
+    ; RET instructions. Because we want the JMP instruction to set both the
+    ; instruction pointer and code segment, we need to use a far jump instruction.
     jmp gdt64.code_segment:.64_bit
 
 
 .unsupported_cpu:
+    ; This loops forever, halting the machine
     ; TODO: add an error message
     hlt
     jmp .unsupported_cpu
 
 
+; Instruct the assembler to generate 64-bit code
 BITS 64
 
 .64_bit:
-    ; Welcome to 64-bit mode!
-    ;
-    ; 5.4.1.1 NULL Segment Checking in 64-bit Mode
-    ;
-    ; In 64-bit mode segment selectors can be 0, so the easiest way of getting
-    ; rid of the old data segments (which have a 4GB limit) is to zero the
-    ; selectors
+    ; The CPU caches data segment selectors, just like the code segment selector.
+    ; The 32-bit data segment selectors are still loaded and we shoud replace
+    ; them. Segment descriptor 0 (the null segment) is invalid in 32-bit
+    ; mode and causes an exception when used, but it is valid in 64-bit mode.
+    ; In order to enable it, DSOS has to write 0 to each data segment register.
     xor ax, ax
     mov ss, ax
     mov ds, ax
@@ -394,36 +431,43 @@ BITS 64
     mov fs, ax
     mov gs, ax
 
-    ; The CPU will crash if we try to use SSE instructions unless they are
-    ; initialized
-    ; Volume 3 - 13.1.3: Initialization of the SSE Extensions
-
-    ; First we need to set CR4.OSFXSR[bit 9] and CR4.OSXMMEXCPT[bit 10]
+    ; Even though we have ensured that the CPU supports AVX and SSE instructions,
+    ; they need to be enabled or the CPU will generate an exception when they
+    ; are used.
+    ;
+    ; In order to enable SSE instructions, DSOS needs to set CR4.OSFXSR[bit 9]
+    ; and CR4.OSXMMEXCPT[bit 10]
     mov rax, cr4
     or rax, (1 << 9) | (1 << 10)
     mov cr4, rax
 
-    ; Then clear CR0.EM[bit 2] and set CR0.MP[bit 1]
+    ; Next, DSOS needs to clear CR0.EM[bit 2] and set CR0.MP[bit 1]
     mov rax, cr0
     and rax, ~(1 << 2)
     or rax, 1 << 1
     mov cr0, rax
 
-
-    ; Enable AVX: First set CR4.OSXSAVE[bit 18] to 1 (Vol. 1 - 13.3)
+    ; In order to enable AVX, DSOS needs to first set CR4.OSXSAVE[bit 18] to 1
     mov rax, cr4
     or rax, 1 << 18
     mov cr4, rax
 
-    ; Then set the AVX/SSE/x87 bits in XCR0
+    ; Then set the AVX/SSE/x87 bits in XCR0.
     xor rcx, rcx
     xgetbv
     or eax, 7
     xsetbv
 
+    ; DSOS needs to guarantee that the stack pointer is aligned on a 16-byte
+    ; boundary before main() is invoked. We instruct the assembler to align
+    ; stack_bottom to a 16-byte boundary.
+    mov esp, stack_bottom
+
+    ; At this point all the preconditions have been satisfied and DSOS can invoke
+    ; the C main function
     call main
 
-    ; This should never be executed, but just in case...
+    ; main() never returns, therefore this code is unreachable.
     jmp dsos_halt
 
 
@@ -456,21 +500,20 @@ section .data
 
 ; Page tables.
 ;
-; We identity map the first 4GB (using a PML4 + 4x 1GB PDPTE
-; mapping a 1GB page). 1GB is not enough because the NICs are usually mapped
-; higher than that but 4GB works. Because the code is verified for memory safety
-; we don't need any memory protection features and can map everything as RWX.
-;
-; We _could_ use 2MB pages for better compatibility but it's more tedious to set
-; up and probably has a worse TLB hit rate
+; DSOS guarantees that the first 4 GiB of the address space are identity mapped.
+; It accomplishes this by creating 4 1-GiB identity mappings with
+; read-write-execute permissions. The PDPT is initialized statically but the
+; PML4 has to be initialized at runtime because it contains a pointer to the
+; PDPT, whose address is not known at compile time.
 
-; Top (4th) level page table
+; PML4 (top/4th-level page table)
 align 4096, db 0
 pml4:
-    ; Nothing for now, we will fill this in at runtime
+    ; All entries must be zeroed (a zeroed entry is invalid and generates a page
+    ; fault if used)
     times 512 dq 0
 
-; 3rd level page table
+; PDPT (3rd-level page table)
 align 4096, db 0
 pdpt:
     ; 1GB page: present, with page size (0b1000000), writable and present bits
@@ -482,7 +525,7 @@ pdpt:
     dq (0x80000000 | 0b10000011)
     dq (0xc0000000 | 0b10000011)
 
-    ; Nothing for all other entries
+    ; All other entries are not present
     times 508 dq 0
 
 
