@@ -28,20 +28,14 @@ struct policer_config config;
 struct State* dynamic_ft;
 
 int policer_expire_entries(vigor_time_t time) {
-  if (time < config.burst / config.rate)
+  vigor_time_t exp_time = VIGOR_TIME_SECONDS_MULTIPLIER * config.burst / config.rate;
+
+  if (time < exp_time)
     return 0;
 
-    if (time < 0) return 0;
-    uint64_t time_u = (uint64_t) time;
-
-    assert(config.burst >= 0);
-    assert(config.rate >= 0);
-    assert(config.burst / config.rate >= 0);
-    assert(time_u >= (config.burst / config.rate));
-    assert(time_u - config.burst / config.rate >= 0);
-
+  uint64_t time_u = (uint64_t) time;
   // OK because time >= config.burst / config.rate >= 0
-  vigor_time_t min_time = time_u - /*VIGOR_TIME_SECONDS_MULTIPLIER * */ config.burst / config.rate;
+  vigor_time_t min_time = time_u - exp_time;
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
                                  dynamic_ft->dyn_map,
@@ -50,9 +44,9 @@ int policer_expire_entries(vigor_time_t time) {
 
 bool
 dyn_val_condition(void* key, int index, void* state) {
-  return 0 < ((struct DynamicValue*) key)->bucket_time AND
-      ((struct DynamicValue*) key)->bucket_time <= recent_time() AND
-      ((struct DynamicValue*) key)->bucket_size <= config.burst;
+  return 0 <= ((struct DynamicValue*) key)->bucket_time AND
+    ((struct DynamicValue*) key)->bucket_time <= recent_time() AND
+    ((struct DynamicValue*) key)->bucket_size <= config.burst;
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {

@@ -455,11 +455,12 @@ let get_sint_in_bounds v =
   else if (String.equal v "18446744073709551556") then -60
   (* and -20 *)
   else if (String.equal v "18446744073709551596") then -20
-  (* and -10000000000 *)
+  (* and -10 000 000 000 in 128bit *)
   else if (String.equal v "18446744063709551616") then -10000000000
   else
     let integer_val = Int.of_string v in
-    if Int.(integer_val > 2147483647) then
+    if Int.(integer_val <> 10000000000) && (* We want this 10B - the policer exp time*)
+       Int.(integer_val > 2147483647) then
       integer_val - 2*2147483648
     else
       integer_val

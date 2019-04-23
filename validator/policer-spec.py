@@ -1,9 +1,9 @@
 from state import flow_emap, dyn_vals
-EXP_TIME = 10
 LAN_DEVICE = 0
 WAN_DEVICE = 1
 BURST = 125000
 RATE = 12500
+EXP_TIME = 10000000000
 WORD_SIZE = 4
 ETHER_IP_HDRLEN = 34
 
