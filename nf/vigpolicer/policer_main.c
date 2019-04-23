@@ -31,8 +31,17 @@ int policer_expire_entries(vigor_time_t time) {
   if (time < config.burst / config.rate)
     return 0;
 
+    if (time < 0) return 0;
+    uint64_t time_u = (uint64_t) time;
+
+    assert(config.burst >= 0);
+    assert(config.rate >= 0);
+    assert(config.burst / config.rate >= 0);
+    assert(time_u >= (config.burst / config.rate));
+    assert(time_u - config.burst / config.rate >= 0);
+
   // OK because time >= config.burst / config.rate >= 0
-  vigor_time_t min_time = time - VIGOR_TIME_SECONDS_MULTIPLIER * config.burst / config.rate;
+  vigor_time_t min_time = time_u - /*VIGOR_TIME_SECONDS_MULTIPLIER * */ config.burst / config.rate;
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
                                  dynamic_ft->dyn_map,
@@ -42,7 +51,8 @@ int policer_expire_entries(vigor_time_t time) {
 bool
 dyn_val_condition(void* key, int index, void* state) {
   return 0 < ((struct DynamicValue*) key)->bucket_time AND
-      ((struct DynamicValue*) key)->bucket_time <= recent_time();
+      ((struct DynamicValue*) key)->bucket_time <= recent_time() AND
+      ((struct DynamicValue*) key)->bucket_size <= config.burst;
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
@@ -54,12 +64,19 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
     struct DynamicValue* value = 0;
     vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
 
-    value->bucket_size +=
-        (time - value->bucket_time) * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+    assert(0 <= time);
+    uint64_t time_u = (uint64_t) time;
+    assert(sizeof(vigor_time_t) == sizeof(int64_t));
+    assert(value->bucket_time >= 0);
+    assert(value->bucket_time <= time_u);
+    uint64_t time_diff = time_u - value->bucket_time;
+    uint64_t added_tokens = time_diff * config.rate;
+    assert(value->bucket_size <= config.burst);
+    value->bucket_size += added_tokens;
     if (value->bucket_size > config.burst) {
       value->bucket_size = config.burst;
     }
-    value->bucket_time = time;
+    value->bucket_time = time_u;
 
     bool fwd = false;
     if (value->bucket_size > size) {

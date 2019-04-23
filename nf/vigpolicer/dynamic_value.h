@@ -5,7 +5,7 @@
 #include "lib/nf_time.h"
 
 struct DynamicValue {
-  uint32_t bucket_size;
+  uint64_t bucket_size;
   vigor_time_t bucket_time;
 };
 

@@ -5,7 +5,7 @@ open Ir
 open Common_fspec
 
 let ip_addr_struct = Ir.Str ( "ip_addr", ["addr", Uint32;])
-let dynamic_value_struct = Ir.Str ( "DynamicValue", ["bucket_size", Uint32;
+let dynamic_value_struct = Ir.Str ( "DynamicValue", ["bucket_size", Uint64;
                                                      "bucket_time", vigor_time_t;] )
 (* FIXME: borrowed from ../nf/vigpolicer/policer_data_spec.ml *)
 let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
