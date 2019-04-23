@@ -782,6 +782,10 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     let guess = {precise=Unknown;s=Sure Sgn;w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
     {v=Bop(Modulo, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
+  | Sexp.List [Sexp.Atom "UDiv"; Sexp.Atom width; value; divisor] ->
+    let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
+    let mt = ttype_of_guess guess in
+    {v=Bop(Div, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "URem"; Sexp.Atom width; value; divisor] ->
     let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in

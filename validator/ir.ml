@@ -4,7 +4,7 @@ open Core
 module Sexp = Core.Sexp
 
 type bop = Eq | Le | Lt | Ge | Gt
-         | Add | Sub | Mul | Modulo
+         | Add | Sub | Mul | Div | Modulo
          | And | Or | Bit_and [@@deriving sexp]
 
 
@@ -125,6 +125,7 @@ let render_bop = function
   | Add -> "+"
   | Sub -> "-"
   | Mul -> "*"
+  | Div -> "/"
   | Modulo -> "%"
   | And -> "&&"
   | Or -> "||"

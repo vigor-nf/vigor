@@ -57,6 +57,17 @@ concretize_devices(uint16_t *device, uint16_t count) {
 }
 #endif//KLEE_VERIFICATION
 
+#ifdef KLEE_VERIFICATION
+// Put an expression into the asumption heap, provided it is true
+static inline void vigor_note(int cond) {
+  klee_assert(cond);
+  klee_assume(cond);
+}
+#else//KLEE_VERIFICATION
+static inline void vigor_note(int cond) {
+  IGNORE(cond);
+}
+#endif//KLEE_VERIFICATION
 
 
 #endif//_BOILERPLATE_UTIL_H_INCLUDED_

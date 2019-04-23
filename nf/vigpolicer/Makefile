@@ -22,6 +22,12 @@ NF_VERIF_ARGS := --lan 0 --wan 1 --rate 12500 --burst 125000 --capacity 100
 # Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 
+# For the "vigor_note" call, that puts a true condition into the assumption heap
+# the condition is trivially true, but VeriFast needs it to check
+# absence of underflow in policer
+VERIF_DEFS += -Wno-tautological-compare
+CFLAGS += -Wno-tautological-compare
+
 dynamic_value.h.gen.c dynamic_value.h.gen.h: dynamic_value.h
 	bash ../../codegen/generate.sh $<
 

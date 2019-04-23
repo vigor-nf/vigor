@@ -64,9 +64,14 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
     assert(value->bucket_time >= 0);
     assert(value->bucket_time <= time_u);
     uint64_t time_diff = time_u - value->bucket_time;
-    uint64_t added_tokens = time_diff * config.rate;
-    assert(value->bucket_size <= config.burst);
-    value->bucket_size += added_tokens;
+    if (config.burst * VIGOR_TIME_SECONDS_MULTIPLIER <= time_diff) {
+      value->bucket_size = config.burst;
+    } else {
+      uint64_t added_tokens = time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+      vigor_note(0 <= time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER);
+      assert(value->bucket_size <= config.burst);
+      value->bucket_size += added_tokens;
+    }
     if (value->bucket_size > config.burst) {
       value->bucket_size = config.burst;
     }

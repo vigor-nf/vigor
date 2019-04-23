@@ -210,7 +210,7 @@ verify-hardware-nf.bc: $(AUTO_GEN_FILES)
 verify-hardware: verify-hardware-nf.bc
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
-	
+
 verify-dsos-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
