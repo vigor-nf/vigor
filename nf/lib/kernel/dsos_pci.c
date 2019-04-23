@@ -8,24 +8,24 @@
 #include "dsos_vga.h"
 #include "dsos_serial.h"
 
-static const size_t MAX_PCI_DEVICES = 32;
+#define MAX_PCI_DEVICES UINT32_C(32)
 
-static const uint16_t PCI_CONFIG_ADDRESS_PORT = 0xcf8;
-static const uint16_t PCI_CONFIG_DATA_PORT = 0xcfc;
+#define PCI_CONFIG_ADDRESS_PORT UINT16_C(0xcf8)
+#define PCI_CONFIG_DATA_PORT UINT16_C(0xcfc)
 
-static const uint32_t PCI_NUM_BUSES = 256;
-static const uint32_t PCI_DEVICES_PER_BUS = 32;
-static const uint32_t PCI_FUNCTIONS_PER_DEVICE = 8;
+#define PCI_NUM_BUSES UINT32_C(256)
+#define PCI_DEVICES_PER_BUS UINT32_C(32)
+#define PCI_FUNCTIONS_PER_DEVICE UINT32_C(8)
 
-static const uint32_t PCI_BAR_BASE = 4;
-static const uint16_t PCI_INVALID_VENDOR_ID = 0xFFFF;
+#define PCI_BAR_BASE UINT32_C(4)
+#define PCI_INVALID_VENDOR_ID UINT16_C(0xFFFF)
 
-static const uint32_t PCI_VENDOR_REGISTER = 0;
-static const uint32_t PCI_STATUS_COMMAND_REGISTER = 1;
-static const uint32_t PCI_CLASS_CODE_REGISTER = 2;
-static const uint32_t PCI_SUBSYSTEM_REGISTER = 11;
+#define PCI_VENDOR_REGISTER UINT32_C(0)
+#define PCI_STATUS_COMMAND_REGISTER UINT32_C(1)
+#define PCI_CLASS_CODE_REGISTER UINT32_C(2)
+#define PCI_SUBSYSTEM_REGISTER UINT32_C(11)
 
-static const uint32_t PCI_COMMAND_MASTER = 4;
+#define PCI_COMMAND_MASTER UINT32_C(4)
 
 /*
  * Taken from OpenBSD's reallocarray.c
