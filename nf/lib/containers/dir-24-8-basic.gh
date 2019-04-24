@@ -2,12 +2,18 @@
 #define DIR248_GH
 
 #include <bitops.gh>
+#include "stdex.gh"
 
 inductive lpm_rule = rule(Z, int, int); //ipv4, prefixlen, route
 inductive dir_24_8 = tables(list<option<pair<bool, Z> > >, list<option<Z> >, int); //last is for tbl_long_index
 
-fixpoint lpm_rule init_rule(Z ipv4, int prefixlen, int route){
-  return rule(ipv4, prefixlen, route);
+
+fixpoint Z Z_of_int(int x, nat length){
+  return Z_of_bits(Zsign(false), snd(bits_of_int(x, length)));
+}
+
+fixpoint lpm_rule init_rule(int ipv4, int prefixlen, int route){
+  return rule(Z_of_int(ipv4, N32), prefixlen, route);
 }
 
 fixpoint int rule_ipv4(lpm_rule rule){
@@ -38,10 +44,6 @@ fixpoint int rule_24_get_value(Z entry){
 
 fixpoint Z two_bytes_mask(){
   return Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zsign(false), true), true), true), true), true), true), true), true);
-}
-
-fixpoint Z Z_of_int(int x, nat length){
-  return Z_of_bits(Zsign(false), snd(bits_of_int(x, length)));
 }
 	
 // INDEX COMPUTING FUNCTIONS
@@ -233,4 +235,24 @@ fixpoint option<Z> entry_long_mapping(int entry){
 
 fixpoint dir_24_8 build_tables(list<int> t_24, list<int> t_long, int long_index){
   return tables(map(entry_24_mapping, t_24), map(entry_long_mapping, t_long), long_index);
+}
+
+fixpoint dir_24_8 dir_init(){
+  return tables(repeat_n(nat_of_int(16777216), entry_24_mapping(0xFFFF)), repeat_n(nat_of_int(65536), entry_long_mapping(0xFFFF)), 0);
+}
+
+
+// Those function must be called only when the option is known not to be none
+fixpoint pair<bool, Z> get_someOption24(option<pair<bool, Z> > o){
+  switch(o){
+    case none: return pair(false, Zsign(false));//should never happen
+    case some(p): return p;
+  }
+}
+
+fixpoint int get_someOptionLong(option<int> o){
+  switch(o){
+    case none: return -1;//should never happen
+    case some(v): return v;
+  }
 }

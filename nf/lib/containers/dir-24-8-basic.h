@@ -52,28 +52,33 @@ struct key{
 };
 
 /*@
-predicate table(struct tbl* t, int long_index; dir_24_8 tables) = 
+predicate table(struct tbl* t, int long_index,
+                dir_24_8 dir) = 
   malloc_block_tbl(t) 
   &*& t->tbl_24 |-> ?tbl_24 &*& t->tbl_long |-> ?tbl_long &*& t->tbl_long_index |-> long_index
   &*& malloc_block_ushorts(tbl_24, TBL_24_MAX_ENTRIES) &*& malloc_block_ushorts(tbl_long, TBL_LONG_MAX_ENTRIES)
-  &*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?t_24 &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?t_l
-  &*& build_tables(t_24, t_l, long_index) = tables
+  &*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?tt_24 &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?tt_l
+  &*& build_tables(tt_24, tt_l, long_index) == dir
   &*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 
-predicate key(struct key* k) = 
-  malloc_block_key(k) &*& k->data |-> ?ipv4 &*& k->prefixlen |-> ?prefixlen &*& k->route |-> ?route;
+predicate key(struct key* k, uint32_t ipv4, uint8_t prefixlen, uint16_t route) = 
+  malloc_block_key(k) &*& k->data |-> ipv4 &*& k->prefixlen |-> prefixlen &*& k->route |-> route
+  &*& prefixlen >= 0 &*& prefixlen <= 32 &*& 0 <= route &*& route <= MAX_NEXT_HOP_VALUE;
   
-/*predicate entry_24(uint16_t entry; option<pair<bool, Z> > table_24_entry){
-  entry == INVALID ?
-    
-}
-
-predicate entry_long(uint16_t entry; option<Z> table_long_entry)*/
+predicate entry_24(option<pair<bool, Z> > entry) =
+  switch(entry){
+    case none:
+      return true;
+    case some(p): 
+      return switch(p){
+        case pair(b, z): return b ? 0x8000 <= int_of_Z(z) &*& int_of_Z(z) <= 0x80FF : 0 <= int_of_Z(z) &*& int_of_Z(z) <= 0xFFF;
+      };
+  };
 @*/
 
 //In header only for tests
 uint32_t tbl_24_extract_first_index(uint32_t data);
-uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index);
+uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen, uint8_t base_index);
 uint16_t tbl_24_entry_set_flag(uint16_t entry);
 uint32_t build_mask_from_prefixlen(uint8_t prefixlen);
 void fill_invalid(uint16_t *array, uint32_t size);

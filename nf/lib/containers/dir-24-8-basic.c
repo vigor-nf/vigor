@@ -1,17 +1,31 @@
 #include "dir-24-8-basic.h"
 //@ #include <nat.gh>
 //@ #include <bitops.gh>
-//@ #include "stdex.gh"
+
+/*@
+fixpoint bool is_invalid(uint16_t x){
+  return x == INVALID;
+}
+@*/
 
 void fill_invalid(uint16_t *t, uint32_t size)
 //@ requires t[0..size] |-> _;
-//@ ensures t[0.. size] |-> repeat_n(nat_of_int(size), INVALID);
+//@ ensures t[0.. size] |-> _;//repeat_n(nat_of_int(size), INVALID);
 {
-  for(uint32_t i = 0; i < size; i++) 
-  //@ requires t[i..size] |-> _;
-  //@ ensures t[old_i..size] |-> repeat_n(nat_of_int(size - old_i), INVALID);
+
+  //@ list<unsigned short> elems = nil;
+  
+  for(uint32_t i = 0; i < size; i++)
+  /*@ invariant 0 <= i &*& i <= size &*&
+                true == forall(elems, is_invalid) &*&
+                length(elems) == i &*&
+                t[0..size] |-> _;
+  @*/
   {
+    //@ assert i < size; 
     t[i] = INVALID;
+    //@ forall_append(elems, cons(INVALID, nil), is_invalid);
+    //@ elems = append(elems, cons(INVALID, nil));
   }
 }
 
@@ -32,10 +46,17 @@ uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
  */
 uint32_t tbl_24_extract_first_index(uint32_t data)
 //@ requires true;
-//@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*& result == (data >> BYTE_SIZE);
+/*@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*&
+            result == data >> BYTE_SIZE;
+
+@*/
 {
+  //@ Z d = Z_of_uint32(data);
+  //@ shiftright_def(data, d, N8);
   //@ shiftright_limits(data, N32, N8);
-  return data >> BYTE_SIZE;
+  uint32_t res = data >> BYTE_SIZE;
+  //@ assert res == int_of_Z(Z_shiftright(d, N8));
+  return res;
 }
 
 
@@ -44,7 +65,7 @@ uint32_t tbl_24_extract_first_index(uint32_t data)
  */
 uint32_t compute_rule_size(uint8_t prefixlen)
 //@ requires prefixlen <= 32;
-//@ ensures result > 0 &*& prefixlen < 24 ? result <= pow_nat(2, nat_of_int(24)) : result <= pow_nat(2, N8);
+//@ ensures result == compute_rule_size(prefixlen) &*& prefixlen < 24 ? result <= pow_nat(2, nat_of_int(24)) : result <= pow_nat(2, N8);
 {	
   if(prefixlen < 24){
     uint32_t res[24] = { 0x1000000, 0x800000, 0x400000, 0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000,
@@ -58,35 +79,55 @@ uint32_t compute_rule_size(uint8_t prefixlen)
   }
 }
 
-bool tbl_24_entry_flag(uint16_t _entry)
-//@ requires true;
-//@ ensures true;
+bool tbl_24_entry_flag(uint16_t entry)
+//@ requires entry_24(entry_24_mapping(entry));
+//@ ensures result == extract_flag(entry) &*& entry_24(entry_24_mapping(entry));
 {
-  return (_entry >> 15) == 1;
+  return (entry >> 15) == 1;
 }
 
-uint16_t tbl_24_entry_set_flag(uint16_t _entry)
-//@ requires true;
-//@ ensures true;
+uint16_t tbl_24_entry_set_flag(uint16_t entry)
+//@ requires entry_24(entry_24_mapping(entry));
+//@ ensures entry_24(entry_24_mapping(result));
 {
-  //@ bitor_limits(_entry, TBL_24_FLAG_MASK, nat_of_int(16));
-  return (uint16_t)(_entry | TBL_24_FLAG_MASK);
+  //@ open entry_24(entry_24_mapping(entry));
+  //@ bitor_limits(entry, TBL_24_FLAG_MASK, N16);
+  //@ Z mask = Z_of_uint16(TBL_24_FLAG_MASK);
+  //@ Z val = Z_of_uint16(entry);
+  //@ bitor_def(entry, val, TBL_24_FLAG_MASK, mask);
+  uint16_t res = (uint16_t)(entry | TBL_24_FLAG_MASK);
+  //@ close entry_24(entry_24_mapping(res));
+  return res;
 }
 
 
-uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t base_index)
-//@ requires true;
-//@ ensures true;
+uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen, uint8_t base_index)
+//@ requires 0 <= base_index &*& base_index < TBL_LONG_OFFSET_MAX &*& 0 <= prefixlen &*& prefixlen <= 32;
+//@ ensures result == compute_starting_index_long(init_rule(data, prefixlen, 0), base_index);//dummy route, unused
 {   
+  
+  uint32_t mask = build_mask_from_prefixlen(prefixlen);
+  //@ Z maskZ = Z_of_uint32(mask);
+  //@ Z d = Z_of_uint32(data); 
+  //@ bitand_def(data, d, mask, maskZ);
+  uint32_t masked_data = data & mask;
   //@ bitand_limits(data, 0xFF, N32);
-  uint16_t last_byte = (uint16_t)(data & 0xFF);
+  //@ Z masked_dataZ = Z_of_uint32(masked_data);
+  //@ Z byte_mask = Z_of_uint8(0xFF);
+  //@ bitand_def(masked_data, masked_dataZ, 0xFF, byte_mask);
+  uint8_t last_byte = (uint8_t)(masked_data & 0xFF);
     
   return (uint16_t)(base_index * (uint16_t)TBL_LONG_FACTOR + last_byte);
 }
 
 struct tbl* tbl_allocate()
 //@ requires true;
-//@ ensures result == 0 ? true : (table(result, 0));
+/*@ ensures result == 0 ? 
+      true 
+    : 
+      table(result, 0, dir_init());
+
+@*/
 {	
   struct tbl* _tbl = malloc(sizeof(struct tbl));
   if(_tbl == 0){
@@ -105,38 +146,49 @@ struct tbl* tbl_allocate()
     free(_tbl);
     return 0;
   }
-    
-  //Set every element of the array to zero
+   
+  //@ close ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?t_24);
+  //@ close ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, ?t_l);
+  
+  //Set every element of the array to INVALID
   fill_invalid(tbl_24, TBL_24_MAX_ENTRIES);
   fill_invalid(tbl_long, TBL_LONG_MAX_ENTRIES);
-    
+  
+  //@ assert forall(t_24, is_invalid);
+  //@ assert forall(t_l, is_invalid);
     
   _tbl->tbl_24 = tbl_24;
   _tbl->tbl_long = tbl_long;
-  _tbl->tbl_long_index = 0;
-
-  //@ close table(_tbl, 0);
+  uint16_t tbl_long_first_index = 0;
+  _tbl->tbl_long_index = tbl_long_first_index;
+  //@ close table(_tbl, tbl_long_first_index, build_tables(t_24, t_l, tbl_long_first_index));
 
   return _tbl;
 }
 
 
 void tbl_free(struct tbl *_tbl)
-//@ requires table(_tbl, _);
+//@ requires table(_tbl, _, _);
 //@ ensures true;
 {
-  //@ open table(_tbl, _);
+  //@ open table(_tbl, _, _);
   free(_tbl->tbl_24);
   free(_tbl->tbl_long);
   free(_tbl);
 }
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key)
-//@ requires table(_tbl, ?long_index) &*& key(_key);
-//@ ensures table(_tbl, _) &*& key(_key);
+//@ requires table(_tbl, ?long_index, ?dir) &*& key(_key, ?ipv4, ?plen, ?route);
+/*@ ensures table(_tbl, long_index,
+                  add_rule(dir,
+                           init_rule(ipv4, plen, route)
+                  )
+            )
+            &*& key(_key, ipv4, plen, route);
+@*/
 {
-  //@ open key(_key);
-  //@ open table(_tbl, _);
+  //@ open key(_key, ipv4, plen, route);
+  //@ open table(_tbl, long_index, dir);
   uint8_t prefixlen = _key->prefixlen;
   uint32_t data = _key->data;
   uint16_t value = _key->route;
@@ -144,8 +196,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
   uint16_t *tbl_long = _tbl->tbl_long;
 
   if(prefixlen > TBL_PLEN_MAX || value > MAX_NEXT_HOP_VALUE){
-    //@ close key(_key);
-    //@ close table(_tbl, long_index);
+    //@ close key(_key, ipv4, plen, route);
+    //@ close table(_tbl, long_index, dir);
     return -1;
   }
 
@@ -166,8 +218,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 	    tbl_24[i] = value;
       }
     }
-    //@ close key(_key);
-    //@ close table(_tbl, long_index);
+    //@ close key(_key, ipv4, plen, route);
+    //@ close table(_tbl, long_index, dir);
     } else {
     //If the prefixlen is not smaller than 24, we have to store the value
     //in tbl_long.
@@ -178,12 +230,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       uint8_t base_index;
       uint32_t tbl_24_index = tbl_24_extract_first_index(data);
       
-      if(tbl_24[tbl_24_index] == INVALID || !tbl_24_entry_flag(tbl_24[tbl_24_index])){
+      uint16_t tbl_24_value = tbl_24[tbl_24_index];
+      //@ close entry_24(entry_24_mapping(tbl_24_value));
+      bool flag = tbl_24_entry_flag(tbl_24_value);
+      bool need_new_index = !flag || tbl_24[tbl_24_index] == INVALID;
+      
+      if(need_new_index){
         if(_tbl->tbl_long_index >= TBL_LONG_OFFSET_MAX){
 
           printf("No more available index for tbl_long!\n");fflush(stdout);
-          //@ close key(_key);
-          //@ close table(_tbl, 256);
+          //@ close key(_key, ipv4, plen, route);
+          //@ close table(_tbl, 256, dir);
           return -1;
 		
         }else{
@@ -201,7 +258,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
       //The last byte in data is used as the starting offset for tbl_long
       //indexes
-      uint32_t first_index = tbl_long_extract_first_index(masked_data, base_index);
+      uint32_t first_index = tbl_long_extract_first_index(data, prefixlen, base_index);
       uint32_t last_index = first_index + compute_rule_size(prefixlen);
 
       //Store value in tbl_long entries indexed from value*256+offset up to
@@ -215,17 +272,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
           tbl_long[i] = value;
         }
       }
-      //@ close key(_key);
-      //@ close table(_tbl, _);
+      //@ close key(_key, ipv4, plen, route);
+      //@ close table(_tbl, _, _);
     }
   return 0;
 }
 
 int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
-//@ requires table(_tbl, ?long_index);
-//@ ensures table(_tbl, long_index);
+//@ requires table(_tbl, ?long_index, ?dir);
+//@ ensures table(_tbl, long_index, dir) &*& result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
 {
-  //@ open table(_tbl, long_index);
+  //@ open table(_tbl, long_index, dir);
   uint16_t *tbl_24 = _tbl->tbl_24;
   uint16_t *tbl_long = _tbl->tbl_long;
 
@@ -240,11 +297,11 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
     //@ bitand_limits(data, 0xFF, N32);
     uint32_t index_long = tbl_long_extract_first_index(data, (uint8_t)(value & 0xFF));
     uint16_t value_long = tbl_long[index_long];
-    //@ close table(_tbl, long_index);
+    //@ close table(_tbl, long_index, dir);
     return value_long;
   } else {
   //the value found in tbl_24 is the next hop, just return it
-    //@ close table(_tbl, long_index);
+    //@ close table(_tbl, long_index, dir);
     return value;
   }
 }
