@@ -24,8 +24,12 @@ else:
             flow_idx = flow_emap.get(ip_addrc(h2.daddr))
             flow_emap.refresh_idx(flow_idx, now)
             flow = dyn_vals.get(flow_idx)
-            bucket_size = flow.bucket_size + (now - flow.bucket_time)*RATE / 1000000000
-            if BURST < bucket_size:
+            bucket_size = 0
+            if now - flow.bucket_time < EXP_TIME:
+                bucket_size = flow.bucket_size + (now - flow.bucket_time)*RATE / 1000000000
+                if BURST < bucket_size:
+                    bucket_size = BURST
+            else:
                 bucket_size = BURST
             if packet_size < bucket_size:
                 bucket_size = bucket_size - packet_size
