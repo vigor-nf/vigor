@@ -70,6 +70,7 @@ let parse_int str =
   else if (String.equal str "18446744073709551556") then Some (-60)
   else if (String.equal str "18446744073709551596") then Some (-20)
   else if (String.equal str "18446744063709551616") then Some (-10000000000)
+  else if (String.equal str "18446744073709551562") then Some (-54)
   else
     try Some (int_of_string str)
     with _ -> None
@@ -457,6 +458,7 @@ let get_sint_in_bounds v =
   else if (String.equal v "18446744073709551596") then -20
   (* and -10 000 000 000 in 128bit *)
   else if (String.equal v "18446744063709551616") then -10000000000
+  else if (String.equal v "18446744073709551562") then -54
   else
     let integer_val = Int.of_string v in
     if Int.(integer_val <> 10000000000) && (* We want this 10B - the policer exp time*)
