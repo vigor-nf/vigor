@@ -23,7 +23,7 @@ case $NF_LIST in
 		;;
 		
 	"All")
-		MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw" )
+		MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw" "$CLICK_PREFIX/click-nat" "$CLICK_PREFIX/click-nop" "$CLICK_PREFIX/click-bridge" "$CLICK_PREFIX/click-fw" "$CLICK_PREFIX/click-lb" )
 		;;
 	*)
 		echo "[bench] Unknown parameter passed. Please pass one of Vigor/Baselines/All"
