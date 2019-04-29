@@ -10,7 +10,8 @@ local log    = require "log"
 
 -- set addresses here
 local DST_MAC			= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE		= "192.160.0.1 " -- actual address will be SRC_IP_BASE + random(0, flows)
+local SRC_IP_BASE_BACKENDS	= "10.0.0.1"   -- actual address will be SRC_IP_BASE + random(0, flows)
+local SRC_IP_BASE_CLIENTS	= "192.160.0.1 " -- actual address will be SRC_IP_BASE + random(0, flows)
 local DST_IP			= "192.168.4.10"
 local SRC_PORT			= 234
 local DST_PORT			= 319
@@ -45,9 +46,13 @@ function master(args)
 	local num_backends = 20
  	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
 		-- Heatup phase
-		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
+		printf("Heating up backends");
 		setRate(txDev:getTxQueue(0), args.size, minRate);
-		local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, nflws, args.upheat)
+		local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, num_backends, args.upheat,SRC_IP_BASE_BACKENDS)
+		mg.waitForTasks()
+		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
+		setRate(rxDev:getTxQueue(0), args.size, minRate);
+		local loadTask = mg.startTask("loadSlave", rxDev:getTxQueue(0), txDev, args.size, nflws, args.upheat,SRC_IP_BASE_CLIENTS)
 		local snt, rcv = loadTask:wait()
 		printf("heatup results: %d sent, %f loss", snt, (snt-rcv)/snt);
 		if (rcv < snt/100) then
@@ -61,10 +66,14 @@ function master(args)
 		-- Testing phase
 		for i = 1, steps  do
 			printf("running step %d/%d for %d flows, %d Mbps", i, steps, nflws, rate);
-			setRate(txDev:getTxQueue(0), args.size, rate);
+			printf("Setting up %d backends ", num_backends);
+			setRate(txDev:getTxQueue(0), args.size, minRate);
+			local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, num_backends, args.upheat,SRC_IP_BASE_BACKENDS)
+			mg.waitForTasks()
+			setRate(rxDev:getTxQueue(0), args.size, rate);
 			local packetsSent
 			local packetsRecv
-			local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, nflws, args.timeout)
+			local loadTask = mg.startTask("loadSlave", rxDev:getTxQueue(0), txDev, args.size, nflws, args.timeout,SRC_IP_BASE_CLIENTS)
 			packetsSent, packetsRecv = loadTask:wait()
 			local loss = (packetsSent - packetsRecv)/packetsSent
 			printf("total: %d flows, %d rate, %d sent, %f lost",
@@ -97,7 +106,7 @@ local function fillUdpPacket(buf, len)
 	}
 end
 
-function loadSlave(queue, rxDev, size, flows, duration)
+function loadSlave(queue, rxDev, size, flows, duration,BASE_IP)
 	local mempool = memory.createMemPool(function(buf)
 		fillUdpPacket(buf, size)
 	end)
@@ -108,7 +117,7 @@ function loadSlave(queue, rxDev, size, flows, duration)
 	local fileRxCtr = stats:newDevRxCounter("rxpkts", rxDev, "CSV", "rxpkts.csv")
 	local txCtr = stats:newDevTxCounter(flows .. " tx", queue, "nil")
 	local rxCtr = stats:newDevRxCounter(flows .. " rx", rxDev, "nil")
-	local baseIP = parseIPAddress(SRC_IP_BASE)
+	local baseIP = parseIPAddress(BASE_IP)
 	local baseSRCP = SRC_PORT
 	local baseDSTP = DST_PORT
 	while finished:running() and mg.running() do

@@ -2,7 +2,7 @@
 # See http://dpdk.org/doc/quick-start
 
 # DPDK release to install
-DPDK_RELEASE=16.07
+DPDK_RELEASE=17.11
 
 
 pushd $HOME >> /dev/null
@@ -20,10 +20,10 @@ if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != $DPDK_RELEASE ]; then
     fi
 
     # Download DPDK
-    wget http://static.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz
-    tar xf dpdk-$DPDK_RELEASE.tar.xz
+    wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
+    tar xf dpdk.tar.xz
     mv dpdk-$DPDK_RELEASE dpdk
-    rm dpdk-$DPDK_RELEASE.tar.xz
+    rm dpdk.tar.xz
 
     # Compile it
     cd dpdk

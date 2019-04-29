@@ -79,7 +79,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
                                               &index,
                                               time);
     if (!allocated) {
-      NF_INFO("No more space in the policer table");
+      NF_DEBUG("No more space in the policer table");
       return false;
     }
     uint32_t *key;
@@ -108,6 +108,7 @@ void nf_core_init(void) {
 }
 
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
+  NF_DEBUG("Received packet");
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
@@ -131,22 +132,22 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
 
   if (in_port == config.lan_device) {
     // Simply forward outgoing packets.
-    NF_INFO("Outgoing packet. Not policing.");
+    NF_DEBUG("Outgoing packet. Not policing.");
     return config.wan_device;
   } else if (in_port == config.wan_device) {
     // Police incoming packets.
     bool fwd = policer_check_tb(ipv4_header->dst_addr, mbuf->pkt_len, now);
 
     if (fwd) {
-      NF_INFO("Incoming packet within policed rate. Forwarding.");
+      NF_DEBUG("Incoming packet within policed rate. Forwarding.");
       return config.lan_device;
     } else {
-      NF_INFO("Incoming packet outside of policed rate. Dropping.");
+      NF_DEBUG("Incoming packet outside of policed rate. Dropping.");
       return config.wan_device;
     }
   } else {
     // Drop any other packets.
-    NF_INFO("Unknown port. Dropping.");
+    NF_DEBUG("Unknown port. Dropping.");
     return in_port;
   }
 }

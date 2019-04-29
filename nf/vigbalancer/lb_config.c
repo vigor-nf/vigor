@@ -116,8 +116,10 @@ void lb_print_config(struct lb_config* config)
 		free(dev_mac_str);
 	}
 
-	NF_INFO("Flow expiration time: %" PRIu32 "ns", config->flow_expiration_time);
+	NF_INFO("Flow expiration time: %" PRVIGT "ns", config->flow_expiration_time);
 	NF_INFO("Flow capacity: %" PRIu32, config->flow_capacity);
+	NF_INFO("Backend expiration time: %" PRVIGT "ns", config->backend_expiration_time);
+	NF_INFO("Backend capacity: %" PRIu32, config->backend_capacity);
 
 	NF_INFO("\n--- --- ------ ---\n");
 }

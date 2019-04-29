@@ -11,7 +11,7 @@
 #     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "~/vnds/nat"
 # $2: The scenario, one of the following:
 #     "mg-1p": Measure throughput: find the rate at which the middlebox
-#              starts loosing 1% of packets.
+#              starts losing 1% of packets.
 #     "mg-existing-flows-latency": Measure the forwarding latency for existing
 #                                  flows.
 #     "mg-new-flows-latency": Measure the forwarding latency for new flows.
@@ -49,7 +49,7 @@ if [ -f "$LOG_FILE" ]; then
 fi
 
 
-if [ "$MIDDLEBOX" = "netfilter" ]; then
+if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     case $SCENARIO in
 	"mg-new-flows-latency")
 	    EXPIRATION_TIME=1
@@ -68,11 +68,11 @@ else
     case $SCENARIO in
         "mg-new-flows-latency")
             SIMPLE_SCENARIO="loopback"
-            EXPIRATION_TIME=2
+            EXPIRATION_TIME=1000000000 #One second
             ;;
         "1p"|"loopback"|"mg-1p"|"mg-existing-flows-latency")
             SIMPLE_SCENARIO="loopback"
-            EXPIRATION_TIME=60
+            EXPIRATION_TIME=60000000000 #One minute
             ;;
         "rr"|"passthrough")
             SIMPLE_SCENARIO="rr"
@@ -86,10 +86,10 @@ else
 
     # Run the app in the background
     # The arguments are not always necessary, but they'll be ignored if unneeded
-    (bash ./bench/run-dpdk.sh $SIMPLE_SCENARIO "$MIDDLEBOX" \
-        "--expire $EXPIRATION_TIME --max-flows 65535 --starting-port 1" \
+    (bash ./bench/run-middlebox.sh $SIMPLE_SCENARIO "$MIDDLEBOX" \
+        "$EXPIRATION_TIME" \
         0<&- &>"$LOG_FILE") &
 
     # Wait for it to have started
-    sleep 60
+    sleep 20
 fi

@@ -9,15 +9,15 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
-local DST_MAC			= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE		= "192.160.0.1 " -- actual address will be SRC_IP_BASE + random(0, flows)
-local DST_IP			= "192.168.4.10"
-local SRC_PORT			= 234
-local DST_PORT			= 319
+local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+local SRC_IP_BASE	= "10.0.0.1" -- actual address will be SRC_IP_BASE + random(0, flows)
+local DST_IP		= "192.168.4.10"
+local SRC_PORT		= 234
+local DST_PORT		= 319
 
 function configure(parser)
 	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
-	parser:argument("txDev", "Device to transmit from."):convert(tonumber)  --For LB sending from here is sending heartbeats
+	parser:argument("txDev", "Device to transmit from."):convert(tonumber)
 	parser:argument("rxDev", "Device to receive from."):convert(tonumber)
 	parser:option("-r --rate", "Transmit rate in Mbit/s."):default(10000):convert(tonumber)
 	parser:option("-f --flows", "Number of flows (randomized source IP)."):default(4):convert(tonumber)
@@ -42,7 +42,6 @@ function master(args)
 	end
 	local minRate = 10
 	local rate = minRate + (maxRate - minRate)/2
-	local num_backends = 20
  	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
 		-- Heatup phase
 		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
@@ -116,9 +115,9 @@ function loadSlave(queue, rxDev, size, flows, duration)
 		for i, buf in ipairs(bufs) do
 			local pkt = buf:getUdpPacket()
 			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.ip4.src:set(baseIP + counter)
+			pkt.ip4.src:set(baseIP)
 			-- pkt.udp.src = (baseSRCP + counter)
-			-- pkt.udp.dst = (baseDSTP + counter)
+			pkt.udp.dst = (baseDSTP + counter)
 			counter = incAndWrap(counter, flows)
 		end
 		-- UDP checksums are optional, so using just IPv4 checksums would be sufficient here

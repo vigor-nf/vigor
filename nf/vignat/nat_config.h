@@ -4,6 +4,8 @@
 
 #include <rte_config.h>
 #include <rte_ether.h>
+#include "lib/nf_time.h"
+
 
 
 struct nat_config {
@@ -27,7 +29,7 @@ struct nat_config {
 	uint16_t start_port;
 
 	// Expiration time of flows in seconds
-	uint64_t expiration_time;
+	vigor_time_t expiration_time;
 
 	// Size of the flow table
 	uint32_t max_flows;

@@ -151,7 +151,7 @@ void nat_print_config(struct nat_config* config)
 	}
 
 	NF_INFO("Starting port: %" PRIu16, config->start_port);
-	NF_INFO("Expiration time: %" PRIu64 "ns", config->expiration_time);
+	NF_INFO("Expiration time: %" PRVIGT "ns", config->expiration_time);
 	NF_INFO("Max flows: %" PRIu32, config->max_flows);
 
 	NF_INFO("\n--- --- ------ ---\n");

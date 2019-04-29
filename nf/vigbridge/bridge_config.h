@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "lib/nf_time.h"
 
 // TODO can't really include rte_max_ethports here but need it :/
 
@@ -8,7 +9,7 @@
 
 struct bridge_config {
   // Expiration time of flows in seconds
-  uint64_t expiration_time;
+  vigor_time_t expiration_time;
 
   // Size of the dynamic filtering table
   uint32_t dyn_capacity;
