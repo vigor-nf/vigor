@@ -18,7 +18,7 @@ set -x
 
 if [ $SCENARIO = "loopback" ]; then
     sudo taskset -c 8 ./build/nat -n 2 -- --wan 0 --lan-dev 1 \
-        --max-flows 65536 --starting-port 1 \
+        --max-flows 65535 --starting-port 1 \
 	--extip $MB_IP_EXTERNAL \
         --eth-dest 0,$TESTER_MAC_EXTERNAL --eth-dest 1,$TESTER_MAC_INTERNAL \
 	--expire $EXP_TIME

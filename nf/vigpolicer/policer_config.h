@@ -14,10 +14,10 @@ struct policer_config {
   uint16_t wan_device;
 
 // Policer rate in B/s
-  uint64_t rate;
+  uint32_t rate;
 
   // Policer burst size in B
-  uint64_t burst;
+  uint32_t burst;
 
   // Size of the dynamic filtering table
   uint32_t dyn_capacity;
