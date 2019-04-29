@@ -14,7 +14,7 @@
 
 struct FlowManager {
   struct State* state;
-  uint64_t expiration_time; /*seconds*/
+  vigor_time_t expiration_time; /*seconds*/
 };
 
 bool
@@ -27,7 +27,7 @@ int_dev_bounds(void* value, int index, void* state) {
 
 struct FlowManager*
 flow_manager_allocate(uint16_t fw_device,
-                      uint64_t expiration_time,
+                      vigor_time_t expiration_time,
                       uint64_t max_flows) {
   struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
   if (manager == NULL) {

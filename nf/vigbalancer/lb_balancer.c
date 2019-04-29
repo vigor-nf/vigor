@@ -17,9 +17,9 @@
 #include <stdbool.h>
 
 struct LoadBalancer {
-  uint64_t flow_expiration_time;
+  vigor_time_t flow_expiration_time;
 
-  uint64_t backend_expiration_time;
+  vigor_time_t backend_expiration_time;
   struct State* state;
 };
 
@@ -48,8 +48,8 @@ lb_flow_id2backend_id_cond(void* key, int index, void* state) {
 
 struct LoadBalancer*
 lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
-                     uint32_t cht_height, uint64_t backend_expiration_time,
-                     uint64_t flow_expiration_time) {
+                     uint32_t cht_height, vigor_time_t backend_expiration_time,
+                     vigor_time_t flow_expiration_time) {
   struct LoadBalancer* balancer = calloc(1, sizeof(struct LoadBalancer));
   balancer->flow_expiration_time = flow_expiration_time;
   balancer->backend_expiration_time = backend_expiration_time;
@@ -187,5 +187,4 @@ void lb_expire_backends(struct LoadBalancer* balancer, vigor_time_t now) {
   vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
 
   expire_items_single_map(balancer->state->active_backends, balancer->state->backend_ips, balancer->state->ip_to_backend_id, last_time);
-
 }

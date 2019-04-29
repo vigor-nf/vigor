@@ -63,7 +63,7 @@ case $SCENARIO in
         	LUA_SCRIPT="l4-load-find-1p.lua"
 	        ;;
 
-     	    "LB")
+     	"LB")
                 LUA_SCRIPT="l3-lb-load-find-1p.lua"
                 ;;
      	    
@@ -71,7 +71,7 @@ case $SCENARIO in
                 LUA_SCRIPT="l3-load-find-1p.lua"
                 ;;
             
-     	    "Br")
+     	"Br")
                 LUA_SCRIPT="l2-load-find-1p.lua"
                 ;;
             
@@ -94,15 +94,15 @@ case $SCENARIO in
         	LUA_SCRIPT="l3-latency-light.lua"
 	        ;;
 
-     	    "FW"|"NAT"|"NOP")
+     	"FW"|"NAT"|"NOP")
                 LUA_SCRIPT="l4-latency-light.lua"
                 ;;
      	   
-       	    "LB")
+       	"LB")
                 LUA_SCRIPT="l3-lb-latency-light.lua"
                 ;;
             
-     	    "Br")
+     	"Br")
                 LUA_SCRIPT="l2-latency-light.lua"
                 ;;
             

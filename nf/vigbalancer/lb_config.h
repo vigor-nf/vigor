@@ -4,6 +4,7 @@
 
 #include <rte_config.h>
 #include <rte_ether.h>
+#include "lib/nf_time.h"
 
 
 struct lb_config {
@@ -17,7 +18,7 @@ struct lb_config {
 	uint32_t flow_capacity;
 
 	// Expiration time of flows in seconds
-	uint64_t flow_expiration_time;
+	vigor_time_t flow_expiration_time;
 
   // The maximum number of backends we can ballance at the same time
   uint32_t backend_capacity;
@@ -30,7 +31,7 @@ struct lb_config {
   // The time for which the load balancer is willing to wait hoping to get
   // another heartbeat. If no heartbeat comes for a host for this time,
   // it is considered down and removed from the pool of backends.
-  uint64_t backend_expiration_time;
+  vigor_time_t backend_expiration_time;
 };
 
 
