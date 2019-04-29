@@ -48,3 +48,4 @@ nat/testbed/hard/util/plot/*.png
 /nf/*/*_state.h
 /nf/*/*_state.c
 *.swp
+.vscode/*
