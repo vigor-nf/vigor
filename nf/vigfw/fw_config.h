@@ -4,6 +4,8 @@
 
 #include <rte_config.h>
 #include <rte_ether.h>
+#include "lib/nf_time.h"
+
 
 
 struct fw_config {
@@ -17,7 +19,7 @@ struct fw_config {
   struct ether_addr endpoint_macs[RTE_MAX_ETHPORTS];
 
   // Expiration time of flows in seconds
-  uint64_t expiration_time;
+  vigor_time_t expiration_time;
 
   // Size of the flow table
   uint32_t max_flows;

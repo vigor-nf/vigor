@@ -5,6 +5,7 @@
 // TODO use time_t from time.h - but this is used by VeriFast
 // so even #ifdef-ing the time.h inclusion out doesn't work
 #define vigor_time_t int64_t
+#define PRVIGT PRId64
 
 #define VIGOR_TIME_SECONDS_MULTIPLIER (1000000000l)
 
