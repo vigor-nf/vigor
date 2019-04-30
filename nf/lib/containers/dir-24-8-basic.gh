@@ -109,6 +109,10 @@ fixpoint bool extract_flag(int entry){
   return (entry >> 15) == 1;
 }
 
+fixpoint int set_flag(int entry){
+  return int_of_Z(Z_or(Z_of_int(entry, N16), Z_of_int(0x8000, N16)));
+}
+
 //The output value does not contain the flag
 fixpoint int extract_value(int entry){
   return entry & 0x7FFF;
@@ -224,6 +228,13 @@ fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_rule rule){
 }
 
 // STRUCTURE BUILDING FUNCTIONS
+
+//If beginning with 1: valid is between 0 and 255 (0xFF)
+//If beginning with 0: valid is between 0 and 0x7FFF
+//INVALID is 0xFFFF (no route set yet)
+fixpoint bool is_entry24_valid(int entry){
+  return entry == 0xFFFF ? false : (extract_flag(entry) ? (0 <= entry && entry <= 0xFF) : (0 <= entry && entry <= 0x7FFF));
+}
 
 fixpoint option<pair<bool, Z> > entry_24_mapping(int entry){
   return entry == 0xFFFF ? none : some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));

@@ -61,19 +61,9 @@ predicate table(struct tbl* t, int long_index,
   &*& build_tables(tt_24, tt_l, long_index) == dir
   &*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 
-predicate key(struct key* k, uint32_t ipv4, uint8_t prefixlen, uint16_t route) = 
+predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen, uint16_t route) = 
   malloc_block_key(k) &*& k->data |-> ipv4 &*& k->prefixlen |-> prefixlen &*& k->route |-> route
   &*& prefixlen >= 0 &*& prefixlen <= 32 &*& 0 <= route &*& route <= MAX_NEXT_HOP_VALUE;
-  
-predicate entry_24(option<pair<bool, Z> > entry) =
-  switch(entry){
-    case none:
-      return true;
-    case some(p): 
-      return switch(p){
-        case pair(b, z): return b ? 0x8000 <= int_of_Z(z) &*& int_of_Z(z) <= 0x80FF : 0 <= int_of_Z(z) &*& int_of_Z(z) <= 0xFFF;
-      };
-  };
 @*/
 
 //In header only for tests

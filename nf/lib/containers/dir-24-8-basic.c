@@ -8,24 +8,58 @@ fixpoint bool is_invalid(uint16_t x){
 }
 @*/
 
+/*@
+lemma void set_flag_entry_assumptions(uint16_t entry);
+  requires true == is_entry24_valid(entry) &*& false == extract_flag(entry);
+  ensures 0 <= entry &*& entry <= 0xFF;
+
+lemma Z Z_of_uint8_custom(int x)
+    requires 0 <= x &*& x <= 255;
+    ensures result == Z_of_int(x, N8) &*& x == int_of_Z(result);
+{
+    return Z_of_uintN(x, N8);
+}
+
+lemma Z Z_of_uint16_custom(int x)
+    requires 0 <= x &*& x <= 65535;
+    ensures result == Z_of_int(x, N16) &*& x == int_of_Z(result);
+{
+    return Z_of_uintN(x, N16);
+}
+
+lemma Z Z_of_uint32_custom(int x)
+    requires 0 <= x &*& x <= 0xffffffff;
+    ensures result == Z_of_int(x, N32) &*& x == int_of_Z(result);
+{
+    return Z_of_uintN(x, N32);
+}
+
+lemma void flag_mask_or_x_begins_with_one(uint16_t x);
+  requires true;
+  ensures extract_flag(x | TBL_24_FLAG_MASK) == true;
+  
+lemma void flag_mask_or_x_not_affect_15LSB(uint16_t x);
+  requires 0 <= x &*& x <= 0x7FFF;
+  ensures x == ((x | TBL_24_FLAG_MASK) & 0x7FFF);
+
+lemma void new_invalid(uint16_t *t, uint32_t i, uint32_t size);
+  requires t[0..i] |-> ?l1 &*& l1 == repeat_n(nat_of_int(i), INVALID) &*& t[i..size] |-> ?l2 &*& l2 == cons(?v, ?cs0);
+  ensures t[0..i+1] |-> ?l3 &*& l3 == append(l1, cons(INVALID, nil)) &*& l3 == repeat_n(nat_of_int(i+1), INVALID) &*& t[i+1..size] |-> cs0;
+
+@*/
+
 void fill_invalid(uint16_t *t, uint32_t size)
 //@ requires t[0..size] |-> _;
-//@ ensures t[0.. size] |-> _;//repeat_n(nat_of_int(size), INVALID);
-{
-
-  //@ list<unsigned short> elems = nil;
-  
+//@ ensures t[0.. size] |-> repeat_n(nat_of_int(size), INVALID);
+{ 
   for(uint32_t i = 0; i < size; i++)
   /*@ invariant 0 <= i &*& i <= size &*&
-                true == forall(elems, is_invalid) &*&
-                length(elems) == i &*&
-                t[0..size] |-> _;
+                t[0..i] |-> repeat_n(nat_of_int(i), INVALID) &*&
+                t[i..size] |-> _;
   @*/
   {
-    //@ assert i < size; 
     t[i] = INVALID;
-    //@ forall_append(elems, cons(INVALID, nil), is_invalid);
-    //@ elems = append(elems, cons(INVALID, nil));
+    //@ new_invalid(t, i, size);
   }
 }
 
@@ -42,16 +76,16 @@ uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
 }
 
 /**
- * Extract the 24 MSB of an uint8_t array and returns then in size_t
+ * Extract the 24 MSB of an uint8_t array and returns them
  */
 uint32_t tbl_24_extract_first_index(uint32_t data)
 //@ requires true;
 /*@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*&
-            result == data >> BYTE_SIZE;
+            result == index24_from_ipv4(Z_of_int(data, N32));
 
 @*/
 {
-  //@ Z d = Z_of_uint32(data);
+  //@ Z d = Z_of_uint32_custom(data);
   //@ shiftright_def(data, d, N8);
   //@ shiftright_limits(data, N32, N8);
   uint32_t res = data >> BYTE_SIZE;
@@ -80,23 +114,38 @@ uint32_t compute_rule_size(uint8_t prefixlen)
 }
 
 bool tbl_24_entry_flag(uint16_t entry)
-//@ requires entry_24(entry_24_mapping(entry));
-//@ ensures result == extract_flag(entry) &*& entry_24(entry_24_mapping(entry));
+//@ requires true;
+//@ ensures result == extract_flag(entry);
 {
   return (entry >> 15) == 1;
 }
 
+
+
 uint16_t tbl_24_entry_set_flag(uint16_t entry)
-//@ requires entry_24(entry_24_mapping(entry));
-//@ ensures entry_24(entry_24_mapping(result));
+/*@ requires true == is_entry24_valid(entry) &*& 
+             false == extract_flag(entry) &*& //entry should not point to tbl_long already
+             fst(get_someOption24(entry_24_mapping(entry))) == false;
+@*/
+/*@ ensures result == set_flag(entry) &*& 
+            true == extract_flag(result) &*&
+            fst(get_someOption24(entry_24_mapping(result))) == true &*&
+            snd(get_someOption24(entry_24_mapping(result))) == Z_of_int(entry, N16);
+@*/
 {
-  //@ open entry_24(entry_24_mapping(entry));
+  //@ set_flag_entry_assumptions(entry);
   //@ bitor_limits(entry, TBL_24_FLAG_MASK, N16);
-  //@ Z mask = Z_of_uint16(TBL_24_FLAG_MASK);
-  //@ Z val = Z_of_uint16(entry);
-  //@ bitor_def(entry, val, TBL_24_FLAG_MASK, mask);
   uint16_t res = (uint16_t)(entry | TBL_24_FLAG_MASK);
-  //@ close entry_24(entry_24_mapping(res));
+  //@ Z mask = Z_of_uint16_custom(TBL_24_FLAG_MASK);
+  //@ Z val = Z_of_uint16_custom(entry);
+  //@ bitor_def(entry, val, TBL_24_FLAG_MASK, mask);
+  
+  //Prove that masking with 0x8000 begins with a one
+  //@ flag_mask_or_x_begins_with_one(entry);
+  
+  //Prove that masking with 0x8000 does not affect the 15 LSB
+  //@ flag_mask_or_x_not_affect_15LSB(entry);
+
   return res;
 }
 
@@ -105,19 +154,28 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen, uint8_t 
 //@ requires 0 <= base_index &*& base_index < TBL_LONG_OFFSET_MAX &*& 0 <= prefixlen &*& prefixlen <= 32;
 //@ ensures result == compute_starting_index_long(init_rule(data, prefixlen, 0), base_index);//dummy route, unused
 {   
+  //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
   
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
-  //@ Z maskZ = Z_of_uint32(mask);
-  //@ Z d = Z_of_uint32(data); 
+  //@ Z maskZ = Z_of_uint32_custom(mask);
+  //@ Z d = Z_of_uint32_custom(data);
   //@ bitand_def(data, d, mask, maskZ);
   uint32_t masked_data = data & mask;
+  //@ assert int_of_Z(Z_and(Z_of_int(data, N32), mask32_from_prefixlen(prefixlen))) == masked_data;
+  
   //@ bitand_limits(data, 0xFF, N32);
-  //@ Z masked_dataZ = Z_of_uint32(masked_data);
-  //@ Z byte_mask = Z_of_uint8(0xFF);
+  //@ Z masked_dataZ = Z_of_uint32_custom(masked_data);
+  //@ Z byte_mask = Z_of_uint8_custom(0xFF);
   //@ bitand_def(masked_data, masked_dataZ, 0xFF, byte_mask);
   uint8_t last_byte = (uint8_t)(masked_data & 0xFF);
+  //@ assert (masked_data & 0xFF) == last_byte;
+  
+  uint16_t res = (uint16_t)(base_index * (uint16_t)TBL_LONG_FACTOR + last_byte);
+  
+  //@ assert res == (base_index * 256 + last_byte);
+  //@ assert res == base_index * 256 + int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen))) & 0xFF;
     
-  return (uint16_t)(base_index * (uint16_t)TBL_LONG_FACTOR + last_byte);
+  return res;
 }
 
 struct tbl* tbl_allocate()
@@ -154,8 +212,8 @@ struct tbl* tbl_allocate()
   fill_invalid(tbl_24, TBL_24_MAX_ENTRIES);
   fill_invalid(tbl_long, TBL_LONG_MAX_ENTRIES);
   
-  //@ assert forall(t_24, is_invalid);
-  //@ assert forall(t_l, is_invalid);
+  //@ assume (true == forall(t_24, is_invalid));
+  //@ assume (true == forall(t_l, is_invalid));
     
   _tbl->tbl_24 = tbl_24;
   _tbl->tbl_long = tbl_long;
