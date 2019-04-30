@@ -80,7 +80,7 @@ fixpoint int compute_starting_index_24(lpm_rule rule){
 	
 fixpoint int compute_starting_index_long(lpm_rule rule, int base_index){
   switch(rule){
-    case rule(ipv4, prefixlen, value): return base_index * 256 + int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen))) & 0xFF;
+    case rule(ipv4, prefixlen, value): return base_index * 256 + (int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen))) & 0xFF);
   }
 }
 	

@@ -161,7 +161,7 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen, uint8_t 
   //@ Z d = Z_of_uint32_custom(data);
   //@ bitand_def(data, d, mask, maskZ);
   uint32_t masked_data = data & mask;
-  //@ assert int_of_Z(Z_and(Z_of_int(data, N32), mask32_from_prefixlen(prefixlen))) == masked_data;
+  //@ assert int_of_Z(Z_and(d, mask32_from_prefixlen(prefixlen))) == masked_data;
   
   //@ bitand_limits(data, 0xFF, N32);
   //@ Z masked_dataZ = Z_of_uint32_custom(masked_data);
@@ -171,9 +171,6 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen, uint8_t 
   //@ assert (masked_data & 0xFF) == last_byte;
   
   uint16_t res = (uint16_t)(base_index * (uint16_t)TBL_LONG_FACTOR + last_byte);
-  
-  //@ assert res == (base_index * 256 + last_byte);
-  //@ assert res == base_index * 256 + int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen))) & 0xFF;
     
   return res;
 }
