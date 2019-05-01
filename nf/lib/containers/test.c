@@ -4,7 +4,23 @@
 
 /*@
 
-    // predicate pow_2(int x, nat n) = (x == pow_nat(2, n));  
+    lemma void loop_fp_pop(int k, int capacity)
+        requires    0 <= k &*& 0 < capacity;
+        ensures     loop_fp(k, capacity) == k % capacity;
+    {
+        div_mod_gt_0(k%capacity, k, capacity);
+        mod_rotate(k%capacity, capacity);
+        mod_bijection(k%capacity, capacity);
+    }
+
+    lemma void mod_add_zero(int a, int b, int k)
+        requires    0 <= a &*& 0 < b &*& 0 <= k;
+        ensures     (a + b*k) % b == a % b;
+    {
+        loop_injection_n(a, b, k);
+        loop_fp_pop(a + b*k, b);
+        loop_fp_pop(a, b);
+    }
 
     lemma void mod_rotate_mul(int a, int b)
         requires    0 <= a &*& 0 < b;
@@ -49,6 +65,8 @@ unsigned loop(unsigned k, unsigned capacity)
 
 
     //@ assert ((k % capacity) == (k & (capacity - 1)) );
+
+    //@ loop_fp_pop(k, capacity);
     //@ assert ((k % capacity) == loop_fp(k, capacity));
 
     return k & (capacity - 1);
