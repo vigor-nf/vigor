@@ -1,9 +1,9 @@
 //@ #include "modulo.gh"
 //@ #include "stdex.gh"
+//@ #include "listexex.gh"
 //@ #include <bitops.gh>
 //@ #include <nat.gh>
 //@ #include <listex.gh>
-
 
 /*@
 
@@ -128,7 +128,8 @@
             int_of_nat(m) <= int_of_nat(n);
         ensures     
             true == forall(take(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(true)) &*&
-            true == forall(drop(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(false));
+            true == forall(drop(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(false)) &*&
+            0 == fst(bits_of_int(pow2(m)-1, n));
     {
         switch(m) {
             case zero: 
@@ -152,6 +153,100 @@
         }
     }
 
+    // ------------- bits_of_int_and -------------
+
+    fixpoint list<bool> bits_of_int_and(list<bool> x_bits, list<bool> y_bits) {
+        switch(x_bits) {
+            case nil: return y_bits;
+            case cons(x0, xs0): return switch(y_bits) {
+                case nil: return x_bits;
+                case cons(y0, ys0): return cons(x0 && y0, bits_of_int_and(xs0, ys0));
+            };
+        }
+    }
+
+    lemma_auto(length(snd(bits_of_int(x, n)))) void length_bits_of_int(int x, nat n)
+        requires    true;
+        ensures     length(snd(bits_of_int(x, n))) == int_of_nat(n);
+    {
+        switch(n) {
+            case zero:
+            case succ(n_pred): length_bits_of_int(x/2, n_pred);
+        }
+    }
+
+    lemma void int_of_Z_of_bits(list<bool> bits)
+        requires    true;
+        ensures     int_of_Z(Z_of_bits(Zsign(false), bits)) == int_of_bits(0, bits);
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0): int_of_Z_of_bits(bs0);
+        }
+    }
+
+    lemma void Z_bits_of_int_and_equiv(list<bool> xs, list<bool> ys)
+        requires    length(xs) == length(ys);
+        ensures     Z_and(Z_of_bits(Zsign(false), xs), Z_of_bits(Zsign(false), ys)) == Z_of_bits(Zsign(false), bits_of_int_and(xs, ys));
+    {
+        switch(xs) {
+            case nil: length_0_nil(ys);
+            case cons(x0, xs0):
+                switch(ys) {
+                    case nil:
+                    case cons(y0, ys0): Z_bits_of_int_and_equiv(xs0, ys0);
+                }
+        }
+    }
+
+    lemma void bits_of_int_and_def(int x, list<bool> x_bits, int y, list<bool> y_bits, nat n)
+        requires 
+            bits_of_int(x, n) == pair(0, x_bits) &*& 
+            bits_of_int(y, n) == pair(0, y_bits) &*& 
+            0 <= x &*& x < pow2(n) &*& 0 <= y &*& y < pow2(n); 
+        ensures 
+            (x & y) == int_of_bits(0, bits_of_int_and(x_bits, y_bits)); 
+    {
+        Z_of_uintN(x, n);
+        Z_of_uintN(y, n);
+        bitand_def(x, Z_of_bits(Zsign(false), x_bits), y, Z_of_bits(Zsign(false), y_bits));
+
+        length_bits_of_int(x, n);
+        length_bits_of_int(y, n);
+        Z_bits_of_int_and_equiv(x_bits, y_bits);
+
+        int_of_Z_of_bits(bits_of_int_and(x_bits, y_bits));
+    }
+
+    // lemma void bits_of_int_apply_mask(int k, int mask, int m, nat n)
+    //     requires   
+    //         0 <= m &*& m < 32 &*&
+    //         true == forall(take(m, snd(bits_of_int(m, n))), (eq)(true)) &*&
+    //         true == forall(drop(m, snd(bits_of_int(m, n))), (eq)(false));
+    //     ensures
+    //         take(m, snd(bits_of_int(k & mask, n))) == take(m, snd(bits_of_int(k, n))) &*&
+    //         true == forall(drop(m, snd(bits_of_int(k & mask, n))), (eq)(false));
+    // {
+        
+    // }
+
+    // fixpoint list<bool> bits_of_Z(Z z) {
+    //     switch(z) {
+    //         case Zsign(b): return nil;
+    //         case Zdigit(z0, b0): return cons(b0, bits_of_Z(z0));
+    //     }
+    // }
+
+    // lemma void bits_of_Z_of_bits(list<bool> bits)
+    //     requires    true;
+    //     ensures     bits_of_Z(Z_of_bits(Zsign(false), bits)) == bits;
+    // {
+    //     switch(bits) {
+    //         case nil: 
+    //         case cons(b, bs0): bits_of_Z_of_bits(bs0); 
+    //     }
+    // }
+
 
 @*/
 
@@ -172,10 +267,6 @@ unsigned loop(unsigned k, unsigned capacity)
 
     // Proof that capacity - 1 == 0...01...1
     //@ bits_of_int_pow2_mask(N32, m);
-
-    // forall(take(m_int, snd(capacity_minus_bits), (eq)(true));
-    // forall(drop(m_int, snd(capacity_minus_bits), (eq)(false));
-    // fst(capacity_minus_bits) == 0;
 
 
     // take(m_int, snd(k_bits)) == take(m_int, snd(Z_of_uint32(k & (capacity - 1))))
