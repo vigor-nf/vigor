@@ -202,20 +202,30 @@ struct tbl* tbl_allocate()
     return 0;
   }
    
-  //@ close ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?t_24);
-  //@ close ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, ?t_l);
-  
   //Set every element of the array to INVALID
   fill_invalid(tbl_24, TBL_24_MAX_ENTRIES);
   fill_invalid(tbl_long, TBL_LONG_MAX_ENTRIES);
-  
-  //@ assume (true == forall(t_24, is_invalid));
-  //@ assume (true == forall(t_l, is_invalid));
+
+  //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), INVALID);
+  //@ assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), INVALID);
     
   _tbl->tbl_24 = tbl_24;
   _tbl->tbl_long = tbl_long;
   uint16_t tbl_long_first_index = 0;
   _tbl->tbl_long_index = tbl_long_first_index;
+  
+  //@ open ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?t_24);
+  //@ open ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, ?t_l);
+  //@ close ushorts(tbl_24, TBL_24_MAX_ENTRIES, t_24);
+  //@ close ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, t_l);
+  
+  //@ assert t_24 == repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), INVALID);
+  //@ assert t_l == repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), INVALID);
+  //@ assert entry_24_mapping(INVALID) == none;
+  // @ assert true == forall(t_24, is_invalid);
+  //@ assume (map(entry_24_mapping, t_24) == repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), none));
+  //@ assume (map(entry_long_mapping, t_l) == repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), none));
+  
   //@ close table(_tbl, tbl_long_first_index, build_tables(t_24, t_l, tbl_long_first_index));
 
   return _tbl;

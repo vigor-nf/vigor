@@ -34,6 +34,24 @@ fixpoint int rule_route(lpm_rule rule){
   }
 }
 
+fixpoint list<option<pair<bool, Z> > > dir_tbl24(dir_24_8 dir){
+  switch(dir){
+    case tables(tbl_24, tbl_long, tbl_long_index): return tbl_24;
+  }
+}
+
+fixpoint list<option<Z> > dir_tbl_long(dir_24_8 dir){
+  switch(dir){
+    case tables(tbl_24, tbl_long, tbl_long_index): return tbl_long;
+  }
+}
+
+fixpoint int dir_tbl_long_index(dir_24_8 dir){
+  switch(dir){
+    case tables(tbl_24, tbl_long, tbl_long_index): return tbl_long_index;
+  }
+}
+
 fixpoint Z value_mask(){
   return Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zsign(false), false), true), true), true), true), true), true), true);
 }
@@ -249,7 +267,7 @@ fixpoint dir_24_8 build_tables(list<int> t_24, list<int> t_long, int long_index)
 }
 
 fixpoint dir_24_8 dir_init(){
-  return tables(repeat_n(nat_of_int(16777216), entry_24_mapping(0xFFFF)), repeat_n(nat_of_int(65536), entry_long_mapping(0xFFFF)), 0);
+  return tables(repeat_n(nat_of_int(16777216), none), repeat_n(nat_of_int(65536), none), 0);
 }
 
 
