@@ -7,6 +7,16 @@
 
 /*@
 
+    lemma void div_minus_one(int a, int b)
+        requires    0 < a &*& 0 < b;
+        ensures     (a*b - 1) / b == a - 1;
+    {
+        div_exact(a, b);
+        div_exact(a - 1, b);
+        div_lt(a*b - 1, a, b);
+        div_ge((a-1)*b, a*b - 1, b);
+    } 
+
     lemma void loop_fp_pop(int k, int capacity)
         requires    0 <= k &*& 0 < capacity;
         ensures     loop_fp(k, capacity) == k % capacity;
@@ -45,9 +55,24 @@
         }
     }
 
+    lemma void pow_nat_bounds(int x, nat n)
+        requires    0 < x;
+        ensures     0 < pow_nat(x, n);
+    {
+        switch(n) {
+            case zero:
+            case succ(n_pred): pow_nat_bounds(x, n_pred);
+        }
+    }
+
     // ------------- pow2 -------------
 
-    fixpoint int pow2(nat m) { return pow_nat(2, m); }
+    fixpoint int pow2(nat m) { 
+        return pow_nat(2, m); 
+    }
+
+    // ------------- sum_pow2 -------------
+
 
     fixpoint int sum_pow2(nat n) {
         switch(n) {
@@ -87,15 +112,43 @@
 
     lemma void bits_of_int_zero(nat n)
         requires    true;
-        ensures     true == forall(snd(bits_of_int(0, n)), (eq)(false));
+        ensures     true == forall(snd(bits_of_int(0, n)), (eq)(false)) &*& fst(bits_of_int(0, n)) == 0;
     {
         switch(n) {
             case zero:
             case succ(n_pred):
                 mod_rotate_mul(0, 2);
-                assert (0%2 != 1);
+                div_rem_nonneg(0, 2);
                 bits_of_int_zero(n_pred);
-                assert (snd(bits_of_int(0, n)) == cons(0%2 == 1, snd(bits_of_int(0, n_pred))));
+        }
+    }
+
+    lemma void bits_of_int_pow2_mask(nat n, nat m)
+        requires    
+            int_of_nat(m) <= int_of_nat(n);
+        ensures     
+            true == forall(take(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(true)) &*&
+            true == forall(drop(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(false));
+    {
+        switch(m) {
+            case zero: 
+                bits_of_int_zero(n);
+            case succ(m_pred):
+                switch(n) {
+                    case zero:
+                    case succ(n_pred):
+                        bits_of_int_pow2_mask(n_pred, m_pred);
+                        assert (snd(bits_of_int(pow2(m)-1, n)) == cons( (pow2(m)-1)%2==1 , snd(bits_of_int((pow2(m)-1)/2, n_pred)) ) );
+
+                        pow_nat_div_rem(2, m);
+                        pow_nat_bounds(2, m_pred);
+                        div_minus_one(pow2(m_pred), 2);
+                        assert((pow2(m)-1)/2 == pow2(m_pred) - 1);
+
+                        div_rem_nonneg(pow2(m), 2);
+                        div_rem_nonneg(pow2(m) - 1, 2);
+                        assert((pow2(m)-1)%2==1);
+                }
         }
     }
 
@@ -110,17 +163,15 @@ unsigned loop(unsigned k, unsigned capacity)
     //@ nat m;
     //@ int m_int = int_of_nat(m);
     //@ assume (m_int < 32);
-    //@ assume (capacity == pow_nat(2, m));
-    //@ assert (capacity < pow_nat(2, nat_of_int(32))); 
+    //@ assume (capacity == pow2(m));
+    //@ assert (capacity < pow2(nat_of_int(32))); 
 
     //@ Z k_bits = Z_of_uint32(k);
     //@ Z capacity_minus_bits = Z_of_uint32(capacity - 1);
 
 
-    // Proof that capacity == 0...010...0
-    
-
     // Proof that capacity - 1 == 0...01...1
+    //@ bits_of_int_pow2_mask(N32, m);
 
     // forall(take(m_int, snd(capacity_minus_bits), (eq)(true));
     // forall(drop(m_int, snd(capacity_minus_bits), (eq)(false));
