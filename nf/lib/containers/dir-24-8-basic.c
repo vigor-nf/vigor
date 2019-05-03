@@ -46,6 +46,14 @@ lemma void new_invalid(uint16_t *t, uint32_t i, uint32_t size);
   requires t[0..i] |-> ?l1 &*& l1 == repeat_n(nat_of_int(i), INVALID) &*& t[i..size] |-> ?l2 &*& l2 == cons(?v, ?cs0);
   ensures t[0..i+1] |-> ?l3 &*& l3 == append(l1, cons(INVALID, nil)) &*& l3 == repeat_n(nat_of_int(i+1), INVALID) &*& t[i+1..size] |-> cs0;
 
+lemma void entries_24_mapping_invalid(fixpoint (uint16_t, option<pair<bool, Z> >) map_func, list<uint16_t> lst);
+  requires length(lst) == TBL_24_MAX_ENTRIES;
+  ensures map(map_func, lst) == repeat_n(nat_of_int(length(lst)), none);
+  
+lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func, list<uint16_t> lst);
+  requires length(lst) == TBL_LONG_MAX_ENTRIES;
+  ensures map(map_func, lst) == repeat_n(nat_of_int(length(lst)), none);
+
 @*/
 
 void fill_invalid(uint16_t *t, uint32_t size)
@@ -222,10 +230,13 @@ struct tbl* tbl_allocate()
   //@ assert t_24 == repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), INVALID);
   //@ assert t_l == repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), INVALID);
   //@ assert entry_24_mapping(INVALID) == none;
-  // @ assert true == forall(t_24, is_invalid);
-  //@ assume (map(entry_24_mapping, t_24) == repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), none));
-  //@ assume (map(entry_long_mapping, t_l) == repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), none));
   
+  //@ entries_24_mapping_invalid(entry_24_mapping, t_24);
+  //@ entries_long_mapping_invalid(entry_long_mapping, t_l);
+  
+  // @ assert (map(entry_24_mapping, t_24)) == repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), none));
+  // @ assert (map(entry_long_mapping, t_l) == repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), none));
+  // @ assert dir_init() == build_tables(t_24, t_l, tbl_long_first_index);
   //@ close table(_tbl, tbl_long_first_index, build_tables(t_24, t_l, tbl_long_first_index));
 
   return _tbl;
@@ -359,8 +370,9 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
   if(value != INVALID && tbl_24_entry_flag(value)){
   //the value found in tbl_24 is a base index for an entry in tbl_long,
   //go look at the index corresponding to the key and this base index
+  // value must be 0 <= value <= 255
     //@ bitand_limits(data, 0xFF, N32);
-    uint32_t index_long = tbl_long_extract_first_index(data, (uint8_t)(value & 0xFF));
+    uint32_t index_long = tbl_long_extract_first_index(data, 32, (uint8_t)(value & 0xFF));
     uint16_t value_long = tbl_long[index_long];
     //@ close table(_tbl, long_index, dir);
     return value_long;
