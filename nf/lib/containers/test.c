@@ -185,6 +185,20 @@
         }
     }
 
+    lemma void bits_of_int_of_bits(list<bool> bits, nat n)
+        requires    int_of_nat(n) == length(bits);
+        ensures     bits == snd(bits_of_int(int_of_bits(0, bits), n));
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0):
+                switch(n) {
+                    case zero:
+                    case succ(n_pred): bits_of_int_of_bits(bs0, n_pred);
+                }
+        }
+    }
+
     lemma void Z_bits_of_int_and_equiv(list<bool> xs, list<bool> ys)
         requires    length(xs) == length(ys);
         ensures     Z_and(Z_of_bits(Zsign(false), xs), Z_of_bits(Zsign(false), ys)) == Z_of_bits(Zsign(false), bits_of_int_and(xs, ys));
@@ -218,17 +232,21 @@
         int_of_Z_of_bits(bits_of_int_and(x_bits, y_bits));
     }
 
-    // lemma void bits_of_int_apply_mask(int k, int mask, int m, nat n)
-    //     requires   
-    //         0 <= m &*& m < 32 &*&
-    //         true == forall(take(m, snd(bits_of_int(m, n))), (eq)(true)) &*&
-    //         true == forall(drop(m, snd(bits_of_int(m, n))), (eq)(false));
-    //     ensures
-    //         take(m, snd(bits_of_int(k & mask, n))) == take(m, snd(bits_of_int(k, n))) &*&
-    //         true == forall(drop(m, snd(bits_of_int(k & mask, n))), (eq)(false));
-    // {
+    lemma void bits_of_int_apply_mask(int k, list<bool> k_bits, int mask, list<bool> mask_bits, int m, nat n)
+        requires   
+            bits_of_int(k, n) == pair(0, k_bits) &*& 
+            bits_of_int(mask, n) == pair(0, mask_bits) &*& 
+            true == forall(take(m, mask_bits), (eq)(true)) &*&
+            true == forall(drop(m, mask_bits), (eq)(false)) &*&
+            0 <= k &*& k < pow2(n) &*& 0 <= mask &*& mask < pow2(n) &*&
+            0 <= m &*& m < 32;
+        ensures
+            take(m, snd(bits_of_int(k & mask, n))) == take(m, k_bits) &*&
+            true == forall(drop(m, snd(bits_of_int(k & mask, n))), (eq)(false));
+            // fst(bits_of_int(k & mask, n)) == 0;
+    {
         
-    // }
+    }
 
     // fixpoint list<bool> bits_of_Z(Z z) {
     //     switch(z) {
