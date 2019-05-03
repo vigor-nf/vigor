@@ -7,6 +7,8 @@
 
 /*@
 
+    // ------------- arithmetic -------------
+    
     lemma void div_minus_one(int a, int b)
         requires    0 < a &*& 0 < b;
         ensures     (a*b - 1) / b == a - 1;
@@ -153,7 +155,7 @@
         }
     }
 
-    // ------------- bits_of_int_and -------------
+    // ------------- k & (capacity - 1)  -------------
 
     fixpoint list<bool> bits_of_int_and(list<bool> x_bits, list<bool> y_bits) {
         switch(x_bits) {
@@ -185,6 +187,16 @@
         }
     }
 
+    lemma void int_of_bits_bounds(list<bool> bits)
+        requires    true;
+        ensures     0 <= int_of_bits(0, bits);
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0): int_of_bits_bounds(bs0);
+        }
+    }
+
     lemma void bits_of_int_of_bits(list<bool> bits, nat n)
         requires    int_of_nat(n) == length(bits);
         ensures     bits == snd(bits_of_int(int_of_bits(0, bits), n));
@@ -194,7 +206,22 @@
             case cons(b, bs0):
                 switch(n) {
                     case zero:
-                    case succ(n_pred): bits_of_int_of_bits(bs0, n_pred);
+                    case succ(n_pred): 
+                        int int_bits = int_of_bits(0, bits);
+                        int int_bs0 = int_of_bits(0, bs0);
+
+                        bits_of_int_of_bits(bs0, n_pred);
+                        assert (bs0 == snd(bits_of_int(int_bs0, n_pred)));
+
+                        assert (int_of_bits(0, bits) == 2 * int_of_bits(0, bs0) + (b ? 1 : 0));
+                        
+
+                        if (!b) {
+                            assert (int_bs0*2 == int_bits);
+                            int_of_bits_bounds(bits);
+                            div_rem_nonneg(int_bits, 2);
+                            assert ( snd(bits_of_int(int_bits, n)) == cons(int_bits%2==1, snd(bits_of_int(int_bits/2, n_pred))) );
+                        }
                 }
         }
     }
