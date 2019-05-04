@@ -58,7 +58,12 @@ predicate table(struct tbl* t, int long_index,
   &*& t->tbl_24 |-> ?tbl_24 &*& t->tbl_long |-> ?tbl_long &*& t->tbl_long_index |-> long_index
   &*& malloc_block_ushorts(tbl_24, TBL_24_MAX_ENTRIES) &*& malloc_block_ushorts(tbl_long, TBL_LONG_MAX_ENTRIES)
   &*& tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?tt_24 &*& tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?tt_l
+  &*& true == forall(tt_24, valid_entry24) &*& true == forall(tt_l, valid_entry_long)
   &*& build_tables(tt_24, tt_l, long_index) == dir
+  &*& map(entry_24_mapping, tt_24) == dir_tbl24(dir)
+  &*& map(entry_long_mapping, tt_l) == dir_tbl_long(dir)
+  &*& length(tt_24) == length(dir_tbl24(dir))
+  &*& length(tt_l) == length(dir_tbl_long(dir))
   &*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 
 predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen, uint16_t route) = 
