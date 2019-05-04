@@ -92,6 +92,14 @@ lemma void enforce_map_invalid_is_valid(list<uint16_t> entries, fixpoint(uint16_
 lemma void elem_is_valid(list<uint16_t> entries, fixpoint(uint16_t, bool) validation_func, uint32_t index);
   requires true == forall(entries, validation_func) &*& 0 <= index &*& index < length(entries);
   ensures true == validation_func(nth(index, entries));
+
+lemma void long_index_extraction_equivalence(uint16_t entry, option<pair<bool, Z> > mapped);
+  requires entry_24_mapping(entry) == mapped;
+  ensures (entry & 0xFF) == extract24_value(mapped);
+  
+lemma void long_index_computing_equivalence_on_prefixlen32(uint32_t ipv4, uint8_t base_index);
+  requires true;
+  ensures compute_starting_index_long(init_rule(ipv4, 32, 0), base_index) == indexlong_from_ipv4(Z_of_int(ipv4, N32), base_index);
 @*/
 
 void fill_invalid(uint16_t *t, uint32_t size)
@@ -452,13 +460,15 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
   //go look at the index corresponding to the key and this base index
     //Prove that the value retrieved by lookup_tbl_24 (without the first bit) is 0 <= value <= 0xFF
     //@ valid_next_bucket_long(value, value24);
-    
+
     // value must be 0 <= value <= 255
     //@ bitand_limits(data, 0xFF, N32);
     uint8_t extracted_index = (uint8_t)(value & 0xFF);
+    //@ long_index_extraction_equivalence(value, value24);
+    //@ assert extracted_index == extract24_value(value24);
     uint16_t index_long = tbl_long_extract_first_index(data, 32, extracted_index);
     //Show that indexlong_from_ipv4 == compute_starting_index_long when the rule has prefixlen == 32
-    //@ assume (index_long == indexlong_from_ipv4(d, extract24_value(value24)));
+    //@ long_index_computing_equivalence_on_prefixlen32(data, extracted_index);
     uint16_t value_long = tbl_long[index_long];
     
     //Prove that the value retrieved by lookup_tbl_long is the mapped value retrieved by tbl_24[index]
