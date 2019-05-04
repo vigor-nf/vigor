@@ -4,7 +4,7 @@
 
 /*@
 lemma void set_flag_entry_assumptions(uint16_t entry);
-  requires true == is_entry24_valid(entry) &*& false == extract_flag(entry);
+  requires entry != INVALID &*& valid_entry24(entry) == true &*& false == extract_flag(entry);
   ensures 0 <= entry &*& entry <= 0xFF;
 
 lemma Z Z_of_uint8_custom(int x)
@@ -417,6 +417,7 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
 //@ requires table(_tbl, ?long_index, ?dir);
 //@ ensures table(_tbl, long_index, dir) &*& result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
 {
+
   //@ open table(_tbl, long_index, dir);
   uint16_t *tbl_24 = _tbl->tbl_24;
   uint16_t *tbl_long = _tbl->tbl_long;
@@ -432,7 +433,7 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
   
   //@ Z d = Z_of_uint32_custom(data);
   //@ assert d == Z_of_int(data, N32);
-
+  
   //get index corresponding to key for tbl_24
   uint32_t index = tbl_24_extract_first_index(data);
   //@ assert index == index24_from_ipv4(d);
@@ -449,14 +450,15 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
   if(value != INVALID && tbl_24_entry_flag(value)){
   //the value found in tbl_24 is a base index for an entry in tbl_long,
   //go look at the index corresponding to the key and this base index
-  
     //Prove that the value retrieved by lookup_tbl_24 (without the first bit) is 0 <= value <= 0xFF
     //@ valid_next_bucket_long(value, value24);
     
-  
     // value must be 0 <= value <= 255
     //@ bitand_limits(data, 0xFF, N32);
-    uint16_t index_long = tbl_long_extract_first_index(data, 32, (uint8_t)(value & 0xFF));
+    uint8_t extracted_index = (uint8_t)(value & 0xFF);
+    uint16_t index_long = tbl_long_extract_first_index(data, 32, extracted_index);
+    //Show that indexlong_from_ipv4 == compute_starting_index_long when the rule has prefixlen == 32
+    //@ assume (index_long == indexlong_from_ipv4(d, extract24_value(value24)));
     uint16_t value_long = tbl_long[index_long];
     
     //Prove that the value retrieved by lookup_tbl_long is the mapped value retrieved by tbl_24[index]
@@ -470,7 +472,7 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
     //@ close table(_tbl, long_index, dir);
     
     if(value_long == INVALID){
-      //@ assert value_l == none;
+      //@ assert value_long == lpm_dir_24_8_lookup(d,dir);
       //@ invalid_is_none_long(value_long, value_l);
       return INVALID;
     }else{

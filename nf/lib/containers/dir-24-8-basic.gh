@@ -158,7 +158,7 @@ fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir){
           switch(p){
             case pair(f, v): return
               f ?
-                switch(lookup_tbl_long(indexlong_from_ipv4(ipv4, index_long), dir)){
+                switch(lookup_tbl_long(indexlong_from_ipv4(ipv4, int_of_Z(v)), dir)){
                   case none: return 0xFFFF;
                   case some(vl): return int_of_Z(vl);
                 }
@@ -247,12 +247,6 @@ fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_rule rule){
 
 // STRUCTURE BUILDING FUNCTIONS
 
-//If beginning with 1: valid is between 0 and 255 (0xFF)
-//If beginning with 0: valid is between 0 and 0x7FFF
-//INVALID is 0xFFFF (no route set yet)
-fixpoint bool is_entry24_valid(int entry){
-  return entry == 0xFFFF ? false : (extract_flag(entry) ? (0 <= entry && entry <= 0xFF) : (0 <= entry && entry <= 0x7FFF));
-}
 
 fixpoint option<pair<bool, Z> > entry_24_mapping(int entry){
   return entry == 0xFFFF ? none : some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
