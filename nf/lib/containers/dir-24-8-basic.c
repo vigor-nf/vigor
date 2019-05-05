@@ -28,13 +28,52 @@ lemma Z Z_of_uint32_custom(int x)
     return Z_of_uintN(x, N32);
 }
 
-lemma void flag_mask_or_x_begins_with_one(uint16_t x);
-  requires true;
+lemma void flag_mask_MBS_one()
+  requires TBL_24_FLAG_MASK == 0x8000;
+  ensures extract_flag(TBL_24_FLAG_MASK) == true;
+{
+  Z maskZ = Z_of_uint16_custom(TBL_24_FLAG_MASK);
+  shiftright_def(TBL_24_FLAG_MASK, maskZ, nat_of_int(15));
+  Z shifted = Z_shiftright(maskZ, nat_of_int(15));
+  assert 1 == int_of_Z(shifted);
+}
+
+lemma void flag_mask_or_x_begins_with_one(uint16_t x)
+  requires 0 <= x &*& x <= 0xFFFF;
   ensures extract_flag(x | TBL_24_FLAG_MASK) == true;
+{
+
+  Z xZ = Z_of_uint16_custom(x);
+  Z maskZ = Z_of_uint16_custom(TBL_24_FLAG_MASK);
+  flag_mask_MBS_one();
+  assert true == extract_flag(TBL_24_FLAG_MASK);
   
-lemma void flag_mask_or_x_not_affect_15LSB(uint16_t x);
+  Z res = Z_or(xZ, maskZ);
+  bitor_def(x, xZ, TBL_24_FLAG_MASK, maskZ);
+  assert int_of_Z(res) == (x | TBL_24_FLAG_MASK);
+  
+  shiftright_def(int_of_Z(res), res, nat_of_int(15));
+  Z shifted = Z_shiftright(res, nat_of_int(15));
+  assert 1 == int_of_Z(shifted);
+}
+  
+lemma void flag_mask_or_x_not_affect_15LSB(uint16_t x)
   requires 0 <= x &*& x <= 0x7FFF;
-  ensures x == ((x | TBL_24_FLAG_MASK) & 0x7FFF);
+  ensures x == ((x | TBL_24_FLAG_MASK) & TBL_24_VAL_MASK);
+{
+  Z xZ = Z_of_uint16_custom(x);
+  Z flagMask = Z_of_uint16_custom(TBL_24_FLAG_MASK);
+  Z valueMask = Z_of_uint16_custom(TBL_24_VAL_MASK);
+  
+  bitor_def(x, xZ, TBL_24_FLAG_MASK, flagMask);
+  Z orRes = Z_or(xZ, flagMask);
+  
+  bitand_def((x | TBL_24_FLAG_MASK), orRes, TBL_24_VAL_MASK, valueMask);
+  Z andRes = Z_and(orRes, valueMask);
+  
+  assert andRes == xZ;
+  assert int_of_Z(andRes) == int_of_Z(xZ);
+}
 
 lemma void new_invalid(uint16_t *t, uint32_t i, uint32_t size);
   requires t[0..i] |-> ?l1 &*& l1 == repeat_n(nat_of_int(i), INVALID) &*& t[i..size] |-> ?l2 &*& l2 == cons(?v, ?cs0);
@@ -55,10 +94,6 @@ lemma void new_value(uint16_t *t, uint32_t i, uint32_t size, uint16_t value);
 lemma void no_update(uint16_t *t, uint32_t i, uint32_t size);
   requires t[0..i] |-> ?l1 &*& t[i..size] |-> cons(?v, ?cs0);
   ensures t[0..i+1] |-> append(l1, cons(v, nil)) &*& t[i+1..size] |-> cs0;
-  
-lemma void mapping_holds<t>(fixpoint (uint16_t, t) map_func, list<uint16_t> toMap, list<t> lst);
-  requires length(toMap) == length(lst);
-  ensures lst == map(map_func, toMap);
   
 lemma void lookup_at_index<t>(uint32_t index, list<uint16_t> lst, list<t> mapped, fixpoint(uint16_t, t) map_func);
   requires 0 <= index &*& index < length(lst) &*& length(lst) == length(mapped);
@@ -434,10 +469,6 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
   //@ open ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, ?t_l);
   //@ close ushorts(tbl_24, TBL_24_MAX_ENTRIES, t_24);
   //@ close ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, t_l);
-  
-  // Prove that the mapping holds, is it enough????
-  //@ mapping_holds(entry_24_mapping, t_24, dir_tbl24(dir));
-  //@ mapping_holds(entry_long_mapping, t_l, dir_tbl_long(dir));
   
   //@ Z d = Z_of_uint32_custom(data);
   //@ assert d == Z_of_int(data, N32);
