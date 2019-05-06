@@ -176,7 +176,10 @@ fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir){
 }
 
 // ADD ROUTE FUNCTIONS
-fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z> > > tbl_24, int start, int count, Z value, bool is_long_index){
+fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z> > > tbl_24,
+                                                       int start, int count,
+                                                       Z value,
+                                                       bool is_long_index){
   switch(tbl_24){
     case nil: return nil;
     case cons(v, cs0): return 
@@ -195,7 +198,8 @@ fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z>
   }
 }
 	
-fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long, int start, int count, Z value){
+fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long,
+                                            int start, int count, Z value){
   switch(tbl_long){
     case nil: return nil;
     case cons(v, cs0): return
@@ -209,7 +213,8 @@ fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long, int start
   }
 }
 
-fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > tbl_24, lpm_rule rule){
+fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > tbl_24,
+                                                       lpm_rule rule){
   switch(rule){
     case rule(ipv4, prefixlen, route):
       return update_n_tbl_24(tbl_24, compute_starting_index_24(rule),
@@ -265,7 +270,11 @@ fixpoint dir_24_8 insert_tbl_long(dir_24_8 dir, lpm_rule rule){
 
 fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_rule rule){
   switch(rule){
-    case rule(ipv4, prefixlen, route): return prefixlen < 24 ? insert_tbl_24(dir, rule) : insert_tbl_long(dir, rule);
+    case rule(ipv4, prefixlen, route):
+      return prefixlen < 24 ?
+               insert_tbl_24(dir, rule)
+             :
+               insert_tbl_long(dir, rule);
   }
 }
 
@@ -273,19 +282,25 @@ fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_rule rule){
 
 
 fixpoint option<pair<bool, Z> > entry_24_mapping(int entry){
-  return entry == 0xFFFF ? none : some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
+  return entry == 0xFFFF ?
+           none
+         :
+           some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
 }
 
 fixpoint option<Z> entry_long_mapping(int entry){
   return entry == 0xFFFF ? none : some(Z_of_int(entry, N16));
 }
 
-fixpoint dir_24_8 build_tables(list<int> t_24, list<int> t_long, int long_index){
-  return tables(map(entry_24_mapping, t_24), map(entry_long_mapping, t_long), long_index);
+fixpoint dir_24_8 build_tables(list<int> t_24, list<int> t_long,
+                               int long_index){
+  return tables(map(entry_24_mapping, t_24),
+                map(entry_long_mapping, t_long), long_index);
 }
 
 fixpoint dir_24_8 dir_init(){
-  return tables(repeat_n(nat_of_int(16777216), none), repeat_n(nat_of_int(65536), none), 0);
+  return tables(repeat_n(nat_of_int(16777216), none),
+                repeat_n(nat_of_int(65536), none), 0);
 }
 
 
@@ -309,7 +324,13 @@ fixpoint bool is_invalid(int x){
 }
 
 fixpoint bool valid_entry24(int entry){
-  return entry == 0xFFFF ? true : (extract_flag(entry) ? (0 <= entry && entry <= 0xFF) : (0 <= entry && entry <= 0x7FFF));
+  return entry == 0xFFFF ?
+           true
+         :
+           (extract_flag(entry) ?
+             (0 <= entry && entry <= 0xFF)
+           :
+             (0 <= entry && entry <= 0x7FFF));
 }
 
 fixpoint bool valid_entry_long(int entry){
