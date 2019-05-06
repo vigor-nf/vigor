@@ -9,7 +9,7 @@
 
     // ------------- arithmetic -------------
 
-    lemma void arith_wrap(int D, int d)
+    lemma void div_rem_nonneg_wrap(int D, int d)
         requires    0 <= D &*& 0 < d;
         ensures     D == D / d * d + D % d &*& 0 <= D / d &*& D / d <= D &*& 0 <= D % d &*& D % d < d;
     {
@@ -46,7 +46,7 @@
         mod_bijection(k%capacity, capacity);
     }
 
-    lemma void mod_add_zero(int a, int b, int k)
+    lemma void mod_reduce(int a, int b, int k)
         requires    0 <= a &*& 0 < b &*& 0 <= k;
         ensures     (a + b*k) % b == a % b;
     {
@@ -61,6 +61,22 @@
     {
         div_exact(a, b);
         div_rem_nonneg(a * b, b);
+    }
+
+    lemma void mod_mul(int a, int b, int k)
+        requires    0 <= a &*& 0 < b &*& 0 < k &*& a % b == 0;
+        ensures     (k*a) % (k*b) == 0;
+    {
+        div_rem_nonneg(a, b);
+        mod_rotate_mul(a/b, k*b);
+    }
+
+
+
+    // ------------- pow_nat/pow2 -------------
+
+    fixpoint int pow2(nat m) {
+        return pow_nat(2, m);
     }
 
     lemma void pow_nat_div_rem(int x, nat n)
@@ -82,49 +98,6 @@
         switch(n) {
             case zero:
             case succ(n_pred): pow_nat_bounds(x, n_pred);
-        }
-    }
-
-    // ------------- pow2 -------------
-
-    fixpoint int pow2(nat m) {
-        return pow_nat(2, m);
-    }
-
-    // ------------- sum_pow2 -------------
-
-
-    fixpoint int sum_pow2(nat n) {
-        switch(n) {
-            case zero: return 1;
-            case succ(n_pred): return pow_nat(2, n) + sum_pow2(n_pred);
-        }
-    }
-
-    lemma void sum_pow2_pred(nat n)
-        requires    n != zero;
-        ensures     sum_pow2(n) == pow_nat(2, n) + sum_pow2(nat_predecessor(n));
-    {
-        switch(n) {
-            case zero:
-            case succ(n_pred):
-        }
-    }
-
-    lemma void sum_pow2_val(nat m)
-        requires    m != zero;
-        ensures     sum_pow2(nat_predecessor(m)) == pow_nat(2, m) - 1;
-    {
-        switch(m) {
-            case zero:
-            case succ(m_pred):
-                if (m_pred == zero) {
-                    assert (sum_pow2(m_pred) == 1);
-                    assert (pow_nat(2, m) == 2);
-                } else {
-                    sum_pow2_val(m_pred);
-                    sum_pow2_pred(m_pred);
-                }
         }
     }
 
@@ -455,13 +428,6 @@
         }
     }
 
-    lemma void arith_tmp(int a, int b)
-        requires    0 <= a &*& 0 < b &*& a % b == 0;
-        ensures     (2*a) % (2*b) == 0;
-    {
-        assume((2*a) % (2*b) == 0);
-    }
-
     lemma void int_of_bits_mul(list<bool> bits, nat m)
         requires
             0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
@@ -486,7 +452,7 @@
 
                         int_of_bits_bounds(bs0);
                         pow_nat_bounds(2, m_pred);
-                        arith_tmp(int_of_bits(0, bs0), pow2(m_pred));
+                        mod_mul(int_of_bits(0, bs0), pow2(m_pred), 2);
                 }
         }
     }
@@ -556,9 +522,9 @@ unsigned loop(unsigned k, unsigned capacity)
     //@ int_of_bits_mul(r_bits, m);
     //@ assert (int_of_bits(0, k_and_capacity_bits) < capacity);
     //@ assert (int_of_bits(0, r_bits) % capacity == 0);
-    //@ arith_wrap(int_of_bits(0, r_bits), capacity);
+    //@ div_rem_nonneg_wrap(int_of_bits(0, r_bits), capacity);
     //@ assert (int_of_bits(0, r_bits) == int_of_bits(0, r_bits)/capacity * capacity);
-    //@ mod_add_zero(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
+    //@ mod_reduce(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
     //@ assert (k == int_of_bits(0, k_and_capacity_bits) + int_of_bits(0, r_bits)/capacity * capacity);
     //@ assert (k % capacity == int_of_bits(0, k_and_capacity_bits) % capacity);
     //@ mod_bijection(int_of_bits(0, k_and_capacity_bits), capacity);
