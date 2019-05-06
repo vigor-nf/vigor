@@ -5,7 +5,8 @@
 #include "stdex.gh"
 
 inductive lpm_rule = rule(Z, int, int); //ipv4, prefixlen, route
-inductive dir_24_8 = tables(list<option<pair<bool, Z> > >, list<option<Z> >, int); //last is for tbl_long_index
+inductive dir_24_8 = tables(list<option<pair<bool, Z> > >,
+                            list<option<Z> >, int); //last is for tbl_long_index
 
 
 fixpoint Z Z_of_int(int x, nat length){
@@ -51,17 +52,9 @@ fixpoint int dir_tbl_long_index(dir_24_8 dir){
     case tables(tbl_24, tbl_long, tbl_long_index): return tbl_long_index;
   }
 }
-
-fixpoint Z value_mask(){
-  return Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zsign(false), false), true), true), true), true), true), true), true);
-}
 	
 fixpoint int rule_24_get_value(Z entry){
-  return int_of_Z(Z_and(entry, value_mask()));
-}
-
-fixpoint Z two_bytes_mask(){
-  return Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zdigit(Zsign(false), true), true), true), true), true), true), true), true);
+  return int_of_Z(Z_and(entry, Z_of_int(0x7FFF, N16)));
 }
 	
 // INDEX COMPUTING FUNCTIONS
@@ -75,13 +68,21 @@ fixpoint int indexlong_from_ipv4(Z ipv4, int index){
 
 //Assuming that prefixlen <= 32
 fixpoint int compute_rule_size(int prefixlen){
-  return prefixlen < 24 ? pow_nat(2, nat_of_int(24 - prefixlen)) : pow_nat(2, nat_of_int(32 - prefixlen));
+  return prefixlen < 24 ?
+           pow_nat(2, nat_of_int(24 - prefixlen))
+         :
+           pow_nat(2, nat_of_int(32 - prefixlen));
 }
 
 fixpoint Z mask_rec(int mask_length, nat total_length){
   switch(total_length){
     case zero: return Zsign(false);
-    case succ(n): return int_of_nat(total_length) == mask_length ? Zdigit(mask_rec(mask_length-1, n), true) : Zdigit(mask_rec(mask_length, n), false);
+    case succ(n):
+      return int_of_nat(total_length) ==
+             mask_length ?
+               Zdigit(mask_rec(mask_length-1, n), true)
+             :
+               Zdigit(mask_rec(mask_length, n), false);
   }
 }
 	
@@ -92,13 +93,16 @@ fixpoint Z mask32_from_prefixlen(int prefixlen){
 
 fixpoint int compute_starting_index_24(lpm_rule rule){
   switch(rule){
-    case rule(ipv4, prefixlen, route): return index24_from_ipv4(Z_and(ipv4, mask32_from_prefixlen(prefixlen)));
+    case rule(ipv4, prefixlen, route):
+      return index24_from_ipv4(Z_and(ipv4, mask32_from_prefixlen(prefixlen)));
   }
 }
 	
 fixpoint int compute_starting_index_long(lpm_rule rule, int base_index){
   switch(rule){
-    case rule(ipv4, prefixlen, value): return base_index * 256 + (int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen))) & 0xFF);
+    case rule(ipv4, prefixlen, value):
+      return base_index * 256 +
+             (int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen))) & 0xFF);
   }
 }
 	
@@ -158,7 +162,9 @@ fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir){
           switch(p){
             case pair(f, v): return
               f ?
-                switch(lookup_tbl_long(indexlong_from_ipv4(ipv4, int_of_Z(v)), dir)){
+                switch(lookup_tbl_long(indexlong_from_ipv4(ipv4, int_of_Z(v)),
+                                       dir))
+                {
                   case none: return 0xFFFF;
                   case some(vl): return int_of_Z(vl);
                 }
@@ -179,9 +185,11 @@ fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z>
           cons(v, cs0)
         :
           is_long_index ? 
-            cons(some(pair(true, value)), update_n_tbl_24(cs0, 0, count-1, value, is_long_index))
+            cons(some(pair(true, value)),
+                 update_n_tbl_24(cs0, 0, count-1, value, is_long_index))
           :
-            cons(some(pair(false, value)), update_n_tbl_24(cs0, 0, count-1, value, is_long_index))
+            cons(some(pair(false, value)),
+                 update_n_tbl_24(cs0, 0, count-1, value, is_long_index))
       :
         update_n_tbl_24(cs0, start-1, count, value, is_long_index);		
   }
@@ -203,19 +211,28 @@ fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long, int start
 
 fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > tbl_24, lpm_rule rule){
   switch(rule){
-    case rule(ipv4, prefixlen, route): return update_n_tbl_24(tbl_24, compute_starting_index_24(rule), compute_rule_size(prefixlen), Z_of_int(route, N16), false);
+    case rule(ipv4, prefixlen, route):
+      return update_n_tbl_24(tbl_24, compute_starting_index_24(rule),
+                             compute_rule_size(prefixlen),
+                             Z_of_int(route, N16), false);
   }
 }
 	
-fixpoint list<option<Z> > insert_route_long(list<option<Z> > tbl_long, lpm_rule rule, int base_index){
+fixpoint list<option<Z> > insert_route_long(list<option<Z> > tbl_long,
+                                            lpm_rule rule, int base_index){
   switch(rule){
-    case rule(ipv4, prefixlen, route): return update_n_tbl_long(tbl_long, compute_starting_index_long(rule, base_index), compute_rule_size(prefixlen), Z_of_int(route, N16));
+    case rule(ipv4, prefixlen, route):
+      return update_n_tbl_long(tbl_long,
+                               compute_starting_index_long(rule, base_index),
+                               compute_rule_size(prefixlen),
+                               Z_of_int(route, N16));
   }
 }
 
 fixpoint dir_24_8 insert_tbl_24(dir_24_8 dir, lpm_rule rule){
   switch(dir){
-    case tables(tbl_24, tbl_long, long_index): return tables(insert_route_24(tbl_24, rule), tbl_long, long_index);
+    case tables(tbl_24, tbl_long, long_index):
+      return tables(insert_route_24(tbl_24, rule), tbl_long, long_index);
   }
 }
 
@@ -231,10 +248,17 @@ fixpoint dir_24_8 insert_tbl_long(dir_24_8 dir, lpm_rule rule){
               tables(tbl_24, tbl_long, long_index)
             :
               //Update the value in tbl_24 and tbl_long
-              tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule), 1, Z_of_int(long_index, N8()), true), insert_route_long(tbl_long, rule, long_index), long_index + 1)
+              tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule), 1,
+                                     Z_of_int(long_index, N8), true),
+                     insert_route_long(tbl_long, rule, long_index),
+                     long_index + 1)
           :
             //No need to update the value in tbl_24, only in tlb_long
-            tables(tbl_24, insert_route_long(tbl_long, rule, extract24_value(lookup_tbl_24(index24_from_ipv4(ipv4), dir))), long_index);		
+            tables(tbl_24,
+                   insert_route_long(tbl_long, rule,
+                                     extract24_value(lookup_tbl_24(index24_from_ipv4(ipv4),
+                                     dir))),
+                   long_index);		
       };		
   }	
 }
