@@ -199,6 +199,7 @@ $(ISO): $(BINARY) $(GRUB_CFG)
 # Link final executable
 $(BINARY): $(OBJS) $(LIBC)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBC) $(LIBS)
+	objcopy -O elf32-i386 $(BINARY)
 
 # Assembly files
 %.o: %.asm
