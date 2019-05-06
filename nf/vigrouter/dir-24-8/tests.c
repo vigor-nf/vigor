@@ -46,7 +46,7 @@ void mask_tests(){
 	res = tbl_24_entry_set_flag(0);
 	assert(res == 0x8000);
 	
-	res = tbl_long_extract_first_index(0x12345678, 43);
+	res = tbl_long_extract_first_index(0x12345678, 32, 43);
 	assert(res == 43*256+0x78);
 	
 	printf("mask_tests OK!\n");fflush(stdout);
