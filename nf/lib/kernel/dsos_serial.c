@@ -38,6 +38,11 @@ void dsos_serial_init(void)
 
 void dsos_serial_write_char(char c)
 {
+	// Convert LF into CRLF
+	if (c == '\n') {
+		dsos_serial_write_char('\r');
+	}
+
 	if (c == 8 || c == 0x7f) {
 		while (dsos_serial_has_output()) {
 			;
