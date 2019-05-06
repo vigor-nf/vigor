@@ -27,6 +27,16 @@
         div_ge((a-1)*b, a*b - 1, b);
     }
 
+    lemma void div_plus_one(int a, int b)
+        requires    0 < a &*& 1 < b;
+        ensures     (a*b + 1) / b == a;
+    {
+        div_exact(a, b);
+        div_exact(a + 1, b);
+        div_lt(a*b+1, a+1, b);
+        div_ge(a*b, a*b + 1, b);
+    }
+
     lemma void loop_fp_pop(int k, int capacity)
         requires    0 <= k &*& 0 < capacity;
         ensures     loop_fp(k, capacity) == k % capacity;
@@ -304,7 +314,7 @@
                         bits_of_int_of_bits(bs0, n_pred);
                         assert (bs0 == snd(bits_of_int(int_bs0, n_pred)));
 
-                        assert (int_of_bits(0, bits) == 2 * int_of_bits(0, bs0) + (b ? 1 : 0));
+                        assert (int_bits == 2 * int_bs0 + (b ? 1 : 0));
 
                         if (!b) {
                             int_of_bits_bounds(bits);
@@ -314,8 +324,7 @@
                         } else {
                             int_of_bits_bounds(bits);
                             div_rem_nonneg(int_bits, 2);
-                      	    assume (int_bs0 == int_bits/2);
-                            assume (int_bits%2==1); 
+                            assert (int_bits%2==1); 
                             assert ( bits_int_bits == cons(int_bits%2==1, bits_int_bs0) );
                         }
                 }
