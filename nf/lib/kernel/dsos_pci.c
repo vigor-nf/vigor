@@ -126,7 +126,7 @@ static void dsos_pci_read_resource(uint32_t bus, uint32_t dev, uint32_t function
  * by the (bus, device) pair. The function assumes that out points to valid
  * memory. We also assume that each PCI device has only one function.
  */
-static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *out)
+static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, uint32_t function, struct dsos_pci_nic *out)
 {
 	/*
 	 * Each PCI device provides 256 bytes of configuration registers that can
@@ -137,7 +137,7 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	 * a vendor and device type and are used by DPDK drivers to recognize
 	 * supported devices.
 	 */
-	uint32_t vendor_reg = dsos_read_pci_reg(bus, dev, 0, PCI_VENDOR_REGISTER);
+	uint32_t vendor_reg = dsos_read_pci_reg(bus, dev, function, PCI_VENDOR_REGISTER);
 	uint16_t vendor_id = (uint16_t)(vendor_reg & 0xFFFF);
 	uint16_t device_id = (uint16_t)(vendor_reg >> 16);
 
@@ -148,6 +148,11 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	 * any device for this combination of (bus, dev)
 	 */
 	if (vendor_id == PCI_INVALID_VENDOR_ID) {
+		return 0;
+	}
+
+	/* Ignore non-IXGBE */
+	if (vendor_id != 0x8086 || device_id != 0x10fb) {
 		return 0;
 	}
 
@@ -162,7 +167,7 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	 * Configuration register 11 contains the subsystem ID in the upper 16 bits
 	 * and the subsystem vendor ID in the lower 16 bits.
 	 */
-	uint32_t subsystem_reg = dsos_read_pci_reg(bus, dev, 0, PCI_SUBSYSTEM_REGISTER);
+	uint32_t subsystem_reg = dsos_read_pci_reg(bus, dev, function, PCI_SUBSYSTEM_REGISTER);
 	out->subsystem_id = (uint16_t)(subsystem_reg >> 16);
 	out->subsystem_vendor_id = (uint16_t)(subsystem_reg & 0xFFFF);
 
@@ -170,7 +175,7 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	 * Rgister 2 contains the device's class code (the type of function that the
 	 * device performs) in the top 8 bits.
 	 */
-	uint32_t class_code_reg = dsos_read_pci_reg(bus, dev, 0, PCI_CLASS_CODE_REGISTER);
+	uint32_t class_code_reg = dsos_read_pci_reg(bus, dev, function, PCI_CLASS_CODE_REGISTER);
 	out->class_code = class_code_reg >> 24;
 
 	/*
@@ -180,7 +185,7 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	 * out.
 	 */
 	for (uint32_t i = 0; i < (sizeof(out->resources) / sizeof(out->resources[0])); i++) {
-		dsos_pci_read_resource(bus, dev, 0, i, &(out->resources[i]));
+		dsos_pci_read_resource(bus, dev, function, i, &(out->resources[i]));
 	}
 
 	/*
@@ -189,9 +194,9 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, struct dsos_pci_nic *o
 	 * Enabling bus mastering for a device is done by setting bit 2 in the command
 	 * register (register 1).
 	 */
-	uint32_t status_command_reg = dsos_read_pci_reg(bus, dev, 0, PCI_STATUS_COMMAND_REGISTER);
+	uint32_t status_command_reg = dsos_read_pci_reg(bus, dev, function, PCI_STATUS_COMMAND_REGISTER);
 	status_command_reg |= PCI_COMMAND_MASTER;
-	dsos_write_pci_reg(bus, dev, 0, PCI_STATUS_COMMAND_REGISTER, status_command_reg);
+	dsos_write_pci_reg(bus, dev, function, PCI_STATUS_COMMAND_REGISTER, status_command_reg);
 
 	// Return 1 because a device was found.
 	return 1;
@@ -238,11 +243,12 @@ struct dsos_pci_nic *dsos_pci_find_nics(int *n)
 	// terminates
 
 	int num_devices = 0;
-	for (uint32_t i = 0; i < PCI_NUM_BUSES * PCI_DEVICES_PER_BUS; i++) {
+	for (uint32_t i = 0; i < PCI_NUM_BUSES * PCI_DEVICES_PER_BUS * PCI_FUNCTIONS_PER_DEVICE; i++) {
 		// Division and modulo by the same number creates a one-to-one mapping
 		// between i and (bus, current_dev)
-		uint32_t bus = i / PCI_DEVICES_PER_BUS;
-		uint32_t device = i % PCI_DEVICES_PER_BUS;
+		uint32_t function = i % PCI_FUNCTIONS_PER_DEVICE;
+		uint32_t device = (i / PCI_FUNCTIONS_PER_DEVICE) % PCI_DEVICES_PER_BUS;
+		uint32_t bus = (i / PCI_FUNCTIONS_PER_DEVICE) / PCI_DEVICES_PER_BUS;
 
 		/*
 		 * Loop invariant: num_devices is equal to the number of devices that
@@ -264,7 +270,7 @@ struct dsos_pci_nic *dsos_pci_find_nics(int *n)
 		if (num_devices < MAX_PCI_DEVICES) {
 			// Because each (bus, device) pair occurs only once, each
 			// PCI device is only probed once
-			if (dsos_pci_probe_dev(bus, device, &devs[num_devices]) != 0) {
+			if (dsos_pci_probe_dev(bus, device, function, &devs[num_devices]) != 0) {
 				// A device was found
 				num_devices++;
 			}
