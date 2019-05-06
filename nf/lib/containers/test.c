@@ -101,6 +101,30 @@
         }
     }
 
+    fixpoint option<nat> is_pow2(int x, nat m) {
+        switch(m) {
+            case zero: return (x == pow2(zero) ? some(zero) : none);
+            case succ(m_pred): return (x == pow2(m) ? some(m) : is_pow2(x, m_pred));
+        }
+    }
+
+    lemma nat is_pow2_some(int x, nat m)
+        requires    is_pow2(x, m) != none;
+        ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
+    {
+        switch(m) {
+            case zero:
+                assert (x == pow2(zero));
+                return zero;
+            case succ(m_pred):
+                if (x == pow2(m)) {
+                    return m;
+                } else {
+                    return is_pow2_some(x, m_pred);
+                }
+        }
+    }     
+
     // ------------- bitwise representation of capacity -------------
 
     lemma void bits_of_int_zero(nat n)
@@ -485,13 +509,13 @@
 @*/
 
 unsigned loop(unsigned k, unsigned capacity)
-//@     requires 0 < capacity &*& capacity < INT_MAX;
+//@     requires 0 < capacity &*& capacity < INT_MAX &*& is_pow2(capacity, N31) != none;
 //@     ensures 0 <= result &*& result < capacity &*& result == loop_fp(k, capacity);
 {
-    //@ nat m;
+    //@ nat m = is_pow2_some(capacity, N31);
     //@ int m_int = int_of_nat(m);
-    //@ assume (m_int < 32);
-    //@ assume (capacity == pow2(m));
+    //@ assert (m_int < 32);
+    //@ assert (capacity == pow2(m));
     //@ assert (capacity < pow2(N32));
     //@ assert (k < pow2(N32));
 
