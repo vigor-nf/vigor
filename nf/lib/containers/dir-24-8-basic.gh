@@ -63,7 +63,7 @@ fixpoint int index24_from_ipv4(Z ipv4){
 }
 
 fixpoint int indexlong_from_ipv4(Z ipv4, int index){
-  return index * 256 + int_of_Z(Z_and(ipv4, two_bytes_mask()));
+  return index * 256 + int_of_Z(Z_and(ipv4, Z_of_int(0xFF, N8)));
 }
 
 //Assuming that prefixlen <= 32

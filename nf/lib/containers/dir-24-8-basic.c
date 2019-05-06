@@ -377,7 +377,8 @@ struct tbl* tbl_allocate()
 
   /*@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |->
       repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), INVALID);
-
+  @*/
+  /*@
       assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |->
       repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), INVALID);
   @*/
@@ -423,10 +424,10 @@ void tbl_free(struct tbl *_tbl)
 }
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key)
-/* @ requires table(_tbl, ?long_index, ?dir) &*&
+/*@ requires table(_tbl, ?long_index, ?dir) &*&
               key(_key, ?ipv4, ?plen, ?route);
 @*/
-/* @ ensures table(_tbl, long_index,
+/*@ ensures table(_tbl, long_index,
                   add_rule(dir,
                            init_rule(ipv4, plen, route)
                   )
