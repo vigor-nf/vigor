@@ -67,8 +67,9 @@ predicate table(struct tbl* t, int long_index,
   &*& long_index >= 0 &*& long_index <= TBL_LONG_FACTOR;
 
 predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen, uint16_t route) = 
-  malloc_block_key(k) &*& k->data |-> ipv4 &*& k->prefixlen |-> prefixlen &*& k->route |-> route
-  &*& prefixlen >= 0 &*& prefixlen <= 32 &*& 0 <= route &*& route <= MAX_NEXT_HOP_VALUE;
+  malloc_block_key(k) &*& k->data |-> ipv4 &*& k->prefixlen |-> prefixlen &*& k->route |-> route &*&
+  prefixlen >= 0 &*& prefixlen <= 32 &*&
+  route != INVALID &*& 0 <= route &*& route <= MAX_NEXT_HOP_VALUE &*& true == valid_entry24(route) &*& true == valid_entry_long(route);
 @*/
 
 //In header only for tests

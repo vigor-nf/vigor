@@ -92,7 +92,7 @@ fixpoint Z mask32_from_prefixlen(int prefixlen){
 
 fixpoint int compute_starting_index_24(lpm_rule rule){
   switch(rule){
-    case rule(ipv4, prefixlen, route): return int_of_Z(Z_and(ipv4, mask32_from_prefixlen(prefixlen)));
+    case rule(ipv4, prefixlen, route): return index24_from_ipv4(Z_and(ipv4, mask32_from_prefixlen(prefixlen)));
   }
 }
 	
