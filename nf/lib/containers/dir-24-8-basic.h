@@ -27,7 +27,7 @@
  * http://tiny-tera.stanford.edu/~nickm/papers/Infocom98_lookup.pdf
  * */
 
-// I assume that the rules will be added from the lower prefixlen to the bigger prefixlen
+// I assume that the rules will be in ascending order of prefixlen
 // Each new rule will simply overwrite any existing rule where it should exist
 /*	The entries in tbl_24 are as follows:
  * 		bit15: 0->next hop, 1->tbl_long lookup
@@ -49,7 +49,8 @@ struct key{
 
 /*@
   predicate table(struct tbl* t, int long_index, dir_24_8 dir);
-  predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen, uint16_t route);
+  predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen,
+                uint16_t route);
 @*/
 
 
@@ -79,4 +80,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key);
 
 int tbl_lookup_elem(struct tbl *_tbl, uint32_t data);
 //@ requires table(_tbl, ?long_index, ?dir);
-//@ ensures table(_tbl, long_index, dir) &*& result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
+/*@ ensures table(_tbl, long_index, dir) &*&
+            result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
+@*/
