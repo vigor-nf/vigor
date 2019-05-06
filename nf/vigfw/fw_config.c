@@ -117,7 +117,7 @@ void fw_print_config(struct fw_config* config)
     free(end_mac_str);
   }
 
-  NF_INFO("Expiration time: %" PRIu64 "ns", config->expiration_time);
+  NF_INFO("Expiration time: %" PRVIGT "ns", config->expiration_time);
   NF_INFO("Max flows: %" PRIu32, config->max_flows);
 
   NF_INFO("\n--- --- ------ ---\n");

@@ -52,3 +52,4 @@ nat/testbed/hard/util/plot/*.png
 /nf/*/*_state.c
 .DS_Store
 *.swp
+.vscode/*

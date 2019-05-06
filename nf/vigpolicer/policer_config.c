@@ -118,11 +118,11 @@ void policer_print_config(struct policer_config* config)
 {
   NF_INFO("\n--- Policer Config ---\n");
 
-  NF_INFO("LAN Device: %" PRIu16, config->lan_device);
-  NF_INFO("WAN Device: %" PRIu16, config->wan_device);
+  NF_INFO("LAN Device: %" PRIu32, config->lan_device);
+  NF_INFO("WAN Device: %" PRIu32, config->wan_device);
   NF_INFO("Rate: %" PRIu32, config->rate);
   NF_INFO("Burst: %" PRIu32, config->burst);
-  NF_INFO("Capacity: %" PRIu32, config->dyn_capacity);
+  NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
 
   NF_INFO("\n--- ------ ------ ---\n");
 }

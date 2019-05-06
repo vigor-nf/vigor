@@ -57,63 +57,62 @@ fi
 
 case $SCENARIO in
     "mg-1p")
-
         case $NF_TYPE in
-	    "NAT"|"FW"|"NOP")	
-        	LUA_SCRIPT="l4-load-find-1p.lua"
-	        ;;
+            "NAT"|"FW"|"NOP")    
+                LUA_SCRIPT="l4-load-find-1p.lua"
+                ;;
 
-     	    "LB")
+             "LB")
                 LUA_SCRIPT="l3-lb-load-find-1p.lua"
                 ;;
-     	    
-	    "Pol")
+             
+            "Pol")
                 LUA_SCRIPT="l3-load-find-1p.lua"
                 ;;
             
-     	    "Br")
+            "Br")
                 LUA_SCRIPT="l2-load-find-1p.lua"
                 ;;
             
             *)
-	     	echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
-		exit 10
-   		;;
+                echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
+                exit 10
+                ;;
         esac
 
         echo "[bench] Benchmarking throughput..."
-	ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 5000 -u 5 -t 20 1 0"
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 10000 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-find-mg-1p.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-find-mg-1p.txt"
         ;;
 
     "mg-new-flows-latency")
         
-	case $NF_TYPE in
-	    "Pol")	
-        	LUA_SCRIPT="l3-latency-light.lua"
-	        ;;
+        case $NF_TYPE in
+            "Pol")    
+                LUA_SCRIPT="l3-latency-light.lua"
+                ;;
 
-     	    "FW"|"NAT"|"NOP")
+            "FW"|"NAT"|"NOP")
                 LUA_SCRIPT="l4-latency-light.lua"
                 ;;
-     	   
-       	    "LB")
+            
+            "LB")
                 LUA_SCRIPT="l3-lb-latency-light.lua"
                 ;;
             
-     	    "Br")
+            "Br")
                 LUA_SCRIPT="l2-latency-light.lua"
                 ;;
             
             *)
-	     	echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
-		exit 10
-   		;;
+                echo "[bench] Unknown NF_TYPE: $NF_TYPE" 1>&2
+                exit 10
+                ;;
         esac
 
         echo "[bench] Benchmarking latency..."
-        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 1000 -u 5 -t 2 1 0"
+        ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/moongen/$LUA_SCRIPT -r 1000 -u 5 -t 20 1 0"
         scp $TESTER_HOST:mf-lat.txt "./$RESULTS_FILE"
         ssh $TESTER_HOST "sudo rm mf-lat.txt"
         ;;
