@@ -2,10 +2,8 @@
 //@ #include <nat.gh>
 //@ #include <bitops.gh>
 
-/*@
-lemma void set_flag_entry_assumptions(uint16_t entry);
-  requires entry != INVALID &*& valid_entry24(entry) == true &*& false == extract_flag(entry);
-  ensures 0 <= entry &*& entry <= 0xFF;
+/* @
+
 
 lemma Z Z_of_uint8_custom(int x)
     requires 0 <= x &*& x <= 255;
@@ -26,13 +24,17 @@ lemma Z Z_of_uint32_custom(int x)
     ensures result == Z_of_int(x, N32) &*& x == int_of_Z(result);
 {
     return Z_of_uintN(x, N32);
-}
+}*/
+/*@
+lemma void set_flag_entry_assumptions(uint16_t entry);
+  requires entry != INVALID &*& valid_entry24(entry) == true &*& false == extract_flag(entry);
+  ensures 0 <= entry &*& entry <= 0xFF;
 
 lemma void flag_mask_MBS_one()
   requires TBL_24_FLAG_MASK == 0x8000;
   ensures extract_flag(TBL_24_FLAG_MASK) == true;
 {
-  Z maskZ = Z_of_uint16_custom(TBL_24_FLAG_MASK);
+  Z maskZ = Z_of_uintN(TBL_24_FLAG_MASK, N16);
   shiftright_def(TBL_24_FLAG_MASK, maskZ, nat_of_int(15));
   Z shifted = Z_shiftright(maskZ, nat_of_int(15));
   assert 1 == int_of_Z(shifted);
@@ -43,8 +45,8 @@ lemma void flag_mask_or_x_begins_with_one(uint16_t x)
   ensures extract_flag(x | TBL_24_FLAG_MASK) == true;
 {
 
-  Z xZ = Z_of_uint16_custom(x);
-  Z maskZ = Z_of_uint16_custom(TBL_24_FLAG_MASK);
+  Z xZ = Z_of_uintN(x, N16);
+  Z maskZ = Z_of_uintN(TBL_24_FLAG_MASK, N16);
   flag_mask_MBS_one();
   assert true == extract_flag(TBL_24_FLAG_MASK);
   
@@ -61,9 +63,9 @@ lemma void flag_mask_or_x_not_affect_15LSB(uint16_t x)
   requires 0 <= x &*& x <= 0x7FFF;
   ensures x == ((x | TBL_24_FLAG_MASK) & TBL_24_VAL_MASK);
 {
-  Z xZ = Z_of_uint16_custom(x);
-  Z flagMask = Z_of_uint16_custom(TBL_24_FLAG_MASK);
-  Z valueMask = Z_of_uint16_custom(TBL_24_VAL_MASK);
+  Z xZ = Z_of_uintN(x, N16);
+  Z flagMask = Z_of_uintN(TBL_24_FLAG_MASK, N16);
+  Z valueMask = Z_of_uintN(TBL_24_VAL_MASK, N16);
   
   bitor_def(x, xZ, TBL_24_FLAG_MASK, flagMask);
   Z orRes = Z_or(xZ, flagMask);
@@ -184,7 +186,7 @@ uint32_t tbl_24_extract_first_index(uint32_t data)
 
 @*/
 {
-  //@ Z d = Z_of_uint32_custom(data);
+  //@ Z d = Z_of_uintN(data, N32);
   //@ shiftright_def(data, d, N8);
   //@ shiftright_limits(data, N32, N8);
   uint32_t res = data >> BYTE_SIZE;
@@ -236,8 +238,8 @@ uint16_t tbl_24_entry_set_flag(uint16_t entry)
   //@ set_flag_entry_assumptions(entry);
   //@ bitor_limits(entry, TBL_24_FLAG_MASK, N16);
   uint16_t res = (uint16_t)(entry | TBL_24_FLAG_MASK);
-  //@ Z mask = Z_of_uint16_custom(TBL_24_FLAG_MASK);
-  //@ Z val = Z_of_uint16_custom(entry);
+  //@ Z mask = Z_of_uintN(TBL_24_FLAG_MASK, N16);
+  //@ Z val = Z_of_uintN(entry, N16);
   //@ bitor_def(entry, val, TBL_24_FLAG_MASK, mask);
   
   //Prove that masking with 0x8000 begins with a one
@@ -257,15 +259,15 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen, uint8_t 
   //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
   
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
-  //@ Z maskZ = Z_of_uint32_custom(mask);
-  //@ Z d = Z_of_uint32_custom(data);
+  //@ Z maskZ = Z_of_uintN(mask, N32);
+  //@ Z d = Z_of_uintN(data, N32);
   //@ bitand_def(data, d, mask, maskZ);
   uint32_t masked_data = data & mask;
   //@ assert int_of_Z(Z_and(d, mask32_from_prefixlen(prefixlen))) == masked_data;
   
   //@ bitand_limits(data, 0xFF, N32);
-  //@ Z masked_dataZ = Z_of_uint32_custom(masked_data);
-  //@ Z byte_mask = Z_of_uint8_custom(0xFF);
+  //@ Z masked_dataZ = Z_of_uintN(masked_data, N32);
+  //@ Z byte_mask = Z_of_uintN(0xFF, N8);
   //@ bitand_def(masked_data, masked_dataZ, 0xFF, byte_mask);
   uint8_t last_byte = (uint8_t)(masked_data & 0xFF);
   //@ assert (masked_data & 0xFF) == last_byte;
@@ -496,7 +498,7 @@ int tbl_lookup_elem(struct tbl *_tbl, uint32_t data)
   //@ assert ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?t_24);
   //@ assert ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, ?t_l);
   
-  //@ Z d = Z_of_uint32_custom(data);
+  //@ Z d = Z_of_uintN(data, N32);
   //@ assert d == Z_of_int(data, N32);
   
   //get index corresponding to key for tbl_24
