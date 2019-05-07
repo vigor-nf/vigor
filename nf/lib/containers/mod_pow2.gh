@@ -41,10 +41,6 @@ lemma void mod_mul(int a, int b, int k);
 
 // ------------- pow_nat/pow2 -------------
 
-fixpoint int pow2(nat m) {
-    return pow_nat(2, m);
-}
-
 lemma void pow_nat_div_rem(int x, nat n);
     requires    0 < x &*& n != zero;
     ensures     pow_nat(x, n) / x == pow_nat(x, nat_predecessor(n)) &*& pow_nat(x, n) % x == 0;
@@ -52,17 +48,6 @@ lemma void pow_nat_div_rem(int x, nat n);
 lemma void pow_nat_bounds(int x, nat n);
     requires    0 < x;
     ensures     0 < pow_nat(x, n);
-
-fixpoint option<nat> is_pow2(int x, nat m) {
-    switch(m) {
-        case zero: return (x == pow2(zero) ? some(zero) : none);
-        case succ(m_pred): return (x == pow2(m) ? some(m) : is_pow2(x, m_pred));
-    }
-}
-
-lemma nat is_pow2_some(int x, nat m);
-    requires    is_pow2(x, m) != none;
-    ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
 
 // ------------- bitwise representation of capacity -------------
 
@@ -75,16 +60,16 @@ lemma void int_of_bits_zero(list<bool> bits);
     ensures     int_of_bits(0, bits) == 0;
 
 lemma void bits_of_int_remainder(int x, nat n);
-    requires    0 <= x &*& x < pow2(n);
+    requires    0 <= x &*& x < pow_nat(2, n);
     ensures     fst(bits_of_int(x, n)) == 0;
 
 lemma void bits_of_int_pow2_mask(nat n, nat m);
     requires
         int_of_nat(m) <= int_of_nat(n);
     ensures
-        true == forall(take(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(true)) &*& 
-        true == forall(drop(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(false)) &*& 
-        0 == fst(bits_of_int(pow2(m)-1, n));
+        true == forall(take(int_of_nat(m), snd(bits_of_int(pow_nat(2, m)-1, n))), (eq)(true)) &*& 
+        true == forall(drop(int_of_nat(m), snd(bits_of_int(pow_nat(2, m)-1, n))), (eq)(false)) &*& 
+        0 == fst(bits_of_int(pow_nat(2, m)-1, n));
 
 // ------------- k & (capacity - 1)  -------------
 
@@ -141,7 +126,7 @@ lemma void bits_of_int_and_def(int x, list<bool> x_bits, int y, list<bool> y_bit
     requires 
         bits_of_int(x, n) == pair(0, x_bits) &*& 
         bits_of_int(y, n) == pair(0, y_bits) &*& 
-        0 <= x &*& x < pow2(n) &*& 0 <= y &*& y < pow2(n);
+        0 <= x &*& x < pow_nat(2, n) &*& 0 <= y &*& y < pow_nat(2, n);
     ensures
         (x & y) == int_of_bits(0, bits_of_int_and(x_bits, y_bits));
 
@@ -151,7 +136,7 @@ lemma void bits_of_int_apply_mask(int k, list<bool> k_bits, int mask, list<bool>
         bits_of_int(mask, n) == pair(0, mask_bits) &*& 
         true == forall(take(m, mask_bits), (eq)(true)) &*& 
         true == forall(drop(m, mask_bits), (eq)(false)) &*& 
-        0 <= k &*& k < pow2(n) &*& 0 <= mask &*& mask < pow2(n) &*& 
+        0 <= k &*& k < pow_nat(2, n) &*& 0 <= mask &*& mask < pow_nat(2, n) &*& 
         0 <= m &*& m < int_of_nat(n); 
     ensures 
         take(m, snd(bits_of_int(k & mask, n))) == take(m, k_bits) &*& 
@@ -162,7 +147,7 @@ lemma void bits_of_int_apply_mask(int k, list<bool> k_bits, int mask, list<bool>
 lemma void bits_of_int_split(int k, nat n, int m, list<bool> k_bits, list<bool> l_bits, list<bool> r_bits); 
     requires 
         snd(bits_of_int(k, n)) == k_bits &*& 
-        0 <= k &*& k < pow2(n) &*& 
+        0 <= k &*& k < pow_nat(2, n) &*& 
         0 <= m &*& m < int_of_nat(n) &*& 
         length(l_bits) == length(r_bits) &*& length(r_bits) == length(k_bits) &*& 
         take(m, k_bits) == take(m, l_bits) &*& true == forall(drop(m, l_bits), (eq)(false)) &*& 
@@ -175,14 +160,14 @@ lemma void int_of_bits_lt(list<bool> bits, nat m);
         0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
         true == forall(drop(int_of_nat(m), bits), (eq)(false));
     ensures
-        int_of_bits(0, bits) < pow2(m);
+        int_of_bits(0, bits) < pow_nat(2, m);
 
 lemma void int_of_bits_mul(list<bool> bits, nat m);
     requires
         0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
         true == forall(take(int_of_nat(m), bits), (eq)(false));
     ensures
-        int_of_bits(0, bits) % pow2(m) == 0;
+        int_of_bits(0, bits) % pow_nat(2, m) == 0;
 
 fixpoint list<bool> gen_r_bits(list<bool> k_bits, int m) {
     switch(k_bits) {
@@ -197,5 +182,9 @@ lemma void gen_r_bits_works(list<bool> k_bits, int m);
     ensures     
         drop(m, gen_r_bits(k_bits, m)) == drop(m, k_bits) &*&
         true == forall(take(m, gen_r_bits(k_bits, m)), (eq)(false));
+
+lemma void mod_bitand_equiv(int k, int capacity, nat m);
+    requires    0 <= k &*& k < pow_nat(2, N32) &*& 0 < capacity &*& capacity < INT_MAX &*& capacity == pow_nat(2, m) &*& int_of_nat(m) < 32;
+    ensures     (k % capacity) == (k & (capacity - 1)) &*& (k % capacity) == loop_fp(k, capacity);
 
 #endif //_MOD_POW2_GH_INCLUDED_

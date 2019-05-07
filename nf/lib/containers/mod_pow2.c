@@ -92,23 +92,6 @@
         }
     }
 
-    lemma nat is_pow2_some(int x, nat m)
-        requires    is_pow2(x, m) != none;
-        ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
-    {
-        switch(m) {
-            case zero:
-                assert (x == pow2(zero));
-                return zero;
-            case succ(m_pred):
-                if (x == pow2(m)) {
-                    return m;
-                } else {
-                    return is_pow2_some(x, m_pred);
-                }
-        }
-    }     
-
     // ------------- bitwise representation of capacity -------------
 
     lemma void bits_of_int_zero(nat n)
@@ -135,16 +118,16 @@
     }
 
     lemma void bits_of_int_remainder(int x, nat n)
-        requires    0 <= x &*& x < pow2(n);
+        requires    0 <= x &*& x < pow_nat(2, n);
         ensures     fst(bits_of_int(x, n)) == 0;
     {
         switch (n) {
             case zero:
             case succ(n_pred):
-                assert (pow2(n) == 2 * pow2(n_pred));
-                div_lt(x, pow2(n_pred), 2);
-                div_exact(pow2(n_pred), 2);
-                assert (x/2 < pow2(n_pred));
+                assert (pow_nat(2, n) == 2 * pow_nat(2, n_pred));
+                div_lt(x, pow_nat(2, n_pred), 2);
+                div_exact(pow_nat(2, n_pred), 2);
+                assert (x/2 < pow_nat(2, n_pred));
                 div_ge(0, x, 2);
                 division_round_to_zero(0, 2);
                 bits_of_int_remainder(x/2, n_pred);
@@ -155,9 +138,9 @@
         requires
             int_of_nat(m) <= int_of_nat(n);
         ensures
-            true == forall(take(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(true)) &*& 
-            true == forall(drop(int_of_nat(m), snd(bits_of_int(pow2(m)-1, n))), (eq)(false)) &*& 
-            0 == fst(bits_of_int(pow2(m)-1, n));
+            true == forall(take(int_of_nat(m), snd(bits_of_int(pow_nat(2, m)-1, n))), (eq)(true)) &*& 
+            true == forall(drop(int_of_nat(m), snd(bits_of_int(pow_nat(2, m)-1, n))), (eq)(false)) &*& 
+            0 == fst(bits_of_int(pow_nat(2, m)-1, n));
     {
         switch(m) {
             case zero:
@@ -167,16 +150,16 @@
                     case zero:
                     case succ(n_pred):
                         bits_of_int_pow2_mask(n_pred, m_pred);
-                        assert (snd(bits_of_int(pow2(m)-1, n)) == cons( (pow2(m)-1)%2==1 , snd(bits_of_int((pow2(m)-1)/2, n_pred)) ) );
+                        assert (snd(bits_of_int(pow_nat(2, m)-1, n)) == cons( (pow_nat(2, m)-1)%2==1 , snd(bits_of_int((pow_nat(2, m)-1)/2, n_pred)) ) );
 
                         pow_nat_div_rem(2, m);
                         pow_nat_bounds(2, m_pred);
-                        div_minus_one(pow2(m_pred), 2);
-                        assert((pow2(m)-1)/2 == pow2(m_pred) - 1);
+                        div_minus_one(pow_nat(2, m_pred), 2);
+                        assert((pow_nat(2, m)-1)/2 == pow_nat(2, m_pred) - 1);
 
-                        div_rem_nonneg(pow2(m), 2);
-                        div_rem_nonneg(pow2(m) - 1, 2);
-                        assert((pow2(m)-1)%2==1);
+                        div_rem_nonneg(pow_nat(2, m), 2);
+                        div_rem_nonneg(pow_nat(2, m) - 1, 2);
+                        assert((pow_nat(2, m)-1)%2==1);
                 }
         }
     }
@@ -319,7 +302,7 @@
         requires 
             bits_of_int(x, n) == pair(0, x_bits) &*& 
             bits_of_int(y, n) == pair(0, y_bits) &*& 
-            0 <= x &*& x < pow2(n) &*& 0 <= y &*& y < pow2(n);
+            0 <= x &*& x < pow_nat(2, n) &*& 0 <= y &*& y < pow_nat(2, n);
         ensures
             (x & y) == int_of_bits(0, bits_of_int_and(x_bits, y_bits));
     {
@@ -340,7 +323,7 @@
             bits_of_int(mask, n) == pair(0, mask_bits) &*& 
             true == forall(take(m, mask_bits), (eq)(true)) &*& 
             true == forall(drop(m, mask_bits), (eq)(false)) &*& 
-            0 <= k &*& k < pow2(n) &*& 0 <= mask &*& mask < pow2(n) &*& 
+            0 <= k &*& k < pow_nat(2, n) &*& 0 <= mask &*& mask < pow_nat(2, n) &*& 
             0 <= m &*& m < int_of_nat(n); 
         ensures 
             take(m, snd(bits_of_int(k & mask, n))) == take(m, k_bits) &*& 
@@ -362,7 +345,7 @@
     lemma void bits_of_int_split(int k, nat n, int m, list<bool> k_bits, list<bool> l_bits, list<bool> r_bits) 
         requires 
             snd(bits_of_int(k, n)) == k_bits &*& 
-            0 <= k &*& k < pow2(n) &*& 
+            0 <= k &*& k < pow_nat(2, n) &*& 
             0 <= m &*& m < int_of_nat(n) &*& 
             length(l_bits) == length(r_bits) &*& length(r_bits) == length(k_bits) &*& 
             take(m, k_bits) == take(m, l_bits) &*& true == forall(drop(m, l_bits), (eq)(false)) &*& 
@@ -383,9 +366,9 @@
                                     case nil:
                                     case cons(r0, rs0):
                                         if (m > 0) {
-                                            div_lt(k, pow2(n_pred), 2);
-                                            div_exact(pow2(n_pred), 2);
-                                            assert(k/2 < pow2(n_pred));
+                                            div_lt(k, pow_nat(2, n_pred), 2);
+                                            div_exact(pow_nat(2, n_pred), 2);
+                                            assert(k/2 < pow_nat(2, n_pred));
                                             div_ge(0, k, 2);
                                             division_round_to_zero(0, 2);
                                             bits_of_int_split(k/2, n_pred, m-1, ks0, ls0, rs0);
@@ -410,7 +393,7 @@
             0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
             true == forall(drop(int_of_nat(m), bits), (eq)(false));
         ensures
-            int_of_bits(0, bits) < pow2(m);
+            int_of_bits(0, bits) < pow_nat(2, m);
     {
         switch(bits) {
             case nil:
@@ -430,7 +413,7 @@
             0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
             true == forall(take(int_of_nat(m), bits), (eq)(false));
         ensures
-            int_of_bits(0, bits) % pow2(m) == 0;
+            int_of_bits(0, bits) % pow_nat(2, m) == 0;
     {
         switch(bits) {
             case nil:
@@ -438,18 +421,18 @@
                 switch(m) {
                     case zero:
                         int_of_bits_bounds(bits);
-                        assert (pow2(zero) == 1);
-                        div_mod_gt_0(int_of_bits(0, bits) % pow2(m), int_of_bits(0, bits), pow2(m)); 
+                        assert (pow_nat(2, zero) == 1);
+                        div_mod_gt_0(int_of_bits(0, bits) % pow_nat(2, m), int_of_bits(0, bits), pow_nat(2, m)); 
                     case succ(m_pred): 
                         int_of_bits_mul(bs0, m_pred);
                         assert (b == false);
                         assert (int_of_bits(0, bits) == 2 * int_of_bits(0, bs0)); 
-                        assert (pow2(m) == 2 * pow2(m_pred)); 
-                        assert (int_of_bits(0, bs0) % pow2(m_pred) == 0);
+                        assert (pow_nat(2, m) == 2 * pow_nat(2, m_pred)); 
+                        assert (int_of_bits(0, bs0) % pow_nat(2, m_pred) == 0);
 
                         int_of_bits_bounds(bs0);
                         pow_nat_bounds(2, m_pred);
-                        mod_mul(int_of_bits(0, bs0), pow2(m_pred), 2);
+                        mod_mul(int_of_bits(0, bs0), pow_nat(2, m_pred), 2);
                 }
         }
     }
@@ -472,5 +455,47 @@
         }
     }
 
+    lemma void mod_bitand_equiv(int k, int capacity, nat m)
+        requires    0 <= k &*& k < pow_nat(2, N32) &*& 0 < capacity &*& capacity < INT_MAX &*& capacity == pow_nat(2, m) &*& int_of_nat(m) < 32;
+        ensures     (k % capacity) == (k & (capacity - 1)) &*& (k % capacity) == loop_fp(k, capacity);
+    {
+        int m_int = int_of_nat(m);
+        list<bool> k_bits = snd(bits_of_int(k, N32));
+        list<bool> capacity_bits = snd(bits_of_int(capacity - 1, N32));
+        list<bool> k_and_capacity_bits = snd(bits_of_int(k & (capacity - 1), N32));
 
+        // k & (capacity - 1)
+        bits_of_int_pow2_mask(N32, m);
+
+        bitand_limits(k, capacity - 1, N32);
+        bits_of_int_remainder(k & (capacity - 1), N32);
+        bits_of_int_remainder(k, N32);
+        bits_of_int_remainder(capacity - 1, N32);
+        bits_of_int_apply_mask(k, k_bits, capacity - 1, capacity_bits, m_int, N32);
+        assert (take(m_int, k_and_capacity_bits) == take(m_int, k_bits));
+        assert (true == forall(drop(m_int, k_and_capacity_bits), (eq)(false)));
+        
+        // k % capacity
+        list<bool> r_bits = gen_r_bits(k_bits, m_int);
+        gen_r_bits_works(k_bits, m_int);
+        
+        bits_of_int_split(k, N32, m_int, k_bits, k_and_capacity_bits, r_bits);
+        assert (k == int_of_bits(0, k_and_capacity_bits) + int_of_bits(0, r_bits));
+        
+        int_of_bits_lt(k_and_capacity_bits, m);
+        int_of_bits_mul(r_bits, m);
+        assert (int_of_bits(0, k_and_capacity_bits) < capacity);
+        assert (int_of_bits(0, r_bits) % capacity == 0);
+        div_rem_nonneg_wrap(int_of_bits(0, r_bits), capacity);
+        assert (int_of_bits(0, r_bits) == int_of_bits(0, r_bits)/capacity * capacity);
+        mod_reduce(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
+        assert (k == int_of_bits(0, k_and_capacity_bits) + int_of_bits(0, r_bits)/capacity * capacity);
+        assert (k % capacity == int_of_bits(0, k_and_capacity_bits) % capacity);
+        mod_bijection(int_of_bits(0, k_and_capacity_bits), capacity);
+        assert (k % capacity == int_of_bits(0, k_and_capacity_bits));
+
+        // Proof of equality
+        int_of_bits_of_int(k & (capacity - 1), N32);
+        loop_fp_pop(k, capacity);
+    }
 @*/
