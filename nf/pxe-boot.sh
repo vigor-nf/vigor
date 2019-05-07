@@ -8,7 +8,7 @@ if [ -z "${1:-}" ]; then
 fi
 BOOT_IMG="$(realpath ${1:-})"
 
-PXE_NIC="enp4s0"
+PXE_NIC="em4"
 PXE_SERVER_IP="192.168.0.254"
 PXE_NETWORK_MASK="255.255.255.0"
 PXE_CLIENT_IP_FIRST="192.168.0.1"
