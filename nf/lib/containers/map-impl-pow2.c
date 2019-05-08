@@ -1,4 +1,4 @@
-#include "map-impl.h"
+#include "map-impl-pow2.h"
 
 #include "lib/ignore.h"
 
@@ -11,7 +11,42 @@
 //@ #include "map.gh"
 //@ #include "natlist.gh"
 //@ #include "chain-buckets.gh"
+//@ #include "mod_pow2.gh"
 
+/*@
+
+  lemma nat is_pow2_some(int x, nat m)
+      requires    is_pow2(x, m) != none;
+      ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
+  {
+      switch(m) {
+          case zero:
+              assert (x == pow2(zero));
+              return zero;
+          case succ(m_pred):
+              if (x == pow2(m)) {
+                  return m;
+              } else {
+                  return is_pow2_some(x, m_pred);
+              }
+      }
+  }
+
+@*/
+
+static 
+unsigned loop(unsigned k, unsigned capacity)
+//@ requires 0 < capacity &*& capacity < INT_MAX &*& is_pow2(capacity, N31) != none;
+//@ ensures 0 <= result &*& result < capacity &*& result == loop_fp(k, capacity);
+{
+  //@ nat m = is_pow2_some(capacity, N31);
+  //@ mod_bitand_equiv(k, capacity, m);
+  //@ div_mod_gt_0(k%capacity, k, capacity);
+  //@ assert ((k % capacity) == (k & (capacity - 1)) );
+  //@ assert ((k % capacity) == loop_fp(k, capacity));
+
+  return k & (capacity - 1);
+}
 
 /*@
   fixpoint bool has_given_hash_fp<kt>(fixpoint (kt, unsigned) hash,
@@ -32,29 +67,7 @@
           };
     }
   }
-  @*/
 
-static
-unsigned loop(unsigned k, unsigned capacity)
-//@ requires 0 < capacity &*& 2*capacity < INT_MAX;
-/*@ ensures 0 <= result &*& result < capacity &*&
-            result == loop_fp(k, capacity); @*/
-{
-  unsigned g = k%capacity;
-  //@ div_mod(g, k, capacity);
-  //@ assert(2*capacity< INT_MAX);
-
-  //FIXME: this step is unnecessary and expensive.
-  // It was semantically justified for negitive numbers.
-  // However, once we switched to unsigned hashes, it is just an expensive
-  // identity function. Remove it.
-
-  unsigned res = (g + capacity)%capacity;
-  //@ div_mod_gt_0(res, g + capacity, capacity);
-  return res;
-}
-
-/*@
   inductive hmap<kt> = hmap(list<option<kt> >, list<unsigned>);
 
   predicate hmapping<kt>(predicate (void*; kt) keyp,
@@ -645,7 +658,8 @@ int find_key/*@ <kt> @*/(int* busybits, void** keyps, unsigned* k_hashes, int* c
              pointers(keyps, capacity, kps) &*&
              [?kfr]kpr(keyp, ?k) &*&
              hsh(k) == key_hash &*&
-             [?f]is_map_keys_equality<kt>(eq, kpr); @*/
+             [?f]is_map_keys_equality<kt>(eq, kpr) &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures hmapping<kt>(kpr, hsh, capacity, busybits, kps, k_hashes, hm) &*&
             buckets_ks_insync(chns, capacity, buckets, hsh,
                                 hmap_ks_fp(hm)) &*&
@@ -809,7 +823,8 @@ unsigned find_key_remove_chain/*@ <kt> @*/(int* busybits, void** keyps,
              hsh(k) == key_hash &*&
              [?f]is_map_keys_equality<kt>(eq, kpr) &*&
              true == hmap_exists_key_fp(hm, k)
-             &*& *keyp_out |-> _; @*/
+             &*& *keyp_out |-> _ &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures hmapping<kt>(kpr, hsh, capacity,
                          busybits, kps, k_hashes,
                          hmap_rem_key_fp(hm, hmap_find_key_fp(hm, k))) &*&
@@ -1120,7 +1135,8 @@ unsigned find_empty/*@ <kt> @*/(int* busybits, int* chns, unsigned start, unsign
              buckets_ks_insync(chns, capacity, ?buckets, hsh, hmap_ks_fp(hm)) &*&
              pointers(?keyps, capacity, kps) &*&
              0 <= start &*& start < capacity &*&
-             hmap_size_fp(hm) < capacity; @*/
+             hmap_size_fp(hm) < capacity &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures hmapping<kt>(kp, hsh, capacity, busybits, kps, k_hashes, hm) &*&
             buckets_ks_insync_Xchain(chns, capacity, buckets, hsh,
                                      start, result, hmap_ks_fp(hm)) &*&
@@ -1847,7 +1863,8 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
              [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality(eq, kp) &*&
              hsh(k) == hash &*&
-             *value |-> ?v; @*/
+             *value |-> ?v &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures mapping<kt>(m, addrs, kp, recp, hsh, capacity, busybits,
                         keyps, k_hashes, chns, values) &*&
             [fk]kp(keyp, k) &*&
@@ -2168,7 +2185,8 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
              [0.25]kp(keyp, ?k) &*& true == recp(k, value) &*&
              hsh(k) == hash &*&
              false == map_has_fp(m, k) &*&
-             map_size_fp(m) < capacity; @*/
+             map_size_fp(m) < capacity &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures true == recp(k, value) &*&
             mapping<kt>(map_put_fp(m, k, value),
                         map_put_fp(addrs, k, keyp),
@@ -2443,7 +2461,8 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps,
              [?fr]is_map_keys_equality<kt>(eq, kp) &*&
              hsh(k) == hash &*&
              *keyp_out |-> ?ko &*&
-             true == map_has_fp(m, k); @*/
+             true == map_has_fp(m, k) &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality<kt>(eq, kp) &*&
             *keyp_out |-> ?nko &*&
