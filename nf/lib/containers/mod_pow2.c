@@ -26,13 +26,23 @@
 
     // ------------- arithmetic -------------
 
-    lemma void div_rem_nonneg_wrap(int D, int d)
-        requires    0 <= D &*& 0 < d;
-        ensures     D == D / d * d + D % d &*& 0 <= D / d &*& D / d <= D &*& 0 <= D % d &*& D % d < d;
+    lemma void loop_fp_pop(int k, int capacity)
+        requires    0 <= k &*& 0 < capacity;
+        ensures     loop_fp(k, capacity) == k % capacity;
     {
-        div_rem_nonneg(D, d);
+        div_mod_gt_0(k%capacity, k, capacity);
+        mod_rotate(k%capacity, capacity);
+        mod_bijection(k%capacity, capacity);
     }
 
+    lemma void mod_reduce(int a, int b, int k)
+        requires    0 <= a &*& 0 < b &*& 0 <= k;
+        ensures     (a + b*k) % b == a % b;
+    {
+        loop_injection_n(a, b, k);
+        loop_fp_pop(a + b*k, b);
+        loop_fp_pop(a, b);
+    }
 
     lemma void div_minus_one(int a, int b)
         requires    0 < a &*& 0 < b;
@@ -52,24 +62,6 @@
         div_exact(a + 1, b);
         div_lt(a*b+1, a+1, b);
         div_ge(a*b, a*b + 1, b);
-    }
-
-    lemma void loop_fp_pop(int k, int capacity)
-        requires    0 <= k &*& 0 < capacity;
-        ensures     loop_fp(k, capacity) == k % capacity;
-    {
-        div_mod_gt_0(k%capacity, k, capacity);
-        mod_rotate(k%capacity, capacity);
-        mod_bijection(k%capacity, capacity);
-    }
-
-    lemma void mod_reduce(int a, int b, int k)
-        requires    0 <= a &*& 0 < b &*& 0 <= k;
-        ensures     (a + b*k) % b == a % b;
-    {
-        loop_injection_n(a, b, k);
-        loop_fp_pop(a + b*k, b);
-        loop_fp_pop(a, b);
     }
 
     lemma void mod_rotate_mul(int a, int b)
@@ -477,6 +469,24 @@
         }
     }
 
+    // This lemma is in fact, just a concluding part of mod_bitand_equiv,
+    // but Z3 hangs if it is inlined.
+    lemma void mod_bitand_equiv_conclude(int k, int capacity, list<bool> r_bits,
+                                         list<bool> k_and_capacity_bits)
+        requires k % capacity == loop_fp(k, capacity) &*&
+                 0 <= int_of_bits(0, r_bits) &*& 0 < capacity &*&
+                 int_of_bits(0, r_bits) % capacity == 0 &*&
+                 0 <= int_of_bits(0, k_and_capacity_bits) &*&
+                 (k == int_of_bits(0, k_and_capacity_bits) + int_of_bits(0, r_bits)) &*&
+                 (int_of_bits(0, k_and_capacity_bits) < capacity) &*&
+                 int_of_bits(0, k_and_capacity_bits) == (k & (capacity - 1)) ;
+        ensures (k % capacity) == (k & (capacity - 1));
+    {
+      div_rem_nonneg(int_of_bits(0, r_bits), capacity);
+      mod_reduce(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
+      mod_bijection(int_of_bits(0, k_and_capacity_bits), capacity);
+    }
+
     lemma void mod_bitand_equiv(int k, int capacity, nat m)
         requires    0 <= k &*& k < pow_nat(2, N32) &*& 0 < capacity &*& capacity < INT_MAX &*& capacity == pow_nat(2, m) &*& int_of_nat(m) < 32;
         ensures     (k % capacity) == (k & (capacity - 1)) &*& (k % capacity) == loop_fp(k, capacity);
@@ -508,16 +518,14 @@
         int_of_bits_mul(r_bits, m);
         assert (int_of_bits(0, k_and_capacity_bits) < capacity);
         assert (int_of_bits(0, r_bits) % capacity == 0);
-        div_rem_nonneg_wrap(int_of_bits(0, r_bits), capacity);
-        assert (int_of_bits(0, r_bits) == int_of_bits(0, r_bits)/capacity * capacity);
-        mod_reduce(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
-        assert (k == int_of_bits(0, k_and_capacity_bits) + int_of_bits(0, r_bits)/capacity * capacity);
-        assert (k % capacity == int_of_bits(0, k_and_capacity_bits) % capacity);
+
         mod_bijection(int_of_bits(0, k_and_capacity_bits), capacity);
-        assert (k % capacity == int_of_bits(0, k_and_capacity_bits));
 
         // Proof of equality
         int_of_bits_of_int(k & (capacity - 1), N32);
         loop_fp_pop(k, capacity);
+
+        assert (k % capacity) == loop_fp(k, capacity);
+        mod_bitand_equiv_conclude(k, capacity, r_bits, k_and_capacity_bits);
     }
 @*/

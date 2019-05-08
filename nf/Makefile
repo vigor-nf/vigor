@@ -73,7 +73,7 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
 LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/mod_pow2.c
 
 verifast:
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -allow_assume -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared $(LIBVIG_SRC)
 
 ### KLEE verification ###
