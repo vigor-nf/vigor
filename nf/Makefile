@@ -56,6 +56,8 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/containers/double-chain-impl.c \
               $(SELF_DIR)/lib/containers/double-chain.c \
               $(SELF_DIR)/lib/containers/map-impl.c \
+			  $(SELF_DIR)/lib/containers/mod_pow2.o \
+              $(SELF_DIR)/lib/containers/map-impl-pow2.c \
               $(SELF_DIR)/lib/containers/double-map.c \
               $(SELF_DIR)/lib/containers/vector.c \
               $(SELF_DIR)/lib/containers/prime.c \
@@ -68,7 +70,10 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/expirator.c \
               $(SELF_DIR)/lib/packet-io.c
 
+LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/mod_pow2.c
+
 verifast:
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -allow_assume -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared $(LIBVIG_SRC)
 
 ### KLEE verification ###
