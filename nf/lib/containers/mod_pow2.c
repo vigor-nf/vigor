@@ -1,6 +1,28 @@
 //@ #include "mod_pow2.gh"
+//@ #include "stdex.gh"
+//@ #include "listexex.gh"
+//@ #include <bitops.gh>
+//@ #include <nat.gh>
+//@ #include <listex.gh>
 
 /*@
+
+    fixpoint list<bool> bits_of_int_and(list<bool> x_bits, list<bool> y_bits) {
+        switch(x_bits) {
+            case nil: return y_bits;
+            case cons(x0, xs0): return switch(y_bits) {
+                case nil: return x_bits;
+                case cons(y0, ys0): return cons(x0 && y0, bits_of_int_and(xs0, ys0));
+            };
+        }
+    }
+
+    fixpoint list<bool> gen_r_bits(list<bool> k_bits, int m) {
+        switch(k_bits) {
+            case nil: return nil;
+            case cons(k0, ks0): return ((m > 0) ? cons(false, gen_r_bits(ks0, m - 1)) : cons(k0, gen_r_bits(ks0, 0)));
+        }
+    }
 
     // ------------- arithmetic -------------
 
