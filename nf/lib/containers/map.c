@@ -1,7 +1,12 @@
 #include <stdlib.h>
 #include <stddef.h>
-#include "map-impl.h"
 #include "map.h"
+
+#ifdef CAPACITY_POW2
+#include "map-impl-pow2.h"
+#else
+#include "map-impl.h"
+#endif
 
 struct Map {
   int* busybits;
@@ -15,6 +20,37 @@ struct Map {
   map_key_hash* khash;
 };
 
+#ifdef CAPACITY_POW2
+/*@
+  predicate mapp<t>(struct Map* ptr,
+                    predicate (void*;t) kp,
+                    fixpoint (t,unsigned) hsh,
+                    fixpoint (t,int,bool) recp,
+                    mapi<t> map) =
+    malloc_block_Map(ptr) &*&
+    ptr->busybits |-> ?busybits &*&
+    ptr->keyps |-> ?keyps &*&
+    ptr->khs |-> ?khs &*&
+    ptr->chns |-> ?chns &*&
+    ptr->vals |-> ?vals &*&
+    ptr->capacity |-> ?capacity &*&
+    ptr->size |-> ?size &*&
+    ptr->keys_eq |-> ?keys_eq &*&
+    ptr->khash |-> ?khash &*&
+    malloc_block_ints(busybits, capacity) &*&
+    malloc_block_pointers(keyps, capacity) &*&
+    malloc_block_uints(khs, capacity) &*&
+    malloc_block_ints(chns, capacity) &*&
+    malloc_block_ints(vals, capacity) &*&
+    [_]is_map_keys_equality<t>(keys_eq, kp) &*&
+    [_]is_map_key_hash<t>(khash, kp, hsh) &*&
+    mapping(?m, ?addrs, kp, recp, hsh, capacity,
+            busybits, keyps, khs, chns, vals) &*&
+    size == length(m) &*&
+    map == mapc(capacity, m, addrs) &*&
+    is_pow2(capacity, N31) != none;
+  @*/
+#else
 /*@
   predicate mapp<t>(struct Map* ptr,
                     predicate (void*;t) kp,
@@ -43,6 +79,7 @@ struct Map {
     size == length(m) &*&
     map == mapc(capacity, m, addrs);
   @*/
+#endif
 
 int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
                             unsigned capacity,
@@ -58,6 +95,15 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
                mapp<t>(new_mo, kp, hsh, nop_true,
                        mapc(capacity, nil, nil))); @*/
 {
+
+#ifdef CAPACITY_POW2
+  // Check that capacity is a power of 2
+  if (capacity == 0 || (capacity & (capacity - 1)) != 0) {
+    return 0;
+  }
+  // assume(is_pow2(capacity, N31) != none);
+#endif
+
   struct Map* old_map_val = *map_out;
   struct Map* map_alloc = malloc(sizeof(struct Map));
   if (map_alloc == NULL) return 0;
