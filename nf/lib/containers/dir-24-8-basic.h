@@ -48,7 +48,7 @@ struct key{
 };
 
 /*@
-  predicate table(struct tbl* t, int long_index, dir_24_8 dir);
+  predicate table(struct tbl* t, dir_24_8 dir);
   predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen,
                 uint16_t route);
 @*/
@@ -60,17 +60,17 @@ struct tbl *tbl_allocate();
 /*@ ensures result == 0 ? 
       true 
     : 
-      table(result, 0, dir_init());
+      table(result, dir_init());
 
 @*/
 
 void tbl_free(struct tbl *_tbl);
-//@ requires table(_tbl, _, _);
+//@ requires table(_tbl, _);
 //@ ensures true;
 
 int tbl_update_elem(struct tbl *_tbl, struct key *_key);
-//@ requires table(_tbl, ?long_index, ?dir) &*& key(_key, ?ipv4, ?plen, ?route);
-/*@ ensures table(_tbl, long_index,
+//@ requires table(_tbl, ?dir) &*& key(_key, ?ipv4, ?plen, ?route);
+/*@ ensures table(_tbl,
                   add_rule(dir,
                            init_rule(ipv4, plen, route)
                   )
@@ -79,7 +79,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key);
 @*/
 
 int tbl_lookup_elem(struct tbl *_tbl, uint32_t data);
-//@ requires table(_tbl, ?long_index, ?dir);
-/*@ ensures table(_tbl, long_index, dir) &*&
+//@ requires table(_tbl, ?dir);
+/*@ ensures table(_tbl, dir) &*&
             result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
 @*/
