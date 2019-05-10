@@ -481,10 +481,10 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     /*@ invariant first_index <= i &*& i <= last_index &*&
                   0 < last_index &*& last_index <= TBL_24_MAX_ENTRIES &*&
                   0 <= first_index &*& first_index < last_index &*&
-                  tbl_24[0..first_index] |-> _ &*&
+                  //tbl_24[0..first_index] |-> _ &*&
                   tbl_24[first_index..i] |-> ?updated &*&
-                  tbl_24[i..last_index] |-> ?to_update &*&
-                  tbl_24[last_index..TBL_24_MAX_ENTRIES] |-> _;
+                  tbl_24[i..last_index] |-> ?to_update;// &*&
+                  //tbl_24[last_index..TBL_24_MAX_ENTRIES] |-> _;
     @*/
     {
       //@ assert (false);
@@ -562,17 +562,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint32_t last_index = first_index + rule_size;
 
     //Store value in tbl_long entries
-    for(uint32_t i = 0; i < TBL_LONG_MAX_ENTRIES; i++)
+    /*for(uint32_t i = 0; i < TBL_LONG_MAX_ENTRIES; i++)
     /*@  invariant 0 <= i &*& i <= TBL_LONG_MAX_ENTRIES &*&
                    tbl_long[0..i] |-> ?updated &*&
                    tbl_long[i..TBL_LONG_MAX_ENTRIES] |-> _;
-    @*/
+    @* /
     {  
       //@ assume (false);
       if(i >= first_index && i < last_index){
         tbl_long[i] = value;
       }
-    }
+    }*/
     //@ assume (map(entry_long_mapping, t_l) == update_n_tbl_long(tt_l, first_index, rule_size, Z_of_int(value, N16)));
     //@ assert (build_tables(t_24, t_l, long_index) == add_rule(dir, new_rule));
   }
