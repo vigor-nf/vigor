@@ -1,8 +1,9 @@
 #ifndef _MAP_H_INCLUDED_
 #define _MAP_H_INCLUDED_
 
-#include "map-impl.h"
 #include "map-util.h"
+
+//@ #include "map.gh"
 
 struct Map;
 

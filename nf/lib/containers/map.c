@@ -101,7 +101,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
   if (capacity == 0 || (capacity & (capacity - 1)) != 0) {
     return 0;
   }
-  // assume(is_pow2(capacity, N31) != none);
+  //@ assume(is_pow2(capacity, N31) != none);
 #endif
 
   struct Map* old_map_val = *map_out;

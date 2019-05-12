@@ -2,12 +2,10 @@
 #define _MAP_IMPL_H_INCLUDED_
 
 #include <stdbool.h>
+#include "map-util.h"
 
+//@ #include "map.gh"
 //@ #include "stdex.gh"
-
-typedef bool map_keys_equality/*@<K>(predicate (void*; K) keyp) @*/(void* k1, void* k2);
-//@ requires [?fr1]keyp(k1, ?kk1) &*& [?fr2]keyp(k2, ?kk2);
-//@ ensures [fr1]keyp(k1, kk1) &*& [fr2]keyp(k2, kk2) &*& (false == result ? (kk1 != kk2) : (kk1 == kk2));
 
 
 /*@ predicate pred_arg4<t1,t2,t3,t4>(predicate (t1,t2,t3,t4) p) = true;
@@ -29,49 +27,7 @@ typedef bool map_keys_equality/*@<K>(predicate (void*; K) keyp) @*/(void* k1, vo
                         int* chns,
                         int* values);
 
-  fixpoint list<pair<kt,vt> > empty_map_fp<kt,vt>() { return nil; }
-
-  fixpoint vt map_get_fp<kt,vt>(list<pair<kt,vt> > m, kt key) {
-    switch(m) {
-      case nil: return default_value<vt>();
-      case cons(h,t):
-        return (fst(h) == key ? snd(h) : map_get_fp(t, key));
-    }
-  }
-
-  fixpoint bool map_has_fp<kt,vt>(list<pair<kt,vt> > m, kt key) {
-    switch(m) {
-      case nil: return false;
-      case cons(h,t):
-        return (fst(h) == key) || map_has_fp(t, key);
-    }
-  }
-
-  fixpoint list<pair<kt,vt> > map_put_fp<kt,vt>(list<pair<kt,vt> > m,
-                                                kt key, vt val) {
-    return cons(pair(key,val), m);
-  }
-
-  fixpoint list<pair<kt,vt> > map_erase_fp<kt,vt>(list<pair<kt,vt> > m, kt key) {
-    switch(m) {
-      case nil: return nil;
-      case cons(h,t):
-        return fst(h) == key ? t : cons(h, map_erase_fp(t, key));
-    }
-  }
-
-  fixpoint list<pair<kt,vt> > map_erase_all_fp<kt,vt>(list<pair<kt,vt> > m, list<kt> keys) {
-    switch(keys) {
-      case nil: return m;
-      case cons(h,t):
-        return map_erase_fp(map_erase_all_fp(m, t), h);
-    }
-  }
-
-  fixpoint int map_size_fp<kt,vt>(list<pair<kt,vt> > m) {
-    return length(m);
-  }
-  @*/
+@*/
 
 /*@
   lemma void map_erase_another_one<kt,vt>(list<pair<kt,vt> > m,
