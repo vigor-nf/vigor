@@ -178,13 +178,13 @@ fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir){
 // ADD ROUTE FUNCTIONS
 //Wanted to regroup update_n_tbl_24/long with type parameter but verifast stalls
 
-fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z> > > tbl_24,
+/*fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z> > > tbl_24,
                                                        int start, int current, int stop,
                                                        option<pair<bool, Z> > entry){
 
   switch(tbl_24){
     case nil: return nil;
-    case cons(v, vs): return start <= current && current < stop ?
+    case cons(v, vs): return start <= current && start+current < stop ?
                                cons(entry, update_n_tbl_24(vs, start, current+1, stop, entry))
                              :
                                cons(v, update_n_tbl_24(vs, start, current+1, stop, entry));
@@ -196,19 +196,65 @@ fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long,
                                             int start, int current, int stop, option<Z> entry){
   switch(tbl_long){
     case nil: return nil;
-    case cons(v, vs): return start <= current && current < stop ?
+    case cons(v, vs): return start <= current && start+current < stop ?
                                cons(entry, update_n_tbl_long(vs, start, current+1, stop, entry))
                              :
                                cons(v, update_n_tbl_long(vs, start, current+1, stop, entry));
   }
+}*/
+
+fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z> > > tbl_24,
+                                                       int start, int count,
+                                                       option<pair<bool, Z> > entry){
+  switch(tbl_24){
+    case nil: return nil;
+    case cons(v, cs0): return 
+      start == 0 ? 
+        count == 0 ? 
+          cons(v, cs0)
+        :
+          cons(entry,
+               update_n_tbl_24(cs0, 0, count-1, entry))
+      :
+        update_n_tbl_24(cs0, start-1, count, entry);		
+  }
 }
+	
+fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long,
+                                            int start, int count, option<Z> entry){
+  switch(tbl_long){
+    case nil: return nil;
+    case cons(v, cs0): return
+      start == 0 ?
+        count == 0 ?
+          cons(v, cs0)
+        :
+          cons(entry, update_n_tbl_long(cs0, 0, count-1, entry))
+      :
+        update_n_tbl_long(cs0, start-1, count, entry);
+  }
+}
+
+lemma_auto(length(update_n_tbl_24(tbl_24, start, count, entry))) void length_update_n_tbl_24(
+                                                       list<option<pair<bool, Z> > > tbl_24,
+                                                       int start, int count,
+                                                       option<pair<bool, Z> > entry);
+  requires true;
+  ensures length(update_n_tbl_24(tbl_24, start, count, entry)) == length(tbl_24);
+
+lemma_auto(length(update_n_tbl_long(tbl_l, start, count, entry))) void length_update_n_tbl_long(
+                                                       list<option<Z> > tbl_l,
+                                                       int start, int count,
+                                                       option<Z> entry);
+  requires true;
+  ensures length(update_n_tbl_long(tbl_l, start, count, entry)) == length(tbl_l);
 	
 
 fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > tbl_24,
                                                        lpm_rule rule){
   switch(rule){
     case rule(ipv4, prefixlen, route):
-      return update_n_tbl_24(tbl_24, compute_starting_index_24(rule), 0,
+      return update_n_tbl_24(tbl_24, compute_starting_index_24(rule),
                           compute_rule_size(prefixlen),
                           some(pair(false, Z_of_int(route, N16))));
   }
@@ -220,7 +266,6 @@ fixpoint list<option<Z> > insert_route_long(list<option<Z> > tbl_long,
     case rule(ipv4, prefixlen, route):
       return update_n_tbl_long(tbl_long,
                           compute_starting_index_long(rule, base_index),
-                          0,
                           compute_rule_size(prefixlen),
                           some(Z_of_int(route, N16)));
   }
@@ -245,7 +290,7 @@ fixpoint dir_24_8 insert_tbl_long(dir_24_8 dir, lpm_rule rule){
               tables(tbl_24, tbl_long, long_index)
             :
               //Update the value in tbl_24 and tbl_long
-              tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule), 0, 1,
+              tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule), 1,
                                   some(pair(true, Z_of_int(long_index, N8)))),
                      insert_route_long(tbl_long, rule, long_index),
                      long_index + 1)
