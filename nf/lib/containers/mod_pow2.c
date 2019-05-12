@@ -7,23 +7,6 @@
 
 /*@
 
-    fixpoint list<bool> bits_of_int_and(list<bool> x_bits, list<bool> y_bits) {
-        switch(x_bits) {
-            case nil: return y_bits;
-            case cons(x0, xs0): return switch(y_bits) {
-                case nil: return x_bits;
-                case cons(y0, ys0): return cons(x0 && y0, bits_of_int_and(xs0, ys0));
-            };
-        }
-    }
-
-    fixpoint list<bool> gen_r_bits(list<bool> k_bits, int m) {
-        switch(k_bits) {
-            case nil: return nil;
-            case cons(k0, ks0): return ((m > 0) ? cons(false, gen_r_bits(ks0, m - 1)) : cons(k0, gen_r_bits(ks0, 0)));
-        }
-    }
-
     // ------------- arithmetic -------------
 
     lemma void loop_fp_pop(int k, int capacity)
@@ -82,7 +65,7 @@
 
 
 
-    // ------------- pow_nat/pow2 -------------
+    // ------------- pow_nat -------------
 
     lemma void pow_nat_div_rem(int x, nat n)
         requires    0 < x &*& n != zero;
@@ -103,6 +86,24 @@
         switch(n) {
             case zero:
             case succ(n_pred): pow_nat_bounds(x, n_pred);
+        }
+    }
+
+    lemma void pow_nat_gt(int x, nat n, nat m)
+        requires    1 < x &*& int_of_nat(n) < int_of_nat(m);
+        ensures     pow_nat(x, n) < pow_nat(x, m);
+    {
+        switch(m) {
+            case zero:
+            case succ(m_pred):
+                switch(n) {
+                    case zero: 
+                        assert (pow_nat(x, n) == 1);
+                        assert (pow_nat(x, m) == x * pow_nat(x, m_pred));
+                        pow_nat_bounds(x, m_pred);
+                    case succ(n_pred): 
+                        pow_nat_gt(x, n_pred, m_pred);
+                }
         }
     }
 
@@ -179,6 +180,16 @@
     }
 
     // ------------- k & (capacity - 1)  -------------
+
+    fixpoint list<bool> bits_of_int_and(list<bool> x_bits, list<bool> y_bits) {
+        switch(x_bits) {
+            case nil: return y_bits;
+            case cons(x0, xs0): return switch(y_bits) {
+                case nil: return x_bits;
+                case cons(y0, ys0): return cons(x0 && y0, bits_of_int_and(xs0, ys0));
+            };
+        }
+    }
 
     lemma void length_bits_of_int_and(list<bool> x_bits, list<bool> y_bits)
         requires    true;
@@ -422,6 +433,26 @@
         }
     }
 
+    lemma void int_of_bits_ge(list<bool> bits, nat m)
+        requires
+            0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
+            nth(int_of_nat(m), bits) == true;
+        ensures
+            pow_nat(2, m) <= int_of_bits(0, bits);
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0):
+                switch(m) {
+                    case zero:
+                        assert (b == true);
+                        int_of_bits_bounds(bs0);
+                    case succ(m_pred):
+                        int_of_bits_ge(bs0, m_pred);
+                }
+        }
+    }
+
     lemma void int_of_bits_mul(list<bool> bits, nat m)
         requires
             0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
@@ -448,6 +479,13 @@
                         pow_nat_bounds(2, m_pred);
                         mod_mul(int_of_bits(0, bs0), pow_nat(2, m_pred), 2);
                 }
+        }
+    }
+
+    fixpoint list<bool> gen_r_bits(list<bool> k_bits, int m) {
+        switch(k_bits) {
+            case nil: return nil;
+            case cons(k0, ks0): return ((m > 0) ? cons(false, gen_r_bits(ks0, m - 1)) : cons(k0, gen_r_bits(ks0, 0)));
         }
     }
 
@@ -482,9 +520,9 @@
                  int_of_bits(0, k_and_capacity_bits) == (k & (capacity - 1)) ;
         ensures (k % capacity) == (k & (capacity - 1));
     {
-      div_rem_nonneg(int_of_bits(0, r_bits), capacity);
-      mod_reduce(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
-      mod_bijection(int_of_bits(0, k_and_capacity_bits), capacity);
+        div_rem_nonneg(int_of_bits(0, r_bits), capacity);
+        mod_reduce(int_of_bits(0, k_and_capacity_bits), capacity, int_of_bits(0, r_bits)/capacity);
+        mod_bijection(int_of_bits(0, k_and_capacity_bits), capacity);
     }
 
     lemma void mod_bitand_equiv(int k, int capacity, nat m)
@@ -528,4 +566,462 @@
         assert (k % capacity) == loop_fp(k, capacity);
         mod_bitand_equiv_conclude(k, capacity, r_bits, k_and_capacity_bits);
     }
+
+    // ------------- proof for check_pow2_valid -------------
+
+    lemma nat is_pow2_some(int x, nat m)
+        requires    is_pow2(x, m) != none;
+        ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
+    {
+        switch(m) {
+            case zero:
+                assert (x == pow2(zero));
+                return zero;
+            case succ(m_pred):
+                if (x == pow2(m)) {
+                    return m;
+                } else {
+                    return is_pow2_some(x, m_pred);
+                }
+        }
+    }
+
+    lemma void some_is_pow2(int x, nat n, nat m)
+        requires    x == pow_nat(2, n) &*& int_of_nat(n) <= int_of_nat(m);
+        ensures     is_pow2(x, m) == some(n);
+    {
+        switch(m) {
+            case zero:
+                assert (int_of_nat(n) == int_of_nat(m));
+                nat_of_int_of_nat(n);
+                nat_of_int_of_nat(m);
+                assert (x == pow2(zero));
+            case succ(m_pred): 
+                if (int_of_nat(n) < int_of_nat(m)) {
+                    pow_nat_gt(2, n, m);
+                    some_is_pow2(x, n, m_pred);
+                } else {
+                    assert (int_of_nat(n) == int_of_nat(m));
+                    nat_of_int_of_nat(n);
+                    nat_of_int_of_nat(m);
+                    assert (n == m);
+                }
+        }
+    }
+
+    lemma_auto(index_of(x, xs)) void index_of_bound<t>(t x, list<t> xs)
+        requires    true;
+        ensures     0 <= index_of(x, xs);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): index_of_bound(x, xs0);
+        }
+    }
+
+    lemma void count_drop_index_of<t>(t x, list<t> xs)
+       requires     0 < count(xs, (eq)(x));
+       ensures      count(drop(index_of(x, xs) + 1, xs), (eq)(x)) == count(xs, (eq)(x)) - 1;
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0):
+                if (x0 == x) {
+                    assert(index_of(x, xs) == 0);
+                    assert (drop(1, xs) == xs0);
+                    count_append(cons(x0, nil), xs0, (eq)(x));
+                } else {
+                    count_drop_index_of(x, xs0);
+                    assert (count(xs, (eq)(x)) == count(xs0, (eq)(x)));
+                    assert (index_of(x, xs0) == index_of(x, xs) - 1);
+                    drop_append(index_of(x, xs) + 1, cons(x0, nil), xs0);
+                    assert (drop(index_of(x, xs) + 1, xs) == drop(index_of(x, xs0) + 1, xs0) );
+                }
+        }
+    }
+
+    fixpoint int repeat_div2(int x, nat m) {
+        switch(m) {
+            case zero: return x;
+            case succ(m_pred): return repeat_div2(x/2, m_pred);
+        }
+    }
+
+    lemma_auto(repeat_div2(x, zero)) void val_repeat_div2(int x)
+        requires    true;
+        ensures     repeat_div2(x, zero) == x;
+    {}
+
+    lemma void repeat_div2_pow2(nat m, nat n)
+        requires    int_of_nat(m) <= int_of_nat(n);
+        ensures     repeat_div2(pow_nat(2, n), m) == pow_nat(2, nat_minus(n, m));
+    {
+        switch(n) {
+            case zero:
+                nat_of_int_of_nat(n);
+                nat_of_int_of_nat(m);
+                assert (m == zero);
+            case succ(n_pred):
+                switch(m) {
+                    case zero:
+                    case succ(m_pred): 
+                        repeat_div2_pow2(m_pred, n_pred);
+                        pow_nat_div_rem(2, n);
+                }
+        }
+    }
+
+    lemma void repeat_div2_mul_pow2(int k, nat m)
+        requires    0 <= k;
+        ensures     repeat_div2(k * pow_nat(2, m), m) == k;
+    {
+        switch(m) {
+            case zero:
+            case succ(m_pred): 
+                repeat_div2_mul_pow2(k, m_pred);
+                div_exact(k * pow_nat(2, m_pred), 2);
+        }
+    }
+
+    lemma void repeat_div2_mul_pow2_minus_one(int k, nat m)
+        requires    0 < k;
+        ensures     repeat_div2(k * pow_nat(2, m) - 1, m) == k - 1;
+    {
+        switch(m) {
+            case zero:
+            case succ(m_pred):
+                repeat_div2_mul_pow2_minus_one(k, m_pred);
+                pow_nat_bounds(2, m_pred);
+                div_minus_one(k * pow_nat(2, m_pred), 2);
+        }
+    }
+
+
+    lemma void repeat_div2_ge(int x, int y, nat m)
+        requires    0 <= x &*& x <= y;
+        ensures     repeat_div2(x, m) <= repeat_div2(y, m);
+    {
+        switch(m) {
+            case zero:
+            case succ(m_pred):
+                div_ge(x, y, 2);
+                div_ge(0, x, 2);
+                division_round_to_zero(0, 2);
+                repeat_div2_ge(x/2, y/2, m_pred);
+        }
+    }
+
+    lemma void repeat_div2_lt(int x, nat m, nat n)
+        requires    0 <= x &*& x < pow_nat(2, n) &*& int_of_nat(m) <= int_of_nat(n);
+        ensures     repeat_div2(x, m) < repeat_div2(pow_nat(2, n), m);
+    {
+        switch(n) {
+            case zero:
+                nat_of_int_of_nat(n);
+                nat_of_int_of_nat(m);
+                assert (m == zero);
+            case succ(n_pred):
+                switch(m) {
+                    case zero:
+                    case succ(m_pred): 
+                        div_ge(0, x, 2);
+                        division_round_to_zero(0, 2);
+
+                        div_lt(x, pow_nat(2, n_pred), 2);
+                        div_exact(pow_nat(2, n_pred), 2);
+                        repeat_div2_lt(x/2, m_pred, n_pred);
+                }
+        }
+    }
+
+    lemma void repeat_div2_bounds(int x, nat m, nat n)
+        requires    pow_nat(2, m) <= x &*& x < pow_nat(2, n) &*& int_of_nat(m) <= int_of_nat(n);
+        ensures     0 < repeat_div2(x, m) &*& repeat_div2(x, m) < pow_nat(2, nat_minus(n, m));
+    {
+        repeat_div2_pow2(m, m);
+        pow_nat_bounds(2, nat_minus(m, m));
+        repeat_div2_ge(pow_nat(2, m), x, m);
+
+        repeat_div2_pow2(m, n);
+        repeat_div2_lt(x, m, n);
+    }
+
+    lemma void bits_of_int_nth(int x, nat m, nat n)
+        requires    0 <= int_of_nat(m) &*& int_of_nat(m) < int_of_nat(n) &*& nth(int_of_nat(m), snd(bits_of_int(x, n))) == true;
+        ensures     repeat_div2(x, m) % 2 == 1;
+    {
+        switch(n) {
+            case zero:
+            case succ(n_pred):
+                switch(m) {
+                    case zero:
+                    case succ(m_pred):
+                        bits_of_int_nth(x/2, m_pred, n_pred);
+                }
+        }
+    }
+
+    lemma void bits_of_int_repeat_div2(int x, nat m, nat n)
+        requires    0 <= x &*& int_of_nat(m) <= int_of_nat(n);
+        ensures     drop(int_of_nat(m), snd(bits_of_int(x, n))) == snd(bits_of_int(repeat_div2(x, m), nat_minus(n, m)));
+    {
+        switch(n) {
+            case zero:
+                nat_of_int_of_nat(n);
+                nat_of_int_of_nat(m);
+                assert (m == zero);
+            case succ(n_pred):
+                switch(m) {
+                    case zero: 
+                    case succ(m_pred):
+                        div_ge(0, x, 2);
+                        division_round_to_zero(0, 2);
+                        bits_of_int_repeat_div2(x/2, m_pred, n_pred);
+                }
+        }
+    }
+
+    lemma void bits_of_int_minus_one(int x, nat n)
+        requires    0 < x &*& x % 2 == 1;
+        ensures     snd(bits_of_int(x/2, n)) == snd(bits_of_int((x-1)/2, n));
+    {
+        // Proof that x == (x/2)*2 + 1
+        div_rem_nonneg(x, 2);
+        
+        // Proof that (x-1)/2 == (x/2)
+        assert (x-1 == (x/2)*2);
+        div_exact((x/2),2);
+        assert ((x-1)/2==x/2);
+    }
+
+    fixpoint int count_bits(list<bool> xs) {
+        return count(xs, (eq)(true));
+    }
+
+    lemma void count_nonzero_to_mem<t>(t x, list<t> xs)
+        requires    0 < count(xs, (eq)(x));
+        ensures     true == mem(x, xs);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): 
+                if (x0 != x) {
+                    count_append(cons(x0, nil), xs0, (eq)(x));
+                    count_nonnegative(cons(x0, nil), (eq)(x));
+                    count_nonnegative(xs0, (eq)(x));
+                    count_nonzero_to_mem(x, xs0);
+                }
+        }
+    }
+
+    lemma void int_of_bits_count_zero(list<bool> bits)
+        requires    count_bits(bits) == 0;
+        ensures     int_of_bits(0, bits) == 0;
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0): 
+                count_append(cons(b, nil), bs0, (eq)(true));
+                count_nonnegative(cons(b, nil), (eq)(true));
+                count_nonnegative(bs0, (eq)(true));
+                int_of_bits_count_zero(bs0);
+        }
+    }
+
+    lemma void int_of_bits_count_nonzero(list<bool> bits)
+        requires    0 < count_bits(bits);
+        ensures     0 < int_of_bits(0, bits);
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0):
+                if (b && count_bits(bits) == 1) {
+                    assert (count_bits(bs0) == 0);
+                    int_of_bits_count_zero(bs0);
+                } else {
+                    int_of_bits_count_nonzero(bs0);
+                }
+        }
+    }
+
+    lemma void bits_of_int_nonzero(int x, nat n)
+        requires    0 < x &*& x < pow_nat(2, n);
+        ensures     0 < count_bits(snd(bits_of_int(x, n)));
+    {
+        list<bool> x_bits = snd(bits_of_int(x, n));
+
+        count_nonnegative(x_bits, (eq)(true));
+
+        if (count_bits(x_bits) == 0) {
+            int_of_bits_count_zero(x_bits);
+            bits_of_int_remainder(x, n);
+            int_of_bits_of_int(x, n);
+
+            assert (int_of_bits(0, x_bits) == 0);
+            assert (x == int_of_bits(0, x_bits));
+            assert (false);
+        }
+    }
+
+    lemma void count_ge_length<t>(list<t> xs, fixpoint (t,bool) fp)
+        requires    true;
+        ensures     count(xs, fp) <= length(xs);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0): count_ge_length(xs0, fp);
+        }
+    }
+
+    lemma void bits_of_int_and_count_nonzero(list<bool> x_bits, list<bool> y_bits, int m)
+        requires    
+            length(x_bits) == length(y_bits) &*&
+            0 <= m &*& m < length(x_bits) &*&
+            drop(m, x_bits) == drop(m, y_bits) &*&
+            0 < count_bits(drop(m, x_bits));
+        ensures
+            0 < count_bits(bits_of_int_and(x_bits, y_bits));
+    {
+        switch(x_bits) {
+            case nil:
+            case cons(x0, xs0):
+                switch(y_bits) {
+                    case nil:
+                    case cons(y0, ys0):
+                        if (m > 0) {
+                            bits_of_int_and_count_nonzero(xs0, ys0, m - 1);
+                        } else {
+                            if (x0) {
+                                count_append(cons(x0 && y0, nil), bits_of_int_and(xs0, ys0), (eq)(true));
+                                count_nonnegative(cons(x0 && y0, nil), (eq)(true));
+                                count_nonnegative(bits_of_int_and(xs0, ys0), (eq)(true));
+                            } else {
+                                count_append(cons(x0, nil), xs0, (eq)(true));
+                                count_nonnegative(cons(x0, nil), (eq)(true));
+                                count_nonnegative(xs0, (eq)(true));
+                                assert (0 == count_bits(cons(x0, nil)));
+                                assert (0 < count_bits(xs0));
+                                count_ge_length(xs0, (eq)(true));
+                                bits_of_int_and_count_nonzero(xs0, ys0, 0);
+                            }
+                        }
+                }
+        }
+    }
+
+    lemma void int_of_bits_pow2(list<bool> bits, nat m)
+        requires    
+            count_bits(bits) == 1 &*& int_of_nat(m) == index_of(true, bits) &*&
+            0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits);
+        ensures
+            int_of_bits(0, bits) == pow_nat(2, m);
+    {
+        switch(bits) {
+            case nil:
+            case cons(b, bs0):
+                switch(m) {
+                    case zero:
+                        assert (b);
+                        count_append(cons(b, nil), bs0, (eq)(true));
+                        count_nonnegative(cons(b, nil), (eq)(true));
+                        count_nonnegative(bs0, (eq)(true));
+                        int_of_bits_count_zero(bs0);
+                    case succ(m_pred): 
+                        int_of_bits_pow2(bs0, m_pred);
+                }
+        }
+    }
+    
+    lemma void index_of_up_bound<t>(t x, list<t> xs)
+        requires    0 < count(xs, (eq)(x));
+        ensures     index_of(x, xs) < length(xs) - (count(xs, (eq)(x)) - 1);
+    {
+        switch(xs) {
+            case nil:
+            case cons(x0, xs0):
+                if (x0 == x) {
+                    assert (index_of(x, xs) == 0);
+                    count_ge_length(xs, (eq)(x));
+                } else {
+                    index_of_up_bound(x, xs0);
+                }
+        }
+    }
+
+    lemma void check_pow2_valid(int x)
+        requires    0 < x &*& x < pow_nat(2, N32) &*& (x & (x - 1)) == 0;
+        ensures     is_pow2(x, N31) != none;
+    {
+
+        list<bool> x_bits = snd(bits_of_int(x, N32));
+        list<bool> x_minus_one_bits = snd(bits_of_int(x - 1, N32));
+        length_bits_of_int(x, N32);
+        length_bits_of_int(x - 1, N32);
+        bits_of_int_remainder(x, N32);
+        bits_of_int_remainder(x - 1, N32);
+        int_of_bits_of_int(x, N32);
+        assert(x == int_of_bits(0, x_bits));
+
+        // Proof that x has at least one bit set to true
+        bits_of_int_nonzero(x, N32);
+        assert(0 < count_bits(x_bits));
+
+        int m = index_of(true, x_bits);
+        count_nonzero_to_mem(true, x_bits);
+        assert(0 <= m && m < int_of_nat(N32)); 
+        assert (nth(m, x_bits) == true);
+
+        if (1 < count_bits(x_bits)) { // Impossible case
+            index_of_up_bound(true, x_bits);
+            assert (m < int_of_nat(N32) - 1);
+
+            // Pure hell
+            nat m_nat = nat_of_int(m);
+            nat m_nat_plus = nat_of_int(m + 1);
+
+            bits_of_int_nth(x, m_nat, N32);
+            int_of_bits_ge(x_bits, m_nat);
+            repeat_div2_bounds(x, m_nat, N32);
+            
+            bits_of_int_minus_one(repeat_div2(x, m_nat), nat_minus(N32, m_nat_plus));
+
+            assert (repeat_div2(x, m_nat)/2 == repeat_div2(x, m_nat_plus));
+            assert (repeat_div2(x-1, m_nat)/2 == repeat_div2(x-1, m_nat_plus));
+
+            int_of_bits_mul(x_bits, m_nat);
+            div_rem_nonneg(x, pow_nat(2, m_nat));
+            assert (x == x/pow_nat(2, m_nat) * pow_nat(2, m_nat));
+            repeat_div2_mul_pow2(x/pow_nat(2, m_nat), m_nat);
+            repeat_div2_mul_pow2_minus_one(x/pow_nat(2, m_nat), m_nat);
+            assert ((repeat_div2(x, m_nat)-1)/2 == repeat_div2(x-1, m_nat_plus));
+
+            bits_of_int_repeat_div2(x, m_nat_plus, N32);
+            bits_of_int_repeat_div2(x-1, m_nat_plus, N32);
+            assert (drop(m+1, x_bits) == drop(m+1, x_minus_one_bits));
+            
+            count_drop_index_of(true, x_bits);
+            assert (0 < count_bits(drop(m, x_bits)));
+
+            bits_of_int_and_def(x, x_bits, x - 1, x_minus_one_bits, N32);
+            assert (x & (x - 1) == int_of_bits(0, bits_of_int_and(x_bits, x_minus_one_bits)));
+
+            bits_of_int_and_count_nonzero(x_bits, x_minus_one_bits, m+1);
+            assert (0 < count_bits(bits_of_int_and(x_bits, x_minus_one_bits)));
+
+            bitand_limits(x, x - 1, N32);
+            bits_of_int_remainder(x & (x - 1), N32);
+            int_of_bits_count_nonzero(bits_of_int_and(x_bits, x_minus_one_bits));
+
+            assert (false);
+        } else {
+            assert (count_bits(x_bits) == 1);
+
+            // Proof that x == 2^m
+            int_of_bits_pow2(x_bits, nat_of_int(m));
+            assert(int_of_bits(0, x_bits) == pow_nat(2, nat_of_int(m)));
+
+            some_is_pow2(x, nat_of_int(m), N31);
+        }
+    }
+
 @*/
