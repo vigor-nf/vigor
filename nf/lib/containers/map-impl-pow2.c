@@ -11,28 +11,6 @@
 //@ #include "map.gh"
 //@ #include "natlist.gh"
 //@ #include "chain-buckets.gh"
-//@ #include "mod_pow2.gh"
-
-/*@
-
-  lemma nat is_pow2_some(int x, nat m)
-      requires    is_pow2(x, m) != none;
-      ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
-  {
-      switch(m) {
-          case zero:
-              assert (x == pow2(zero));
-              return zero;
-          case succ(m_pred):
-              if (x == pow2(m)) {
-                  return m;
-              } else {
-                  return is_pow2_some(x, m_pred);
-              }
-      }
-  }
-
-@*/
 
 static 
 unsigned loop(unsigned k, unsigned capacity)

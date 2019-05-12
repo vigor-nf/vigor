@@ -6,21 +6,7 @@
 
 //@ #include "map.gh"
 //@ #include "stdex.gh"
-
-/*@
-
-  fixpoint int pow2(nat m) {
-      return pow_nat(2, m);
-  }
-
-  fixpoint option<nat> is_pow2(int x, nat m) {
-      switch(m) {
-          case zero: return (x == pow2(zero) ? some(zero) : none);
-          case succ(m_pred): return (x == pow2(m) ? some(m) : is_pow2(x, m_pred));
-      }
-  }
-
-@*/
+//@ #include "mod_pow2.gh"
 
 /*@ predicate pred_arg4<t1,t2,t3,t4>(predicate (t1,t2,t3,t4) p) = true;
     predicate pred_arg2<t1,t2>(predicate (t1,t2) p) = true;

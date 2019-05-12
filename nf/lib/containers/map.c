@@ -49,7 +49,7 @@ struct Map {
     size == length(m) &*&
     map == mapc(capacity, m, addrs) &*&
     is_pow2(capacity, N31) != none;
-  @*/
+@*/
 #else
 /*@
   predicate mapp<t>(struct Map* ptr,
@@ -78,7 +78,7 @@ struct Map {
             busybits, keyps, khs, chns, vals) &*&
     size == length(m) &*&
     map == mapc(capacity, m, addrs);
-  @*/
+@*/
 #endif
 
 int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
@@ -96,13 +96,14 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
                        mapc(capacity, nil, nil))); @*/
 {
 
-#ifdef CAPACITY_POW2
+  #ifdef CAPACITY_POW2
   // Check that capacity is a power of 2
   if (capacity == 0 || (capacity & (capacity - 1)) != 0) {
-    return 0;
+      return 0;
   }
-  //@ assume(is_pow2(capacity, N31) != none);
-#endif
+  //@ check_pow2_valid(capacity);
+  #else
+  #endif
 
   struct Map* old_map_val = *map_out;
   struct Map* map_alloc = malloc(sizeof(struct Map));
@@ -312,28 +313,30 @@ unsigned map_size/*@ <t> @*/(struct Map* map)
 }
 
 /*@
-lemma void map_has_two_values_nondistinct<kt,vt>(list<pair<kt,vt> > m, kt k1, kt k2)
-requires true == map_has_fp(m, k1) &*&
-         true == map_has_fp(m, k2) &*&
-         map_get_fp(m, k1) == map_get_fp(m, k2) &*&
-         k1 != k2;
-ensures false == distinct(map(snd, m));
-{
-  switch(m) {
-    case nil:
-    case cons(h,t):
-      switch(h) { case pair(key, value):
-        if (key == k1) {
-          map_get_mem(t, k2);
-          mem_map(pair(k2, map_get_fp(m, k1)), t, snd);
-        } else if (key == k2) {
-          map_get_mem(t, k1);
-          mem_map(pair(k1, map_get_fp(m, k2)), t, snd);
-        } else {
-          map_has_two_values_nondistinct(t, k1, k2);
+
+  lemma void map_has_two_values_nondistinct<kt,vt>(list<pair<kt,vt> > m, kt k1, kt k2)
+  requires true == map_has_fp(m, k1) &*&
+          true == map_has_fp(m, k2) &*&
+          map_get_fp(m, k1) == map_get_fp(m, k2) &*&
+          k1 != k2;
+  ensures false == distinct(map(snd, m));
+  {
+    switch(m) {
+      case nil:
+      case cons(h,t):
+        switch(h) { case pair(key, value):
+          if (key == k1) {
+            map_get_mem(t, k2);
+            mem_map(pair(k2, map_get_fp(m, k1)), t, snd);
+          } else if (key == k2) {
+            map_get_mem(t, k1);
+            mem_map(pair(k1, map_get_fp(m, k2)), t, snd);
+          } else {
+            map_has_two_values_nondistinct(t, k1, k2);
+          }
         }
-      }
+    }
   }
-}
+
 @*/
 
