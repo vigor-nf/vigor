@@ -135,6 +135,16 @@ fixpoint int set_flag(int entry){
   return int_of_Z(Z_or(Z_of_int(entry, N16), Z_of_int(0x8000, N16)));
 }
 
+fixpoint option<pair<bool, Z> > set_flag_entry(option<pair<bool, Z> > entry){
+  switch(entry){
+    case none: return none;
+    case some(p): return
+      switch(p){
+        case pair(b,z): return some(pair(true, z));
+      };
+  }
+}
+
 //The output value does not contain the flag
 fixpoint int extract_value(int entry){
   return entry & 0x7FFF;
@@ -233,22 +243,7 @@ fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long,
       :
         update_n_tbl_long(cs0, start-1, count, entry);
   }
-}
-
-lemma_auto(length(update_n_tbl_24(tbl_24, start, count, entry))) void length_update_n_tbl_24(
-                                                       list<option<pair<bool, Z> > > tbl_24,
-                                                       int start, int count,
-                                                       option<pair<bool, Z> > entry);
-  requires true;
-  ensures length(update_n_tbl_24(tbl_24, start, count, entry)) == length(tbl_24);
-
-lemma_auto(length(update_n_tbl_long(tbl_l, start, count, entry))) void length_update_n_tbl_long(
-                                                       list<option<Z> > tbl_l,
-                                                       int start, int count,
-                                                       option<Z> entry);
-  requires true;
-  ensures length(update_n_tbl_long(tbl_l, start, count, entry)) == length(tbl_l);
-	
+}	
 
 fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > tbl_24,
                                                        lpm_rule rule){

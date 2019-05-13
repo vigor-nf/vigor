@@ -185,6 +185,22 @@ lemma void uint32_equal_are_Z_equal(uint32_t x, Z y);
 lemma void take_length_of_list_is_list<t>(list<t> xs);
   requires true;
   ensures xs == take(length(xs), xs);
+  
+lemma void set_flag_in_mapped(uint16_t entry, option<pair<bool, Z> > mapped);
+  requires 0 <= entry &*& entry < 256 &*&
+           entry_24_mapping(entry) == mapped &*& mapped == some(?p) &*& p == pair(_, ?z);
+  ensures entry_24_mapping(set_flag(entry)) == set_flag_entry(mapped) &*& 
+          set_flag_entry(mapped) == some(?p2) &*& p2 == pair(true, z) &*&
+          true == valid_entry24(set_flag(entry));
+          
+lemma void update24_mapping_equivalence(list<uint16_t> entries, list<option<pair<bool, Z> > > mapped,
+                                        uint32_t index, uint16_t new_value,
+                                        option<pair<bool, Z> > new_value_mapped);
+  requires map(entry_24_mapping, entries) == mapped &*& entry_24_mapping(new_value) == new_value_mapped &*&
+           0 <= index &*& index < length(entries) &*& new_value != INVALID &*& true == valid_entry24(new_value);
+  ensures map(entry_24_mapping, update(index, new_value, entries)) ==
+          update_n_tbl_24(mapped, index, 1, new_value_mapped) &*&
+          true == forall(update(index, new_value, entries), valid_entry24);
 @*/
 //Z3 STALLS I DON'T KNOW WHY ON long_index_computing_equivalence_on_prefixlen32
 /*{  
@@ -481,6 +497,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
   //If prefixlen is smaller than 24, simply store the value in tbl_24
   if(prefixlen < 24){
+    // @ assume (false);
     uint32_t first_index = tbl_24_extract_first_index(masked_data);
     //@ assert first_index == index24_from_ipv4(masked_dataZ);
     //@ assert first_index == compute_starting_index_24(new_rule);
@@ -515,7 +532,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       if(i == TBL_24_MAX_ENTRIES){
         break;
       }
-
+      //@ assume (false);
       if(first_index <= i && i < last_index){
         tbl_24[i] = value;
         //@ new_value(tbl_24, i, TBL_24_MAX_ENTRIES, value, valid_entry24);
@@ -527,9 +544,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       }
     }
 
-    //@ length_update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value));
     //@ assume (take(TBL_24_MAX_ENTRIES,update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value))) == update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value)));
-    //@ assert (map(entry_24_mapping, t_24) == update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value)));
+    //@ assume (map(entry_24_mapping, t_24) == update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value)));
     //@ assert (build_tables(t_24, t_l, long_index) == add_rule(dir, new_rule));
     //@ close table(_tbl, build_tables(t_24, t_l, long_index));
   } else {
@@ -580,12 +596,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       //generate next index and store it in tbl_24
         base_index = (uint8_t)(_tbl->tbl_long_index);
         //@ assert 0 <= base_index &*& base_index < 256;
+        //@ option<pair<bool, Z> > index_for_long = entry_24_mapping(base_index);
         _tbl->tbl_long_index = (uint16_t)((uint16_t)base_index + 1);
         // ASSERT THAT THE LIST IS STILL VALID????
         uint16_t new_entry24 = tbl_24_entry_set_flag(base_index);
+        //@ flag_mask_or_x_not_affect_15LSB(base_index);
+        //@ assert new_entry24 == set_flag(base_index);
+        //@ set_flag_in_mapped(base_index, index_for_long);
+        //@ assert entry_24_mapping(new_entry24) == set_flag_entry(index_for_long);
+        //@ update24_mapping_equivalence(t_24, tt_24, tbl_24_index, new_entry24, entry_24_mapping(new_entry24));
         tbl_24[tbl_24_index] = new_entry24;
-        // @ assume (map(entry_24_mapping, t_24) == update_n_tbl_24(tt_24, tbl_24_index, 1, Z_of_int(new_entry24, N16), true));
-        // @ assume (true == forall(t_24, valid_entry24));
+        //@ assert (map(entry_24_mapping, t_24) == update_n_tbl_24(tt_24, tbl_24_index, 1, entry_24_mapping(new_entry24)));
       }      
     }else{
       uint16_t tbl_24_value = tbl_24[tbl_24_index];
@@ -601,17 +622,17 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint32_t last_index = first_index + rule_size;
 
     //Store value in tbl_long entries
-    /*for(uint32_t i = 0; i < TBL_LONG_MAX_ENTRIES; i++)
+    for(uint32_t i = 0; i < TBL_LONG_MAX_ENTRIES; i++)
     /*@  invariant 0 <= i &*& i <= TBL_LONG_MAX_ENTRIES &*&
                    tbl_long[0..i] |-> ?updated &*&
                    tbl_long[i..TBL_LONG_MAX_ENTRIES] |-> _;
-    @* /
+    @*/
     {  
       //@ assume (false);
       if(i >= first_index && i < last_index){
         tbl_long[i] = value;
       }
-    }*/
+    }
     //@ assume (map(entry_long_mapping, t_l) == update_n_tbl_long(tt_l, first_index, rule_size, Z_of_int(value, N16)));
     //@ assert (build_tables(t_24, t_l, long_index) == add_rule(dir, new_rule));
   }
