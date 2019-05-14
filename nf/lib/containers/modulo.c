@@ -378,4 +378,55 @@
         }
     }
 
+    lemma void loop_fp_pop(int k, int capacity)
+        requires    0 <= k &*& 0 < capacity;
+        ensures     loop_fp(k, capacity) == k % capacity;
+    {
+        div_mod_gt_0(k%capacity, k, capacity);
+        mod_rotate(k%capacity, capacity);
+        mod_bijection(k%capacity, capacity);
+    }
+
+    lemma void mod_reduce(int a, int b, int k)
+        requires    0 <= a &*& 0 < b &*& 0 <= k;
+        ensures     (a + b*k) % b == a % b;
+    {
+        mul_nonnegative(b, k);
+        loop_injection_n(a, b, k);
+        loop_fp_pop(a + b*k, b);
+        loop_fp_pop(a, b);
+    }
+
+    lemma void div_minus_one(int a, int b)
+        requires    0 < a &*& 0 < b;
+        ensures     (a*b - 1) / b == a - 1;
+    {
+        div_exact(a, b);
+        div_exact(a - 1, b);
+        mul_nonzero(a, b);
+        div_lt(a*b - 1, a, b);
+        mul_nonnegative(a-1, b);
+        div_ge((a-1)*b, a*b - 1, b);
+    }
+
+    lemma void div_plus_one(int a, int b)
+        requires    0 < a &*& 1 < b;
+        ensures     (a*b + 1) / b == a;
+    {
+        div_exact(a, b);
+        div_exact(a + 1, b);
+        mul_nonnegative(a, b);
+        div_lt(a*b+1, a+1, b);
+        div_ge(a*b, a*b + 1, b);
+    }
+
+    lemma void mod_rotate_mul(int a, int b)
+        requires    0 <= a &*& 0 < b;
+        ensures     ((a * b) % b) == 0;
+    {
+        div_exact(a, b);
+        mul_nonnegative(a, b);
+        div_rem_nonneg(a * b, b);
+    }
+
 @*/

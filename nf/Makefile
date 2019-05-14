@@ -56,6 +56,7 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/containers/double-chain-impl.c \
               $(SELF_DIR)/lib/containers/double-chain.c \
               $(SELF_DIR)/lib/containers/map-impl.c \
+			  $(SELF_DIR)/lib/containers/bitopsutils.o \
 			  $(SELF_DIR)/lib/containers/mod_pow2.o \
               $(SELF_DIR)/lib/containers/map-impl-pow2.c \
               $(SELF_DIR)/lib/containers/double-map.c \
@@ -70,7 +71,8 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/expirator.c \
               $(SELF_DIR)/lib/packet-io.c
 
-LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/mod_pow2.c
+LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/bitopsutils.c \
+				 $(SELF_DIR)/lib/containers/mod_pow2.c
 
 verifast:
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	

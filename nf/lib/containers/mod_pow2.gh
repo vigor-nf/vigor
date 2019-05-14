@@ -1,8 +1,9 @@
 #ifndef _MOD_POW2_INCLUDED_
 #define _MOD_POW2_INCLUDED_
 
-#include "modulo.gh"
 #include <nat.gh>
+
+#include "modulo.gh"
 
 fixpoint int pow2(nat m) {
     return pow_nat(2, m);

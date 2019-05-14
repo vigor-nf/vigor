@@ -98,4 +98,24 @@ lemma void div_ge(int a, int b, int c);
     requires    0 <= a &*& 0 < c &*& a <= b;
     ensures     a/c <= b/c;
 
+lemma void loop_fp_pop(int k, int capacity);
+    requires    0 <= k &*& 0 < capacity;
+    ensures     loop_fp(k, capacity) == k % capacity;
+
+lemma void mod_reduce(int a, int b, int k);
+    requires    0 <= a &*& 0 < b &*& 0 <= k;
+    ensures     (a + b*k) % b == a % b;
+
+lemma void div_minus_one(int a, int b);
+    requires    0 < a &*& 0 < b;
+    ensures     (a*b - 1) / b == a - 1;
+
+lemma void div_plus_one(int a, int b);
+    requires    0 < a &*& 1 < b;
+    ensures     (a*b + 1) / b == a;
+
+lemma void mod_rotate_mul(int a, int b);
+    requires    0 <= a &*& 0 < b;
+    ensures     ((a * b) % b) == 0;
+
 #endif//_MODULO_GH_INCLUDED_
