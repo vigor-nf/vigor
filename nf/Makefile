@@ -56,6 +56,9 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/containers/double-chain-impl.c \
               $(SELF_DIR)/lib/containers/double-chain.c \
               $(SELF_DIR)/lib/containers/map-impl.c \
+              $(SELF_DIR)/lib/containers/bitopsutils.o \
+              $(SELF_DIR)/lib/containers/mod_pow2.o \
+              $(SELF_DIR)/lib/containers/map-impl-pow2.c \
               $(SELF_DIR)/lib/containers/double-map.c \
               $(SELF_DIR)/lib/containers/vector.c \
               $(SELF_DIR)/lib/containers/prime.c \
@@ -63,13 +66,28 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/containers/transpose-lemmas.c \
               $(SELF_DIR)/lib/containers/permutations.c \
               $(SELF_DIR)/lib/containers/cht.c \
+              $(SELF_DIR)/lib/packet-io.c \
               $(SELF_DIR)/lib/containers/map.c \
               $(SELF_DIR)/lib/coherence.c \
-              $(SELF_DIR)/lib/expirator.c \
-              $(SELF_DIR)/lib/packet-io.c
+              $(SELF_DIR)/lib/expirator.c
+
+LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/bitopsutils.c \
+				 $(SELF_DIR)/lib/containers/mod_pow2.c
+
+LIBVIG_MAP_CAP_POW2 := $(SELF_DIR)/lib/containers/arith.o \
+                       $(SELF_DIR)/lib/containers/modulo.o \
+                       $(SELF_DIR)/lib/containers/bitopsutils.o \
+                       $(SELF_DIR)/lib/containers/mod_pow2.o \
+                       $(SELF_DIR)/lib/containers/map-impl-pow2.o \
+                       $(SELF_DIR)/lib/containers/listutils-lemmas.o \
+                       $(SELF_DIR)/lib/containers/map.c
 
 verifast:
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared $(LIBVIG_SRC)
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest $(LIBVIG_SRC)
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -D CAPACITY_POW2 \
+		$(LIBVIG_MAP_CAP_POW2)
+	rm $(SELF_DIR)/lib/*.vfmanifest $(SELF_DIR)/lib/**/*.vfmanifest
 
 ### KLEE verification ###
 
