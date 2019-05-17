@@ -106,7 +106,6 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config.wan_device);
 
     uint16_t external_port;
-    static int flow_counter = 0;
 		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
 			NF_DEBUG("New flow");
 
