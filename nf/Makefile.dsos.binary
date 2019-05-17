@@ -8,7 +8,8 @@ NASM = nasm
 QEMU = qemu-system-x86_64
 
 ARCH = x86_64
-BINARY = dsos-$(ARCH).bin
+BINARY_MULTIBOOT1 = dsos-$(ARCH)-multiboot1.bin
+BINARY_MULTIBOOT2 = dsos-$(ARCH)-multiboot2.bin
 ISO = dsos-$(ARCH).iso
 
 LINKER_SCRIPT = linker.ld
@@ -123,8 +124,13 @@ OTHER_INCLUDES := -I lib/stubs -I lib --include $(NF_DIR)/lib/misc_defs.h
 C_SRCS = $(NF_SOURCES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
-BOOT_SRCS = $(KERNEL_DIR)/asm/multiboot_header.asm $(KERNEL_DIR)/asm/boot.asm
+BOOT_SRCS = $(KERNEL_DIR)/asm/boot.asm
+MULTIBOOT1_SRC = $(KERNEL_DIR)/asm/multiboot1_header.asm
+MULTIBOOT2_SRC = $(KERNEL_DIR)/asm/multiboot2_header.asm
+
 BOOT_OBJS := $(patsubst %.asm, %.o, $(BOOT_SRCS))
+MULTIBOOT1_OBJ := $(patsubst %.asm, %.o, $(MULTIBOOT1_SRC))
+MULTIBOOT2_OBJ := $(patsubst %.asm, %.o, $(MULTIBOOT2_SRC))
 
 CFLAGS := -march=native -ffreestanding -flto -O3
 
@@ -156,13 +162,18 @@ QEMUFLAGS += -device vfio-pci,host=06:00.1
 # QEMUFLAGS += -no-hpet -nodefaults -no-acpi -vga std
 # QEMUFLAGS += -object memory-backend-file,id=mem,prealloc=on,size=1G,mem-path=/mnt/huge1GB
 
-.PHONY: all clean run iso kernel
+.PHONY: all clean run debug iso multiboot1 multiboot2
 
-all: $(BINARY)
+all: multiboot1 multiboot2
+
+multiboot1: $(BINARY_MULTIBOOT1)
+
+multiboot2: $(BINARY_MULTIBOOT2)
 
 # We can't remove CRT{BEGIN,END}_OBJ because they're system-provided
 clean:
-	@rm -f $(C_OBJS) $(BOOT_OBJS) $(CRTI_OBJ) $(CRTN_OBJ)
+	@rm -f $(C_OBJS) $(MULTIBOOT1_OBJ) $(MULTIBOOT2_OBJ) $(BOOT_OBJS) \
+		$(CRTI_OBJ) $(CRTN_OBJ)
 
 # Launch QEMU
 run: $(ISO)
@@ -173,7 +184,7 @@ debug: $(ISO)
 	@sudo $(QEMU) -s -S $(QEMUFLAGS) > /dev/null 2>&1 &
 	@sudo gdb -ex "set arch i386:x86-64:intel" \
 		-ex "target remote localhost:1234" \
-		-ex "symbol-file $(BINARY)" \
+		-ex "symbol-file $(BINARY_MULTIBOOT2)" \
 		-ex "hb main" \
 		-ex "c" \
 		-ex "d 1" \
@@ -189,17 +200,20 @@ debug: $(ISO)
 iso: $(ISO)
 
 # Make bootable iso image
-$(ISO): $(BINARY) $(GRUB_CFG)
+$(ISO): $(BINARY_MULTIBOOT2) $(GRUB_CFG)
 	@mkdir -p build/isofiles/boot/grub
-	@cp $(BINARY) build/isofiles/boot/kernel.bin
+	@cp $(BINARY_MULTIBOOT2) build/isofiles/boot/kernel.bin
 	@cp $(GRUB_CFG) build/isofiles/boot/grub
 	@grub-mkrescue -o $(ISO) build/isofiles 2> /dev/null
 	@rm -r build/isofiles
 
 # Link final executable
-$(BINARY): $(OBJS) $(LIBC)
-	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBC) $(LIBS)
-	objcopy -O elf32-i386 $(BINARY)
+$(BINARY_MULTIBOOT2): $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC) $(LIBS)
+
+$(BINARY_MULTIBOOT1): $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC) $(LIBS)
+	objcopy -O elf32-i386 $(BINARY_MULTIBOOT1)
 
 # Assembly files
 %.o: %.asm
