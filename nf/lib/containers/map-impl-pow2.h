@@ -6,7 +6,7 @@
 
 //@ #include "map.gh"
 //@ #include "stdex.gh"
-
+//@ #include "mod_pow2.gh"
 
 /*@ predicate pred_arg4<t1,t2,t3,t4>(predicate (t1,t2,t3,t4) p) = true;
     predicate pred_arg2<t1,t2>(predicate (t1,t2) p) = true;
@@ -113,7 +113,8 @@ int map_impl_get/*@ <kt> @*/(int* busybits, void** keyps,
              [?fk]kp(keyp, ?k) &*&
              [?fr]is_map_keys_equality(eq, kp) &*&
              hsh(k) == hash &*&
-             *value |-> ?v; @*/
+             *value |-> ?v &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures mapping<kt>(m, addrs, kp, recp, hsh, capacity, busybits,
                         keyps, k_hashes, chns, values) &*&
             [fk]kp(keyp, k) &*&
@@ -136,7 +137,8 @@ void map_impl_put/*@ <kt> @*/(int* busybits, void** keyps,
              [0.25]kp(keyp, ?k) &*& true == recp(k, value) &*&
              hsh(k) == hash &*&
              false == map_has_fp(m, k) &*&
-             map_size_fp(m) < capacity; @*/
+             map_size_fp(m) < capacity &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures true == recp(k, value) &*&
             mapping<kt>(map_put_fp(m, k, value),
                         map_put_fp(addrs, k, keyp),
@@ -158,7 +160,8 @@ void map_impl_erase/*@ <kt> @*/(int* busybits, void** keyps, unsigned* key_hashe
              [?fr]is_map_keys_equality<kt>(eq, kp) &*&
              hsh(k) == hash &*&
              *keyp_out |-> ?ko &*&
-             true == map_has_fp(m, k); @*/
+             true == map_has_fp(m, k) &*&
+             is_pow2(capacity, N31) != none; @*/
 /*@ ensures [fk]kp(keyp, k) &*&
             [fr]is_map_keys_equality<kt>(eq, kp) &*&
             *keyp_out |-> ?nko &*&
