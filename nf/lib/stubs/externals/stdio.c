@@ -22,7 +22,8 @@
 extern struct dsos_pci_nic *PCI_DEVICES;
 extern int NUM_PCI_DEVICES;
 
-FILE* fopencookie_ret = NULL;
+// Because DPDK might call fflush on this file we need to be able to recognize it
+static FILE* fopencookie_ret = NULL;
 
 #ifdef DSOS
 int vprintf1(const char *fmt, va_list va);
