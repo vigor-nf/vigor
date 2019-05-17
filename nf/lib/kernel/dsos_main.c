@@ -3,7 +3,6 @@
 #include <stdio.h>
 
 #include "dsos_pci.h"
-#include "dsos_msr.h"
 #include "dsos_halt.h"
 #include "dsos_serial.h"
 
