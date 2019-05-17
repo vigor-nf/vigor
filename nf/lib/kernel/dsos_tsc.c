@@ -1,5 +1,6 @@
 #include "dsos_tsc.h"
 #include <x86intrin.h>
+#include <rte_cycles.h>
 
 #ifdef KLEE_VERIFICATION
 
@@ -21,7 +22,5 @@ uint64_t dsos_rdtsc(void)
 
 uint64_t dsos_tsc_get_freq(void)
 {
-  /* Completely arbitrary but ok. TODO: Find a reliable way to get it from
-     hardware */
-  return 3292182000ul;
+  return rte_get_tsc_hz();
 }
