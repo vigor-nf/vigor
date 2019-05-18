@@ -216,6 +216,10 @@ lemma void update_long_list_is_update_map(list<option<Z> > map, list<uint16_t> e
 lemma void value24_extraction_equivalence(uint16_t entry, option<pair<bool, Z> > mapped);
   requires valid_entry24(entry) == true &*& entry_24_mapping(entry) == mapped;
   ensures extract_value(entry) == extract24_value(mapped);
+  
+lemma void first_index_depends_on_prefixlen(lpm_rule new_rule, uint8_t base_index, uint8_t prefixlen);
+  requires 0 <= base_index &*& base_index < 256 &*& 24 <= prefixlen &*& prefixlen <= 32;
+  ensures compute_starting_index_long(new_rule, base_index) <= (0xFFFF+1)-compute_rule_size(prefixlen);
 @*/
 //Z3 STALLS I DON'T KNOW WHY ON long_index_computing_equivalence_on_prefixlen32
 /*{  
@@ -667,7 +671,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint32_t rule_size = compute_rule_size(prefixlen);
     //@ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
-    //@ assume (last_index <= length(t_l));
+    //@ first_index_depends_on_prefixlen(new_rule, base_index, prefixlen);
+    //@ assert (last_index <= length(t_l));
     
     //@ assert INVALID != value;
     //@ assert true == valid_entry_long(value);
