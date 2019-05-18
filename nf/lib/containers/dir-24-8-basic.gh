@@ -193,17 +193,18 @@ fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z>
                                                        option<pair<bool, Z> > entry){
   switch(count){
     case zero: return tbl_24;
-    case succ(n): return update_n_tbl_24(update(start, entry, tbl_24), start+1, n,
-                                         entry);		
+    case succ(n): return update_n_tbl_24(update(start, entry, tbl_24), start+1,
+                                         n, entry);		
   }
 }
 
 fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long,
-                                            int start, nat count, option<Z> entry){
+                                            int start, nat count,
+                                            option<Z> entry){
   switch(count){
     case zero: return tbl_long;
-    case succ(n): return update_n_tbl_long(update(start, entry, tbl_long), start+1, n,
-                                    entry);
+    case succ(n): return update_n_tbl_long(update(start, entry, tbl_long),
+                                           start+1, n, entry);
   }
 }
 
@@ -247,8 +248,10 @@ fixpoint dir_24_8 insert_tbl_long(dir_24_8 dir, lpm_rule rule){
               tables(tbl_24, tbl_long, long_index)
             :
               //Update the value in tbl_24 and tbl_long
-              tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule), N1,
-                                  some(pair(true, Z_of_int(long_index, N16)))),
+              tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule),
+                                     N1,
+                                     some(pair(true,
+                                               Z_of_int(long_index, N16)))),
                      insert_route_long(tbl_long, rule, long_index),
                      long_index + 1)
           :
