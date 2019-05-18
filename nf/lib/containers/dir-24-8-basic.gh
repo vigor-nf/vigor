@@ -248,7 +248,7 @@ fixpoint dir_24_8 insert_tbl_long(dir_24_8 dir, lpm_rule rule){
             :
               //Update the value in tbl_24 and tbl_long
               tables(update_n_tbl_24(tbl_24, compute_starting_index_24(rule), N1,
-                                  some(pair(true, Z_of_int(long_index, N8)))),
+                                  some(pair(true, Z_of_int(long_index, N16)))),
                      insert_route_long(tbl_long, rule, long_index),
                      long_index + 1)
           :

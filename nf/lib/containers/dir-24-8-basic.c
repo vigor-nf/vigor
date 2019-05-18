@@ -360,7 +360,8 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen,
 /*@ ensures result ==
             compute_starting_index_long(init_rule(data, prefixlen, 0),
                                         base_index) &*&
-            0 <= result &*& result <= 0xFFFF;//dummy route, unused
+            0 <= result &*&
+            result <= 0xFFFF;//dummy route, unused
 @*/
 {   
   //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
@@ -520,6 +521,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint32_t rule_size = compute_rule_size(prefixlen);
     //@ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
+
+    //@ assert last_index <= length(t_24);
     
     //@ assert INVALID != value;
     //@ assert true == valid_entry24(value);
@@ -573,6 +576,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint8_t base_index;
     uint32_t tbl_24_index = tbl_24_extract_first_index(data);
     //@ assert tbl_24_index == index24_from_ipv4(d);
+    //@ assert tbl_24_index == compute_starting_index_24(new_rule);
       
     uint16_t tbl_24_value = tbl_24[tbl_24_index];
     //Prove that the value retrieved by lookup_tbl_24 is the mapped value
@@ -610,7 +614,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         return -1;
 		
       }else{
-      //@ assume (false);
       //generate next index and store it in tbl_24
         base_index = (uint8_t)(_tbl->tbl_long_index);
         //@ assert 0 <= base_index &*& base_index < 256;
@@ -702,7 +705,6 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     //@ assert length(new_t_l) == length(updated_map);
     //@ assert map(entry_long_mapping, new_t_l) == updated_map;
     
-    // @ assert updated_map == insert_route_long(map_l, new_rule, lookup);
     //@ assert (build_tables(new_t_24, new_t_l, new_long_index) == add_rule(dir, new_rule));
     //@ close table(_tbl, build_tables(new_t_24, new_t_l, new_long_index));
   }
