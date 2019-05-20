@@ -1,25 +1,18 @@
-server: kernel version 3.14 , gcc version 4.8.5 
+server: kernel version 3.14 , gcc version 4.8.5 , need lua 5.1 with luasocket
 
 download MoonRoute from here https://github.com/emmericp/MoonRoute-data
 
 cd /code/MoonGen
 
-not usefull{
 
-	edit CMakeCache.txt and replace every occurance of "/home/rainer/ma/MoonGen" (hardcoded path..) by your own path
+edit CMakeCache.txt and replace every occurance of "/home/rainer/ma/MoonGen" (hardcoded path..) by your own path
 
-	modify deps/dpdk/config/x86_64-native-linuxapp-gcc by adding "CONFIG_RTE_BUILD_COMBINE_LIBS=y"    see : https://bugs.launchpad.net/ubuntu/+source/dpdk/+bug/1578118
-
-}
 
 run sudo ./build.sh
 
 make
 
 the MoonGen executable should be there.
-
-
-ADD LUA LIBBBBBSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
 now for running the router....
