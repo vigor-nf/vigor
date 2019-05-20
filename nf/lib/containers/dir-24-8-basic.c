@@ -103,22 +103,6 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
            lst == repeat_n(nat_of_int(length(lst)), INVALID);
   ensures map(map_func, lst) == repeat_n(nat_of_int(length(lst)), none);
   
-lemma void new_value(uint16_t *t, uint32_t i, uint32_t size, uint16_t value,
-                     fixpoint(uint16_t, bool) validation_func);
-  requires t[0..i] |-> ?l1 &*& t[i..size] |-> cons(?v, ?cs0) &*&
-           true == validation_func(value) &*&
-           true == forall(l1, validation_func);
-  ensures t[0..i+1] |-> ?updated &*& updated == append(l1, cons(value, nil))
-          &*& t[i+1..size] |-> cs0 &*& true == forall(updated, validation_func);
-  
-lemma void no_update(uint16_t *t, uint32_t i, uint32_t size,
-                     fixpoint(uint16_t, bool) validation_func);
-  requires t[0..i] |-> ?l1 &*& t[i..size] |-> cons(?v, ?cs0) &*&
-           true == validation_func(v) &*&
-           true == forall(l1, validation_func);
-  ensures t[0..i+1] |-> ?l3 &*& l3 == append(l1, cons(v, nil)) &*&
-          t[i+1..size] |-> cs0 &*& true == forall(l3, validation_func);
-  
 lemma void lookup_at_index<t>(uint32_t index, list<uint16_t> lst,
                               list<t> mapped, fixpoint(uint16_t, t) map_func);
   requires 0 <= index &*& index < length(lst) &*&
@@ -182,9 +166,83 @@ lemma void uint32_equal_are_Z_equal(uint32_t x, Z y);
   requires 0 <= x &*& x <= 0xFFFFFFFF &*& x == int_of_Z(y);
   ensures Z_of_int(x, N32) == y;
   
-lemma void take_length_of_list_is_list<t>(list<t> xs);
-  requires true;
-  ensures xs == take(length(xs), xs);
+lemma void set_flag_in_mapped(uint16_t entry, option<pair<bool, Z> > mapped);
+  requires 0 <= entry &*& entry < 256 &*&
+           entry_24_mapping(entry) == mapped &*& mapped == some(?p) &*&
+           p == pair(_, ?z);
+  ensures entry_24_mapping(set_flag(entry)) == set_flag_entry(mapped) &*& 
+          set_flag_entry(mapped) == some(?p2) &*& p2 == pair(true, z) &*&
+          true == valid_entry24(set_flag(entry));
+          
+lemma void length_update_n_tbl_24(list<option<pair<bool, Z> > > l,
+                                  uint32_t first_index,
+                                  uint32_t rule_size,
+                                  option<pair<bool, Z> > entry);
+  requires 0 <= first_index &*& first_index < length(l) &*& 0 < rule_size &*&
+          first_index+rule_size <= length(l);
+  ensures length(l) == length(update_n_tbl_24(l, first_index,
+                                              nat_of_int(rule_size), entry));
+
+lemma void update24_with_valid(list<uint16_t> l, uint32_t index,
+                               uint16_t new_value);
+  requires 0 <= index &*& index < length(l) &*&
+           true == forall(l, valid_entry24) &*&
+           true == valid_entry24(new_value);
+  ensures true == forall(update(index, new_value, l), valid_entry24);
+  
+lemma void update24_list_is_update_map(list<option<pair<bool,Z> > > map,
+                                       list<uint16_t> entries,
+                                       uint32_t first_index, uint32_t index,
+                                       uint16_t value);
+  requires true == forall(entries, valid_entry24) &*&
+           map(entry_24_mapping, entries) ==
+           update_n_tbl_24(map, first_index, nat_of_int(index-first_index),
+                           entry_24_mapping(value)) &*&
+           true == valid_entry24(value);
+  ensures map(entry_24_mapping, update(index, value, entries)) ==
+          update_n_tbl_24(map, first_index, nat_of_int(index-first_index+1),
+                          entry_24_mapping(value));
+                          
+lemma void length_update_n_tbl_long(list<option<Z> > l, uint32_t first_index,
+                                  uint32_t rule_size, option<Z> entry);
+  requires 0 <= first_index &*& first_index < length(l) &*& 0 < rule_size &*&
+          first_index+rule_size <= length(l);
+  ensures length(l) ==
+          length(update_n_tbl_long(l, first_index, nat_of_int(rule_size),
+                                   entry));
+
+lemma void update_long_with_valid(list<uint16_t> l, uint32_t index,
+                                  uint16_t new_value);
+  requires 0 <= index &*& index < length(l) &*&
+           true == forall(l, valid_entry_long) &*&
+           true == valid_entry24(new_value);
+  ensures true == forall(update(index, new_value, l), valid_entry_long);
+  
+lemma void update_long_list_is_update_map(list<option<Z> > map,
+                                          list<uint16_t> entries,
+                                          uint32_t first_index, uint32_t index,
+                                          uint16_t value);
+  requires true == forall(entries, valid_entry_long) &*&
+           map(entry_long_mapping, entries) ==
+           update_n_tbl_long(map, first_index, nat_of_int(index-first_index),
+                             entry_long_mapping(value)) &*&
+           true == valid_entry_long(value);
+  ensures map(entry_long_mapping, update(index, value, entries)) ==
+          update_n_tbl_long(map, first_index, nat_of_int(index-first_index+1),
+                          entry_long_mapping(value));
+
+lemma void value24_extraction_equivalence(uint16_t entry,
+                                          option<pair<bool, Z> > mapped);
+  requires valid_entry24(entry) == true &*& entry_24_mapping(entry) == mapped;
+  ensures extract_value(entry) == extract24_value(mapped);
+  
+lemma void first_index_depends_on_prefixlen(lpm_rule new_rule,
+                                            uint8_t base_index,
+                                            uint8_t prefixlen);
+  requires 0 <= base_index &*& base_index < 256 &*& 24 <= prefixlen &*&
+           prefixlen <= 32;
+  ensures compute_starting_index_long(new_rule, base_index) <= (0xFFFF+1)-
+          compute_rule_size(prefixlen);
 @*/
 //Z3 STALLS I DON'T KNOW WHY ON long_index_computing_equivalence_on_prefixlen32
 /*{  
@@ -203,6 +261,7 @@ struct tbl{
   uint16_t* tbl_long;
   uint16_t  tbl_long_index;
 };
+
 
 
 void fill_invalid(uint16_t *t, uint32_t size)
@@ -300,8 +359,8 @@ uint16_t tbl_24_entry_set_flag(uint16_t entry)
             true == extract_flag(result) &*&
             true == valid_entry24(result) &*&
             fst(get_someOption24(entry_24_mapping(result))) == true &*&
-            snd(get_someOption24(entry_24_mapping(result))) == Z_of_int(entry,
-                                                                        N16);
+            snd(get_someOption24(entry_24_mapping(result))) ==
+            Z_of_int(entry, N16);
 @*/
 {
   //@ bitor_limits(entry, TBL_24_FLAG_MASK, N16);
@@ -328,7 +387,8 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen,
 /*@ ensures result ==
             compute_starting_index_long(init_rule(data, prefixlen, 0),
                                         base_index) &*&
-            0 <= result &*& result <= 0xFFFF;//dummy route, unused
+            0 <= result &*&
+            result <= 0xFFFF;//dummy route, unused
 @*/
 {   
   //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
@@ -338,8 +398,9 @@ uint16_t tbl_long_extract_first_index(uint32_t data, uint8_t prefixlen,
   //@ Z d = Z_of_uintN(data, N32);
   //@ bitand_def(data, d, mask, maskZ);
   uint32_t masked_data = data & mask;
-  //@ assert int_of_Z(Z_and(d, mask32_from_prefixlen(prefixlen)))==masked_data;
-  
+  /*@ assert int_of_Z(Z_and(d, mask32_from_prefixlen(prefixlen))) ==
+             masked_data;
+  @*/
   //@ bitand_limits(data, 0xFF, N32);
   //@ Z masked_dataZ = Z_of_uintN(masked_data, N32);
   //@ Z byte_mask = Z_of_uintN(0xFF, N8);
@@ -358,7 +419,6 @@ struct tbl* tbl_allocate()
       true 
     : 
       table(result, dir_init());
-
 @*/
 {	
   struct tbl* _tbl = malloc(sizeof(struct tbl));
@@ -432,6 +492,7 @@ void tbl_free(struct tbl *_tbl)
   free(_tbl);
 }
 
+
 int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 /*@ requires table(_tbl, ?dir) &*&
               key(_key, ?ipv4, ?plen, ?route);
@@ -457,7 +518,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
   //@ assert ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?t_24);
   //@ assert ushorts(tbl_long, TBL_LONG_MAX_ENTRIES, ?t_l);
   
-  //@ assert dir == tables(?tt_24, ?tt_l, ?long_index);
+  //@ assert dir == tables(?map_24, ?map_l, ?long_index);
 
   //@ lpm_rule new_rule = init_rule(data, prefixlen, value);
 
@@ -481,59 +542,68 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
   //If prefixlen is smaller than 24, simply store the value in tbl_24
   if(prefixlen < 24){
+
     uint32_t first_index = tbl_24_extract_first_index(masked_data);
     //@ assert first_index == index24_from_ipv4(masked_dataZ);
     //@ assert first_index == compute_starting_index_24(new_rule);
     uint32_t rule_size = compute_rule_size(prefixlen);
     //@ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
+
+    //@ assert last_index <= length(t_24);
     
     //@ assert INVALID != value;
     //@ assert true == valid_entry24(value);
     //@ assert route == value;
     //@ extract_value_is_value(value);
     //@ assert route == extract_value(route);
-    //@ assert some(pair(false, Z_of_int(route, N16))) == entry_24_mapping(value);
-    
-    /* @ list<option<pair<bool, Z> > > updated_map = nil;
-          //update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value));
+    /*@ assert some(pair(false, Z_of_int(route, N16))) ==
+               entry_24_mapping(value);
     @*/
-    // @ length_update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value));
     
-    // @ assert length(updated_list) == length(tt_24);
+    /*@ list<option<pair<bool, Z> > > updated_map =
+        update_n_tbl_24(map_24, first_index,nat_of_int(rule_size),
+                        entry_24_mapping(value));
+    @*/
+    
+    /*@ length_update_n_tbl_24(map_24, first_index, rule_size,
+                               entry_24_mapping(value));
+    @*/
+    
+    //@ assert length(updated_map) == length(map_24);
     
     //fill all entries between [first index and last index[ with value
-    for(uint32_t i = 0; ; i++)
-    /*@ invariant 0 <= i &*& i <= TBL_24_MAX_ENTRIES &*&
-                  tbl_24[0..i] |-> ?updated &*&
+    for(uint32_t i = first_index; ; i++)
+    /*@ invariant 0 <= i &*& i <= last_index &*&
+                  tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry24) &*&
-                  tbl_24[i..TBL_24_MAX_ENTRIES] |-> ?to_update &*&
-                  true == forall(to_update, valid_entry24) &*&
-                  map(entry_24_mapping, updated) == take(i, update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value)));
+                  map(entry_24_mapping, updated) ==
+                  update_n_tbl_24(map_24, first_index,
+                                  nat_of_int(i-first_index),
+                                  entry_24_mapping(value));
     @*/
-    { 
-      if(i == TBL_24_MAX_ENTRIES){
+    {
+      if(i == last_index){
         break;
       }
-
-      if(first_index <= i && i < last_index){
-        tbl_24[i] = value;
-        //@ new_value(tbl_24, i, TBL_24_MAX_ENTRIES, value, valid_entry24);
-        // @ updated_map = append(updated_map, map(entry_24_mapping, cons(value, nil)));
-      }else{
-        //@ elem_is_valid(to_update, valid_entry24, 0); //Head is valid
-        //@ no_update(tbl_24, i, TBL_24_MAX_ENTRIES, valid_entry24);
-        // @ updated_map = append(updated_map, map(entry_24_mapping, cons(nth(i, t_24), nil)));
-      }
+      
+      //@ assert ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?before);
+      //@ update24_with_valid(updated, i, value);
+      //@ update24_list_is_update_map(map_24, updated, first_index, i, value);
+      tbl_24[i] = value;
+      //@ assert ushorts(tbl_24, TBL_24_MAX_ENTRIES, ?after);
+      //@ assert after == update(i, value, before);
     }
+    
+    
+    //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?new_t_24;
+    //@ assert length(new_t_24) == length(updated_map);
+    //@ assert (map(entry_24_mapping, new_t_24) == updated_map);
 
-    //@ length_update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value));
-    //@ assume (take(TBL_24_MAX_ENTRIES,update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value))) == update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value)));
-    //@ assert (map(entry_24_mapping, t_24) == update_n_tbl_24(tt_24, first_index, rule_size, entry_24_mapping(value)));
-    //@ assert (build_tables(t_24, t_l, long_index) == add_rule(dir, new_rule));
-    //@ close table(_tbl, build_tables(t_24, t_l, long_index));
+
+    //@ assert (build_tables(new_t_24,t_l,long_index)==add_rule(dir, new_rule));
+    //@ close table(_tbl, build_tables(new_t_24, t_l, long_index));
   } else {
-  //@ assume (false);
   //If the prefixlen is not smaller than 24, we have to store the value
   //in tbl_long.
   
@@ -543,19 +613,21 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     uint8_t base_index;
     uint32_t tbl_24_index = tbl_24_extract_first_index(data);
     //@ assert tbl_24_index == index24_from_ipv4(d);
+    //@ assert tbl_24_index == compute_starting_index_24(new_rule);
       
     uint16_t tbl_24_value = tbl_24[tbl_24_index];
     //Prove that the value retrieved by lookup_tbl_24 is the mapped value
     //retrieved by tbl_24[index]
 
-    //@ lookup_at_index(tbl_24_index, t_24, tt_24, entry_24_mapping);
-    //@ assert entry_24_mapping(tbl_24_value) == lookup_tbl_24(tbl_24_index, dir);
+    //@ lookup_at_index(tbl_24_index, t_24, map_24, entry_24_mapping);
+    //@ assert entry_24_mapping(tbl_24_value)==lookup_tbl_24(tbl_24_index, dir);
     //@ option<pair<bool, Z> > value24 = lookup_tbl_24(tbl_24_index, dir);
   
     //Prove that the retrieved elem is valid
     //@ elem_is_valid(t_24, valid_entry24, tbl_24_index);
     
     bool need_new_index;
+    uint16_t new_long_index;
     
     if(tbl_24_value == INVALID){
       need_new_index = true;
@@ -563,7 +635,9 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       //@ assert need_new_index == is_new_index_needed(value24);
     }else{
       need_new_index = !tbl_24_entry_flag(tbl_24_value);
-      //@ assert need_new_index == !extract_flag(value24);
+      //@ assert need_new_index == !extract_flag(tbl_24_value);
+      //@ assert value24 == some(?p);
+      //@ assert need_new_index == !fst(p);
     }
     
     //@ assert need_new_index == is_new_index_needed(value24);
@@ -580,42 +654,118 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       //generate next index and store it in tbl_24
         base_index = (uint8_t)(_tbl->tbl_long_index);
         //@ assert 0 <= base_index &*& base_index < 256;
-        _tbl->tbl_long_index = (uint16_t)((uint16_t)base_index + 1);
+        //@ option<pair<bool, Z> > index_for_long=entry_24_mapping(base_index);
+        new_long_index = (uint16_t)(_tbl->tbl_long_index + 1);
+        _tbl->tbl_long_index = new_long_index;
         // ASSERT THAT THE LIST IS STILL VALID????
         uint16_t new_entry24 = tbl_24_entry_set_flag(base_index);
+        //@ flag_mask_or_x_not_affect_15LSB(base_index);
+        //@ assert new_entry24 == set_flag(base_index);
+        //@ set_flag_in_mapped(base_index, index_for_long);
+        /*@ assert entry_24_mapping(new_entry24) ==
+                   set_flag_entry(index_for_long);
+        @*/
+        
+        //@ assert INVALID != new_entry24;
+        //@ assert true == valid_entry24(new_entry24);
+        //@ assert true == extract_flag(new_entry24);
+        /*@ assert entry_24_mapping(new_entry24) ==
+                   some(pair(true, Z_of_int(base_index, N16)));
+        @*/
+        
+        //@ update24_with_valid(t_24, tbl_24_index, new_entry24);
+        /*@ update24_list_is_update_map(map_24, t_24, tbl_24_index,
+                                        tbl_24_index, new_entry24);
+        @*/
         tbl_24[tbl_24_index] = new_entry24;
-        // @ assume (map(entry_24_mapping, t_24) == update_n_tbl_24(tt_24, tbl_24_index, 1, Z_of_int(new_entry24, N16), true));
-        // @ assume (true == forall(t_24, valid_entry24));
+        
+        //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?updated_t_24;
+        /*@ assert map(entry_24_mapping, updated_t_24) ==
+                   update_n_tbl_24(map_24, tbl_24_index, N1,
+                                   entry_24_mapping(new_entry24));
+        @*/
       }      
     }else{
-      uint16_t tbl_24_value = tbl_24[tbl_24_index];
-      base_index = (uint8_t)(tbl_24_value & 0xFF);
-    }
+      new_long_index = _tbl->tbl_long_index;
       
+      base_index = (uint8_t)(tbl_24_value & 0x7FFF);
+      //@ assert entry_24_mapping(tbl_24_value) == value24;
+      //@ assert value24 == some(?p);
+      //@ assert fst(p) == true;
+      
+      //@ assert true == valid_entry24(tbl_24_value);
+      //@ assert true == extract_flag(tbl_24_value);
+      /*@ assert 0 <= extract_value(tbl_24_value) &*&
+                 extract_value(tbl_24_value) <= 0xFF;
+      @*/
+      //@ assert snd(p) == Z_of_int(extract_value(tbl_24_value),N16);
+      /*@ assert entry_24_mapping(tbl_24_value) ==
+          lookup_tbl_24(tbl_24_index, dir);
+      @*/
+      //Show extraction equivalence
+      //@ value24_extraction_equivalence(tbl_24_value, value24);
+      //@ assert base_index == extract24_value(entry_24_mapping(tbl_24_value));
+    }
+    
+    //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?new_t_24;
 
     //The last byte in data is used as the starting offset for tbl_long
     //indexes
     uint32_t first_index = tbl_long_extract_first_index(data, prefixlen,
                                                         base_index);
+    //@ assert first_index == compute_starting_index_long(new_rule, base_index);
     uint32_t rule_size = compute_rule_size(prefixlen);
+    //@ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
+    //@ first_index_depends_on_prefixlen(new_rule, base_index, prefixlen);
+    //@ assert (last_index <= length(t_l));
+    
+    //@ assert INVALID != value;
+    //@ assert true == valid_entry_long(value);
+    //@ assert route == value;
+    //@ extract_value_is_value(value);
+    //@ assert route == extract_value(route);
+    //@ assert some(Z_of_int(route, N16)) == entry_long_mapping(value);
+    
+    /*@ list<option<Z> > updated_map =
+                         update_n_tbl_long(map_l, first_index,
+                                           nat_of_int(rule_size),
+                                           entry_long_mapping(value));
+    @*/
+                                                                                                           
+    /*@ length_update_n_tbl_long(map_l, first_index, rule_size,
+                                 entry_long_mapping(value));
+    @*/
+    //@ assert length(updated_map) == length(map_l);
 
     //Store value in tbl_long entries
-    /*for(uint32_t i = 0; i < TBL_LONG_MAX_ENTRIES; i++)
-    /*@  invariant 0 <= i &*& i <= TBL_LONG_MAX_ENTRIES &*&
-                   tbl_long[0..i] |-> ?updated &*&
-                   tbl_long[i..TBL_LONG_MAX_ENTRIES] |-> _;
-    @* /
-    {  
-      //@ assume (false);
-      if(i >= first_index && i < last_index){
-        tbl_long[i] = value;
+    for(uint32_t i = first_index; ; i++)
+    /*@ invariant 0 <= i &*& i <= last_index &*&
+                  tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?updated &*&
+                  true == forall(updated, valid_entry_long) &*&
+                  map(entry_long_mapping, updated) ==
+                  update_n_tbl_long(map_l, first_index,
+                                    nat_of_int(i-first_index),
+                                    entry_long_mapping(value));
+    @*/
+    { 
+      if(i == last_index){
+        break;
       }
-    }*/
-    //@ assume (map(entry_long_mapping, t_l) == update_n_tbl_long(tt_l, first_index, rule_size, Z_of_int(value, N16)));
-    //@ assert (build_tables(t_24, t_l, long_index) == add_rule(dir, new_rule));
+      //@ update_long_with_valid(updated, i, value);
+      //@ update_long_list_is_update_map(map_l, updated, first_index, i, value);
+      tbl_long[i] = value;
+    }
+
+    //@ assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?new_t_l;
+    //@ assert length(new_t_l) == length(updated_map);
+    //@ assert map(entry_long_mapping, new_t_l) == updated_map;
+    
+    /*@ assert build_tables(new_t_24, new_t_l, new_long_index) ==
+               add_rule(dir, new_rule);
+    @*/
+    //@ close table(_tbl, build_tables(new_t_24, new_t_l, new_long_index));
   }
-  // @ close table(_tbl, build_tables(t_24, t_l, long_index));
   //@ close key(_key, ipv4, plen, route);
   return 0;
 }
