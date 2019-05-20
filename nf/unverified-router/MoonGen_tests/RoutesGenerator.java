@@ -2,12 +2,16 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
+/**
+* Small program used to generate routes for MoonRoute (lua files) and the verified and unverified router
+*/
 public class RoutesGenerator {
 
     public static int IPV4_ADDR_LENGTH = 4;
 
     public static int   MAX_OCTET_SIZE = 256;
 
+	//proportion of routes with a prefix length bigger than 23
     public static double LONG_PREFIX_PROPORTION = 0.01;
 
     public static String PORT_NUMBER = "0";
@@ -22,7 +26,14 @@ public class RoutesGenerator {
 
         for(int i = 0; i < args.length; i++) {
 
-            int nbrRoutes = Integer.parseInt(args[0]);
+			int nbrRoutes = 0;
+
+			try{
+            	nbrRoutes = Integer.parseInt(args[i]);
+			} catch(NumberFormatException n) {
+				System.out.println("PLease enter a number\n");
+			}
+
 
             try {
                 createFile("Routes" + nbrRoutes, nbrRoutes);
@@ -113,6 +124,7 @@ public class RoutesGenerator {
 
 
 
+		//add random routes
 
         double nbrShortPrefix = Math.floor( (1- LONG_PREFIX_PROPORTION) * nbrRoutes);
 
@@ -156,7 +168,7 @@ public class RoutesGenerator {
             }
         }
 
-//	fw.write("\n");
+
 
         //write final lines of cfg.lua
 
