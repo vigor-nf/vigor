@@ -11,13 +11,14 @@ APP = router
 
 
 # sources  normal mode
-SRCS-y := router.c parse_utils.c \
-          ../nf_main.c \
+SRCS-y := router.c router_config.c parse_utils.c \
+          nf_main.c \
           ../lib/nf_util.c \
           ../lib/packet-io.c \
           ../lib/nf_time.c \
           ../lib/containers/double-chain-impl.c \
           ../lib/containers/double-chain.c \
+          ../lib/containers/lpm_trie.c \
 
 
 
@@ -35,4 +36,5 @@ CFLAGS += -D$(USE)
 
 
 include $(RTE_SDK)/mk/rte.extapp.mk
+
 

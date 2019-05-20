@@ -1,28 +1,7 @@
 #include "router.h"
 
-struct router_config config;
-
 
 struct rte_lpm * lpm_dir;
-
-typedef struct{
-	
-	uint32_t ip;
-	uint16_t port;
-	uint8_t dirty;
-	
-}cache;
-
-cache * ip_cache;
-
-
-struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
-{
-    struct lpm_trie_key *key = malloc(sizeof(struct lpm_trie_key));
-    key->prefixlen = prefixlen;
-    memcpy(key->data, data, LPM_DATA_SIZE);
-    return key;
-}
 
 
 
@@ -39,9 +18,7 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 		 
         abort();
 	}
-	
 
-	struct router_config config;
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
@@ -53,12 +30,6 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 		abort();
 	}
 
-	ip_cache = calloc(CACHE_SIZE, sizeof(cache));
-	
-	
-	if(ip_cache == NULL){
-		abort();
-	}
 	
     //close file
     fclose(in_file);
@@ -66,39 +37,6 @@ struct lpm_trie_key * lpm_trie_key_alloc(size_t prefixlen, uint8_t *data)
 }
 
 
-int checkCache(uint32_t ip_addr){
-	
-	int res = 0;
-	
-	cache line = ip_cache[ip_addr % CACHE_SIZE];
-	
-	if(likely(ip_addr == line.ip)){	//check destination in cache
-		return line.port;
-	}
-	else{	//check in directory for lpm
-		
-		if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
-		
-				return FLOOD_FRAME;	// in case of lookup miss
-		} 
-		
-		if(line.dirty == 1){
-			
-			
-			line.port = res;
-			line.ip = ip_addr;
-			line.dirty = 0;
-			
-			return res;
-		}
-		else{
-			
-			line.dirty = 1;
-			return res;
-		}
-		
-	}
-}
 
 
 
@@ -108,50 +46,10 @@ int checkCache(uint32_t ip_addr){
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
 
-	//half of the packets are "bad"...
 
+  //as in policer
 
-	//first try
-/*
-	struct ether_hdr* eth_hdr = nf_then_get_ether_header(mbuf_pkt(mbuf));
-	struct ipv4_hdr *  ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
-*/
-
-	//second try	
-
-	uint8_t* ip_options;
-	bool ip_ok = true;
-	struct ipv4_hdr * ip_hdr = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &ip_ok);
-
-	/*if(unlikely(!ip_ok)){
-		 printf("not a good ip\n"); fflush(stdout);
-		return FLOOD_FRAME;
-	}*/
-
-//as in l3fwd by dpdk -> SEGV
-
-
-/*	struct ipv4_hdr *ip_hdr;
-        struct ether_hdr *eth_hdr;
-
-        if (RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
-                eth_hdr = rte_pktmbuf_mtod(mbuf, struct ether_hdr *);
-                //ip_hdr = (struct ipv4_hdr *)(eth_hdr + 1);
-
-		  ip_hdr = rte_pktmbuf_mtod_offset(mbuf, struct ipv4_hdr *, sizeof(struct ether_hdr));
-
-
-	}
-	else{
-
-		return FLOOD_FRAME;
-	}
-
-*/
-
-//as in policer
-
-  /*const uint16_t in_port = mbuf->port;
+  const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
   if (unlikely(!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
@@ -167,30 +65,26 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
   if (unlikely(!wellformed)) {
 	printf("router dropping packet...\n"); fflush(stdout);
     return in_port;
-}
+  }
 
 
-*/
+
 
     uint32_t ip_addr = rte_be_to_cpu_32(((struct ipv4_hdr *)ip_hdr)->dst_addr); //rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
     int res = 0;
   
-#ifdef CACHE 
-   
-    return checkCache(ip_addr);
-    
-#else	
+
 
 	if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
 		
 		return FLOOD_FRAME;	// in case of lookup miss
 	} 
 	
-	//printf("Route is : %d\n",res); fflush(stdout);
+
 	return res;
 
-#endif
+
 }
 
 
@@ -208,7 +102,7 @@ void insert_all(FILE * f){
 
 	/* create the LPM table */
 	config_ipv4.max_rules = MAX_ROUTES_ENTRIES;
-	config_ipv4.number_tbl8s = 256;
+	config_ipv4.number_tbl8s = MAX_TBL_8;
 	config_ipv4.flags = 0;
 	snprintf(s, sizeof(s), "IPV4_ROUTER_LPM_%d", 0);
 	
@@ -217,7 +111,6 @@ void insert_all(FILE * f){
 	
 	if (lpm_dir == NULL)
 		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
-	
 	
 	
 	 
@@ -302,8 +195,9 @@ void insert_all(FILE * f){
 				abort();
 			}
 			
-			memcpy(ip_address, ip, sizeof(uint32_t));
-			
+			//compute ip address from the byte array
+			*ip_address = ip[3] + (ip[2] << 8) + (ip[1] << 16) + (ip[0] <<24);
+
 			int res = rte_lpm_add(lpm_dir, *ip_address, mask, port);
 			
 			free(ip_address);
@@ -336,13 +230,13 @@ void insert_all(FILE * f){
 //Needed by nf_main.c
 
 void nf_config_init(int argc, char** argv) {
-  router_config_init(&config, argc, argv);
+  
 }
 
 void nf_config_cmdline_print_usage(void) {
-  router_config_cmdline_print_usage();
+  
 }
 
 void nf_print_config() {
-  router_print_config(&config);
+ 
 }
