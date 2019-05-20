@@ -79,6 +79,17 @@ struct rte_mbuf {
 //	};
 	struct rte_mempool *pool;
 	struct rte_mbuf *next;
+  /*
+    The memory layout doesn't matter here, as the structure is being initialized
+    and used only through its fields. The overflow bounds are higher, but in
+    this particular case it does not affect soundness, because fields are never
+    written to in the user code and initialized with bounded values in the
+    models.
+
+    The reason I dismissed the bit-width is that VeriFast doesn't support it.
+
+    TODO: add checks for the assumptions stated.
+   */
 //	union {
 //		uint64_t tx_offload;
 //		struct {
