@@ -1,4 +1,4 @@
-server: kernel version 3.14 , gcc version 4.8.5 , need lua 5.1
+server: kernel version 3.14 , gcc version 4.8.5 , need lua 5.1 and luasocket
 
 download MoonRoute from here https://github.com/emmericp/MoonRoute-data
 

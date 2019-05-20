@@ -3,8 +3,6 @@
 include $(RTE_SDK)/mk/rte.vars.mk
 
 
-#use ip CACHE terrible performances with changing ip. Pretty much the same with constant ip... not really usefull 
-USE = NO_CACHE
 
 # binary name
 APP = router
@@ -31,7 +29,7 @@ CFLAGS += -g
 # disable warnings triggered by DPDK
 CFLAGS += -Wno-implicit-function-declaration
 CFLAGS += -Wno-nested-externs
-CFLAGS += -D$(USE)
+
 
 
 include $(RTE_SDK)/mk/rte.extapp.mk
