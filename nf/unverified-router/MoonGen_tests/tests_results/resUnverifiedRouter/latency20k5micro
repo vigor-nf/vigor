@@ -1,0 +1,65 @@
+[1;37m[INFO]  Initializing DPDK. This will take a few seconds...[0m
+EAL: Probing VFIO support...
+EAL: PCI device 0000:02:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.2 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.3 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:06:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:06:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:81:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:81:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:83:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:83:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:85:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:85:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+[1;37m[INFO]  Found 2 usable devices:[0m
+   Device 0: 90:E2:BA:55:14:10 ([0;32mIntel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection[0m)
+   Device 1: 90:E2:BA:55:14:11 ([0;32mIntel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection[0m)
+Try to configure devices
+PMD: ixgbe_dev_link_status_print(): Port 0: Link Up - speed 0 Mbps - half-duplex
+[1;37m[INFO]  Waiting for devices to come up...[0m
+[1;37m[INFO]  Device 0 (90:E2:BA:55:14:10) is up: 10000 MBit/s[0m
+[1;37m[INFO]  [0;32m1 device is up.[0m[0m
+[0;31m[FATAL] Lua error in task sendPackets[0m
+/home/hedi/MoonGen/build/../libmoon/lua/libmoon.lua:287: bad argument #1 to 'rte_delay_us_export' (cannot convert 'nil' to 'unsigned int')
+Stack Traceback
+===============
+(2) Lua field 'sleepMicros' at file '/home/hedi/MoonGen/build/../libmoon/lua/libmoon.lua:287'
+	Local variables:
+	 t = nil
+(3) Lua function 'sendPackets' at file 'test/perf_test.lua:118' (best guess)
+	Local variables:
+	 txQueue = [TxQueue: id=0, qid=0]  {qid:0, dev:[Device: id=0], id:0}
+	 arrayIp4 = number: 1
+	 delay = nil
+	 txCtr = table: 0x40a9b6d0  {format:plain, mbit:table: 0x40a9b8a8, id:2, file:file (0x7ffff68bb620) (more...)}
+	 bufs = table: 0x40e0ca28  {array:cdata<struct rte_mbuf *[?]>: 0x40e0cac8, maxSize:63, size:63, mem:cdata<struct mempool *>: 0x7ffed307dec0 (more...)}
+(4) global C function 'xpcall'
+(5) Lua upvalue 'slave' at file '/home/hedi/MoonGen/build/../libmoon/lua/main.lua:128'
+	Local variables:
+	 args = table: 0x40a98e78  {1:2, 2:sendPackets, 3:[TxQueue: id=0, qid=0], 4:1}
+	 ok = boolean: true
+	 taskId = number: 2
+	 func = string: "sendPackets"
+	 (*temporary) = table: 0x40a9a9e8  {}
+	 (*temporary) = C function: select
+	 (*temporary) = number: 2
+(6) Lua function 'main' at file '/home/hedi/MoonGen/build/../libmoon/lua/main.lua:148' (best guess)
+	Local variables:
+	 task = string: "slave"
+	/home/hedi/MoonGen/build/../libmoon/lua/libmoon.lua:287: bad argument #1 to 'rte_delay_us_export' (cannot convert 'nil' to 'unsigned int')
+[1;36m[Device: id=0] RX[0m: nan (StdDev 0.00) Mpps, nan (StdDev 0) Mbit/s (nan Mbit/s with framing), total 26844 packets with 2362272 bytes (incl. CRC)
+Samples: 26844, Average: 3805.6 ns, StdDev: 114.6 ns, Quartiles: 3776.0/3802.0/3827.0 ns
+[1;37m[INFO]  Saving histogram to 'histogram.csv'[0m

@@ -2,8 +2,6 @@
 
 include $(RTE_SDK)/mk/rte.vars.mk
 
-
-
 # binary name
 APP = router
 
@@ -16,7 +14,7 @@ SRCS-y := router.c parse_utils.c \
           ../lib/nf_time.c \
           ../lib/containers/double-chain-impl.c \
           ../lib/containers/double-chain.c \
-
+	  	  ../lib/containers/dir-24-8-basic.c \
 
 
 # gcc flags
@@ -33,4 +31,5 @@ CFLAGS += -Wno-nested-externs
 
 
 include $(RTE_SDK)/mk/rte.extapp.mk
+
 

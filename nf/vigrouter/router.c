@@ -1,7 +1,7 @@
 #include "router.h"
 
 
-struct rte_lpm * lpm_dir;
+struct tbl * lpm_table;
 
 
 
@@ -18,6 +18,8 @@ struct rte_lpm * lpm_dir;
 		 
         abort();
 	}
+	
+
 
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
@@ -25,7 +27,7 @@ struct rte_lpm * lpm_dir;
 	
 
 	
-	if(!lpm_dir){
+	if(lpm_table == NULL){
 		fclose(in_file);
 		abort();
 	}
@@ -38,16 +40,13 @@ struct rte_lpm * lpm_dir;
 
 
 
-
-
 /**
  * Routes packets using a LPM DIR-24-8
  */
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
-
-
-  //as in policer
+	
+//as in policer
 
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
@@ -65,18 +64,18 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
   if (unlikely(!wellformed)) {
 	printf("router dropping packet...\n"); fflush(stdout);
     return in_port;
-  }
-
-
+}
 
 
     uint32_t ip_addr = rte_be_to_cpu_32(((struct ipv4_hdr *)ip_hdr)->dst_addr); //rte_be_to_cpu_32(ip_hdr->dst_addr);
 	
-    int res = 0;
+	
+	//lookup the ip
+	
+    int res = tbl_lookup_elem(lpm_table, ip_addr);
   
 
-
-	if(unlikely(rte_lpm_lookup (lpm_dir, ip_addr, &res))){	//lookup returns 0 on lookup hit
+	if(unlikely(res == -1)){	//lookup returns 0 on lookup hit
 		
 		return FLOOD_FRAME;	// in case of lookup miss
 	} 
@@ -93,24 +92,11 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
  */
 void insert_all(FILE * f){
 	
+	lpm_table = tbl_allocate();	//create lpm table
 	
-	//inspired by dpdk's l3fwd example
-
-	struct rte_lpm_config config_ipv4;
-
-	char s[64];
-
-	/* create the LPM table */
-	config_ipv4.max_rules = MAX_ROUTES_ENTRIES;
-	config_ipv4.number_tbl8s = MAX_TBL_8;
-	config_ipv4.flags = 0;
-	snprintf(s, sizeof(s), "IPV4_ROUTER_LPM_%d", 0);
-	
-	lpm_dir = rte_lpm_create(s, SOCKET_ID_ANY, &config_ipv4);
-
-	
-	if (lpm_dir == NULL)
+	if (lpm_table == NULL){
 		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
+	}
 	
 	
 	 
@@ -185,27 +171,27 @@ void insert_all(FILE * f){
 					abort();
 		}
 		
-   
+			
+			
 
 		
-			uint32_t  * ip_address= malloc(sizeof(uint32_t));
+		uint32_t ip_address = ip[3] + (ip[2] << 8) + (ip[1] << 16) + (ip[0] <<24);
 			
-			if(!ip_address){
-				printf("Could not allocate memory !");
-				abort();
-			}
+		struct key * new_key = malloc(sizeof(struct key));
 			
-			//compute ip address from the byte array
-			*ip_address = ip[3] + (ip[2] << 8) + (ip[1] << 16) + (ip[0] <<24);
+		if(new_key == NULL){
+			printf("Error during update. Could not allocate memory for key !\n"); 
+			abort();
+		}
+			
+		new_key->data = ip_address;
+		new_key->prefixlen = mask;
+		new_key->route = (uint16_t)port;
 
-			int res = rte_lpm_add(lpm_dir, *ip_address, mask, port);
-			
-			free(ip_address);
-					
+		int res = tbl_update_elem(lpm_table, new_key);
 
-		
       
-		if(res){
+		if(res == -1){
 			printf("error during update. error is : %d\n",res); fflush(stdout);
 			abort();
 		}
@@ -230,13 +216,13 @@ void insert_all(FILE * f){
 //Needed by nf_main.c
 
 void nf_config_init(int argc, char** argv) {
-  
+
 }
 
 void nf_config_cmdline_print_usage(void) {
-  
+
 }
 
 void nf_print_config() {
- 
+
 }

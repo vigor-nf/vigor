@@ -1,0 +1,62 @@
+[1;37m[INFO]  Initializing DPDK. This will take a few seconds...[0m
+EAL: Probing VFIO support...
+EAL: PCI device 0000:02:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.2 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.3 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:06:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:06:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:81:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:81:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:83:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:83:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:85:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:85:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+[1;37m[INFO]  Found 2 usable devices:[0m
+   Device 0: 90:E2:BA:55:14:10 ([0;32mIntel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection[0m)
+   Device 1: 90:E2:BA:55:14:11 ([0;32mIntel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection[0m)
+Try to configure devices
+PMD: ixgbe_dev_link_status_print():  Port 0: Link Down
+[1;37m[INFO]  Waiting for devices to come up...[0m
+[1;37m[INFO]  Device 0 (90:E2:BA:55:14:10) is up: 10000 MBit/s[0m
+[1;37m[INFO]  [0;32m1 device is up.[0m[0m
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4949 Mbit/s (6074 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8143 Mbit/s (9994 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 6.92 Mpps, 4872 Mbit/s (5980 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.39 Mpps, 8017 Mbit/s (9839 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4952 Mbit/s (6077 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4951 Mbit/s (6077 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (9999 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4952 Mbit/s (6078 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (10000 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4950 Mbit/s (6074 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4952 Mbit/s (6077 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8149 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4951 Mbit/s (6076 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4951 Mbit/s (6076 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4949 Mbit/s (6074 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8149 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4951 Mbit/s (6076 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8148 Mbit/s (10000 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 7.03 Mpps, 4952 Mbit/s (6077 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.57 Mpps, 8149 Mbit/s (10001 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 11.56 (StdDev 0.06) Mpps, 8136 (StdDev 40) Mbit/s (9986 Mbit/s with framing), total 142642160 packets with 12552510080 bytes (incl. CRC)
+[1;36m[Device: id=0] RX[0m: 7.02 (StdDev 0.03) Mpps, 4944 (StdDev 24) Mbit/s (6067 Mbit/s with framing), total 86681527 packets with 7627974376 bytes (incl. CRC)
+Samples: 1185, Average: 589450.5 ns, StdDev: 68255.5 ns, Quartiles: 596692.0/596889.0/597140.0 ns
+[1;37m[INFO]  Saving histogram to 'histogram.csv'[0m

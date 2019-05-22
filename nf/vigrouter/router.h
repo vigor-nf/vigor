@@ -2,12 +2,13 @@
 #ifndef _router_h
 #define _router_h
 
-#define MAX_ROUTES_ENTRIES 1200000
+#define MAX_ROUTES_ENTRIES 120000
 #define MAX_TBL_8 	80000	//number of 8bits tables for the dir-24-8 algorithm
 #define CACHE_SIZE 32
 
 
 #include "lib/nf_time.h"
+#include "lib/containers/dir-24-8-basic.h"
 #include <rte_lpm.h>
 #include "parse_utils.h"
 #include <stdio.h>
@@ -26,8 +27,7 @@
 
 
 //the DIR-24-8 that will be used by the nf (global variable)
-extern struct rte_lpm * lpm_dir;			
-
+extern struct tbl * lpm_table;			
 
 
 /**

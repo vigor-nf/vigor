@@ -8,7 +8,6 @@
 #include <stdlib.h>
 
 #define IPV4_IP_SIZE 4
-#define MAX_ROUTES_ENTRIES 256
 #define MIN_ENTRY_SIZE 12
 #define MAX_OCTET_VALUE 255
 #define MAX_OCTET_DIGITS 3

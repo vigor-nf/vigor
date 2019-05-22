@@ -1,0 +1,56 @@
+[1;37m[INFO]  Initializing DPDK. This will take a few seconds...[0m
+EAL: Probing VFIO support...
+EAL: PCI device 0000:02:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.2 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:02:00.3 on NUMA socket 0
+EAL:   probe driver: 8086:1521 net_e1000_igb
+EAL: PCI device 0000:06:00.0 on NUMA socket 0
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:06:00.1 on NUMA socket 0
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:81:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:81:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:83:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:83:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:85:00.0 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+EAL: PCI device 0000:85:00.1 on NUMA socket 1
+EAL:   probe driver: 8086:10fb net_ixgbe
+[1;37m[INFO]  Found 2 usable devices:[0m
+   Device 0: 90:E2:BA:55:14:10 ([0;32mIntel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection[0m)
+   Device 1: 90:E2:BA:55:14:11 ([0;32mIntel Corporation 82599ES 10-Gigabit SFI/SFP+ Network Connection[0m)
+Try to configure devices
+PMD: ixgbe_dev_link_status_print():  Port 0: Link Down
+[1;37m[INFO]  Waiting for devices to come up...[0m
+[1;37m[INFO]  Device 0 (90:E2:BA:55:14:10) is up: 10000 MBit/s[0m
+[1;37m[INFO]  [0;32m1 device is up.[0m[0m
+[0;34m[Device: id=0] TX[0m: 5.92 Mpps, 4167 Mbit/s (5114 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.62 Mpps, 3954 Mbit/s (4853 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.85 Mpps, 4118 Mbit/s (5053 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.53 Mpps, 3897 Mbit/s (4782 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.62 Mpps, 3954 Mbit/s (4853 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.95 Mpps, 4191 Mbit/s (5143 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.92 Mpps, 4171 Mbit/s (5119 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.62 Mpps, 3954 Mbit/s (4853 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.61 Mpps, 3953 Mbit/s (4851 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.96 Mpps, 4196 Mbit/s (5149 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.62 Mpps, 3954 Mbit/s (4853 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.94 Mpps, 4181 Mbit/s (5131 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.62 Mpps, 3955 Mbit/s (4854 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.95 Mpps, 4187 Mbit/s (5138 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.62 Mpps, 3954 Mbit/s (4852 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.94 Mpps, 4185 Mbit/s (5136 Mbit/s with framing)
+[1;36m[Device: id=0] RX[0m: 5.61 Mpps, 3952 Mbit/s (4850 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.94 Mpps, 4180 Mbit/s (5130 Mbit/s with framing)
+[0;34m[Device: id=0] TX[0m: 5.93 (StdDev 0.04) Mpps, 4176 (StdDev 25) Mbit/s (5125 Mbit/s with framing), total 58023056 packets with 5106028928 bytes (incl. CRC)
+[1;36m[Device: id=0] RX[0m: 5.61 (StdDev 0.03) Mpps, 3947 (StdDev 20) Mbit/s (4843 Mbit/s with framing), total 54857528 packets with 4827462464 bytes (incl. CRC)
+Samples: 2950, Average: 736761.3 ns, StdDev: 71584.0 ns, Quartiles: 743072.0/745005.0/747066.0 ns
+[1;37m[INFO]  Saving histogram to 'histogram.csv'[0m
