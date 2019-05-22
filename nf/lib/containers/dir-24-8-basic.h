@@ -78,8 +78,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key);
             &*& key(_key, ipv4, plen, route);
 @*/
 
-int tbl_lookup_elem(struct tbl *_tbl, uint32_t data);
+/*int tbl_lookup_elem(struct tbl *_tbl, uint32_t data);
 //@ requires table(_tbl, ?dir);
-/*@ ensures table(_tbl, dir) &*&
+/* @ ensures table(_tbl, dir) &*&
             result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
 @*/
