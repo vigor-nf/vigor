@@ -301,23 +301,12 @@ fixpoint dir_24_8 dir_init(){
 }
 
 
-// Those function must be called only when the option is known not to be none
+// This function must be called only when the option is known not to be none
 fixpoint pair<bool, Z> get_someOption24(option<pair<bool, Z> > o){
   switch(o){
     case none: return pair(false, Zsign(false));//should never happen
     case some(p): return p;
   }
-}
-
-fixpoint int get_someOptionLong(option<int> o){
-  switch(o){
-    case none: return -1;//should never happen
-    case some(v): return v;
-  }
-}
-
-fixpoint bool is_invalid(int x){
-  return x == 0xFFFF;
 }
 
 fixpoint bool valid_entry24(int entry){
