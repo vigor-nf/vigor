@@ -118,11 +118,8 @@ fixpoint bool is_new_index_needed(option<pair<bool, Z> > entry){
 
 fixpoint int extract24_value(option<pair<bool, Z> > entry){
   switch(entry){
-    case none: return 0;
-    case some(p): return 
-      switch(p){
-        case pair(f, v): return int_of_Z(v);
-      };
+    case none: return 0xFFFF;
+    case some(p): return int_of_Z(snd(p));
   }
 }
 
@@ -132,7 +129,7 @@ fixpoint bool extract_flag(int entry){
 }
 
 fixpoint int set_flag(int entry){
-  return int_of_Z(Z_or(Z_of_int(entry, N16), Z_of_int(0x8000, N16)));
+  return entry | 0x8000;
 }
 
 fixpoint option<pair<bool, Z> > set_flag_entry(option<pair<bool, Z> > entry){
