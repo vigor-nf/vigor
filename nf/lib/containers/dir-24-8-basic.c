@@ -255,8 +255,13 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
 /*@
   lemma void long_index_extraction_equivalence(uint16_t entry,
                                                option<pair<bool, Z> > mapped);
-    requires entry_24_mapping(entry) == mapped;
+    requires entry_24_mapping(entry) == mapped &*& entry != INVALID;
     ensures (entry & 0xFF) == extract24_value(mapped);
+  /*{
+  
+    assume ((entry & 0xFFFF) == );
+    assert false;
+  }*/
   @*/
 
 /*@ 
@@ -274,8 +279,8 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
   }
   @*/
 
-/*@
-  lemma void set_flag_in_mapped(uint16_t entry, option<pair<bool, Z> > mapped)
+/* @//Verifast stalls at the end of update_elem when the proof is activated wtf
+  lemma void set_flag_in_mapped(uint16_t entry, option<pair<bool, Z> > mapped);
     requires 0 <= entry &*& entry < 256 &*&
              entry != INVALID &*&
              entry_24_mapping(entry) == mapped &*& mapped == some(?p) &*&
@@ -283,8 +288,8 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
     ensures entry_24_mapping(set_flag(entry)) == set_flag_entry(mapped) &*& 
             set_flag_entry(mapped) == some(?p2) &*& p2 == pair(true, z) &*&
             true == valid_entry24(set_flag(entry));
-  {
-    assert mapped == some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
+  /*{
+    //assert mapped == some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
     flag_mask_or_x_begins_with_one(entry);
     flag_mask_or_x_not_affect_15LSB(entry);
     
@@ -309,8 +314,8 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
     bitand_def(entry, entryZ, TBL_24_VAL_MASK, valuemask);
     Z extracted2 = Z_and(entryZ, valuemask);
     
-    assert entry_24_mapping(set_flag(entry)) == some(pair(true, z));
-  }
+    //assert entry_24_mapping(set_flag(entry)) == some(pair(true, z));
+  }* /
   @*/
 
 /*@          
@@ -1053,7 +1058,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     //@ assert length(new_t_l) == length(updated_map);
     //@ assert map(entry_long_mapping, new_t_l) == updated_map;
     
-    /* @ assert build_tables(new_t_24, new_t_l, new_long_index) ==
+    /*@ assert build_tables(new_t_24, new_t_l, new_long_index) ==
                add_rule(dir, new_rule);
     @*/
     //@ close table(_tbl, build_tables(new_t_24, new_t_l, new_long_index));
