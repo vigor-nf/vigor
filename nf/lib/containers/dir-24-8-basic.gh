@@ -311,6 +311,7 @@ fixpoint bool valid_entry24(int entry){
            true
          :
            (extract_flag(entry) ?
+             (0x8000 <= entry && entry <= 0x80FF) &&
              (0 <= extract_value(entry) && extract_value(entry) <= 0xFF)
            :
              (0 <= entry && entry <= 0x7FFF));

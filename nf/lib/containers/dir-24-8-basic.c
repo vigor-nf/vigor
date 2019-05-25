@@ -252,16 +252,32 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
   }
   @*/
   
-/*@
+/*@//Lemma verifies but verifast stalls when activated
   lemma void long_index_extraction_equivalence(uint16_t entry,
-                                               option<pair<bool, Z> > mapped);
-    requires entry_24_mapping(entry) == mapped &*& entry != INVALID;
+                                               option<pair<bool, Z> > mapped)
+    requires entry_24_mapping(entry) == mapped &*& entry != INVALID &*&
+             mapped == some(?p) &*& p == pair(true, ?z) &*&
+             true == valid_entry24(entry) &*&
+             true == extract_flag(entry);
     ensures (entry & 0xFF) == extract24_value(mapped);
-  /*{
-  
-    assume ((entry & 0xFFFF) == );
-    assert false;
-  }*/
+  {
+    //assert z == Z_of_int(extract_value(entry), N16);
+    
+    //assert snd(get_some(mapped)) == z;
+    Z_of_uintN(extract_value(entry), N16);
+    //assert z == extractedZ;
+    //assert mapped == some(pair(true, extractedZ));
+    //assert snd(get_some(mapped)) == extractedZ;
+    //assert int_of_Z(extractedZ) == extract_value(entry);
+    
+    //Show ((entry & 0xFF) == (entry & 0x7FFF))
+    Z entryZ = Z_of_uintN(entry, N16);
+    Z maskFF = Z_of_uintN(0xFF, N8);
+    Z mask7FFF = Z_of_uintN(0x7FFF, N16);
+    
+    bitand_def(entry, entryZ, 0xFF, maskFF);
+    bitand_def(entry, entryZ, 0x7FFF, mask7FFF);
+  }
   @*/
 
 /*@ 
@@ -277,45 +293,6 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
     
     bitand_def(ipv4, ipv4Z, 0xFFFFFFFF, mask32);
   }
-  @*/
-
-/* @//Verifast stalls at the end of update_elem when the proof is activated wtf
-  lemma void set_flag_in_mapped(uint16_t entry, option<pair<bool, Z> > mapped);
-    requires 0 <= entry &*& entry < 256 &*&
-             entry != INVALID &*&
-             entry_24_mapping(entry) == mapped &*& mapped == some(?p) &*&
-             p == pair(_, ?z);
-    ensures entry_24_mapping(set_flag(entry)) == set_flag_entry(mapped) &*& 
-            set_flag_entry(mapped) == some(?p2) &*& p2 == pair(true, z) &*&
-            true == valid_entry24(set_flag(entry));
-  /*{
-    //assert mapped == some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
-    flag_mask_or_x_begins_with_one(entry);
-    flag_mask_or_x_not_affect_15LSB(entry);
-    
-    Z entryZ = Z_of_uintN(entry, N16);
-    Z maskflag = Z_of_uintN(TBL_24_FLAG_MASK, N16);
-    
-    bitor_limits(entry, TBL_24_FLAG_MASK, N16);
-    Z flagged = Z_of_uintN(set_flag(entry), N16);
-    
-    bitor_def(entry, entryZ, TBL_24_FLAG_MASK, maskflag);
-    
-    Z flagged2 = Z_or(entryZ, maskflag);
-    
-    assert flagged == flagged2;
-    
-    //Show (extract_value(set_flag(entry)) == extract_value(entry));
-    Z valuemask = Z_of_uintN(TBL_24_VAL_MASK, N16);
-    
-    bitand_def(int_of_Z(flagged), flagged, TBL_24_VAL_MASK, valuemask);
-    Z extracted1 = Z_and(flagged, valuemask);
-    
-    bitand_def(entry, entryZ, TBL_24_VAL_MASK, valuemask);
-    Z extracted2 = Z_and(entryZ, valuemask);
-    
-    //assert entry_24_mapping(set_flag(entry)) == some(pair(true, z));
-  }* /
   @*/
 
 /*@          
@@ -420,7 +397,7 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
              prefixlen <= 32;
     ensures compute_starting_index_long(new_rule, base_index) <= (0xFFFF+1)-
             compute_rule_size(prefixlen);
-@*/
+  @*/
 
 /*@
   lemma void invalid_24_none_holds(list<uint16_t> entries, list<option<pair<bool, Z> > > mapped, nat size);
