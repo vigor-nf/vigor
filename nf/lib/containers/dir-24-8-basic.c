@@ -394,8 +394,8 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
                                               uint8_t base_index,
                                               uint8_t prefixlen);
     requires 0 <= base_index &*& base_index < 256 &*& 24 <= prefixlen &*&
-             prefixlen <= 32;
-    ensures compute_starting_index_long(new_rule, base_index) <= (0xFFFF+1)-
+             prefixlen <= 32 &*& new_rule == rule(?ipv4, prefixlen, ?value);
+    ensures compute_starting_index_long(new_rule, base_index) <= (TBL_24_MAX_ENTRIES)-
             compute_rule_size(prefixlen);
   @*/
 
