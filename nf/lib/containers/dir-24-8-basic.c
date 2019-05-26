@@ -252,7 +252,7 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
   }
   @*/
   
-/*@//Lemma verifies but verifast stalls when activated
+/*@
   lemma void long_index_extraction_equivalence(uint16_t entry,
                                                option<pair<bool, Z> > mapped)
     requires entry_24_mapping(entry) == mapped &*& entry != INVALID &*&
