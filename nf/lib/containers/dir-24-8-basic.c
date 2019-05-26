@@ -392,11 +392,24 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
 /*@
   lemma void first_index_depends_on_prefixlen(lpm_rule new_rule,
                                               uint8_t base_index,
-                                              uint8_t prefixlen);
+                                              uint8_t prefixlen)
     requires 0 <= base_index &*& base_index < 256 &*& 24 <= prefixlen &*&
-             prefixlen <= 32 &*& new_rule == rule(?ipv4, prefixlen, ?value);
+             prefixlen <= 32 &*& new_rule == rule(?ipv4, prefixlen, ?value) &*&
+             0 <= int_of_Z(ipv4) &*& int_of_Z(ipv4) <= 0xFFFFFFFF;
     ensures compute_starting_index_long(new_rule, base_index) <= (TBL_24_MAX_ENTRIES)-
             compute_rule_size(prefixlen);
+  {
+    bitand_def(int_of_Z(ipv4), ipv4, int_of_Z(mask32_from_prefixlen(prefixlen)), mask32_from_prefixlen(prefixlen));
+    bitand_limits(int_of_Z(ipv4), int_of_Z(mask32_from_prefixlen(prefixlen)), N32);
+    
+    Z andRes = Z_and(ipv4, mask32_from_prefixlen(prefixlen));
+    
+    Z maskZ = Z_of_uintN(0xFF, N8);
+    
+    bitand_def(int_of_Z(andRes), andRes, 0xFF, maskZ);
+    bitand_limits(int_of_Z(andRes), 0xFF, N8);
+    
+  }
   @*/
 
 /*@
