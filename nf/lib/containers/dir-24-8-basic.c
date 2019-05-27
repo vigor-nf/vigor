@@ -120,34 +120,53 @@
   @*/
   
 /*@
-  lemma void repeat_n_forall<t>(list<t> lst, nat size, t e, fixpoint(t, bool) p)
-    requires lst == repeat_n(size, e) &*& true == p(e);
-    ensures true == forall(lst, p); 
-  {
-    switch(lst){
-      case nil:
-      case cons(x, xs): 
-        switch(size){
-          case zero:
-          case succ(n): repeat_n_forall(xs, n, e, p);
-        }
-    }
+  lemma void repeat_n_forall<t>(nat size, t e, fixpoint(t, bool) p)
+    requires true == p(e);
+    ensures true == forall(repeat_n(size, e), p); 
+  { 
+     switch(size){
+       case zero:
+       case succ(n): repeat_n_forall(n, e, p);
+     }
   }
   @*/
 
 /*@
-  lemma void repeat_n_append<t>(list<t> lst, t e, int size);
-    requires lst == repeat_n(nat_of_int(size), e);
-    ensures append(lst, cons(e, nil)) == repeat_n(nat_of_int(size+1), e);
+  lemma void repeat_n_append<t>(t e, nat size)
+    requires true;
+    ensures append(repeat_n(size, e), cons(e, nil)) == repeat_n(succ(size), e);
+  {
+    switch(size){
+      case zero:
+      case succ(n): repeat_n_append(e, n);
+    }
+  }
   @*/
 
-/*@
-  lemma void new_invalid(uint16_t *t, uint32_t i, uint32_t size);
-    requires t[0..i] |-> ?l1 &*&
-             l1 == repeat_n(nat_of_int(i), INVALID) &*&
-             t[i..size] |-> _;
-    ensures t[0..i+1] |-> append(l1, cons(INVALID, nil)) &*&
+/*@//LEMMA IS PROVED BUT VERIFAST STALLS WHEN ACTIVATED
+  lemma void new_invalid(uint16_t *t, uint32_t i, nat j, uint32_t size)
+    requires t[(i - int_of_nat(j))..i] |-> repeat_n(j, INVALID) &*&
+             i < size &*&
+             int_of_nat(j) <= i &*&
+             t[i] |-> INVALID &*&
+             t[i+1..size] |-> _;
+    ensures t[(i - int_of_nat(j))..i+1] |-> append(repeat_n(j, INVALID), cons(INVALID, nil)) &*&
             t[i+1..size] |-> _;
+  {
+    switch(j){
+      case zero:
+      case succ(n): 
+        assert int_of_nat(succ(n)) == int_of_nat(n)+1;
+        assert u_short_integer(t+(i - int_of_nat(n))-1, INVALID);
+        new_invalid(t, i, n, size);
+        assert ushorts(t+(i - int_of_nat(n)), int_of_nat(n)+1, append(repeat_n(n, INVALID), cons(INVALID, nil)));
+        assert ushorts(t+(i - int_of_nat(n))-1, int_of_nat(n)+2, cons(INVALID,  append(repeat_n(n, INVALID), cons(INVALID, nil))));
+        assert t[(i - int_of_nat(n))-1..i+1] |-> cons(INVALID,  append(repeat_n(n, INVALID), cons(INVALID, nil)));
+        assert t[(i - int_of_nat(n))-1..i+1] |-> append(cons(INVALID, repeat_n(n, INVALID)), cons(INVALID, nil));
+        assert t[(i - int_of_nat(n))-1..i+1] |-> append(repeat_n(succ(n), INVALID), cons(INVALID, nil));
+        assert t[(i - int_of_nat(succ(n)))..i+1] |-> append(repeat_n(succ(n), INVALID), cons(INVALID, nil));
+    }
+  }
   @*/
 
 
@@ -425,6 +444,8 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
           switch(mapped){
             case nil:
             case cons(y, ys):
+              assert entry_24_mapping(x) == y;
+              //invalid_24_none_holds(xs, ys, size);
           }
       }
     }*/
@@ -472,8 +493,8 @@ void fill_invalid(uint16_t *t, uint32_t size)
     } 
     
     t[i] = INVALID;
-    //@ new_invalid(t, i, size);
-    //@ repeat_n_append(updated, INVALID, i);
+    //@ new_invalid(t, i, nat_of_int(i), size);
+    //@ repeat_n_append(INVALID, nat_of_int(i));
     //@ forall_append(updated, cons(INVALID, nil), check_INVALID);
   }
   //@ repeat_n_length(nat_of_int(size), INVALID);
@@ -675,8 +696,8 @@ struct tbl* tbl_allocate()
   //@ map_preserves_length(entry_24_mapping, t_24);
   //@ map_preserves_length(entry_long_mapping, t_l);
   
-  //@ repeat_n_forall(map_24, nat_of_int(TBL_24_MAX_ENTRIES), none, is_none);
-  //@ repeat_n_forall(map_l, nat_of_int(TBL_LONG_MAX_ENTRIES), none, is_none);
+  //@ repeat_n_forall(nat_of_int(TBL_24_MAX_ENTRIES), none, is_none);
+  //@ repeat_n_forall(nat_of_int(TBL_LONG_MAX_ENTRIES), none, is_none);
   
   //@ invalid_24_none_holds(t_24, map_24, nat_of_int(TBL_24_MAX_ENTRIES));
   //@ invalid_long_none_holds(t_l, map_l, nat_of_int(TBL_LONG_MAX_ENTRIES));
@@ -1048,7 +1069,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     //@ assert length(new_t_l) == length(updated_map);
     //@ assert map(entry_long_mapping, new_t_l) == updated_map;
     
-    /*@ assert build_tables(new_t_24, new_t_l, new_long_index) ==
+    /* @ assert build_tables(new_t_24, new_t_l, new_long_index) ==
                add_rule(dir, new_rule);
     @*/
     //@ close table(_tbl, build_tables(new_t_24, new_t_l, new_long_index));
