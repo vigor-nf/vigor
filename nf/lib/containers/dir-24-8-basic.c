@@ -169,26 +169,6 @@
   }
   @*/
 
-
-//Replaced by invalid_24/long_none_holds
-/* @
-lemma void entries_24_mapping_invalid(fixpoint(uint16_t, option<pair<bool, Z> >)
-                                        map_func,
-                                      list<uint16_t> lst);
-  requires length(lst) == TBL_24_MAX_ENTRIES &*&
-           lst == repeat_n(nat_of_int(length(lst)), INVALID) &*&
-           map_func(INVALID);
-  ensures map(map_func, lst) == repeat_n(nat_of_int(length(lst)), none);
-@*/
-
-/* @  
-lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
-                                        list<uint16_t> lst);
-  requires length(lst) == TBL_LONG_MAX_ENTRIES &*&
-           lst == repeat_n(nat_of_int(length(lst)), INVALID);
-  ensures map(map_func, lst) == repeat_n(nat_of_int(length(lst)), none);
-@*/
-
 /*@  
   lemma void invalid_is_none24(uint16_t entry, option<pair<bool, Z> > mapped)
     requires entry == INVALID &*& entry_24_mapping(entry) == mapped;
@@ -432,38 +412,26 @@ lemma void entries_long_mapping_invalid(fixpoint (uint16_t, option<Z>) map_func,
   @*/
 
 /*@
-  lemma void invalid_24_none_holds(list<uint16_t> entries, list<option<pair<bool, Z> > > mapped, nat size);
-    requires true == forall(entries, check_INVALID) &*&
-             true == forall(mapped, is_none) &*&
-             entry_24_mapping(INVALID) == none;
-    ensures map(entry_24_mapping, entries) == mapped;
-    /*{
-      switch(entries){
-        case nil:
-        case cons(x, xs):
-          switch(mapped){
-            case nil:
-            case cons(y, ys):
-              assert entry_24_mapping(x) == y;
-              //invalid_24_none_holds(xs, ys, size);
-          }
+  lemma void invalid_24_none_holds(nat size)
+    requires entry_24_mapping(INVALID) == none;
+    ensures map(entry_24_mapping, repeat_n(size, INVALID)) == repeat_n(size, none);
+    {
+      switch(size){
+        case zero:
+        case succ(n): invalid_24_none_holds(n);
       }
-    }*/
+    }
   @*/
 /*@
-  lemma void invalid_long_none_holds(list<uint16_t> entries, list<option<Z > > mapped, nat size);
-    requires true == forall(entries, check_INVALID) &*&
-             true == forall(mapped, is_none) &*&
-             entry_long_mapping(INVALID) == none;
-    ensures map(entry_long_mapping, entries) == mapped; 
-  /*{
+  lemma void invalid_long_none_holds(nat size)
+    requires entry_long_mapping(INVALID) == none;
+    ensures map(entry_long_mapping, repeat_n(size, INVALID)) == repeat_n(size, none); 
+  {
     switch(size){
       case zero:
-      case succ(n):
-        nth_map(int_of_nat(n), entry_long_mapping, entries);
-        invalid24_none_holds(entries, mapped, n);
+      case succ(n): invalid_long_none_holds(n);
     }
-  }*/
+  }
   @*/
 
 struct tbl{
@@ -699,8 +667,8 @@ struct tbl* tbl_allocate()
   //@ repeat_n_forall(nat_of_int(TBL_24_MAX_ENTRIES), none, is_none);
   //@ repeat_n_forall(nat_of_int(TBL_LONG_MAX_ENTRIES), none, is_none);
   
-  //@ invalid_24_none_holds(t_24, map_24, nat_of_int(TBL_24_MAX_ENTRIES));
-  //@ invalid_long_none_holds(t_l, map_l, nat_of_int(TBL_LONG_MAX_ENTRIES));
+  //@ invalid_24_none_holds(nat_of_int(TBL_24_MAX_ENTRIES));
+  //@ invalid_long_none_holds(nat_of_int(TBL_LONG_MAX_ENTRIES));
   
   //@ assert map_24 == map(entry_24_mapping, t_24);
   //@ assert map_l == map(entry_long_mapping, t_l);
