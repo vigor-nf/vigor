@@ -21,17 +21,4 @@ do
 done
 
 
-echo "Cache Miss Test Begin\n"
 
-for i in {1..100..5}
-do
-
-	echo "Start test with sleep $i microseconds"
-
-   sudo ./build/MoonGen test/cacheMissTest.lua $NIC_PORT $i >> ../$FOLDER_NAME &
-
-	PID=$!
-	sleep 10
-	sudo kill $PID
-	
-done
