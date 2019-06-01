@@ -23,7 +23,8 @@
   @*/
 
 /*@
-  predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen, uint16_t route)= 
+  predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen,
+                uint16_t route) = 
     malloc_block_key(k) &*&
     k->data |-> ipv4 &*&
     k->prefixlen |-> prefixlen &*&
@@ -144,7 +145,8 @@
              int_of_nat(j) <= i &*&
              t[i] |-> INVALID &*&
              t[i+1..size] |-> _;
-    ensures t[(i - int_of_nat(j))..i+1] |-> append(repeat_n(j, INVALID), cons(INVALID, nil)) &*&
+    ensures t[(i - int_of_nat(j))..i+1] |->
+            append(repeat_n(j, INVALID), cons(INVALID, nil)) &*&
             t[i+1..size] |-> _;
   {
     switch(j){
@@ -153,12 +155,19 @@
         assert int_of_nat(succ(n)) == int_of_nat(n)+1;
         assert u_short_integer(t+(i - int_of_nat(n))-1, INVALID);
         new_invalid(t, i, n, size);
-        assert ushorts(t+(i - int_of_nat(n)), int_of_nat(n)+1, append(repeat_n(n, INVALID), cons(INVALID, nil)));
-        assert ushorts(t+(i - int_of_nat(n))-1, int_of_nat(n)+2, cons(INVALID,  append(repeat_n(n, INVALID), cons(INVALID, nil))));
-        assert t[(i - int_of_nat(n))-1..i+1] |-> cons(INVALID,  append(repeat_n(n, INVALID), cons(INVALID, nil)));
-        assert t[(i - int_of_nat(n))-1..i+1] |-> append(cons(INVALID, repeat_n(n, INVALID)), cons(INVALID, nil));
-        assert t[(i - int_of_nat(n))-1..i+1] |-> append(repeat_n(succ(n), INVALID), cons(INVALID, nil));
-        assert t[(i - int_of_nat(succ(n)))..i+1] |-> append(repeat_n(succ(n), INVALID), cons(INVALID, nil));
+        assert ushorts(t+(i - int_of_nat(n)), int_of_nat(n)+1,
+                       append(repeat_n(n, INVALID), cons(INVALID, nil)));
+        assert ushorts(t+(i - int_of_nat(n))-1, int_of_nat(n)+2,
+                       cons(INVALID,
+                            append(repeat_n(n, INVALID), cons(INVALID, nil))));
+        assert t[(i - int_of_nat(n))-1..i+1] |->
+               cons(INVALID,  append(repeat_n(n, INVALID), cons(INVALID, nil)));
+        assert t[(i - int_of_nat(n))-1..i+1] |->
+               append(cons(INVALID, repeat_n(n, INVALID)), cons(INVALID, nil));
+        assert t[(i - int_of_nat(n))-1..i+1] |->
+               append(repeat_n(succ(n), INVALID), cons(INVALID, nil));
+        assert t[(i - int_of_nat(succ(n)))..i+1] |->
+               append(repeat_n(succ(n), INVALID), cons(INVALID, nil));
     }
   }
   @*/
@@ -320,11 +329,13 @@
     requires 0 <= base_index &*& base_index < 256 &*& 24 <= prefixlen &*&
              prefixlen <= 32 &*& new_rule == rule(?ipv4, prefixlen, ?value) &*&
              0 <= int_of_Z(ipv4) &*& int_of_Z(ipv4) <= 0xFFFFFFFF;
-    ensures compute_starting_index_long(new_rule, base_index) <= (TBL_24_MAX_ENTRIES)-
-            compute_rule_size(prefixlen);
+    ensures compute_starting_index_long(new_rule, base_index) <=
+            (TBL_24_MAX_ENTRIES) - compute_rule_size(prefixlen);
   {
-    bitand_def(int_of_Z(ipv4), ipv4, int_of_Z(mask32_from_prefixlen(prefixlen)), mask32_from_prefixlen(prefixlen));
-    bitand_limits(int_of_Z(ipv4), int_of_Z(mask32_from_prefixlen(prefixlen)), N32);
+    bitand_def(int_of_Z(ipv4), ipv4, int_of_Z(mask32_from_prefixlen(prefixlen)),
+               mask32_from_prefixlen(prefixlen));
+    bitand_limits(int_of_Z(ipv4),
+                  int_of_Z(mask32_from_prefixlen(prefixlen)), N32);
     
     Z andRes = Z_and(ipv4, mask32_from_prefixlen(prefixlen));
     
@@ -339,7 +350,8 @@
 /*@
   lemma void invalid_24_none_holds(nat size)
     requires entry_24_mapping(INVALID) == none;
-    ensures map(entry_24_mapping, repeat_n(size, INVALID)) == repeat_n(size, none);
+    ensures map(entry_24_mapping, repeat_n(size, INVALID)) ==
+            repeat_n(size, none);
     {
       switch(size){
         case zero:
@@ -351,7 +363,8 @@
 /*@
   lemma void invalid_long_none_holds(nat size)
     requires entry_long_mapping(INVALID) == none;
-    ensures map(entry_long_mapping, repeat_n(size, INVALID)) == repeat_n(size, none); 
+    ensures map(entry_long_mapping, repeat_n(size, INVALID)) ==
+            repeat_n(size, none); 
   {
     switch(size){
       case zero:
@@ -376,9 +389,11 @@
   @*/
     
 /*@
-  lemma void map_update_n<t, u>(int start, nat n, t y, list<t> xs, fixpoint(t, u) f);
+  lemma void map_update_n<t, u>(int start, nat n, t y, list<t> xs,
+                                fixpoint(t, u) f);
     requires true;//0 <= start &*& start + int_of_nat(n) <= length(xs);
-    ensures map(f, update_n(xs, start, n, y)) == update_n(map(f, xs), start, n, f(y));
+    ensures map(f, update_n(xs, start, n, y)) ==
+            update_n(map(f, xs), start, n, f(y));
   /*{
     switch(n){
       case zero:
@@ -393,7 +408,8 @@
 /*@
   lemma void loop_update_n<t>(int start, int i, t y, list<t> xs, list<t> ys);
     requires ys == update_n(xs, start, nat_of_int(i-start), y);
-    ensures update(start + (i-start), y, ys) == update_n(xs, start, nat_of_int(i-start+1), y);
+    ensures update(start + (i-start), y, ys) ==
+            update_n(xs, start, nat_of_int(i-start+1), y);
   @*/
   
 /* @
@@ -628,7 +644,10 @@ struct tbl* tbl_allocate()
   //@ assert t_l == repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), INVALID);
   //@ assert entry_24_mapping(INVALID) == none;
   
-  //@ list<option<pair<bool, Z> > > map_24 = repeat_n(nat_of_int(TBL_24_MAX_ENTRIES), none);
+  /*@ list<option<pair<bool, Z> > > map_24 =
+                                    repeat_n(nat_of_int(TBL_24_MAX_ENTRIES),
+                                             none);
+  @*/
   //@ list<option<Z> > map_l = repeat_n(nat_of_int(TBL_LONG_MAX_ENTRIES), none);
   
   //@ map_preserves_length(entry_24_mapping, t_24);
@@ -644,8 +663,13 @@ struct tbl* tbl_allocate()
   //@ assert map_l == map(entry_long_mapping, t_l);
   
   //Prove that a list of INVALID is valid
-  //@ enforce_map_invalid_is_valid(t_24, nat_of_int(TBL_24_MAX_ENTRIES), valid_entry24);
-  //@ enforce_map_invalid_is_valid(t_l, nat_of_int(TBL_LONG_MAX_ENTRIES), valid_entry_long);
+  /*@ enforce_map_invalid_is_valid(t_24, nat_of_int(TBL_24_MAX_ENTRIES),
+                                   valid_entry24);
+  @*/
+
+  /*@ enforce_map_invalid_is_valid(t_l, nat_of_int(TBL_LONG_MAX_ENTRIES),
+                                   valid_entry_long);
+  @*/
   
   /*@ close table(_tbl, build_tables(t_24, t_l, tbl_long_first_index));
   @*/
@@ -852,13 +876,13 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?new_t_24;
     
     //Prove that mapping holds
-    //@ map_update_n(first_index, nat_of_int(rule_size), value, t_24, entry_24_mapping);
+    /*@ map_update_n(first_index, nat_of_int(rule_size), value,
+                     t_24, entry_24_mapping);
+    @*/
     
     //@ assert length(new_t_24) == length(updated_map);
     //@ assert (map(entry_24_mapping, new_t_24) == updated_map);
 
-
-    // @ assert (build_tables(new_t_24,t_l,long_index)==add_rule(dir, new_rule));
     //@ close table(_tbl, build_tables(new_t_24, t_l, long_index));
   } else {
   //If the prefixlen is not smaller than 24, we have to store the value
@@ -1009,11 +1033,10 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     //@ assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?new_t_l;
     
     //Prove that mapping holds
-    //@ map_update_n(first_index, nat_of_int(rule_size), value, t_l, entry_long_mapping);
-    
-    //@ assert new_t_l == update_n(t_l, first_index, nat_of_int(rule_size), value);
+    /*@ map_update_n(first_index, nat_of_int(rule_size),
+                     value, t_l, entry_long_mapping);
+    @*/
 
-    //@ assert map(entry_long_mapping, new_t_l) == update_n(map_l, first_index, nat_of_int(rule_size), entry_long_mapping(value));
     //@ assert length(new_t_l) == length(updated_map);
     //@ assert map(entry_long_mapping, new_t_l) == updated_map;
     
