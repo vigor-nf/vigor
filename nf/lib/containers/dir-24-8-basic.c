@@ -314,14 +314,14 @@
   }
   @*/
 
-/*@
+/* @
   lemma void drop_n_map<t, u>(int n, list<t> lst, list<u> mapped, fixpoint(t, u) f);
     requires 0 <= n &*& n <= length(lst) &*& length(lst) == length(mapped) &*&
              map(f, lst) == mapped;
     ensures map(f, drop(n, lst)) == drop(n, mapped);
   @*/
   
-/*@
+/* @
   lemma void add_update_lst(uint16_t *tbl, uint32_t i, nat j, uint32_t size,
                             uint16_t new_value, list<uint16_t> old_lst, 
                             list<uint16_t> new_lst);
@@ -329,12 +329,13 @@
              i < size &*&
              int_of_nat(j) <= i &*&
              tbl[i] |-> new_value &*&
-             tbl[i+1..size] |-> _;
+             tbl[i+1..size] |-> ?tail &*&
+             true == forall(tail, valid_entry24);
     ensures tbl[(i - int_of_nat(j))..i+1] |-> append(take(int_of_nat(j), new_lst), cons(new_value, nil)) &*&
-            tbl[i+1..size] |-> _;
+            tbl[i+1..size] |-> tail &*& true == forall(tail, valid_entry24);
   @*/
   
-/*@
+/* @
   lemma void add_no_update_lst(uint16_t *tbl, uint32_t i, nat j, uint32_t size,
                                list<uint16_t> old_lst, list<uint16_t> new_lst);
     requires tbl[(i - int_of_nat(j))..i] |-> take(int_of_nat(j), new_lst) &*&
@@ -346,7 +347,7 @@
             tbl[i+1..size] |-> _;
   @*/
 
-/*@  
+/* @  
   lemma void update24_list_is_update_map(list<option<pair<bool,Z> > > map,
                                          list<uint16_t> entries,
                                          uint32_t first_index, uint32_t index,
@@ -359,7 +360,7 @@
     ensures map(entry_24_mapping, update(index, value, entries)) ==
             update_n(map, first_index, nat_of_int(index-first_index+1),
                             entry_24_mapping(value));
-@*/
+  @*/
 
 /* @                          
   lemma void length_update_n_tbl_long(list<option<Z> > l, uint32_t first_index,
@@ -380,7 +381,7 @@
   }
   @*/
 
-/*@  
+/* @  
   lemma void update_long_list_is_update_map(list<option<Z> > map,
                                             list<uint16_t> entries,
                                             uint32_t first_index, uint32_t index,
@@ -467,12 +468,56 @@
   }
   @*/
 
+/*@
+  lemma void map_update<t, u>(int i, t y, list<t> xs, fixpoint(t, u) f)
+    requires 0 <= i &*& i < length(xs);
+    ensures map(f, update(i, y, xs)) == update(i, f(y), map(f, xs));
+  {
+    switch(xs){
+      case nil:
+      case cons(x, xs0):
+        if(i != 0){
+          map_update(i-1, y, xs0, f);
+        }
+    }
+  }
+  @*/
+    
+/*@
+  lemma void map_update_n<t, u>(int start, nat n, t y, list<t> xs, fixpoint(t, u) f);
+    requires true;//0 <= start &*& start + int_of_nat(n) <= length(xs);
+    ensures map(f, update_n(xs, start, n, y)) == update_n(map(f, xs), start, n, f(y));
+  /*{
+    switch(n){
+      case zero:
+      case succ(n0):
+        list<t> updated = update(start, y, xs);
+        map_update(start, y, xs, f);
+        map_update_n(start+1, n0, y, updated, f);
+    }
+  }*/
+  @*/
+  
+/*@
+  lemma void loop_update_n<t>(int start, int i, t y, list<t> xs, list<t> ys);
+    requires ys == update_n(xs, start, nat_of_int(i-start), y);
+    ensures update(start + (i-start), y, ys) == update_n(xs, start, nat_of_int(i-start+1), y);
+  @*/
+  
+/* @
+  lemma void fail()
+    requires true;
+    ensures true;
+  {
+    assert false;
+  }
+@*/
+
 struct tbl{
   uint16_t* tbl_24;
   uint16_t* tbl_long;
   uint16_t  tbl_long_index;
 };
-
 
 void fill_invalid(uint16_t *t, uint32_t size)
 //@ requires t[0..size] |-> _ &*& size > 0;
@@ -890,37 +935,33 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
     
     //fill all entries between [first index and last index[ with value
-    for(uint32_t i = 0; ; i++)
+    for(uint32_t i = first_index; ; i++)
     /*@ invariant 0 <= i &*& i <= last_index &*&
-                  tbl_24[0..i] |-> ?updated &*&
-                  tbl_24[i..TBL_24_MAX_ENTRIES] |-> ?to_update &*&
+                  tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry24) &*&
-                  true == forall(to_update, valid_entry24) &*&
-                  updated == take(i, updated_t) &*&
-                  //to_update == drop(i, t_24) &*&
-                  map(entry_24_mapping, updated) ==
-                  take(i, updated_map);// &*&
-                  //map(entry_24_mapping, to_update) ==
-                  //drop(i, map_24);
+                  updated == update_n(t_24, first_index,
+                                      nat_of_int(i-first_index),
+                                      value);
     @*/
-    {  // @ assume (false);
-      if(i == TBL_24_MAX_ENTRIES){
+    {
+      if(i == last_index){
         break;
       }
       
-      if(first_index <= i && i < last_index){
-        tbl_24[i] = value;
-        //@ forall_append(updated, cons(value, nil), valid_entry24);
-        //@ add_update_lst(tbl_24, i, nat_of_int(i), TBL_24_MAX_ENTRIES, value, t_24, updated_t);
-        //@ map_append(entry_24_mapping, updated ,cons(value, nil));
-      }else{
-        //@ add_no_update_lst(tbl_24, i, nat_of_int(i), TBL_24_MAX_ENTRIES, t_24, updated_t);
-      }
-      // @ drop_n_map(i, t_24, map_24, entry_24_mapping);
+      tbl_24[i] = value;
+      
+      //@ forall_update(updated, valid_entry24, i, value);
+      
+      //Prove that the loop is like update_n
+      //@ loop_update_n(first_index, i, value, t_24, updated);
     }
     
-    //@ take_length(updated_map);
+
     //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?new_t_24;
+    
+    //Prove that mapping holds
+    //@ map_update_n(first_index, nat_of_int(rule_size), value, t_24, entry_24_mapping);
+    
     //@ assert length(new_t_24) == length(updated_map);
     //@ assert (map(entry_24_mapping, new_t_24) == updated_map);
 
@@ -991,9 +1032,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
         //@ assert true == extract_flag(new_entry24);
         
         //@ forall_update(t_24, valid_entry24, tbl_24_index, new_entry24);
-        /*@ update24_list_is_update_map(map_24, t_24, tbl_24_index,
-                                        tbl_24_index, new_entry24);
-        @*/
+
+        //@ map_update(tbl_24_index, new_entry24, t_24, entry_24_mapping);
         tbl_24[tbl_24_index] = new_entry24;
         
         //@ assert tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?updated_t_24;
@@ -1058,21 +1098,30 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     /*@ invariant 0 <= i &*& i <= last_index &*&
                   tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry_long) &*&
-                  map(entry_long_mapping, updated) ==
-                  update_n(map_l, first_index,
-                                    nat_of_int(i-first_index),
-                                    entry_long_mapping(value));
+                  updated == update_n(t_l, first_index, 
+                                      nat_of_int(i-first_index),
+                                      value);
     @*/
     { 
       if(i == last_index){
         break;
       }
       //@ forall_update(updated, valid_entry_long, i, value);
-      //@ update_long_list_is_update_map(map_l, updated, first_index, i, value);
+      
       tbl_long[i] = value;
+      
+      //Prove that the loop is like update_n
+      //@ loop_update_n(first_index, i, value, t_l, updated);
     }
 
     //@ assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?new_t_l;
+    
+    //Prove that mapping holds
+    //@ map_update_n(first_index, nat_of_int(rule_size), value, t_l, entry_long_mapping);
+    
+    //@ assert new_t_l == update_n(t_l, first_index, nat_of_int(rule_size), value);
+
+    //@ assert map(entry_long_mapping, new_t_l) == update_n(map_l, first_index, nat_of_int(rule_size), entry_long_mapping(value));
     //@ assert length(new_t_l) == length(updated_map);
     //@ assert map(entry_long_mapping, new_t_l) == updated_map;
     
