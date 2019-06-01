@@ -98,9 +98,6 @@
     Z orRes = Z_or(xZ, flagMask);
   
     bitand_def((x | TBL_24_FLAG_MASK), orRes, TBL_24_VAL_MASK, valueMask);
-    //Z andRes = Z_and(orRes, valueMask);
-  
-    //assert andRes == xZ;
   }
   @*/
 
@@ -113,9 +110,6 @@
     Z valuemask = Z_of_uintN(TBL_24_VAL_MASK, N16);
     
     bitand_def(entry, entryZ, TBL_24_VAL_MASK, valuemask);
-    Z andRes = Z_and(entryZ, valuemask);
-    
-    assert andRes == entryZ;
   }
   @*/
   
@@ -293,108 +287,6 @@
     bitand_def(ipv4, ipv4Z, 0xFFFFFFFF, mask32);
   }
   @*/
-
-/* @          
-  lemma void length_update_n_tbl_24(list<option<pair<bool, Z> > > l,
-                                    uint32_t first_index,
-                                    nat rule_size,
-                                    option<pair<bool, Z> > entry)
-    requires true;
-    ensures length(l) == length(update_n_tbl_24(l, first_index,
-                                                rule_size, entry));
-  {
-    switch(rule_size){
-      case zero:
-      case succ(n):
-        list<option<pair<bool, Z> > > updated = update(first_index, entry, l);
-        length_update(first_index, entry, l);
-        length_update_n_tbl_24(updated, first_index+1, n, entry);
-               
-    }
-  }
-  @*/
-
-/* @
-  lemma void drop_n_map<t, u>(int n, list<t> lst, list<u> mapped, fixpoint(t, u) f);
-    requires 0 <= n &*& n <= length(lst) &*& length(lst) == length(mapped) &*&
-             map(f, lst) == mapped;
-    ensures map(f, drop(n, lst)) == drop(n, mapped);
-  @*/
-  
-/* @
-  lemma void add_update_lst(uint16_t *tbl, uint32_t i, nat j, uint32_t size,
-                            uint16_t new_value, list<uint16_t> old_lst, 
-                            list<uint16_t> new_lst);
-    requires tbl[(i - int_of_nat(j))..i] |-> take(int_of_nat(j), new_lst) &*&
-             i < size &*&
-             int_of_nat(j) <= i &*&
-             tbl[i] |-> new_value &*&
-             tbl[i+1..size] |-> ?tail &*&
-             true == forall(tail, valid_entry24);
-    ensures tbl[(i - int_of_nat(j))..i+1] |-> append(take(int_of_nat(j), new_lst), cons(new_value, nil)) &*&
-            tbl[i+1..size] |-> tail &*& true == forall(tail, valid_entry24);
-  @*/
-  
-/* @
-  lemma void add_no_update_lst(uint16_t *tbl, uint32_t i, nat j, uint32_t size,
-                               list<uint16_t> old_lst, list<uint16_t> new_lst);
-    requires tbl[(i - int_of_nat(j))..i] |-> take(int_of_nat(j), new_lst) &*&
-             i < size &*&
-             int_of_nat(j) <= i &*&
-             tbl[i] |-> ?old_val &*&
-             tbl[i+1..size] |-> _;
-    ensures tbl[(i - int_of_nat(j))..i+1] |-> append(take(int_of_nat(j), new_lst), cons(old_val, nil)) &*&
-            tbl[i+1..size] |-> _;
-  @*/
-
-/* @  
-  lemma void update24_list_is_update_map(list<option<pair<bool,Z> > > map,
-                                         list<uint16_t> entries,
-                                         uint32_t first_index, uint32_t index,
-                                         uint16_t value);
-    requires true == forall(entries, valid_entry24) &*&
-             map(entry_24_mapping, entries) ==
-             update_n(map, first_index, nat_of_int(index-first_index),
-                             entry_24_mapping(value)) &*&
-             true == valid_entry24(value);
-    ensures map(entry_24_mapping, update(index, value, entries)) ==
-            update_n(map, first_index, nat_of_int(index-first_index+1),
-                            entry_24_mapping(value));
-  @*/
-
-/* @                          
-  lemma void length_update_n_tbl_long(list<option<Z> > l, uint32_t first_index,
-                                    nat rule_size, option<Z> entry)
-    requires true;
-    ensures length(l) ==
-            length(update_n_tbl_long(l, first_index, rule_size,
-                                     entry));
-  {
-    switch(rule_size){
-      case zero:
-      case succ(n):
-        list<option<Z> > updated = update(first_index, entry, l);
-        length_update(first_index, entry, l);
-        length_update_n_tbl_long(updated, first_index+1, n, entry);
-               
-    }
-  }
-  @*/
-
-/* @  
-  lemma void update_long_list_is_update_map(list<option<Z> > map,
-                                            list<uint16_t> entries,
-                                            uint32_t first_index, uint32_t index,
-                                            uint16_t value);
-    requires true == forall(entries, valid_entry_long) &*&
-             map(entry_long_mapping, entries) ==
-             update_n(map, first_index, nat_of_int(index-first_index),
-                               entry_long_mapping(value)) &*&
-             true == valid_entry_long(value);
-    ensures map(entry_long_mapping, update(index, value, entries)) ==
-            update_n(map, first_index, nat_of_int(index-first_index+1),
-                              entry_long_mapping(value));
-@*/
 
 /*@
   lemma void value24_extraction_equivalence(uint16_t entry,
