@@ -206,29 +206,6 @@ lemma_auto(length(update_n(lst, start, count, x))) void update_n_length<t>(list<
   }
 }
 
-
-/*fixpoint list<option<pair<bool, Z> > > update_n_tbl_24(list<option<pair<bool, Z> > > tbl_24,
-                                                       int start, nat count,
-                                                       option<pair<bool, Z> > entry){
-  switch(count){
-    case zero: return tbl_24;
-    case succ(n): return update_n_tbl_24(update(start, entry, tbl_24), start+1,
-                                         n, entry);		
-  }
-  return update_n(tbl_24, start, count, entry);
-}
-
-fixpoint list<option<Z> > update_n_tbl_long(list<option<Z> > tbl_long,
-                                            int start, nat count,
-                                            option<Z> entry){
-  switch(count){
-    case zero: return tbl_long;
-    case succ(n): return update_n_tbl_long(update(start, entry, tbl_long),
-                                           start+1, n, entry);
-  }
-  return update_n(tbl_long, start, count, entry);
-}*/
-
 fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > tbl_24,
                                                        lpm_rule rule){
   switch(rule){
