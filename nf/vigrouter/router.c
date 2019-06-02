@@ -18,14 +18,11 @@ struct tbl * lpm_table;
 		 
         abort();
 	}
-	
-
 
 	
 	//insert all routes into data structure and returns it. Also fill the ports list (NIC ports)
 	insert_all(in_file);
 	
-
 	
 	if(lpm_table == NULL){
 		fclose(in_file);
@@ -48,32 +45,32 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
 //as in policer
 
-  const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
+	const uint16_t in_port = mbuf->port;
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
-  if (unlikely(!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
-      !(mbuf->packet_type == 0 &&
+	if (unlikely(!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
+		!(mbuf->packet_type == 0 &&
         ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4)))) {
-    printf("not an ipv4...\n"); fflush(stdout);
-    return in_port;
-  }
+			
+		printf("not an ipv4...\n"); fflush(stdout);
+		return in_port;
+	}
 
-  uint8_t* ip_options;
-  bool wellformed = true;
+	uint8_t* ip_options;
+	bool wellformed = true;
 	struct ipv4_hdr* ip_hdr = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
-  if (unlikely(!wellformed)) {
-	printf("router dropping packet...\n"); fflush(stdout);
-    return in_port;
-}
+	
+	if (unlikely(!wellformed)) {
+		printf("router dropping packet...\n"); fflush(stdout);
+		return in_port;
+	}
 
 
-    uint32_t ip_addr = rte_be_to_cpu_32(((struct ipv4_hdr *)ip_hdr)->dst_addr); //rte_be_to_cpu_32(ip_hdr->dst_addr);
+    uint32_t ip_addr = rte_be_to_cpu_32(((struct ipv4_hdr *)ip_hdr)->dst_addr); 
 	
 	
 	//lookup the ip
-	
     int res = tbl_lookup_elem(lpm_table, ip_addr);
-  
 
 	if(unlikely(res == -1)){	//lookup returns 0 on lookup hit
 		
@@ -83,7 +80,6 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 
 	return res;
 
-
 }
 
 
@@ -92,14 +88,14 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
  */
 void insert_all(FILE * f){
 	
-	lpm_table = tbl_allocate();	//create lpm table
+	//create lpm table
+	lpm_table = tbl_allocate();
 	
 	if (lpm_table == NULL){
 		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
 	}
-	
-	
-	 
+		
+	//Begin parsing the routes 
     size_t length = 0;
     char * line = NULL;
     int csvLength = 0;
@@ -107,7 +103,7 @@ void insert_all(FILE * f){
  
 	while ((csvLength = getline(&line, &length, f)) >= MIN_ENTRY_SIZE) {
 		
-    
+		//variables for each route
 		uint8_t * ip = NULL;
 		uint8_t mask = 0;
 		uint8_t port = 0;
@@ -169,14 +165,12 @@ void insert_all(FILE * f){
 		if(entries_count >= MAX_ROUTES_ENTRIES){
 					printf("Error too much entries in routes file !\n"); 
 					abort();
-		}
-		
-			
-			
+		}			
 
 		
-		uint32_t ip_address = ip[3] + (ip[2] << 8) + (ip[1] << 16) + (ip[0] <<24);
-			
+		uint32_t ip_address = ip[3] + (ip[2] << 8) + (ip[1] << 16) + (ip[0] <<24);			
+		
+		//create new key for the lpm table
 		struct key * new_key = malloc(sizeof(struct key));
 			
 		if(new_key == NULL){
@@ -188,13 +182,16 @@ void insert_all(FILE * f){
 		new_key->prefixlen = mask;
 		new_key->route = (uint16_t)port;
 
-		int res = tbl_update_elem(lpm_table, new_key);
 
-      
+		//update the table with the new key
+		int res = tbl_update_elem(lpm_table, new_key);
+   
 		if(res == -1){
 			printf("error during update. error is : %d\n",res); fflush(stdout);
 			abort();
 		}
+      
+      
       
 		if(ip){
 			free(ip);
@@ -202,9 +199,8 @@ void insert_all(FILE * f){
 		}
 		
     }
-
-	     
-       
+    
+   
     if(line){
 		free(line);
 		line = NULL;
