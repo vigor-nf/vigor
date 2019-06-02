@@ -150,7 +150,7 @@ lcore_main(void)
     	struct rte_mbuf* mbuf;
     	if (likely(nf_receive_packet(VIGOR_DEVICE, &mbuf))) {
 		
-    	  uint16_t dst_device = nf_core_process(mbuf, 0);	//don't need the time
+    	  uint16_t dst_device = nf_core_process(mbuf, 0);	//don't need the time for the router
     	  nf_return_all_chunks(mbuf_pkt(mbuf));
 
     	 if (unlikely(dst_device == FLOOD_FRAME)) {
