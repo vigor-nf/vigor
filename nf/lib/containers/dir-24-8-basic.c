@@ -34,12 +34,6 @@
     false == extract_flag(route) &*&
     true == valid_entry24(route) &*& true == valid_entry_long(route);
   @*/
-  
-/*@
-  fixpoint bool boundaries(uint16_t elem){
-    return 0 <= elem && elem <= 0xFFFF;
-  }
-@*/
 
 /*@
   fixpoint bool is_none<t>(option<t> mapped){
@@ -50,6 +44,53 @@
 /*@
   fixpoint bool check_INVALID(uint16_t current){
     return current == INVALID;
+  }
+  @*/
+
+/*@
+  lemma void map_update<t, u>(int i, t y, list<t> xs, fixpoint(t, u) f)
+    requires 0 <= i &*& i < length(xs);
+    ensures map(f, update(i, y, xs)) == update(i, f(y), map(f, xs));
+  {
+    switch(xs){
+      case nil:
+      case cons(x, xs0):
+        if(i != 0){
+          map_update(i-1, y, xs0, f);
+        }
+    }
+  }
+  @*/
+    
+/*@
+  lemma void map_update_n<t, u>(int start, nat n, t y, list<t> xs,
+                                fixpoint(t, u) f)
+    requires 0 <= start &*& start + int_of_nat(n) <= length(xs);
+    ensures map(f, update_n(xs, start, n, y)) ==
+            update_n(map(f, xs), start, n, f(y));
+  {
+    switch(n){
+      case zero:
+      case succ(n0):
+        list<t> updated = update(start, y, xs);
+        map_update(start, y, xs, f);
+        map_update_n(start+1, n0, y, updated, f);
+    }
+  }
+  @*/
+
+/*@
+  lemma void loop_update_n<t>(int start, nat count, t y, list<t> xs)
+    requires true;
+    ensures update(start + int_of_nat(count), y,
+                   update_n(xs, start, count, y)) ==
+            update_n(xs, start, succ(count), y);
+  {
+    switch(count){
+      case zero:
+      case succ(n): 
+        loop_update_n(start+1, n, y, update(start, y, xs));
+    }
   }
   @*/
 
@@ -372,54 +413,6 @@
     }
   }
   @*/
-
-/*@
-  lemma void map_update<t, u>(int i, t y, list<t> xs, fixpoint(t, u) f)
-    requires 0 <= i &*& i < length(xs);
-    ensures map(f, update(i, y, xs)) == update(i, f(y), map(f, xs));
-  {
-    switch(xs){
-      case nil:
-      case cons(x, xs0):
-        if(i != 0){
-          map_update(i-1, y, xs0, f);
-        }
-    }
-  }
-  @*/
-    
-/*@
-  lemma void map_update_n<t, u>(int start, nat n, t y, list<t> xs,
-                                fixpoint(t, u) f)
-    requires 0 <= start &*& start + int_of_nat(n) <= length(xs);
-    ensures map(f, update_n(xs, start, n, y)) ==
-            update_n(map(f, xs), start, n, f(y));
-  {
-    switch(n){
-      case zero:
-      case succ(n0):
-        list<t> updated = update(start, y, xs);
-        map_update(start, y, xs, f);
-        map_update_n(start+1, n0, y, updated, f);
-    }
-  }
-  @*/
-  
-/*@
-  lemma void loop_update_n<t>(int start, nat count, t y, list<t> xs, list<t> ys);
-    requires ys == update_n(xs, start, count, y);
-    ensures update(start + int_of_nat(count), y, ys) ==
-            update_n(xs, start, succ(count), y);
-  @*/
-  
-/* @
-  lemma void fail()
-    requires true;
-    ensures true;
-  {
-    assert false;
-  }
-@*/
 
 struct tbl{
   uint16_t* tbl_24;
@@ -870,7 +863,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       
       //Prove that the loop is like update_n
       //@ succ_int(i-first_index);
-      //@ loop_update_n(first_index, nat_of_int(i-first_index), value, t_24, updated);
+      //@ loop_update_n(first_index, nat_of_int(i-first_index), value, t_24);
     }
     
 
@@ -1029,7 +1022,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       
       //Prove that the loop is like update_n
       //@ succ_int(i-first_index);
-      //@ loop_update_n(first_index, nat_of_int(i-first_index), value, t_l, updated);
+      //@ loop_update_n(first_index, nat_of_int(i-first_index), value, t_l);
     }
 
     //@ assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?new_t_l;
