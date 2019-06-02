@@ -390,11 +390,11 @@
     
 /*@
   lemma void map_update_n<t, u>(int start, nat n, t y, list<t> xs,
-                                fixpoint(t, u) f);
-    requires true;//0 <= start &*& start + int_of_nat(n) <= length(xs);
+                                fixpoint(t, u) f)
+    requires 0 <= start &*& start + int_of_nat(n) <= length(xs);
     ensures map(f, update_n(xs, start, n, y)) ==
             update_n(map(f, xs), start, n, f(y));
-  /*{
+  {
     switch(n){
       case zero:
       case succ(n0):
@@ -402,14 +402,14 @@
         map_update(start, y, xs, f);
         map_update_n(start+1, n0, y, updated, f);
     }
-  }*/
+  }
   @*/
   
 /*@
-  lemma void loop_update_n<t>(int start, int i, t y, list<t> xs, list<t> ys);
-    requires ys == update_n(xs, start, nat_of_int(i-start), y);
-    ensures update(start + (i-start), y, ys) ==
-            update_n(xs, start, nat_of_int(i-start+1), y);
+  lemma void loop_update_n<t>(int start, nat count, t y, list<t> xs, list<t> ys);
+    requires ys == update_n(xs, start, count, y);
+    ensures update(start + int_of_nat(count), y, ys) ==
+            update_n(xs, start, succ(count), y);
   @*/
   
 /* @
@@ -852,7 +852,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
     
     //fill all entries between [first index and last index[ with value
     for(uint32_t i = first_index; ; i++)
-    /*@ invariant 0 <= i &*& i <= last_index &*&
+    /*@ invariant first_index <= i &*& i <= last_index &*&
                   tbl_24[0..TBL_24_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry24) &*&
                   updated == update_n(t_24, first_index,
@@ -869,7 +869,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       //@ forall_update(updated, valid_entry24, i, value);
       
       //Prove that the loop is like update_n
-      //@ loop_update_n(first_index, i, value, t_24, updated);
+      //@ succ_int(i-first_index);
+      //@ loop_update_n(first_index, nat_of_int(i-first_index), value, t_24, updated);
     }
     
 
@@ -1011,7 +1012,7 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
 
     //Store value in tbl_long entries
     for(uint32_t i = first_index; ; i++)
-    /*@ invariant 0 <= i &*& i <= last_index &*&
+    /*@ invariant first_index <= i &*& i <= last_index &*&
                   tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry_long) &*&
                   updated == update_n(t_l, first_index, 
@@ -1027,7 +1028,8 @@ int tbl_update_elem(struct tbl *_tbl, struct key *_key)
       tbl_long[i] = value;
       
       //Prove that the loop is like update_n
-      //@ loop_update_n(first_index, i, value, t_l, updated);
+      //@ succ_int(i-first_index);
+      //@ loop_update_n(first_index, nat_of_int(i-first_index), value, t_l, updated);
     }
 
     //@ assert tbl_long[0..TBL_LONG_MAX_ENTRIES] |-> ?new_t_l;
