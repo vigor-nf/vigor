@@ -10,59 +10,48 @@ local hist   = require "histogram"
 local timer  = require "timer"
 
 
--- best config 10000, 8, 1
---local NB_DIFF_IP4 = 10000;
 local NB_TX_QUEUE = 2;
 local NB_RX_QUEUE = 2;
+--84 is the minimum packet size for timestamping
 local PACKET_SIZE = 84;
 
+--jump used to generate pseudo random ip to trigger cache misses in the router
 local CACHE_JUMP = 17027;
 
-function master(txNum, nbrRoutes, delay)
+--enter the nic (port) nummber, the range of routes (between 1 and 2^32) and the delay (to reduce tx load)
+function master(nic, nbrRoutes, delay)
 
 	print("Try to configure devices")
 
-	txDev = device.config{	--configure device for transmission
+	dev = device.config{	--configure device for transmission
 
-		port = txNum,
+		port = nic,
 		rxQueues = NB_RX_QUEUE,
 		txQueues = NB_TX_QUEUE,	
 	}
 
-	--rxDev = device.config{	--configure device for reception
-
-	--	port = rxNum,
-	--	rxQueues = 1,
-	--	txQueues = 1,
-	--}
 
 	device.waitForLinks()	--wait for the devices
 
 
-	local arrayIp4 = {}		--prepare NB_DIFF_IP4 ip addresses
-
---	for i = 0, NB_DIFF_IP4 -1 do
---		arrayIp4[i] = getRandomIp4()
---	end
+	--launch slave task for reception
+	moongen.startTask("receivePackets", dev:getRxQueue(0))		
 	
-	--for i = 0, NB_RX_QUEUE -1 do
-		moongen.startTask("receivePackets", txDev:getRxQueue(0))		--launch slave task for reception
-	--end
+	--launch slave task for transmission
+	moongen.startTask("sendPackets", dev:getTxQueue(0), nbrRoutes, delay)	
 
-	--for i = 0, NB_TX_QUEUE -1 do
-
-		moongen.startTask("sendPackets", txDev:getTxQueue(0), nbrRoutes, delay)--, rxDev:getRxQueue(0), arrayIp4)		--launch slave task for transmission
-	--end
-
-	moongen.startTask("timerSlave", txDev:getTxQueue(1), txDev:getRxQueue(1), PACKET_SIZE, nbrRoutes)
-
-	moongen.waitForTasks() -- wait for child termination
+	--launch slave task for packet timestamping
+	moongen.startTask("timerSlave", dev:getTxQueue(1), dev:getRxQueue(1), PACKET_SIZE, nbrRoutes)
 	
-
+	
+	-- wait for child termination
+	moongen.waitForTasks() 
+	
 
 end
 
 
+--receive packets and gather stats
 function receivePackets(rxQueue)
 
 	local bufs = memory.bufArray()
@@ -72,12 +61,6 @@ function receivePackets(rxQueue)
 
 		local rx = rxQueue:recv(bufs)
 
-		for i = 1, rx do 
-
---			local pkt = bufs[i]:getUdp4Packet()
---			print("Packet: " .. pkt.ip4:getString())
-			--print("from ip: " .. pkt.ip4.dst:getString())
-		end
 		rxCtr:update()
 		bufs:freeAll()
 	end
@@ -86,7 +69,8 @@ function receivePackets(rxQueue)
 end
 
 
-
+--sends packets by iterating on the max number of routes (pseudo random jumps to trigger cache miss)
+--you can slow down the load by increasing the delay between packets
 function sendPackets(txQueue, nbrRoutes, delay)
 
  	local txCtr = stats:newDevTxCounter(txQueue, "plain")
@@ -97,7 +81,6 @@ function sendPackets(txQueue, nbrRoutes, delay)
 			ethSrc = txQueue, -- device mac
 			ethDst = " 90:e2:ba:55:14:39",--rxQueue,
 			-- ipDst will be randomized later
-	--		ip4Dst = "10.0.0.2", --remove when randomizing
 			ip4Src = "10.0.0.1",
 			udpSrc = 4321,
 			udpDst = 1234,
@@ -119,12 +102,11 @@ function sendPackets(txQueue, nbrRoutes, delay)
 		for _, buf in ipairs(bufs) do
 			local pkt = buf:getUdpPacket()
 	
-			--pkt.ip4.dst:set(parseIPAddress(arrayIp4[i])) -- select an ipDst
-			--i = (i + 1) % NB_DIFF_IP4 
+			--set the destination ip and do a pseudo random jump to trigger caceh miss in the router
 			pkt.ip4.dst:set(i)
 			i = i + (CACHE_JUMP * (i+1));
 			i = i % nbrRoutes
-	--		print("Packet: " .. pkt.ip4:getString())
+
 		end
 
 		bufs:offloadUdpChecksums() -- harware checksums
@@ -136,7 +118,7 @@ function sendPackets(txQueue, nbrRoutes, delay)
 end
 
 
-
+--timestamps packets and gather stats
 function timerSlave(txQueue, rxQueue, size, nbrRoutes)
 	
 	local timestamper = ts:newUdpTimestamper(txQueue, rxQueue)
@@ -152,7 +134,6 @@ function timerSlave(txQueue, rxQueue, size, nbrRoutes)
 			ethSrc = txQueue, -- device mac
 			ethDst = " 90:e2:ba:55:14:39",--rxQueue,
 			-- ipDst will be randomized later
-	--		ip4Dst = "10.0.0.2", --remove when randomizing
 			ip4Src = "10.0.0.1",
 			udpSrc = 4321,
 			udpDst = 1234,
@@ -160,13 +141,10 @@ function timerSlave(txQueue, rxQueue, size, nbrRoutes)
 
 		local pkt = buf:getUdpPacket()
 
-                        --pkt.ip4.dst:set(parseIPAddress(arrayIp4[i])) -- select an ipDst
-                        --i = (i + 1) % NB_DIFF_IP4 
-                        pkt.ip4.dst:set(i)
-                        i = i + (CACHE_JUMP * (i+1))
-                        i = i % nbrRoutes
-
-
+        --as in sendPackets
+        pkt.ip4.dst:set(i)
+        i = i + (CACHE_JUMP * (i+1))
+        i = i % nbrRoutes
 
 				
 		end))
