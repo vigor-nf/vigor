@@ -9,46 +9,45 @@ local hist   = require "histogram"
 local timer  = require "timer"
 
 
--- best config 10000, 8, 1
---local NB_DIFF_IP4 = 10000;
 local NB_TX_QUEUE = 2;
 local NB_RX_QUEUE = 2;
-local PACKET_SIZE = 84;
+--84 is the minimum packet size for timestamping
+local PACKET_SIZE = 84;	
 
-function master(txNum, delay)
+--enter the nic number (port) and the delay between tx packets (to reduce load)
+function master(nic, delay)
 
 	print("Try to configure devices")
 
-	txDev = device.config{	--configure device for transmission
+	--configure the device 
+	dev = device.config{	
 
-		port = txNum,
+		port = nic,
 		rxQueues = NB_RX_QUEUE,
 		txQueues = NB_TX_QUEUE,	
 	}
 
 	
+	--wait for the devices
+	device.waitForLinks()	
 
-	device.waitForLinks()	--wait for the devices
+	--launch slave task for reception
+	moongen.startTask("receivePackets", dev:getRxQueue(0))		
 
-
-	local arrayIp4 = {}		--prepare NB_DIFF_IP4 ip addresses
-
-
-		moongen.startTask("receivePackets", txDev:getRxQueue(0))		--launch slave task for reception
+	--launch slave task for transmission
+	moongen.startTask("sendPackets", dev:getTxQueue(0), delay)
 	
+	-- launch slave task for timestamping
+	moongen.startTask("timerSlave", dev:getTxQueue(1), dev:getRxQueue(1), PACKET_SIZE) 
 
-	
-		moongen.startTask("sendPackets", txDev:getTxQueue(0), delay)	--launch slave task for transmission
-
-	moongen.startTask("timerSlave", txDev:getTxQueue(1), txDev:getRxQueue(1), PACKET_SIZE)
 
 	moongen.waitForTasks() -- wait for child termination
 	
 
-
 end
 
 
+--receive packets and gather stats
 function receivePackets(rxQueue)
 
 	local bufs = memory.bufArray()
@@ -58,12 +57,6 @@ function receivePackets(rxQueue)
 
 		local rx = rxQueue:recv(bufs)
 
-		for i = 1, rx do 
-
-	--		local pkt = bufs[i]:getUdp4Packet()
-	--		print("Packet: " .. pkt.ip4:getString())
-			--print("from ip: " .. pkt.ip4.dst:getString())
-		end
 		rxCtr:update()
 		bufs:freeAll()
 	end
@@ -72,23 +65,7 @@ function receivePackets(rxQueue)
 end
 
 
-
-function getRandomIp4()		--generates random ipv4 addresses
-
-	local s = ""
-
-	for i = 0 , 3 do
-		if(i ~= 0) then
-			s = s .. "."
-		end
-		s = s .. math.random(0,255)
-	end
-
-return s
-end
-
-
-
+--send packets with a fix destination ip (triggers cache hit in the nf)
 function sendPackets(txQueue, delay)
 
  	local txCtr = stats:newDevTxCounter(txQueue, "plain")
@@ -98,11 +75,7 @@ function sendPackets(txQueue, delay)
 			pktLength = PACKET_SIZE,
 			ethSrc = txQueue, -- device mac
 			ethDst = " 90:e2:ba:55:14:39",--rxQueue,
-	--		 ipDst will be randomized later
 			ip4Dst = "10.0.0.2", --remove when randomizing
-	--		ip4Src = "10.0.0.1",
-	--		udpSrc = 4321,
-	--		udpDst = 1234,
 		}
 
 	end)
@@ -114,22 +87,8 @@ function sendPackets(txQueue, delay)
 	while moongen.running() do
 		bufs:alloc(PACKET_SIZE) --allocate memory for packets
 		
-		
+		--delay packet generation to reduce load
 		moongen.sleepMicros(delay)
-
-
-		--can modify packets here
-
-		--for _, buf in ipairs(bufs) do
-		--	local pkt = buf:getUdpPacket()
-	
-			--pkt.ip4.dst:set(parseIPAddress(arrayIp4[i])) -- select an ipDst
-			--i = (i + 1) % NB_DIFF_IP4 
-		--	pkt.ip4.dst:set(i)
-		--	i = i + 1
-
-		--	print("Packet: " .. pkt.ip4:getString())
-		--end
 
 		bufs:offloadUdpChecksums() -- harware checksums
 	
@@ -140,7 +99,7 @@ function sendPackets(txQueue, delay)
 end
 
 
-
+--timestamp packets and gather stats
 function timerSlave(txQueue, rxQueue, size)
 	
 	local timestamper = ts:newUdpTimestamper(txQueue, rxQueue)
@@ -155,24 +114,10 @@ function timerSlave(txQueue, rxQueue, size)
 			pktLength = PACKET_SIZE,
 			ethSrc = txQueue, -- device mac
 			ethDst = " 90:e2:ba:55:14:39",--rxQueue,
-			-- ipDst will be randomized later
 			ip4Dst = "10.0.0.2", --remove when randomizing
-	--		ip4Src = "10.0.0.1",
-	--		udpSrc = 4321,
-	--		udpDst = 1234,
+
 		}
 	
-	 
-
-
-	--	local pkt = buf:getUdpPacket()
-
-                        --pkt.ip4.dst:set(parseIPAddress(arrayIp4[i])) -- select an ipDst
-                --i = (i + 1) % NB_DIFF_IP4 
-          --      pkt.ip4.dst:set(i)
-            --    i = i + 1
-	--	 moongen.sleepMillis(1)
-
 		end))
 
 		rateLimit:wait()
