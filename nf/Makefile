@@ -72,7 +72,8 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/expirator.c
 
 LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/bitopsutils.c \
-				 $(SELF_DIR)/lib/containers/mod_pow2.c
+				 $(SELF_DIR)/lib/containers/mod_pow2.c \
+				 $(SELF_DIR)/lib/containers/lpm-dir-24-8.c
 
 LIBVIG_MAP_CAP_POW2 := $(SELF_DIR)/lib/containers/arith.o \
                        $(SELF_DIR)/lib/containers/modulo.o \
