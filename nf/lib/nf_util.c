@@ -33,6 +33,7 @@ nf_set_ipv4_checksum(struct ipv4_hdr* header)
 {
 	// TODO: See if can be offloaded to hardware
 	header->hdr_checksum = 0;
+	return;// FIXME: Get the checksum back!
 
 	if (header->next_proto_id == IPPROTO_TCP) {
 		struct tcp_hdr* tcp_header = (struct tcp_hdr*)(header + 1);

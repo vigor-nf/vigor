@@ -17,7 +17,6 @@
 
 #ifdef KLEE_VERIFICATION
 #  include "lib/stubs/time_stub_control.h"
-#  include "lib/stubs/driver_stub.h"
 #  include "lib/stubs/hardware_stub.h"
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
@@ -58,6 +57,7 @@
 #  define VIGOR_LOOP_END } }
 #endif//KLEE_VERIFICATION
 
+
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;
@@ -68,21 +68,17 @@ static const uint16_t TX_QUEUES_COUNT = 1;
 static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
 
-// Clone pool for flood()
-static struct rte_mempool* clone_pool;
-
 void
-flood(struct rte_mbuf* frame, uint16_t skip_device,
-      uint16_t nb_devices, struct rte_mempool* clone_pool) {
+flood(struct rte_mbuf* frame, uint16_t skip_device, uint16_t nb_devices) {
+  rte_mbuf_refcnt_set(frame, nb_devices - 1);
+  int total_sent = 0;
   for (uint16_t device = 0; device < nb_devices; device++) {
     if (device == skip_device) continue;
-    struct rte_mbuf* copy = rte_pktmbuf_clone(frame, clone_pool);
-    if (copy == NULL) {
-      rte_exit(EXIT_FAILURE, "Cannot clone a frame for flooding");
-    }
-    nf_send_packet(copy, device);
+    total_sent += rte_eth_tx_burst(device, 0, &frame, 1);
   }
-  rte_pktmbuf_free(frame);
+  if (total_sent != nb_devices - 1) {
+    rte_pktmbuf_free(frame);
+  }
 }
 
 // Buffer count for mempools
@@ -97,6 +93,7 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   // device_conf passed to rte_eth_dev_configure cannot be NULL
   struct rte_eth_conf device_conf;
   memset(&device_conf, 0, sizeof(struct rte_eth_conf));
+  device_conf.rxmode.hw_strip_crc = 1;
 
   // Configure the device
   retval = rte_eth_dev_configure(
@@ -116,7 +113,7 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
       txq,
       TX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      NULL // config (NULL = default)
+      NULL // default config
     );
     if (retval != 0) {
       return retval;
@@ -124,18 +121,13 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
   }
 
   // Allocate and set up RX queues
-  // with rx_free_thresh = 1 so that internal descriptors are replenished always,
-  // i.e. 1 mbuf is taken (for RX) from the pool and 1 is put back (when freeing),
-  //      at each iteration, which avoids havocing problems
-  struct rte_eth_rxconf rx_conf = {0};
-  rx_conf.rx_free_thresh = 1;
   for (int rxq = 0; rxq < RX_QUEUES_COUNT; rxq++) {
     retval = rte_eth_rx_queue_setup(
       device,
       rxq,
       RX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      &rx_conf,
+      NULL, // default config
       mbuf_pool
     );
     if (retval != 0) {
@@ -175,7 +167,6 @@ lcore_main(void)
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
   VIGOR_LOOP_BEGIN
-
     struct rte_mbuf* mbuf;
     if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
       uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
@@ -184,8 +175,9 @@ lcore_main(void)
       if (dst_device == VIGOR_DEVICE) {
         nf_free_packet(mbuf);
       } else if (dst_device == FLOOD_FRAME) {
-        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT, clone_pool);
+        flood(mbuf, VIGOR_DEVICE, VIGOR_DEVICES_COUNT);
       } else {
+        concretize_devices(&dst_device, rte_eth_dev_count());
         nf_send_packet(mbuf, dst_device);
       }
     }
@@ -206,11 +198,6 @@ main(int argc, char* argv[])
   argc -= ret;
   argv += ret;
 
-#ifdef KLEE_VERIFICATION
-  // Attach stub driver (note that hardware stub is autodetected, no need to attach)
-  stub_driver_attach();
-#endif
-
   // NF-specific config
   nf_config_init(argc, argv);
   nf_print_config();
@@ -227,19 +214,6 @@ main(int argc, char* argv[])
   );
   if (mbuf_pool == NULL) {
     rte_exit(EXIT_FAILURE, "Cannot create mbuf pool: %s\n", rte_strerror(rte_errno));
-  }
-
-  // Create another pool for the flood() cloning
-  clone_pool = rte_pktmbuf_pool_create(
-    "clone_pool", // name
-     MEMPOOL_BUFFER_COUNT, // #elements
-     0, // cache size (same remark as above)
-     0, // application private data size
-     RTE_MBUF_DEFAULT_BUF_SIZE, // data buffer size
-     rte_socket_id() // socket ID
-  );
-  if (clone_pool == NULL) {
-    rte_exit(EXIT_FAILURE, "Cannot create mbuf clone pool: %s\n", rte_strerror(rte_errno));
   }
 
   // Initialize all devices

@@ -14,22 +14,23 @@
 
 struct FlowManager {
   struct State* state;
-	uint32_t expiration_time; /*seconds*/
+	vigor_time_t expiration_time; /*seconds*/
 };
 
 bool
 flow_consistency(void* value, int index, void* state) {
 	struct FlowId* flow_id = value;
 	struct State* st = state;
-	return ( 0 <= flow_id->internal_device ) & ( flow_id->internal_device < rte_eth_dev_count() ) &
-		( flow_id->internal_device != st->nat_device );
+	return ( 0 <= flow_id->internal_device ) AND
+              ( flow_id->internal_device < rte_eth_dev_count() ) AND
+		          ( flow_id->internal_device != st->nat_device );
 }
 
 struct FlowManager*
 flow_manager_allocate(uint16_t starting_port,
                       uint32_t nat_ip,
                       uint16_t nat_device,
-                      uint32_t expiration_time,
+                      vigor_time_t expiration_time,
                       uint64_t max_flows) {
 	struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
 	if (manager == NULL) {
@@ -116,9 +117,5 @@ flow_manager_get_external(struct FlowManager* manager, uint16_t external_port,
 
   dchain_rejuvenate_index(manager->state->heap, index, time);
 
-#ifdef KLEE_VERIFICATION
-	concretize_devices(&out_flow->internal_device, rte_eth_dev_count());
-
-#endif
 	return true;
 }

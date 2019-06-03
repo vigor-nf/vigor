@@ -28,15 +28,20 @@ struct policer_config config;
 struct State* dynamic_ft;
 
 int policer_expire_entries(uint64_t time) {
-  if (time < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate)
+  if (time < config.burst / config.rate)
     return 0;
 
-  // OK because time >= config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate >= 0
-  uint64_t min_time = time - config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate;
+  // OK because time >= config.burst / config.rate >= 0
+  uint64_t min_time = time - config.burst / config.rate;
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
                                  dynamic_ft->dyn_map,
                                  min_time);
+}
+
+bool
+dyn_val_condition(void* key, int index, void* state) {
+  return ((struct DynamicValue*) key)->bucket_time <= recent_time();
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
@@ -49,7 +54,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
 
     value->bucket_size +=
-        (time - value->bucket_time) * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+        (time - value->bucket_time) * config.rate;
     if (value->bucket_size > config.burst) {
       value->bucket_size = config.burst;
     }
@@ -74,7 +79,7 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
                                               &index,
                                               time);
     if (!allocated) {
-      NF_INFO("No more space in the policer table");
+      NF_DEBUG("No more space in the policer table");
       return false;
     }
     uint32_t *key;
@@ -103,6 +108,7 @@ void nf_core_init(void) {
 }
 
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
+  NF_DEBUG("Received packet");
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
@@ -126,22 +132,22 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
 
   if (in_port == config.lan_device) {
     // Simply forward outgoing packets.
-    NF_INFO("Outgoing packet. Not policing.");
+    NF_DEBUG("Outgoing packet. Not policing.");
     return config.wan_device;
   } else if (in_port == config.wan_device) {
     // Police incoming packets.
     bool fwd = policer_check_tb(ipv4_header->dst_addr, mbuf->pkt_len, now);
 
     if (fwd) {
-      NF_INFO("Incoming packet within policed rate. Forwarding.");
+      NF_DEBUG("Incoming packet within policed rate. Forwarding.");
       return config.lan_device;
     } else {
-      NF_INFO("Incoming packet outside of policed rate. Dropping.");
+      NF_DEBUG("Incoming packet outside of policed rate. Dropping.");
       return config.wan_device;
     }
   } else {
     // Drop any other packets.
-    NF_INFO("Unknown port. Dropping.");
+    NF_DEBUG("Unknown port. Dropping.");
     return in_port;
   }
 }

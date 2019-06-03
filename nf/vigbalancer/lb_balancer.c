@@ -17,9 +17,9 @@
 #include <stdbool.h>
 
 struct LoadBalancer {
-  uint32_t flow_expiration_time;
+  vigor_time_t flow_expiration_time;
 
-  uint32_t backend_expiration_time;
+  vigor_time_t backend_expiration_time;
   struct State* state;
 };
 
@@ -48,8 +48,8 @@ lb_flow_id2backend_id_cond(void* key, int index, void* state) {
 
 struct LoadBalancer*
 lb_allocate_balancer(uint32_t flow_capacity, uint32_t backend_capacity,
-                     uint32_t cht_height, uint32_t backend_expiration_time,
-                     uint32_t flow_expiration_time) {
+                     uint32_t cht_height, vigor_time_t backend_expiration_time,
+                     vigor_time_t flow_expiration_time) {
   struct LoadBalancer* balancer = calloc(1, sizeof(struct LoadBalancer));
   balancer->flow_expiration_time = flow_expiration_time;
   balancer->backend_expiration_time = backend_expiration_time;
@@ -112,6 +112,7 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, vig
       // current impl of symbex models does not support
       // connecting a map with its keystore.
       map_erase(balancer->state->flow_to_flow_id, flow, (void**)&flow_key);
+
       dchain_free_index(balancer->state->flow_chain, flow_index);
       vector_return(balancer->state->flow_heap, flow_index, (void*)flow_key);
       return lb_get_backend(balancer, flow, now);
@@ -124,11 +125,6 @@ lb_get_backend(struct LoadBalancer* balancer, struct LoadBalancedFlow* flow, vig
       vector_return(balancer->state->backends, backend_index, (void*)vec_backend);
     }
   }
-
-#ifdef KLEE_VERIFICATION
-  // Concretize the backend, to avoid propagating a symbolic device
-  concretize_devices(&backend.nic, rte_eth_dev_count());
-#endif//KLEE_VERIFICATION
 
   return backend;
 }

@@ -12,7 +12,7 @@ struct FlowManager;
 struct FlowManager* flow_manager_allocate(uint16_t starting_port,
                                           uint32_t nat_ip,
                                           uint16_t nat_device, /* NOTE: only required for verif to show that internal != external; can be removed once "our NAT" == router + "only NAT" */
-                                          uint32_t expiration_time,
+                                          vigor_time_t expiration_time,
                                           uint64_t max_flows);
 
 bool flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
@@ -25,11 +25,4 @@ bool flow_manager_get_internal(struct FlowManager* manager,
 bool flow_manager_get_external(struct FlowManager* manager,
                                uint16_t external_port, vigor_time_t time,
                                struct FlowId* out_flow);
-
-#ifdef KLEE_VERIFICATION
-struct DoubleChain** flow_manager_get_chain(struct FlowManager* manager);
-struct Map** flow_manager_get_in_table(struct FlowManager* manager);
-struct Vector** flow_manager_get_in_vec(struct FlowManager* manager);
-#endif
-
 #endif //_FLOWMANAGER_H_INCLUDED_

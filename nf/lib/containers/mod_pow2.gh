@@ -1,0 +1,35 @@
+#ifndef _MOD_POW2_INCLUDED_
+#define _MOD_POW2_INCLUDED_
+
+#include <nat.gh>
+
+#include "modulo.gh"
+
+fixpoint int pow2(nat m) {
+    return pow_nat(2, m);
+}
+
+fixpoint option<nat> is_pow2(int x, nat m) {
+    switch(m) {
+        case zero: return (x == pow2(zero) ? some(zero) : none);
+        case succ(m_pred): return (x == pow2(m) ? some(m) : is_pow2(x, m_pred));
+    }
+}
+
+lemma nat is_pow2_some(int x, nat m);
+    requires    is_pow2(x, m) != none;
+    ensures     x == pow2(result) &*& int_of_nat(result) <= int_of_nat(m);
+
+lemma void some_is_pow2(int x, nat n, nat m);
+    requires    x == pow2(n) &*& int_of_nat(n) <= int_of_nat(m);
+    ensures     is_pow2(x, m) == some(n);
+
+lemma void mod_bitand_equiv(int k, int capacity, nat m);
+    requires    0 <= k &*& k < pow2(N32) &*& 0 < capacity &*& capacity < INT_MAX &*& capacity == pow2(m) &*& int_of_nat(m) < 32;
+    ensures     (k % capacity) == (k & (capacity - 1)) &*& (k % capacity) == loop_fp(k, capacity);
+
+lemma void check_pow2_valid(int x);
+    requires    0 < x &*& x < pow2(N32) &*& (x & (x - 1)) == 0;
+    ensures     is_pow2(x, N31) != none;
+
+#endif //_MOD_POW2_GH_INCLUDED_

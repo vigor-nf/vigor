@@ -1,5 +1,6 @@
 #include "lib/stubs/core_stub.h"
 #include "lib/stubs/containers/str-descr.h"
+#include "lib/packet-io.h"
 
 #include <stdlib.h>
 #include <string.h>

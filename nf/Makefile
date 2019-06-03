@@ -51,19 +51,43 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 
 ### VeriFast verification ###
 # we use DPDK stubs in there (e.g. rte_config.h)
-verifast:
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared \
-		$(SELF_DIR)/lib/containers/double-chain-impl.c \
-		$(SELF_DIR)/lib/containers/double-chain.c \
-		$(SELF_DIR)/lib/containers/map-impl.c \
-		$(SELF_DIR)/lib/containers/double-map.c \
-		$(SELF_DIR)/lib/containers/vector.c \
-		$(SELF_DIR)/lib/containers/cht.c \
-		$(SELF_DIR)/lib/containers/map.c \
-		$(SELF_DIR)/lib/coherence.c \
-		$(SELF_DIR)/lib/expirator.c \
-		$(SELF_DIR)/lib/packet-io.c
+LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
+              $(SELF_DIR)/lib/containers/modulo.c \
+              $(SELF_DIR)/lib/containers/double-chain-impl.c \
+              $(SELF_DIR)/lib/containers/double-chain.c \
+              $(SELF_DIR)/lib/containers/map-impl.c \
+              $(SELF_DIR)/lib/containers/bitopsutils.o \
+              $(SELF_DIR)/lib/containers/mod_pow2.o \
+              $(SELF_DIR)/lib/containers/map-impl-pow2.c \
+              $(SELF_DIR)/lib/containers/double-map.c \
+              $(SELF_DIR)/lib/containers/vector.c \
+              $(SELF_DIR)/lib/containers/prime.c \
+              $(SELF_DIR)/lib/containers/listutils-lemmas.c \
+              $(SELF_DIR)/lib/containers/transpose-lemmas.c \
+              $(SELF_DIR)/lib/containers/permutations.c \
+              $(SELF_DIR)/lib/containers/cht.c \
+              $(SELF_DIR)/lib/packet-io.c \
+              $(SELF_DIR)/lib/containers/map.c \
+              $(SELF_DIR)/lib/coherence.c \
+              $(SELF_DIR)/lib/expirator.c
 
+LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/bitopsutils.c \
+				 $(SELF_DIR)/lib/containers/mod_pow2.c
+
+LIBVIG_MAP_CAP_POW2 := $(SELF_DIR)/lib/containers/arith.o \
+                       $(SELF_DIR)/lib/containers/modulo.o \
+                       $(SELF_DIR)/lib/containers/bitopsutils.o \
+                       $(SELF_DIR)/lib/containers/mod_pow2.o \
+                       $(SELF_DIR)/lib/containers/map-impl-pow2.o \
+                       $(SELF_DIR)/lib/containers/listutils-lemmas.o \
+                       $(SELF_DIR)/lib/containers/map.c
+
+verifast:
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest $(LIBVIG_SRC)
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -D CAPACITY_POW2 \
+		$(LIBVIG_MAP_CAP_POW2)
+	rm $(SELF_DIR)/lib/*.vfmanifest $(SELF_DIR)/lib/**/*.vfmanifest
 
 ### KLEE verification ###
 
@@ -122,10 +146,10 @@ VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h --include=rte_config.h
 # Files for DPDK
 # Low-level stubs for specific functions
 VERIF_DPDK_FILES := ../lib/stubs/dpdk_low_level_stub.c
-# Replacement for the mempool containr
-VERIF_DPDK_FILES += ../lib/stubs/dpdk_mempool_singleton.c
 # Platform-independent and Linux-specific EAL
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
+# Default ring mempool driver
+VERIF_DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 # Other libraries, except acl and distributor which use CPU intrinsics (there is a generic version of distributor, but we don't need it),
 # and power has been broken for a while: http://dpdk.org/ml/archives/dev/2016-February/033152.html
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power)/*.c
@@ -152,11 +176,15 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 # KLEE verification
 # if something takes longer than expected, try --max-solver-time=3 --debug-report-symbdex (to avoid symbolic indices)
 VERIF_COMMAND := /usr/bin/time -v \
-                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs
+                 klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
 # NF args for the verification
 NF_VERIF_BASE_ARGS := nf.bc --no-shconf --
 
-clean: clean-gen
+clean: clean-gen clean-verify
+
+clean-verify:
+	$(CLEAN_COMMAND)
+
 clean-gen:
 	rm -f $(AUTO_GEN_FILES)
 
@@ -164,15 +192,6 @@ verify-dpdk: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stub headers
 	$(COMPILE_COMMAND) $(VERIF_DEFS) -DVIGOR_STUB_DPDK $(VERIF_INCLUDES) -I $(SELF_DIR)/lib/stubs/dpdk $(VERIF_FILES) $(VERIF_FLAGS)
-	$(LINK_COMMAND)
-	$(OPT_COMMAND)
-	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
-	$(CLEAN_COMMAND)
-
-verify-driver: $(AUTO_GEN_FILES)
-	$(CLEAN_COMMAND)
-	# Use DPDK stuff + stub driver
-	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_DRIVER $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/driver_stub.c $(VERIF_FLAGS)
 	$(LINK_COMMAND)
 	$(OPT_COMMAND)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
@@ -186,3 +205,23 @@ verify-hardware: $(AUTO_GEN_FILES)
 	$(OPT_COMMAND)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
+
+
+# ################# #
+# LoC count targets #
+# ################# #
+
+# cloc instead of sloccount because the latter does not report comments, and all VeriFast annotations are comments
+
+loc: all
+	cloc $(SRCS-y) $(AUTO_GEN_FILES)
+
+loc-dpdk:
+	cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
+
+loc-dsos:
+	echo 'todo'
+
+loc-libvig:
+	cloc --force-lang 'Pig Latin',gh  $(LIBVIG_SRC) lib/containers/*.gh
+	@echo 'NOTE: C comments + Pig Latin == VeriFast annotations'

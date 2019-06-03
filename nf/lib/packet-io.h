@@ -47,13 +47,13 @@ uint32_t packet_get_unread_length(void* p);
 /*@ ensures packetp(p, unread, mc) &*&
             result == length(unread); @*/
 
-void packet_state_total_length(void* p, uint16_t* len);
+void packet_state_total_length(void* p, uint32_t* len);
 /*@ requires packetp(p, ?unread, nil) &*&
              *len |-> length(unread); @*/
 /*@ ensures packetp(p, unread, nil) &*&
             *len |-> length(unread); @*/
 
-bool packet_receive(uint16_t src_device, void** p, uint16_t* len);
+bool packet_receive(uint16_t src_device, void** p, uint32_t* len);
 /*@ requires *p |-> _ &*& *len |-> ?length; @*/
 /*@ ensures result ? *p |-> ?pp &*&
                      packetp(pp, ?unread, nil) &*&

@@ -11,6 +11,8 @@
 #include "rte_cycles.h" // to include the next one cleanly
 #include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
+#include "lib/packet-io.h"
+
 #include <klee/klee.h>
 
 
@@ -82,10 +84,6 @@ stub_device_start(struct stub_device* dev)
 	uint32_t rdt = DEV_REG(dev, 0x01018);
 	klee_assert(rdt >= 1);
 
-	if (klee_int("received") == 0) {
-		// no packet
-	}
-
 	// Descriptor is 128 bits, see page 313, table 7-15 "Descriptor Read Format"
 	// (which the NIC reads to know where to put a packet)
 	// and page 314, table 7-16 "Descriptor Write-Back Format"
@@ -100,7 +98,29 @@ stub_device_start(struct stub_device* dev)
 	uint64_t head_addr = descr[1];
 	klee_assert(head_addr == 0);
 
+	// Get device index
+	int device_index = 0;
+	while (dev != &DEVICES[device_index]) { device_index++; }
+
+
 	dev->old_mbuf_addr = mbuf_addr;
+
+	bool received = klee_int("received");
+	set_packet_receive_success(received);
+	//need it forward, to make sure packet_receive args are the same in both calls
+	uint32_t packet_len = sizeof(struct stub_mbuf_content); //TODO: make length symbolic
+	//uint32_t data_len = klee_int("data_len");
+	//klee_assume(packet_len <= 90); //Make sure it fits 1 mbuf
+	//klee_assume(data_len <= packet_len);
+	//klee_assume(sizeof(struct ether_hdr) <= data_len);
+	uint32_t data_len = packet_len;
+	if (!received) {
+		// no packet
+		bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
+		klee_assert(!received_a_packet);
+		return;
+	}
+
 
 	// Write phase
 
@@ -203,8 +223,7 @@ stub_device_start(struct stub_device* dev)
 	uint64_t wb1 = 0b0000000000000000000000000000000000000000000000000000000000000011;
 
 	// get packet length
-	uint16_t packet_length = sizeof(struct stub_mbuf_content);
-	wb1 |= (uint64_t) packet_length << 32;
+	wb1 |= (uint64_t) packet_len << 32;
 
 	if (is_ipv4 && (
 			// Multicast addr?
@@ -225,15 +244,11 @@ stub_device_start(struct stub_device* dev)
 	}
 
 	// Write the packet into the proper place
-	memcpy((void*) mbuf_addr, mbuf_content, packet_length);
+	memcpy((void*) mbuf_addr, mbuf_content, packet_len);
 
 	// "The 82599 writes back the receive descriptor immediately following the packet write into system memory."
 	descr[0] = wb0;
 	descr[1] = wb1;
-
-	// Get device index
-	int device_index = 0;
-	while (dev != &DEVICES[device_index]) { device_index++; }
 
 	// Get the DPDK packet type
 	uint32_t traced_ptype = 0;
@@ -248,34 +263,8 @@ stub_device_start(struct stub_device* dev)
 	if (is_tcp) traced_ptype |= 0x00000100;
 	if (is_sctp) traced_ptype |= 0x00000400;
 
-	// Trace the mbuf
-	memcpy(&traced_mbuf_content, (void*) mbuf_addr, packet_length);
-	memset(&traced_mbuf, 0, sizeof(struct rte_mbuf));
-	traced_mbuf.buf_addr = &traced_mbuf_content;
-	traced_mbuf.buf_iova = (rte_iova_t) traced_mbuf.buf_addr;
-	traced_mbuf.data_off = 0;
-	traced_mbuf.refcnt = 1;
-	traced_mbuf.nb_segs = 1;
-	traced_mbuf.port = device_index;
-	traced_mbuf.ol_flags = 0; // TODO?
-	traced_mbuf.packet_type = traced_ptype;
-	traced_mbuf.pkt_len = packet_length;
-	traced_mbuf.data_len = packet_length;
-	traced_mbuf.vlan_tci = 0; // TODO?
-	traced_mbuf.hash.rss = 0; // TODO?
-	traced_mbuf.vlan_tci_outer = 0; // TODO?
-	traced_mbuf.buf_len = packet_length;
-	traced_mbuf.timestamp = 0; // TODO?
-	traced_mbuf.userdata = NULL;
-	traced_mbuf.pool = NULL;
-	traced_mbuf.next = NULL;
-	traced_mbuf.tx_offload = 0; // TODO?
-	traced_mbuf.priv_size = 0;
-	traced_mbuf.timesync = 0; // TODO?
-	traced_mbuf.seqn = 0; // TODO?
-
-	struct rte_mbuf* trace_mbuf_addr = &traced_mbuf;
-	stub_core_trace_rx(&trace_mbuf_addr);
+	bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
+	klee_assert(received_a_packet);
 
 	// Soundness for hack
 	klee_assert(!rx_called);
@@ -847,10 +836,12 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
         DEV_REG(dev, 0x06010) = 0; // TDH
         // Make sure we have enough space
         uint32_t tdt = new_value;
-	if (tdt == 0) {
-		// No? Probably this is not to send a packet, then.
-		return new_value;
-	}
+        // VVV after the mem-pool fix (commit 5471336bf9), this value changes from 1
+        // to 0 on sending a packet.
+//	if (tdt == 0) {
+//		// No? Probably this is not to send a packet, then.
+//		return new_value;
+//	}
 
         // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
         // (which the NIC reads to know how to send a packet)
@@ -889,6 +880,13 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	uint64_t buf_props = descr[1];
 
 	uint16_t buf_len = buf_props & 0xFF;
+        if ( !( GET_BIT(buf_props, 20) == 1 &&
+                GET_BIT(buf_props, 21) == 1 &&
+                GET_BIT(buf_props, 22) == 0 &&
+                GET_BIT(buf_props, 23) == 0) ) {
+            // Invalid descriptor type, assume it is not sending a packet
+            return new_value;
+        }
 
 	klee_assert(GET_BIT(buf_props, 18) == 0);
 	klee_assert(GET_BIT(buf_props, 19) == 0);
@@ -916,33 +914,8 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	int device_index = 0;
 	while (dev != &DEVICES[device_index]) { device_index++; }
 
-	// Trace the mbuf
-	memcpy(&traced_mbuf_content, (void*) buf_addr, sizeof(struct stub_mbuf_content));
-	memset(&traced_mbuf, 0, sizeof(struct rte_mbuf));
-	traced_mbuf.buf_addr = &traced_mbuf_content;
-	traced_mbuf.buf_iova = (rte_iova_t) traced_mbuf.buf_addr;
-	traced_mbuf.data_off = 0;
-	traced_mbuf.refcnt = 1;
-	traced_mbuf.nb_segs = 1;
-	traced_mbuf.port = device_index;
-	traced_mbuf.ol_flags = 0; // TODO?
-	traced_mbuf.packet_type = 0; // TODO?
-	traced_mbuf.pkt_len = buf_len;
-	traced_mbuf.data_len = buf_len;
-	traced_mbuf.vlan_tci = 0; // TODO?
-	traced_mbuf.hash.rss = 0; // TODO?
-	traced_mbuf.vlan_tci_outer = 0; // TODO?
-	traced_mbuf.buf_len = buf_len;
-	traced_mbuf.timestamp = 0; // TODO?
-	traced_mbuf.userdata = NULL;
-	traced_mbuf.pool = NULL;
-	traced_mbuf.next = NULL;
-	traced_mbuf.tx_offload = 0; // TODO?
-	traced_mbuf.priv_size = 0;
-	traced_mbuf.timesync = 0; // TODO?
-	traced_mbuf.seqn = 0; // TODO?
-
-	uint8_t ret = stub_core_trace_tx(&traced_mbuf, device_index);
+	packet_send((void*)buf_addr, device_index);
+	uint8_t ret = 1;
 
 	// Soundness check
 	klee_assert(!tx_called);
@@ -2355,11 +2328,7 @@ stub_hardware_write(uint64_t addr, unsigned offset, unsigned size, uint64_t valu
 
 void
 stub_free(struct rte_mbuf* mbuf) {
-	// Ugh, we have to trace an mbuf with the right address, so we copy the whole thing... this is silly
-	memcpy(&traced_mbuf, mbuf, sizeof(struct rte_mbuf));
-	memcpy(&traced_mbuf_content, mbuf->buf_addr + mbuf->data_off, sizeof(struct stub_mbuf_content));
-	traced_mbuf.buf_addr = &traced_mbuf_content - mbuf->data_off;
-	stub_core_trace_free(&traced_mbuf);
+	packet_free(mbuf->buf_addr);
 
 	// Still need to free the actual mbuf though
 	rte_mbuf_raw_free(mbuf);

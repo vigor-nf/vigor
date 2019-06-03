@@ -1,0 +1,120 @@
+#ifndef _BITOPSUTIL_INCLUDED_
+#define _BITOPSUTIL_INCLUDED_
+
+#include <nat.gh>
+#include <bitops.gh>
+
+#include "stdex.gh"
+
+fixpoint list<bool> bits_of_int_and(list<bool> x_bits, list<bool> y_bits) {
+    switch(x_bits) {
+        case nil: return y_bits;
+        case cons(x0, xs0): return switch(y_bits) {
+            case nil: return x_bits;
+            case cons(y0, ys0): return cons(x0 && y0, bits_of_int_and(xs0, ys0));
+        };
+    }
+}
+
+// ------------- pow_nat -------------
+
+lemma void pow_nat_div_rem(int x, nat n);
+    requires    0 < x &*& n != zero;
+    ensures     pow_nat(x, n) / x == pow_nat(x, nat_predecessor(n)) &*& pow_nat(x, n) % x == 0;
+
+lemma void pow_nat_bounds(int x, nat n);
+    requires    0 < x;
+    ensures     0 < pow_nat(x, n);
+
+lemma void pow_nat_gt(int x, nat n, nat m);
+    requires    1 < x &*& int_of_nat(n) < int_of_nat(m);
+    ensures     pow_nat(x, n) < pow_nat(x, m);
+
+
+// ------------- bits_of_int -------------
+
+lemma_auto(length(snd(bits_of_int(x, n)))) void length_bits_of_int(int x, nat n) ;
+    requires    true; 
+    ensures     length(snd(bits_of_int(x, n))) == int_of_nat(n);
+
+lemma void bits_of_int_zero(nat n);
+    requires    true;
+    ensures     true == forall(snd(bits_of_int(0, n)), (eq)(false)) &*& fst(bits_of_int(0, n)) == 0;
+
+lemma void bits_of_int_remainder(int x, nat n);
+    requires    0 <= x &*& x < pow_nat(2, n);
+    ensures     fst(bits_of_int(x, n)) == 0;
+
+lemma void bits_of_int_pow2_mask(nat n, nat m);
+    requires
+        int_of_nat(m) <= int_of_nat(n);
+    ensures
+        true == forall(take(int_of_nat(m), snd(bits_of_int(pow_nat(2, m)-1, n))), (eq)(true)) &*& 
+        true == forall(drop(int_of_nat(m), snd(bits_of_int(pow_nat(2, m)-1, n))), (eq)(false)) &*& 
+        0 == fst(bits_of_int(pow_nat(2, m)-1, n));
+
+// ------------- bits_of_int_and -------------
+
+lemma void length_bits_of_int_and(list<bool> x_bits, list<bool> y_bits);
+    requires    true;
+    ensures     length(bits_of_int_and(x_bits, y_bits)) == ((length(x_bits) < length(y_bits)) ? length(y_bits) : length(x_bits));
+
+lemma void bits_of_int_and_zero(list<bool> x_bits, list<bool> y_bits);
+    requires    length(x_bits) == length(y_bits) &*& true == forall(y_bits, (eq)(false)); 
+    ensures     true == forall(bits_of_int_and(x_bits, y_bits), (eq)(false));
+
+lemma void bits_of_int_and_mask(list<bool> k_bits, list<bool> mask_bits, int m) ;
+    requires 
+        length(k_bits) == length(mask_bits) &*& 
+        true == forall(take(m, mask_bits), (eq)(true)) &*& 
+        true == forall(drop(m, mask_bits), (eq)(false)) &*&
+        0 <= m &*& m < length(k_bits);
+    ensures
+        take(m, k_bits) == take(m, bits_of_int_and(k_bits, mask_bits)) &*&
+        true == forall(drop(m, bits_of_int_and(k_bits, mask_bits)), (eq)(false));
+
+lemma void Z_bits_of_int_and_equiv(list<bool> xs, list<bool> ys);
+    requires    length(xs) == length(ys);
+    ensures     Z_and(Z_of_bits(Zsign(false), xs), Z_of_bits(Zsign(false), ys)) == Z_of_bits(Zsign(false), bits_of_int_and(xs, ys));
+
+lemma void int_of_Z_of_bits(list<bool> bits);
+    requires    true;
+    ensures     int_of_Z(Z_of_bits(Zsign(false), bits)) == int_of_bits(0, bits);
+
+lemma void bits_of_int_and_def(int x, list<bool> x_bits, int y, list<bool> y_bits, nat n);
+    requires 
+        bits_of_int(x, n) == pair(0, x_bits) &*& 
+        bits_of_int(y, n) == pair(0, y_bits) &*& 
+        0 <= x &*& x < pow_nat(2, n) &*& 0 <= y &*& y < pow_nat(2, n);
+    ensures
+        (x & y) == int_of_bits(0, bits_of_int_and(x_bits, y_bits));
+
+// ------------- int_of_bits -------------
+
+lemma void int_of_bits_zero(list<bool> bits);
+    requires    true == forall(bits, (eq)(false));
+    ensures     int_of_bits(0, bits) == 0;
+
+lemma void int_of_bits_bounds(list<bool> bits);
+    requires    true;
+    ensures     0 <= int_of_bits(0, bits);
+
+lemma void int_of_bits_lt(list<bool> bits, nat m);
+    requires
+        0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
+        true == forall(drop(int_of_nat(m), bits), (eq)(false));
+    ensures
+        int_of_bits(0, bits) < pow_nat(2, m);
+
+lemma void int_of_bits_ge(list<bool> bits, nat m);
+    requires
+        0 <= int_of_nat(m) &*& int_of_nat(m) < length(bits) &*&
+        nth(int_of_nat(m), bits) == true;
+    ensures
+        pow_nat(2, m) <= int_of_bits(0, bits);
+
+lemma void bits_of_int_of_bits(list<bool> bits, nat n);
+    requires    int_of_nat(n) == length(bits);
+    ensures     bits == snd(bits_of_int(int_of_bits(0, bits), n));
+
+#endif //_BITOPSUTIL_INCLUDED_

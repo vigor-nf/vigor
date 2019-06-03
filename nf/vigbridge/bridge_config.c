@@ -16,7 +16,7 @@
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
 
-const uint64_t DEFAULT_EXP_TIME = 300000000000l;//nanoseconds
+const vigor_time_t DEFAULT_EXP_TIME = 300000000000l;//nanoseconds
 const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses
 
 #define PARSE_ERROR(format, ...) \
@@ -89,7 +89,7 @@ void bridge_print_config(struct bridge_config* config)
 {
   NF_INFO("\n--- Bridge Config ---\n");
 
-  NF_INFO("Expiration time: %" PRIu64 "ns", config->expiration_time);
+  NF_INFO("Expiration time: %" PRVIGT "ns", config->expiration_time);
   NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
   NF_INFO("Static configuration file: %s", config->static_config_fname);
 

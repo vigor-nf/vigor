@@ -405,7 +405,7 @@ let gen_allocation containers =
         | CHT (depth, height) -> ["  ret->" ^ name ^ " = NULL;\n";
                                   abort_on_null ("vector_allocate(sizeof(uint32_t), " ^
                                                  depth ^ "*" ^ height ^ ", null_init, &(ret->" ^ name ^ "))");
-                                  "  cht_fill_cht(ret->" ^ name ^ ", " ^ height ^ ", " ^ depth ^ ");\n"]
+                                  "  " ^ abort_on_null ("cht_fill_cht(ret->" ^ name ^ ", " ^ height ^ ", " ^ depth ^ ")")]
         | DChain cap -> ["  ret->" ^ name ^ " = NULL;\n";
                          abort_on_null ("dchain_allocate(" ^ cap ^ ", &(ret->" ^ name ^ "))")]
         | Int

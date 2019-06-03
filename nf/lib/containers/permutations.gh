@@ -1,0 +1,77 @@
+#ifndef _PERMUTATIONS_GH_INCLUDED_
+#define _PERMUTATIONS_GH_INCLUDED_
+
+#include <nat.gh>
+#include "listutils.gh"
+#include "stdex.gh"
+#include "listexex.gh"
+#include "set.gh"
+
+
+// ------------- is_permutation -------------
+
+fixpoint bool is_permutation(list<int> xs) {
+    return forall(xs, (lt)(length(xs))) && true == forall(xs, (ge)(0)) && distinct(xs);
+}
+
+// ------------- is_sub_permutation -------------
+
+fixpoint bool is_sub_permutation(list<int> xs, int max_val) {
+    return forall(xs, (lt)(max_val)) && true == forall(xs, (ge)(0)) && distinct(xs);
+}
+
+lemma void sub_permutation_complete(list<int> xs);
+    requires    true == is_sub_permutation(xs, length(xs));
+    ensures     true == is_permutation(xs);
+
+lemma void take_preserves_mem<t>(list<t> tail, t head, int i);
+    requires    false == mem(head, tail) &*& 0 <= i;
+    ensures     false == mem(head, take(i, tail));
+
+lemma void take_preserves_distinct<t>(list<t> xs, int i);
+    requires    true == distinct(xs) &*& 0 <= i;
+    ensures     true == distinct(take(i, xs));
+
+lemma void sub_permutation_take(list<int> xs, int max_val, int i);
+    requires    true == is_sub_permutation(xs, max_val) &*& 0 <= i &*& i < length(xs);
+    ensures     true == is_sub_permutation(take(i, xs), max_val);
+
+// ------------- permutations & count -------------
+
+lemma void mem_count_zero<t>(list<t> xs, t elem);
+    requires    false == mem(elem, xs);
+    ensures     count(xs, (eq)(elem)) == 0;
+
+lemma void mem_count_bound<t>(list<t> xs, t elem);
+    requires    true == mem(elem, xs);
+    ensures     count(xs, (eq)(elem)) >= 1;
+
+lemma void count_distinct<t>(list<t> xs, t elem);
+    requires    true == distinct(xs);
+    ensures     count(xs, (eq)(elem)) <= 1;
+
+lemma void permutation_exists_helper(list<int> xs, list<int> integers, int max_val, int x);
+    requires    
+        true == is_sub_permutation(xs, max_val) &*& 0 < max_val &*&
+        0 <= x &*& x < max_val &*& length(xs) == length(integers) &*& 
+        true == subset(xs, integers) &*& true == mem(x, integers);
+    ensures
+        true == mem(x, xs);
+
+lemma void permutation_exists(list<int> xs, int x);
+    requires    true == is_permutation(xs) &*& 0 <= x &*& x < length(xs);
+    ensures     count(xs, (eq)(x)) == 1;
+
+lemma void permutation_to_count(list<int> xs, nat val);
+    requires    true == is_permutation(xs) &*& 0 < length(xs) &*& int_of_nat(val) <= length(xs) - 1;
+    ensures     true == integer_copies(val, 1, xs);
+
+lemma void permutation_split_to_count(list<int> xs, nat nb_split, int n);
+    requires    
+        true == forall(split(xs, nb_split, n), is_permutation) &*&
+        length(xs) == int_of_nat(nb_split) * n &*&
+        0 < n &*& n <= length(xs);
+    ensures     
+        true == integer_copies(nat_of_int(n - 1), int_of_nat(nb_split), xs);
+
+#endif //_PERMUTATIONS_GH_INCLUDED_
