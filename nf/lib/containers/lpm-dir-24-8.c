@@ -153,24 +153,6 @@
   @*/
 
 /*@  
-  lemma void invalid_is_none24(uint16_t entry, option<pair<bool, Z> > mapped)
-    requires entry == INVALID &*& entry_24_mapping(entry) == mapped;
-    ensures mapped == none;
-  {
-    assert entry_24_mapping(INVALID) == none;
-  }
-  @*/
-  
-/*@
-  lemma void invalid_is_none_long(uint16_t entry, option<Z> mapped)
-    requires entry == INVALID &*& entry_long_mapping(entry) == mapped;
-    ensures mapped == none;
-  {
-    assert entry_long_mapping(entry) == none;
-  }
-  @*/
-
-/*@  
   lemma void enforce_map_invalid_is_valid(list<uint16_t> entries,
                                           nat size,
                                           fixpoint(uint16_t, bool)
@@ -539,7 +521,6 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t data)
     //@ close table(_lpm, dir);
     
     if(value_long == INVALID){
-      //@ invalid_is_none_long(value_long, value_l);
       return INVALID;
     }else{
       //@ valid_next_hop_long(value_long, value_l);
@@ -550,7 +531,6 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t data)
     //@ close table(_lpm, dir);
     
     if(value == INVALID){
-      //@ invalid_is_none24(value, value24);
       return INVALID;
     }else{
     //@ valid_next_hop24(value, value24);
@@ -590,7 +570,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
 
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
   //@ Z maskZ = mask32_from_prefixlen(prefixlen);
-  //@ assert mask == int_of_Z(maskZ);
+  // @ assert mask == int_of_Z(maskZ);
   
   uint32_t masked_data = data & mask;
   //@ bitand_def(data, d, mask, maskZ);
@@ -603,17 +583,17 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
   if(prefixlen < 24){
 
     uint32_t first_index = lpm_24_extract_first_index(masked_data);
-    //@ assert first_index == index24_from_ipv4(masked_dataZ);
-    //@ assert first_index == compute_starting_index_24(new_rule);
+    // @ assert first_index == index24_from_ipv4(masked_dataZ);
+    // @ assert first_index == compute_starting_index_24(new_rule);
     uint32_t rule_size = compute_rule_size(prefixlen);
-    //@ assert rule_size == compute_rule_size(prefixlen);
+    // @ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
 
-    //@ assert last_index <= length(t_24);
+    // @ assert last_index <= length(t_24);
     
-    //@ assert INVALID != value;
-    //@ assert true == valid_entry24(value);
-    //@ assert route == value;
+    // @ assert INVALID != value;
+    // @ assert true == valid_entry24(value);
+    // @ assert route == value;
     //@ extract_value_is_value(value);
     
     /*@ list<option<pair<bool, Z> > > updated_map =
@@ -656,7 +636,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
                      t_24, entry_24_mapping);
     @*/
     
-    //@ assert (map(entry_24_mapping, new_t_24) == updated_map);
+    // @ assert (map(entry_24_mapping, new_t_24) == updated_map);
 
     //@ close table(_lpm, build_tables(new_t_24, t_l, long_index));
   } else {
@@ -668,15 +648,15 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
     //index and store it in the lpm_24
     uint8_t base_index;
     uint32_t lpm_24_index = lpm_24_extract_first_index(data);
-    //@ assert lpm_24_index == index24_from_ipv4(d);
-    //@ assert lpm_24_index == compute_starting_index_24(new_rule);
+    // @ assert lpm_24_index == index24_from_ipv4(d);
+    // @ assert lpm_24_index == compute_starting_index_24(new_rule);
       
     uint16_t lpm_24_value = lpm_24[lpm_24_index];
     //Prove that the value retrieved by lookup_lpm_24 is the mapped value
     //retrieved by lpm_24[index]
 
     //@ nth_map(lpm_24_index, entry_24_mapping, t_24);
-    //@ assert entry_24_mapping(lpm_24_value)==lookup_lpm_24(lpm_24_index, dir);
+    // @ assert entry_24_mapping(lpm_24_value)==lookup_lpm_24(lpm_24_index, dir);
     //@ option<pair<bool, Z> > value24 = lookup_lpm_24(lpm_24_index, dir);
   
     //Prove that the retrieved elem is valid
@@ -687,20 +667,20 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
     
     if(lpm_24_value == INVALID){
       need_new_index = true;
-      //@ assert value24 == none;
-      //@ assert need_new_index == is_new_index_needed(value24);
+      // @ assert value24 == none;
+      // @ assert need_new_index == is_new_index_needed(value24);
     }else{
       need_new_index = !lpm_24_entry_flag(lpm_24_value);
-      //@ assert need_new_index == !extract_flag(lpm_24_value);
-      //@ assert value24 == some(?p);
-      //@ assert need_new_index == !fst(p);
+      // @ assert need_new_index == !extract_flag(lpm_24_value);
+      // @ assert value24 == some(?p);
+      // @ assert need_new_index == !fst(p);
     }
     
-    //@ assert need_new_index == is_new_index_needed(value24);
+    // @ assert need_new_index == is_new_index_needed(value24);
       
     if(need_new_index){
       if(_lpm->lpm_long_index >= lpm_LONG_OFFSET_MAX){
-        //@ assert long_index >= 256;
+        // @ assert long_index >= 256;
         printf("No more available index for lpm_long!\n");fflush(stdout);
         //@ close key(_key, ipv4, plen, route);
         //@ close table(_lpm, dir);
@@ -709,18 +689,18 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
       }else{
       //generate next index and store it in lpm_24
         base_index = (uint8_t)(_lpm->lpm_long_index);
-        //@ assert 0 <= base_index &*& base_index < 256;
+        // @ assert 0 <= base_index &*& base_index < 256;
         //@ option<pair<bool, Z> > index_for_long=entry_24_mapping(base_index);
         new_long_index = (uint16_t)(_lpm->lpm_long_index + 1);
         _lpm->lpm_long_index = new_long_index;
 
         uint16_t new_entry24 = lpm_24_entry_set_flag(base_index);
         //@ flag_mask_or_x_not_affect_15LSB(base_index);
-        //@ assert new_entry24 == set_flag(base_index);
+        // @ assert new_entry24 == set_flag(base_index);
         
-        //@ assert INVALID != new_entry24;
-        //@ assert true == valid_entry24(new_entry24);
-        //@ assert true == extract_flag(new_entry24);
+        // @ assert INVALID != new_entry24;
+        // @ assert true == valid_entry24(new_entry24);
+        // @ assert true == extract_flag(new_entry24);
         
         //@ forall_update(t_24, valid_entry24, lpm_24_index, new_entry24);
 
@@ -728,7 +708,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
         lpm_24[lpm_24_index] = new_entry24;
         
         //@ assert lpm_24[0..lpm_24_MAX_ENTRIES] |-> ?updated_t_24;
-        /*@ assert map(entry_24_mapping, updated_t_24) ==
+        /* @ assert map(entry_24_mapping, updated_t_24) ==
                    update_n(map_24, lpm_24_index, N1,
                                    entry_24_mapping(new_entry24));
         @*/
@@ -737,23 +717,23 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
       new_long_index = _lpm->lpm_long_index;
       
       base_index = (uint8_t)(lpm_24_value & 0x7FFF);
-      //@ assert entry_24_mapping(lpm_24_value) == value24;
-      //@ assert value24 == some(?p);
-      //@ assert fst(p) == true;
+      // @ assert entry_24_mapping(lpm_24_value) == value24;
+      // @ assert value24 == some(?p);
+      // @ assert fst(p) == true;
       
-      //@ assert true == valid_entry24(lpm_24_value);
-      //@ assert true == extract_flag(lpm_24_value);
-      /*@ assert 0 <= extract_value(lpm_24_value) &*&
+      // @ assert true == valid_entry24(lpm_24_value);
+      // @ assert true == extract_flag(lpm_24_value);
+      /* @ assert 0 <= extract_value(lpm_24_value) &*&
                  extract_value(lpm_24_value) <= 0xFF;
       @*/
-      //@ assert snd(p) == Z_of_int(extract_value(lpm_24_value),N16);
+      // @ assert snd(p) == Z_of_int(extract_value(lpm_24_value),N16);
       /*@ assert entry_24_mapping(lpm_24_value) ==
                  lookup_lpm_24(lpm_24_index, dir);
       @*/
 
       //Show extraction equivalence
       //@ value24_extraction_equivalence(lpm_24_value, value24);
-      //@ assert base_index == extract24_value(entry_24_mapping(lpm_24_value));
+      // @ assert base_index == extract24_value(entry_24_mapping(lpm_24_value));
     }
     
     //@ assert lpm_24[0..lpm_24_MAX_ENTRIES] |-> ?new_t_24;
@@ -762,18 +742,18 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
     //indexes
     uint32_t first_index = lpm_long_extract_first_index(data, prefixlen,
                                                         base_index);
-    //@ assert first_index == compute_starting_index_long(new_rule, base_index);
+    // @ assert first_index == compute_starting_index_long(new_rule, base_index);
     uint32_t rule_size = compute_rule_size(prefixlen);
-    //@ assert rule_size == compute_rule_size(prefixlen);
+    // @ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
     //@ first_index_depends_on_prefixlen(new_rule, base_index, prefixlen);
-    //@ assert (last_index <= length(t_l));
+    // @ assert (last_index <= length(t_l));
     
-    //@ assert INVALID != value;
-    //@ assert true == valid_entry_long(value);
-    //@ assert route == value;
+    // @ assert INVALID != value;
+    // @ assert true == valid_entry_long(value);
+    // @ assert route == value;
     //@ extract_value_is_value(value);
-    //@ assert route == extract_value(route);
+    // @ assert route == extract_value(route);
     //@ assert some(Z_of_int(route, N16)) == entry_long_mapping(value);
     
     /*@ list<option<Z> > updated_map =
@@ -782,7 +762,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
                                            entry_long_mapping(value));
     @*/
 
-    //@ assert length(updated_map) == length(map_l);
+    // @ assert length(updated_map) == length(map_l);
 
     //Store value in lpm_long entries
     for(uint32_t i = first_index; ; i++)
