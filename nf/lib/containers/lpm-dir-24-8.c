@@ -1,4 +1,4 @@
-#include "lpm-dir-24-8-basic.h"
+#include "lpm-dir-24-8.h"
 //@ #include <nat.gh>
 //@ #include <bitops.gh>
 
