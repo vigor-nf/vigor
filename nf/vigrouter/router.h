@@ -8,7 +8,7 @@
 
 
 #include "lib/nf_time.h"
-#include "lib/containers/dir-24-8-basic.h"
+#include "lib/containers/lpm-dir-24-8.h"
 #include <rte_lpm.h>
 #include "parse_utils.h"
 #include <stdio.h>
@@ -27,7 +27,7 @@
 
 
 //the DIR-24-8 that will be used by the nf (global variable)
-extern struct tbl * lpm_table;			
+extern struct lpm * lpm_table;			
 
 
 /**

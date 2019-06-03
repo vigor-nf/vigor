@@ -14,7 +14,7 @@ SRCS-y := router.c parse_utils.c \
           ../lib/nf_time.c \
           ../lib/containers/double-chain-impl.c \
           ../lib/containers/double-chain.c \
-	  	  ../lib/containers/dir-24-8-basic.c \
+	  	  ../lib/containers/lpm-dir-24-8.c
 
 
 # gcc flags

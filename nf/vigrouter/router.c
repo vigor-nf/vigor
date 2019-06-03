@@ -1,7 +1,7 @@
 #include "router.h"
 
 
-struct tbl * lpm_table;
+struct lpm * lpm_table;
 
 
 
@@ -70,7 +70,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 	
 	
 	//lookup the ip
-    int res = tbl_lookup_elem(lpm_table, ip_addr);
+    int res = lpm_lookup_elem(lpm_table, ip_addr);
 
 	if(unlikely(res == -1)){	//lookup returns 0 on lookup hit
 		
@@ -89,7 +89,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now){
 void insert_all(FILE * f){
 	
 	//create lpm table
-	lpm_table = tbl_allocate();
+	lpm_table = lpm_allocate();
 	
 	if (lpm_table == NULL){
 		rte_exit(EXIT_FAILURE,"Unable to create the router LPM table\n");
@@ -184,7 +184,7 @@ void insert_all(FILE * f){
 
 
 		//update the table with the new key
-		int res = tbl_update_elem(lpm_table, new_key);
+		int res = lpm_update_elem(lpm_table, new_key);
    
 		if(res == -1){
 			printf("error during update. error is : %d\n",res); fflush(stdout);
