@@ -1,7 +1,4 @@
 #include "lpm-dir-24-8.h"
-//@ #include <nat.gh>
-//@ #include <bitops.gh>
-
 
 /*@
   predicate table(struct lpm* t, dir_24_8 dir) = 
@@ -574,10 +571,14 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
   
   uint32_t masked_data = data & mask;
   //@ bitand_def(data, d, mask, maskZ);
+  //@ bitand_limits(data, mask, N32);
   //@ Z masked_dataZ = Z_and(d, maskZ);
   //Show that if two uint32_t are equal, then their respective Z values
   // are also equal
-  //@ Z_of_uintN(masked_data, N32);
+  // @ Z_of_uintN(masked_data, N32); // works but takes 50sec...
+  //@ equal_int_equal_Z(masked_data, masked_dataZ, N32);
+  // @ assert int_of_Z(masked_dataZ) == masked_data;
+  // @ assert (masked_dataZ == Z_of_int(masked_data, N32));
 
   //If prefixlen is smaller than 24, simply store the value in lpm_24
   if(prefixlen < 24){
