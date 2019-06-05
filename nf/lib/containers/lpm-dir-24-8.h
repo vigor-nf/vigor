@@ -42,15 +42,15 @@
 
 struct lpm;
 
-struct key{
-  uint32_t data;
+struct rule{
+  uint32_t ipv4;
   uint8_t prefixlen;
   uint16_t route;
 };
 
 /*@
   predicate table(struct lpm* t, dir_24_8 dir);
-  predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen,
+  predicate rule(struct rule* r; uint32_t ipv4, uint8_t prefixlen,
                 uint16_t route);
 @*/
 
@@ -69,18 +69,18 @@ void lpm_free(struct lpm *_lpm);
 //@ requires table(_lpm, _);
 //@ ensures true;
 
-int lpm_update_elem(struct lpm *_lpm, struct key *_key);
-//@ requires table(_lpm, ?dir) &*& key(_key, ?ipv4, ?plen, ?route);
+int lpm_update_elem(struct lpm *_lpm, struct rule *_rule);
+//@ requires table(_lpm, ?dir) &*& rule(_rule, ?ipv4, ?plen, ?route);
 /*@ ensures table(_lpm,
                   add_rule(dir,
                            init_rule(ipv4, plen, route)
                   )
             )
-            &*& key(_key, ipv4, plen, route);
+            &*& rule(_rule, ipv4, plen, route);
 @*/
 
-int lpm_lookup_elem(struct lpm *_lpm, uint32_t data);
+int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4);
 //@ requires table(_lpm, ?dir);
 /*@ ensures table(_lpm, dir) &*&
-            result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
+            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir);
 @*/

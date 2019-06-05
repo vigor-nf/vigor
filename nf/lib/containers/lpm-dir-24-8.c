@@ -20,12 +20,12 @@
   @*/
 
 /*@
-  predicate key(struct key* k; uint32_t ipv4, uint8_t prefixlen,
+  predicate rule(struct rule* r; uint32_t ipv4, uint8_t prefixlen,
                 uint16_t route) = 
-    malloc_block_key(k) &*&
-    k->data |-> ipv4 &*&
-    k->prefixlen |-> prefixlen &*&
-    k->route |-> route &*&
+    malloc_block_rule(r) &*&
+    r->ipv4 |-> ipv4 &*&
+    r->prefixlen |-> prefixlen &*&
+    r->route |-> route &*&
     prefixlen >= 0 &*& prefixlen <= 32 &*&
     route != INVALID &*& 0 <= route &*& route <= MAX_NEXT_HOP_VALUE &*&
     false == extract_flag(route) &*&
@@ -460,10 +460,10 @@ void lpm_free(struct lpm *_lpm)
   free(_lpm);
 }
 
-int lpm_lookup_elem(struct lpm *_lpm, uint32_t data)
+int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
 //@ requires table(_lpm, ?dir);
 /*@ ensures table(_lpm, dir) &*&
-            result == lpm_dir_24_8_lookup(Z_of_int(data, N32),dir);
+            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir);
 @*/
 {
 
@@ -475,7 +475,7 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t data)
   //@ assert ushorts(lpm_long, lpm_LONG_MAX_ENTRIES, ?t_l);
 
   //get index corresponding to key for lpm_24
-  uint32_t index = lpm_24_extract_first_index(data);
+  uint32_t index = lpm_24_extract_first_index(ipv4);
 
   uint16_t value = lpm_24[index];
   //Prove that the value retrieved by lookup_lpm_24 is the mapped value
@@ -495,15 +495,15 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t data)
     //(without the first bit) is 0 <= value <= 0xFF
     //@ valid_next_bucket_long(value, value24);
 
-    //@ bitand_limits(data, 0xFF, N32);
+    //@ bitand_limits(ipv4, 0xFF, N32);
     uint8_t extracted_index = (uint8_t)(value & 0xFF);
     //@ long_index_extraction_equivalence(value, value24);
     //@ assert extracted_index == extract24_value(value24);
-    uint16_t index_long = lpm_long_extract_first_index(data, 32,
+    uint16_t index_long = lpm_long_extract_first_index(ipv4, 32,
                                                        extracted_index);
     //Show that indexlong_from_ipv4 == compute_starting_index_long when
     //the rule has prefixlen == 32
-    //@ long_index_computing_equivalence_on_prefixlen32(data, extracted_index);
+    //@ long_index_computing_equivalence_on_prefixlen32(ipv4, extracted_index);
     uint16_t value_long = lpm_long[index_long];
                                                                   
     //Prove that the value retrieved by lookup_lpm_long is the mapped value
@@ -536,26 +536,26 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t data)
   }
 }
 
-int lpm_update_elem(struct lpm *_lpm, struct key *_key)
+int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 /*@ requires table(_lpm, ?dir) &*&
-              key(_key, ?ipv4, ?plen, ?route);
+              rule(_rule, ?ipv4, ?plen, ?route);
 @*/
 /*@ ensures table(_lpm,
                   add_rule(dir,
                            init_rule(ipv4, plen, route)
                   )
             )
-            &*& key(_key, ipv4, plen, route);
+            &*& rule(_rule, ipv4, plen, route);
 @*/
 {
-  //@ open key(_key, ipv4, plen, route);
+  //@ open rule(_rule, ipv4, plen, route);
   //@ open table(_lpm, dir);
   
-  uint8_t prefixlen = _key->prefixlen;
-  uint32_t data = _key->data;
-  //@ Z d = Z_of_uintN(data, N32);
+  uint8_t prefixlen = _rule->prefixlen;
+  uint32_t ip = _rule->ipv4;
+  //@ Z d = Z_of_uintN(ip, N32);
 
-  uint16_t value = _key->route;
+  uint16_t value = _rule->route;
   uint16_t *lpm_24 = _lpm->lpm_24;
   uint16_t *lpm_long = _lpm->lpm_long;
   
@@ -564,28 +564,28 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
   
   //@ assert dir == tables(?map_24, ?map_l, ?long_index);
 
-  //@ lpm_rule new_rule = init_rule(data, prefixlen, value);
+  //@ lpm_rule new_rule = init_rule(ipv4, prefixlen, value);
 
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
   //@ Z maskZ = mask32_from_prefixlen(prefixlen);
   
-  uint32_t masked_data = data & mask;
-  //@ bitand_def(data, d, mask, maskZ);
-  //@ bitand_limits(data, mask, N32);
-  //@ Z masked_dataZ = Z_and(d, maskZ);
+  uint32_t masked_ip = ipv4 & mask;
+  //@ bitand_def(ip, d, mask, maskZ);
+  //@ bitand_limits(ip, mask, N32);
+  //@ Z masked_ipZ = Z_and(d, maskZ);
   //Show that if two uint32_t are equal, then their respective Z values
   // are also equal
   //@ Z_and_length(d, maskZ);
   //@ assert (Z_length(Z_and(d, maskZ)) == N32);
-  //@ equal_int_equal_Z(masked_dataZ, N32);
-  //@ assert int_of_Z(masked_dataZ) == masked_data;
-  //@ assert (masked_dataZ == Z_of_int(masked_data, N32));
+  //@ equal_int_equal_Z(masked_ipZ, N32);
+  //@ assert int_of_Z(masked_ipZ) == masked_ip;
+  //@ assert (masked_ipZ == Z_of_int(masked_ip, N32));
 
   //If prefixlen is smaller than 24, simply store the value in lpm_24
   if(prefixlen < 24){
 
-    uint32_t first_index = lpm_24_extract_first_index(masked_data);
-    // @ assert first_index == index24_from_ipv4(masked_dataZ);
+    uint32_t first_index = lpm_24_extract_first_index(masked_ip);
+    // @ assert first_index == index24_from_ipv4(masked_ipZ);
     // @ assert first_index == compute_starting_index_24(new_rule);
     uint32_t rule_size = compute_rule_size(prefixlen);
     // @ assert rule_size == compute_rule_size(prefixlen);
@@ -649,7 +649,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
     //flag set to 1, use the stored value as base index, otherwise get a new
     //index and store it in the lpm_24
     uint8_t base_index;
-    uint32_t lpm_24_index = lpm_24_extract_first_index(data);
+    uint32_t lpm_24_index = lpm_24_extract_first_index(ip);
     // @ assert lpm_24_index == index24_from_ipv4(d);
     // @ assert lpm_24_index == compute_starting_index_24(new_rule);
       
@@ -684,7 +684,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
       if(_lpm->lpm_long_index >= lpm_LONG_OFFSET_MAX){
         // @ assert long_index >= 256;
         printf("No more available index for lpm_long!\n");fflush(stdout);
-        //@ close key(_key, ipv4, plen, route);
+        //@ close rule(_rule, ipv4, plen, route);
         //@ close table(_lpm, dir);
         return -1;
 		
@@ -742,7 +742,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
 
     //The last byte in data is used as the starting offset for lpm_long
     //indexes
-    uint32_t first_index = lpm_long_extract_first_index(data, prefixlen,
+    uint32_t first_index = lpm_long_extract_first_index(ip, prefixlen,
                                                         base_index);
     // @ assert first_index == compute_starting_index_long(new_rule, base_index);
     uint32_t rule_size = compute_rule_size(prefixlen);
@@ -799,6 +799,6 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
     
     //@ close table(_lpm, build_tables(new_t_24, new_t_l, new_long_index));
   }
-  //@ close key(_key, ipv4, plen, route);
+  //@ close rule(_rule, ipv4, plen, route);
   return 0;
 }

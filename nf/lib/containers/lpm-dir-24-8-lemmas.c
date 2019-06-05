@@ -8,10 +8,11 @@
 
 /*@
   lemma void int_of_Z_0(Z z)
-  requires 0 == int_of_Z(z);
+  requires 0 == int_of_Z(z) &*& zero == Z_length(z);
   ensures z == Zsign(false);
   {
-    assume(false);//TODO
+  
+    assume (false);
   }
   @*/
 
@@ -21,8 +22,15 @@
   ensures int_of_nat(Z_length(z1)) < int_of_nat(Z_length(z2)) ?
           Z_length(Z_and(z1, z2)) == Z_length(z1)             :
           Z_length(Z_and(z1, z2)) == Z_length(z2);
-  {
-    assume(false);//TODO
+  {assume (false);
+    /*switch(z1){
+      case Zsign(b1): assert Z_length(Zsign(b1)) == zero;
+      case Zdigit(z10, b10):
+        switch(z2){
+          case Zsign(b2): assert Z_length(Zsign(b2)) == zero;
+          case Zdigit(z20, b20): Z_and_length(z10, z20);
+        }
+    }*/
   }
   @*/
 
