@@ -51,8 +51,10 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 
 ### VeriFast verification ###
 # we use DPDK stubs in there (e.g. rte_config.h)
-LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
-              $(SELF_DIR)/lib/containers/modulo.c \
+LIBVIG_SRC_ARITH := $(SELF_DIR)/lib/containers/arith.c \
+                    $(SELF_DIR)/lib/containers/modulo.c
+LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.o \
+              $(SELF_DIR)/lib/containers/modulo.o \
               $(SELF_DIR)/lib/containers/double-chain-impl.c \
               $(SELF_DIR)/lib/containers/double-chain.c \
               $(SELF_DIR)/lib/containers/map-impl.c \
@@ -71,10 +73,12 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.c \
               $(SELF_DIR)/lib/coherence.c \
               $(SELF_DIR)/lib/expirator.c
 
-LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/bitopsutils.c \
-				 $(SELF_DIR)/lib/containers/mod_pow2.c \
-				 $(SELF_DIR)/lib/containers/lpm-dir-24-8-lemmas.c \
-				 $(SELF_DIR)/lib/containers/lpm-dir-24-8.c
+LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/arith.o \
+                 $(SELF_DIR)/lib/containers/modulo.o \
+                 $(SELF_DIR)/lib/containers/bitopsutils.c \
+                 $(SELF_DIR)/lib/containers/mod_pow2.c \
+                 $(SELF_DIR)/lib/containers/lpm-dir-24-8-lemmas.c \
+                 $(SELF_DIR)/lib/containers/lpm-dir-24-8.c
 
 LIBVIG_MAP_CAP_POW2 := $(SELF_DIR)/lib/containers/arith.o \
                        $(SELF_DIR)/lib/containers/modulo.o \
@@ -85,8 +89,12 @@ LIBVIG_MAP_CAP_POW2 := $(SELF_DIR)/lib/containers/arith.o \
                        $(SELF_DIR)/lib/containers/map.c
 
 verifast:
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -prover="Z3v4.5" -c -emit_vfmanifest $(LIBVIG_SRC_Z3)	
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest $(LIBVIG_SRC)
+	rm -f $(SELF_DIR)/lib/*.vfmanifest $(SELF_DIR)/lib/**/*.vfmanifest
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest $(LIBVIG_SRC_ARITH)
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -prover="Z3v4.5" -shared -emit_vfmanifest \
+    $(LIBVIG_SRC_Z3)
+	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest \
+    $(LIBVIG_SRC)
 	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -D CAPACITY_POW2 \
 		$(LIBVIG_MAP_CAP_POW2)
 	rm $(SELF_DIR)/lib/*.vfmanifest $(SELF_DIR)/lib/**/*.vfmanifest

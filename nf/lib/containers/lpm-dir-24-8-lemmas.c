@@ -6,24 +6,60 @@
 // 16777216 is tbl24 max entries
 // 0xFFFF is 0xFFFF
 
-/* @
-  lemma void equal_int32_equal_Z(int x, Z yZ, int data, int mask,
-                               Z dataZ, Z maskZ)
-  requires x == int_of_Z(yZ) &*&
-           0 <= x &*& x <= 0xFFFFFFFF &*&
-           0 <= data &*& data <= 0xFFFFFFFF &*&
-           0 <= mask &*& mask <= 0xFFFFFFFF &*&
-           dataZ == Z_of_int(data, N32) &*&
-           maskZ == Z_of_int(mask, N32) &*&
-           int_of_Z(dataZ) == data &*&
-           int_of_Z(maskZ) == mask &*&
-           yZ == Z_and(dataZ, maskZ);
-  ensures Z_of_int(x, N32) == yZ;
+/*@
+  lemma void int_of_Z_0(Z z)
+  requires 0 == int_of_Z(z);
+  ensures z == Zsign(false);
   {
-    bitand_def(data, dataZ, mask, maskZ);
-    bitand_limits(data, mask, N32);
-    int masked_data = data & mask;
-    Z_of_uintN(masked_data, N32);
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
+  lemma void Z_and_length(Z z1, Z z2)
+  requires true;
+  ensures int_of_nat(Z_length(z1)) < int_of_nat(Z_length(z2)) ?
+          Z_length(Z_and(z1, z2)) == Z_length(z1)             :
+          Z_length(Z_and(z1, z2)) == Z_length(z2);
+  {
+    assume(false);//TODO
+  }
+  @*/
+
+/*@
+  lemma void equal_int_equal_Z(Z yZ, nat n)
+    requires 0 <= int_of_Z(yZ) &*& int_of_Z(yZ) < pow_nat(2, n) &*& Z_length(yZ) == n;
+    ensures Z_of_int(int_of_Z(yZ), n) == yZ;
+  {
+    switch(n) {
+      case zero:
+        assert pow_nat(2, n) == 1;
+        assert 0 == int_of_Z(yZ);
+        int_of_Z_0(yZ);
+        assert yZ == Zsign(false);
+        assert Z_of_int(int_of_Z(yZ), n) == Zsign(false);
+      case succ(m):
+        switch(yZ) {
+          case Zsign(b):
+            assert b == false;
+            assert int_of_Z(yZ) == 0;
+            assert false;
+          case Zdigit(z0, b0):
+            equal_int_equal_Z(z0, m);
+            assert Z_of_bits(Zsign(false), snd(bits_of_int(int_of_Z(z0), m))) == z0;
+            int x = 2 * int_of_Z(z0) + (b0 ? 1 : 0);
+            assert int_of_Z(yZ) == x;
+
+            div_rem(x, 2);
+
+            assert (x % 2 == 1) == b0;
+
+            assert snd(bits_of_int(int_of_Z(yZ), n)) == cons(b0, snd(bits_of_int(int_of_Z(z0), m)));
+            assert Z_of_bits(Zsign(false), snd(bits_of_int(int_of_Z(yZ), n))) ==
+                   Zdigit(Z_of_bits(Zsign(false), snd(bits_of_int(int_of_Z(z0), m))), b0);
+            assert Z_of_bits(Zsign(false), snd(bits_of_int(int_of_Z(yZ), n))) == yZ;
+        }
+    }
   }
   @*/
 
