@@ -6,6 +6,27 @@
 // 16777216 is tbl24 max entries
 // 0xFFFF is 0xFFFF
 
+/* @
+  lemma void equal_int32_equal_Z(int x, Z yZ, int data, int mask,
+                               Z dataZ, Z maskZ)
+  requires x == int_of_Z(yZ) &*&
+           0 <= x &*& x <= 0xFFFFFFFF &*&
+           0 <= data &*& data <= 0xFFFFFFFF &*&
+           0 <= mask &*& mask <= 0xFFFFFFFF &*&
+           dataZ == Z_of_int(data, N32) &*&
+           maskZ == Z_of_int(mask, N32) &*&
+           int_of_Z(dataZ) == data &*&
+           int_of_Z(maskZ) == mask &*&
+           yZ == Z_and(dataZ, maskZ);
+  ensures Z_of_int(x, N32) == yZ;
+  {
+    bitand_def(data, dataZ, mask, maskZ);
+    bitand_limits(data, mask, N32);
+    int masked_data = data & mask;
+    Z_of_uintN(masked_data, N32);
+  }
+  @*/
+
 /*@
   lemma void flag_mask_MSB_one()
     requires true;
