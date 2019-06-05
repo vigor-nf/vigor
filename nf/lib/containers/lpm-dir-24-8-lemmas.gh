@@ -5,18 +5,26 @@
 // 16777216 is tbl24 max entries
 // 0xFFFF is 0xFFFF
 
-lemma void equal_int32_equal_Z(int x, Z yZ, int data, int mask,
-                               Z dataZ, Z maskZ);
-  requires x == int_of_Z(yZ) &*&
-           0 <= x &*& x <= 0xFFFFFFFF &*&
-           0 <= data &*& data <= 0xFFFFFFFF &*&
-           0 <= mask &*& mask <= 0xFFFFFFFF &*&
-           dataZ == Z_of_int(data, N32) &*&
-           maskZ == Z_of_int(mask, N32) &*&
-           int_of_Z(dataZ) == data &*&
-           int_of_Z(maskZ) == mask &*&
-           yZ == Z_and(dataZ, maskZ);
-  ensures Z_of_int(x, N32) == yZ;
+fixpoint nat Z_length(Z z) {
+  switch(z) {
+    case Zsign(b): return zero;
+    case Zdigit(z0, b0): return succ(Z_length(z0));
+  }
+}
+
+lemma void Z_and_length(Z z1, Z z2);
+requires true;
+ensures int_of_nat(Z_length(z1)) < int_of_nat(Z_length(z2)) ?
+        Z_length(Z_and(z1, z2)) == Z_length(z1)             :
+        Z_length(Z_and(z1, z2)) == Z_length(z2);
+
+lemma void equal_int_equal_Z(Z yZ, nat n);
+  requires 0 <= int_of_Z(yZ) &*& int_of_Z(yZ) < pow_nat(2, n) &*& Z_length(yZ) == n;
+  ensures Z_of_int(int_of_Z(yZ), n) == yZ;
+
+lemma void Z_of_uintN_light(int x, nat N);
+  requires 0 <= x &*& x < pow_nat(2, N);
+  ensures x == int_of_Z(Z_of_bits(Zsign(false), snd(bits_of_int(x, N))));
 
 lemma void flag_mask_MSB_one();
   requires true;
