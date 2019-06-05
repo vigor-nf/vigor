@@ -6,22 +6,6 @@
 // 16777216 is tbl24 max entries
 // 0xFFFF is 0xFFFF
 
-/* @
-  lemma void equal_int_equal_Z(int x, Z yZ, nat n);
-    requires x == int_of_Z(yZ) &*& 0 <= x &*& x < pow_nat(2, n);
-    ensures Z_of_int(x, n) == yZ;
-  / *{
-    int y = int_of_Z(yZ);
-    assert x == y;
-    assert 0 <= y &*& y < pow_nat(2, n);
-    
-    Z xZ = Z_of_uintN(x, n);
-    Z yZ_bis = Z_of_uintN(y, n);
-    assert xZ == yZ_bis;
-    assert yZ == yZ_bis;
-  }
-  @*/
-
 /*@
   lemma void flag_mask_MSB_one()
     requires true;
