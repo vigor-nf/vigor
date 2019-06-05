@@ -554,8 +554,7 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
   uint8_t prefixlen = _key->prefixlen;
   uint32_t data = _key->data;
   //@ Z d = Z_of_uintN(data, N32);
-  // @ Z_of_uintN(data, N32);
-  // @ Z_of_uint32(data);
+
   uint16_t value = _key->route;
   uint16_t *lpm_24 = _lpm->lpm_24;
   uint16_t *lpm_long = _lpm->lpm_long;
@@ -569,9 +568,6 @@ int lpm_update_elem(struct lpm *_lpm, struct key *_key)
 
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
   //@ Z maskZ = mask32_from_prefixlen(prefixlen);
-  //@ Z_of_uintN(mask, N32);
-  // @ Z_of_uint32(mask);
-  // @ assert Z_of_int(mask, N32) == maskZ;
   
   uint32_t masked_data = data & mask;
   //@ bitand_def(data, d, mask, maskZ);
