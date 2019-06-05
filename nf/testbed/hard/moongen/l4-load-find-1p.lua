@@ -54,7 +54,7 @@ function master(args)
 			return	
 		end
 		mg.waitForTasks()
-		local steps = 11;
+		local steps = 2;--11;
 		local upperbound = maxRate
 		local lowerbound = minRate
 		-- Testing phase

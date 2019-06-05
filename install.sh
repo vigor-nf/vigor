@@ -33,7 +33,7 @@ fi
 # Bash "strict mode"
 set -euxo pipefail
 
-echo '# The configuration paths for VNDS dependencies' > "$PATHSFILE"
+echo '# The configuration paths for VNDS dependencies' >> "$PATHSFILE"
 
 # Source the paths file at login
 echo ". $PATHSFILE" >> "$HOME/.profile"
