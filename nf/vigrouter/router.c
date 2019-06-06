@@ -171,20 +171,20 @@ void insert_all(FILE * f){
 		uint32_t ip_address = ip[3] + (ip[2] << 8) + (ip[1] << 16) + (ip[0] <<24);			
 		
 		//create new key for the lpm table
-		struct key * new_key = malloc(sizeof(struct key));
+		struct rule * new_rule = malloc(sizeof(struct rule));
 			
-		if(new_key == NULL){
+		if(new_rule == NULL){
 			printf("Error during update. Could not allocate memory for key !\n"); 
 			abort();
 		}
 			
-		new_key->data = ip_address;
-		new_key->prefixlen = mask;
-		new_key->route = (uint16_t)port;
+		new_rule->ipv4 = ip_address;
+		new_rule->prefixlen = mask;
+		new_rule->route = (uint16_t)port;
 
 
 		//update the table with the new key
-		int res = lpm_update_elem(lpm_table, new_key);
+		int res = lpm_update_elem(lpm_table, new_rule);
    
 		if(res == -1){
 			printf("error during update. error is : %d\n",res); fflush(stdout);

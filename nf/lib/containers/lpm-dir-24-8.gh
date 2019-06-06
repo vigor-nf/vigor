@@ -68,7 +68,7 @@ fixpoint int indexlong_from_ipv4(Z ipv4, int index){
 
 //Assuming that prefixlen <= 32
 fixpoint int compute_rule_size(int prefixlen){
-  return prefixlen < 24 ?
+  return prefixlen < 25 ?
            pow_nat(2, nat_of_int(24 - prefixlen))
          :
            pow_nat(2, nat_of_int(32 - prefixlen));
@@ -184,8 +184,6 @@ fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir){
 }
 
 // ADD ROUTE FUNCTIONS
-//Wanted to regroup update_n_lpm_24/long with type parameter but verifast stalls
-
 fixpoint list<t> update_n<t>(list<t> lst, int start, nat count, t x){
   switch(count){
     case zero: return lst;
@@ -267,7 +265,7 @@ fixpoint dir_24_8 insert_lpm_long(dir_24_8 dir, lpm_rule rule){
 fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_rule rule){
   switch(rule){
     case rule(ipv4, prefixlen, route):
-      return prefixlen < 24 ?
+      return prefixlen < 25 ?
                insert_lpm_24(dir, rule)
              :
                insert_lpm_long(dir, rule);

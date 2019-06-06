@@ -275,22 +275,22 @@ uint32_t lpm_24_extract_first_index(uint32_t data)
 uint32_t compute_rule_size(uint8_t prefixlen)
 //@ requires prefixlen <= 32;
 /*@ ensures result == compute_rule_size(prefixlen) &*&
-            prefixlen < 24 ? 
-              result <= pow_nat(2, nat_of_int(24))
+            prefixlen < 25 ? 
+              result == pow_nat(2, nat_of_int(24-prefixlen))
             : 
-              result <= pow_nat(2, N8);
+              result == pow_nat(2, nat_of_int(32-prefixlen));
 @*/
 {	
-  if(prefixlen < 24){
-    uint32_t res[24] = { 0x1000000, 0x800000, 0x400000, 0x200000, 0x100000,
+  if(prefixlen < 25){
+    uint32_t res[25] = { 0x1000000, 0x800000, 0x400000, 0x200000, 0x100000,
                          0x80000, 0x40000, 0x20000, 0x10000, 0x8000, 0x4000,
                          0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100 ,0x80,
-                         0x40, 0x20, 0x10, 0x8, 0x4, 0x2};
+                         0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
     uint32_t v = res[prefixlen];
     return v;
   }else{
-    uint32_t res[9] = {0x100 ,0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
-    uint32_t v = res[prefixlen-24];
+    uint32_t res[8] = {0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
+    uint32_t v = res[prefixlen-25];
     return v;
   }
 }
@@ -331,7 +331,6 @@ uint16_t lpm_24_entry_set_flag(uint16_t entry)
 
   return res;
 }
-
 
 uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
                                       uint8_t base_index)
@@ -582,13 +581,15 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
   //@ assert (masked_ipZ == Z_of_int(masked_ip, N32));
 
   //If prefixlen is smaller than 24, simply store the value in lpm_24
-  if(prefixlen < 24){
+  if(prefixlen < 25){
 
     uint32_t first_index = lpm_24_extract_first_index(masked_ip);
     // @ assert first_index == index24_from_ipv4(masked_ipZ);
     // @ assert first_index == compute_starting_index_24(new_rule);
     uint32_t rule_size = compute_rule_size(prefixlen);
-    // @ assert rule_size == compute_rule_size(prefixlen);
+    // @ assert rule_size == pow_nat(2, nat_of_int(24-prefixlen));
+    // @ assert rule_size = compute_rule_size(prefixlen);
+
     uint32_t last_index = first_index + rule_size;
 
     // @ assert last_index <= length(t_24);
