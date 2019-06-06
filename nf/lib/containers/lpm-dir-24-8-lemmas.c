@@ -19,27 +19,29 @@
   }
   @*/
 
-/* @
-  lemma void Z_and_length(Z z1, Z z2);
-  requires true;
-  ensures int_of_nat(Z_length(z1)) < int_of_nat(Z_length(z2)) ?
+/*@
+  lemma void Z_and_length(Z z1, Z z2)
+  requires 0 <= int_of_Z(z1) &*& 0 <= int_of_Z(z2);
+  ensures int_of_nat(Z_length(z1)) <= int_of_nat(Z_length(z2)) ?
           Z_length(Z_and(z1, z2)) == Z_length(z1)             :
           Z_length(Z_and(z1, z2)) == Z_length(z2);
-  /*{
-    /*switch(z1){
-      case Zsign(b1): assert Z_length(Zsign(b1)) == zero;
-      case Zdigit(z10, b10):
-        switch(z2){
-          case Zsign(b2): assert Z_length(Zsign(b2)) == zero;
+  {
+    switch(z1){
+      case Zsign(b1): assert int_of_nat(Z_length(z1)) <= int_of_nat(Z_length(z2));
+                      assert Z_length(z1) == zero;
+                      
+      case Zdigit(z10, b10): switch(z2){
+          case Zsign(b2): assert int_of_nat(Z_length(z1)) > int_of_nat(Z_length(z2));
           case Zdigit(z20, b20): Z_and_length(z10, z20);
-        }
+        };
     }
   }
   @*/
 
 /*@
   lemma void equal_int_equal_Z(Z yZ, nat n)
-    requires 0 <= int_of_Z(yZ) &*& int_of_Z(yZ) < pow_nat(2, n) &*& Z_length(yZ) == n;
+    requires 0 <= int_of_Z(yZ) &*& int_of_Z(yZ) < pow_nat(2, n) &*&
+             Z_length(yZ) == n;
     ensures Z_of_int(int_of_Z(yZ), n) == yZ;
   {
     switch(n) {

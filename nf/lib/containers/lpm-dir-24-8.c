@@ -659,7 +659,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     //retrieved by lpm_24[index]
 
     //@ nth_map(lpm_24_index, entry_24_mapping, t_24);
-    // @ assert entry_24_mapping(lpm_24_value)==lookup_lpm_24(lpm_24_index, dir);
+
     //@ option<pair<bool, Z> > value24 = lookup_lpm_24(lpm_24_index, dir);
   
     //Prove that the retrieved elem is valid
@@ -745,7 +745,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     //indexes
     uint32_t first_index = lpm_long_extract_first_index(ip, prefixlen,
                                                         base_index);
-    // @ assert first_index == compute_starting_index_long(new_rule, base_index);
+
     uint32_t rule_size = compute_rule_size(prefixlen);
     // @ assert rule_size == compute_rule_size(prefixlen);
     uint32_t last_index = first_index + rule_size;
