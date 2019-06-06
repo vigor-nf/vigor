@@ -11,18 +11,21 @@
   requires 0 == int_of_Z(z) &*& zero == Z_length(z);
   ensures z == Zsign(false);
   {
-  
-    assume (false);
+    assert z == Zsign(_);
+    switch(z){
+      case Zsign(b0): 
+      case Zdigit(z0, b1):
+    }
   }
   @*/
 
-/*@
-  lemma void Z_and_length(Z z1, Z z2)
+/* @
+  lemma void Z_and_length(Z z1, Z z2);
   requires true;
   ensures int_of_nat(Z_length(z1)) < int_of_nat(Z_length(z2)) ?
           Z_length(Z_and(z1, z2)) == Z_length(z1)             :
           Z_length(Z_and(z1, z2)) == Z_length(z2);
-  {assume (false);
+  /*{
     /*switch(z1){
       case Zsign(b1): assert Z_length(Zsign(b1)) == zero;
       case Zdigit(z10, b10):
@@ -30,7 +33,7 @@
           case Zsign(b2): assert Z_length(Zsign(b2)) == zero;
           case Zdigit(z20, b20): Z_and_length(z10, z20);
         }
-    }*/
+    }
   }
   @*/
 
