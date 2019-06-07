@@ -1,6 +1,6 @@
 
-#ifndef _router_h
-#define _router_h
+#ifndef __ROUTER_H_INCLUDED__
+#define __ROUTER_H_INCLUDED__
 
 #define MAX_ROUTES_ENTRIES 1200000
 #define MAX_TBL_8 	80000	//number of 8bits tables for the dir-24-8 algorithm
