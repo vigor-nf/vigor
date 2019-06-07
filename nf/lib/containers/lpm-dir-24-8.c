@@ -36,7 +36,7 @@
   fixpoint bool is_none<t>(option<t> mapped) {
     return mapped == none;
   }
-@*/
+  @*/
 
 /*@
   fixpoint bool check_INVALID(uint16_t current) {
@@ -206,16 +206,14 @@ void fill_invalid(uint16_t *t, uint32_t size)
 //@ requires t[0..size] |-> _ &*& size > 0;
 /*@ ensures t[0.. size] |-> ?inv_list &*&
             inv_list == repeat_n(nat_of_int(size), INVALID) &*&
-            true == forall(inv_list, check_INVALID);
-@*/
+            true == forall(inv_list, check_INVALID); @*/
 { 
   for (uint32_t i = 0; ; i++)
   /*@ invariant 0 <= i &*& i <= size &*&
                 t[0..i] |-> ?updated &*&
                 updated == repeat_n(nat_of_int(i), INVALID) &*&
                 true == forall(updated, check_INVALID) &*&
-                t[i..size] |-> _;
-  @*/
+                t[i..size] |-> _; @*/
   {
     if (i == size) {
       break;
@@ -256,9 +254,7 @@ uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
 uint32_t lpm_24_extract_first_index(uint32_t data)
 //@ requires true;
 /*@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*&
-            result == index24_from_ipv4(Z_of_int(data, N32));
-
-@*/
+            result == index24_from_ipv4(Z_of_int(data, N32)); @*/
 {
   //@ Z d = Z_of_uintN(data, N32);
   //@ shiftright_def(data, d, N8);
@@ -278,8 +274,7 @@ uint32_t compute_rule_size(uint8_t prefixlen)
             prefixlen < 25 ? 
               result == pow_nat(2, nat_of_int(24-prefixlen))
             : 
-              result == pow_nat(2, nat_of_int(32-prefixlen));
-@*/
+              result == pow_nat(2, nat_of_int(32-prefixlen)); @*/
 {	
   if (prefixlen < 25) {
     uint32_t res[25] = { 0x1000000, 0x800000, 0x400000, 0x200000, 0x100000,
@@ -298,9 +293,7 @@ uint32_t compute_rule_size(uint8_t prefixlen)
 
 bool lpm_24_entry_flag(uint16_t entry)
 /*@ requires entry != INVALID &*& true == valid_entry24(entry) &*&
-    entry_24_mapping(entry) == some(?p) &*& p == pair(?b, _);
-@*/
-
+             entry_24_mapping(entry) == some(?p) &*& p == pair(?b, _); @*/
 //@ ensures result == extract_flag(entry) &*& result == b;
 {
   return (entry >> 15) == 1;
@@ -315,8 +308,7 @@ uint16_t lpm_24_entry_set_flag(uint16_t entry)
             true == valid_entry24(result) &*&
             fst(get_someOption24(entry_24_mapping(result))) == true &*&
             snd(get_someOption24(entry_24_mapping(result))) ==
-            Z_of_int(entry, N16);
-@*/
+            Z_of_int(entry, N16); @*/
 {
   //@ bitor_limits(entry, lpm_24_FLAG_MASK, N16);
   uint16_t res = (uint16_t)(entry | lpm_24_FLAG_MASK);
@@ -336,14 +328,12 @@ uint16_t lpm_24_entry_set_flag(uint16_t entry)
 uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
                                       uint8_t base_index)
 /*@ requires 0 <= base_index &*& base_index < lpm_LONG_OFFSET_MAX &*&
-             0 <= prefixlen &*& prefixlen <= 32;
-@*/
+             0 <= prefixlen &*& prefixlen <= 32; @*/
 /*@ ensures result ==
             compute_starting_index_long(init_rule(data, prefixlen, 0),
                                         base_index) &*&
             0 <= result &*&
-            result <= 0xFFFF;//dummy route, unused
-@*/
+            result <= 0xFFFF;//dummy route, unused @*/
 {   
   //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
   
@@ -368,10 +358,9 @@ uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
 struct lpm* lpm_allocate()
 //@ requires true;
 /*@ ensures result == 0 ? 
-      true 
-    : 
-      table(result, dir_init());
-@*/
+              true 
+            : 
+              table(result, dir_init()); @*/
 {	
   struct lpm* _lpm = malloc(sizeof(struct lpm));
   if (_lpm == 0) {
@@ -463,8 +452,7 @@ void lpm_free(struct lpm *_lpm)
 int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
 //@ requires table(_lpm, ?dir);
 /*@ ensures table(_lpm, dir) &*&
-            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir);
-@*/
+            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir); @*/
 {
 
   //@ open table(_lpm, dir);
@@ -538,15 +526,13 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
 
 int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 /*@ requires table(_lpm, ?dir) &*&
-              rule(_rule, ?ipv4, ?plen, ?route);
-@*/
+              rule(_rule, ?ipv4, ?plen, ?route); @*/
 /*@ ensures table(_lpm,
                   add_rule(dir,
                            init_rule(ipv4, plen, route)
                   )
             )
-            &*& rule(_rule, ipv4, plen, route);
-@*/
+            &*& rule(_rule, ipv4, plen, route); @*/
 {
   //@ open rule(_rule, ipv4, plen, route);
   //@ open table(_lpm, dir);
@@ -616,8 +602,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
                   true == forall(updated, valid_entry24) &*&
                   updated == update_n(t_24, first_index,
                                       nat_of_int(i-first_index),
-                                      value);
-    @*/
+                                      value); @*/
     {
       if (i == last_index) {
         break;
@@ -775,8 +760,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
                   true == forall(updated, valid_entry_long) &*&
                   updated == update_n(t_l, first_index, 
                                       nat_of_int(i-first_index),
-                                      value);
-    @*/
+                                      value); @*/
     { 
       if (i == last_index) {
         break;

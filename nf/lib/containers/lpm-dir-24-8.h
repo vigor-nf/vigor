@@ -51,19 +51,16 @@ struct rule {
 /*@
   predicate table(struct lpm* t, dir_24_8 dir);
   predicate rule(struct rule* r; uint32_t ipv4, uint8_t prefixlen,
-                uint16_t route);
-@*/
+                uint16_t route); @*/
 
 
 
 struct lpm *lpm_allocate();
 //@ requires true;
 /*@ ensures result == 0 ? 
-      true 
-    : 
-      table(result, dir_init());
-
-@*/
+              true 
+            : 
+              table(result, dir_init()); @*/
 
 void lpm_free(struct lpm *_lpm);
 //@ requires table(_lpm, _);
@@ -76,11 +73,9 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule);
                            init_rule(ipv4, plen, route)
                   )
             )
-            &*& rule(_rule, ipv4, plen, route);
-@*/
+            &*& rule(_rule, ipv4, plen, route); @*/
 
 int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4);
 //@ requires table(_lpm, ?dir);
 /*@ ensures table(_lpm, dir) &*&
-            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir);
-@*/
+            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir); @*/
