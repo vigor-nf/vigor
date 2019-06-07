@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-// @ #include "lpm-dir-24-8.gh"
 //@ #include "lpm-dir-24-8-lemmas.gh"
 
 #define lpm_PLEN_MAX 32

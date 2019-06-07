@@ -670,7 +670,8 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     if (need_new_index) {
       if (_lpm->lpm_long_index >= lpm_LONG_OFFSET_MAX) {
         // @ assert long_index >= 256;
-        printf("No more available index for lpm_long!\n");fflush(stdout);
+        printf("No more available index for lpm_long!\n");
+        fflush(stdout);
         //@ close rule(_rule, ipv4, plen, route);
         //@ close table(_lpm, dir);
         return -1;
