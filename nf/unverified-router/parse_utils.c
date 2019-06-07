@@ -86,7 +86,7 @@ uint8_t * parse_ip(const char * ip, size_t size) {
 /**
  * Takes n elements of a string of size = length starting at index = starting
  */
-char * take(size_t starting, size_t n, const char * s, size_t length){
+char * take(size_t starting, size_t n, const char * s, size_t length) {
 	
   if (n + starting > length) {
 		return NULL;
