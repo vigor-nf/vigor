@@ -1,13 +1,14 @@
 
-#How to install MoonRoute
+# How to install MoonRoute
 
 
-##Configuration
+## Configuration
+
 server: kernel version 3.14
 gcc version 4.8.5
 need lua 5.1 and luasocket
 
-##Installation
+## Installation
 
 [Download MoonRoute here](https://github.com/emmericp/MoonRoute-data)
 
@@ -32,7 +33,7 @@ sudo modprobe uio
 sudo insmod igb_uio.ko
 
 
-##how to run the router
+## how to run the router
 
 simply run ./MoonGen  ../MoonRoute/router.lua  the maximum number of entries can be modified in rte_lpm.h found in MoonGen/deps/dpdk ...
 
