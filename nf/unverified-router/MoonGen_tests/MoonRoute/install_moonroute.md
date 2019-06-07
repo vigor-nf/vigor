@@ -24,12 +24,14 @@ make
 the MoonGen executable should be there.
 
 
-now for running the router....
+## Binding the NICs
 
 bind the Nic using the modules provided in MoonRoute/code/MoonGen/deps/dpdk/x86_64-native-linuxapp-gcc/kmod with the following commands:
 
 cd  MoonRoute/code/MoonGen/deps/dpdk/x86_64-native-linuxapp-gcc/kmod
+
 sudo modprobe uio
+
 sudo insmod igb_uio.ko
 
 
