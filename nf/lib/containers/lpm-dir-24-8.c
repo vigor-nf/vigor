@@ -196,7 +196,7 @@
   }
   @*/
 
-struct lpm{
+struct lpm {
   uint16_t* lpm_24;
   uint16_t* lpm_long;
   uint16_t  lpm_long_index;

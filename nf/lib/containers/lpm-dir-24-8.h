@@ -42,7 +42,7 @@
 
 struct lpm;
 
-struct rule{
+struct rule {
   uint32_t ipv4;
   uint8_t prefixlen;
   uint16_t route;
