@@ -1,6 +1,6 @@
 
 #ifndef __PARSE_UTILS_H_INCLUDED__
-#define __PARSE_UTILS_H__
+#define __PARSE_UTILS_H_INCLUDED__
 
 #include <ctype.h>
 #include <stdint.h>
