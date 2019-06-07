@@ -1,5 +1,7 @@
 #include "lpm-dir-24-8.h"
 
+//@ #include "lpm-dir-24-8-lemmas.gh"
+
 /*@
   predicate table(struct lpm* t, dir_24_8 dir) = 
     malloc_block_lpm(t) &*&
@@ -284,7 +286,7 @@ uint32_t compute_rule_size(uint8_t prefixlen)
                          0x10,      0x8,      0x4,      0x2,      0x1};
     uint32_t v = res[prefixlen];
     return v;
-  }else{
+  } else {
     uint32_t res[8] = {0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
     uint32_t v = res[prefixlen-25];
     return v;
@@ -333,7 +335,7 @@ uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
             compute_starting_index_long(init_rule(data, prefixlen, 0),
                                         base_index) &*&
             0 <= result &*&
-            result <= 0xFFFF;//dummy route, unused @*/
+            result <= 0xFFFF; @*/ //dummy route, unused
 {   
   //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
   
@@ -507,7 +509,7 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
     
     if (value_long == INVALID) {
       return INVALID;
-    }else{
+    } else {
       //@ valid_next_hop_long(value_long, value_l);
       return value_long;
     }
@@ -517,7 +519,7 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
     
     if (value == INVALID) {
       return INVALID;
-    }else{
+    } else {
     //@ valid_next_hop24(value, value24);
       return value;
     }
@@ -658,7 +660,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
       need_new_index = true;
       // @ assert value24 == none;
       // @ assert need_new_index == is_new_index_needed(value24);
-    }else{
+    } else {
       need_new_index = !lpm_24_entry_flag(lpm_24_value);
       // @ assert need_new_index == !extract_flag(lpm_24_value);
       // @ assert value24 == some(?p);
@@ -676,7 +678,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
         //@ close table(_lpm, dir);
         return -1;
 		
-      }else{
+      } else {
       //generate next index and store it in lpm_24
         base_index = (uint8_t)(_lpm->lpm_long_index);
         // @ assert 0 <= base_index &*& base_index < 256;
@@ -703,7 +705,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
                                    entry_24_mapping(new_entry24));
         @*/
       }      
-    }else{
+    } else {
       new_long_index = _lpm->lpm_long_index;
       
       base_index = (uint8_t)(lpm_24_value & 0x7FFF);
