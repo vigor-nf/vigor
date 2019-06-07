@@ -68,13 +68,13 @@ uint8_t * parse_ip(const char * ip, size_t size) {
 	  free(octet);
 
 	} else if (i == size -1) {
-			++count;
-			char * octet = take(i - count +1, count, ip, size);
-			res[j] = get_number(octet, count);
-			free(octet);
+	  ++count;
+	  char * octet = take(i - count +1, count, ip, size);
+	  res[j] = get_number(octet, count);
+	  free(octet);
 
 	} else {
-			count++;
+	  count++;
 	}
 
   }
