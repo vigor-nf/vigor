@@ -568,7 +568,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
   //@ Z maskZ = mask32_from_prefixlen(prefixlen);
   
-  uint32_t masked_ip = ipv4 & mask;
+  uint32_t masked_ip = ip & mask;
   //@ bitand_def(ip, d, mask, maskZ);
   //@ bitand_limits(ip, mask, N32);
   //@ Z masked_ipZ = Z_and(d, maskZ);
