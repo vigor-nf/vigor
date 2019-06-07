@@ -1,5 +1,5 @@
-#ifndef DIR248_GH
-#define DIR248_GH
+#ifndef __LPM_DIR_24_8_GH_INCLUDED__
+#define __LPM_DIR_24_8_GH_INCLUDED__
 
 #include <bitops.gh>
 #include "stdex.gh"
@@ -320,3 +320,5 @@ fixpoint bool valid_entry24(int entry){
 fixpoint bool valid_entry_long(int entry){
   return entry == 0xFFFF ? true : 0 <= entry && entry <= 0x7FFF;
 }
+
+#endif//_LPM_DIR_24_8_GH_INCLUDED_
