@@ -1,6 +1,6 @@
 
-#ifndef _parse_utils_h
-#define _parse_utils_h
+#ifndef __PARSE_UTILS_H_INCLUDED__
+#define __PARSE_UTILS_H__
 
 #include <ctype.h>
 #include <stdint.h>
