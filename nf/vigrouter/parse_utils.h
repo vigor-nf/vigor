@@ -1,6 +1,5 @@
-
-#ifndef _parse_utils_h
-#define _parse_utils_h
+#ifndef __PARSE_UTILS_H_INCLUDED__
+#define __PARSE_UTILS_H_INCLUDED__
 
 #include <ctype.h>
 #include <stdint.h>
@@ -30,4 +29,4 @@ uint8_t * parse_ip(const char * ip, size_t size);
 char * take(size_t starting, size_t n, const char * s, size_t length);
 
 
-#endif
+#endif//__PARSE_UTILS_H_INCLUDED__
