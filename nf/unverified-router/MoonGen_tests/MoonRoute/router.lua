@@ -31,42 +31,9 @@ end
 --- Initializes the router
 -- freq == 1  ==> minimum frequency
 function master(freq, ...)
-  printf("try to set the power")
-  --dpdk.enablePowerManagement(0)
-  --dpdk.enablePowerManagement(1)
-  --dpdk.enablePowerManagement(2)
-  --dpdk.enablePowerManagement(3)
-  --dpdk.setCPUFreqMin(0)
-  --dpdk.setCPUFreqMin(1)
-  --dpdk.setCPUFreqMin(2)
-  --dpdk.setCPUFreqMin(3)
-  --dpdk.setCPUFreqMax(0)
-  --dpdk.setCPUFreqMax(1)
-  --dpdk.setCPUFreqMax(2)
-  --dpdk.setCPUFreqMax(3)
-  --for i = 1, (freq-1) do
-    --dpdk.setCPUFreqUp(0)
-    --dpdk.setCPUFreqUp(1)
-    --dpdk.setCPUFreqUp(2)
-    --dpdk.setCPUFreqUp(3)
-  --end
-  printf("power set")
+ 
   local config = dofile "../MoonRoute/cfg.lua"
-  -- we need to enable queues for each port:
-  -- RX:
-  --  - 1 ARP
-  --  - 1 slow path
-  --  - nRss fast path
-  -- TX:
-  --  - 1 ARP
-  --  - 1 slow path
-  --  - number of fast path cores
-  --local count_fast_path_cores = 0
-  --for _, port in pairs(config.ports) do
-  --  if(port.direction == "inout" or port.direction == "in")then
-  --    count_fast_path_cores = count_fast_path_cores + port.nRss
-  --  end
-  --end
+ 
 
   printfColor("Assigning devices to cores...", "yellow")
   for _, port in pairs(config.ports) do
@@ -109,11 +76,10 @@ function master(freq, ...)
     printf(" configuring %s", port.mac)
     port["direction"] = port["direction"] or "inout"
     if(port.direction == "out") then
-      --device.config({port=port.device.id, rxQueues=0, txQueues=1+1+getnumber(cores)})
       errorf("out devices currently not supported")
     elseif(port.direction == "in") then
       errorf("in devices currently not supported")
-      --device.config({port=port.device.id, rxQueues=1+1+getNumber(port.fastPathCores), txQueues=0, rssNQueues=getNumber(port.fastPathCores), separateMemPools=true, memPoolSize = 512*2})
+      
     else
       local rxDescsS = 4*config.rxBurstSize
       local txDescsS = 4*config.txQueueSize
@@ -128,17 +94,12 @@ function master(freq, ...)
         rxQueues=1+1+getNumber(port.fastPathCores),
         txQueues=1+1+getNumber(cores),
         rssNQueues=getNumber(port.fastPathCores),
-        --rxDescs = 512,
         rxDescs = rxDescsS,
         txDescs = rxDescsS,
         separateMemPools=true,
-        --memPoolSize = 2*512 * (1+1+getNumber(port.fastPathCores)) + config.nrPorts * config.txQueueSize + config.slowPathQueueSize + 1
-        --memPoolSize = 2*512 + config.nrPorts * config.txQueueSize + config.slowPathQueueSize + 1
+       
         memPoolSize = 2*rxDescsS + config.nrPorts * txDescsS + config.slowPathQueueSize + 1
-        --rxDescs = 2*config.rxBurstSize,
-        --txDescs = 2*config.txQueueSize,
-        --separateMemPools=true,
-        --memPoolSize = 2*config.rxBurstSize + config.nrPorts * config.txQueueSize + config.slowPathQueueSize + 1
+       
         })
     end
   end
@@ -163,7 +124,6 @@ function master(freq, ...)
   local i = 1
   for c, core in pairs(cores) do
     local distributor = distribute.createDistributor(nil, nil, config.nrPorts, false)
-    --local distributor = distribute.createDistributor(nil, nil, config.nrPorts, true)
     -- register all output ports
     for _, port2 in pairs(config.ports) do
       if(port2.direction == "inout" or port2.direction == "out")then
@@ -183,13 +143,9 @@ function master(freq, ...)
     -- TODO: NUMA awareness
     printf("  Launch FastPath on core %d...", c)
     local testports = {}
- --   if(c < 4) then
-      testports = {config.ports["Port1"].device:getTxQueue(i) }
-   -- else
-     -- testports = {config.ports["Port2"].device:getTxQueue(i) }
-    --end
-    --testports = {config.ports["Port2"].device:getTxQueue(i), config.ports["Port1"].device:getTxQueue(i) }
 
+    testports = {config.ports["Port1"].device:getTxQueue(i) }
+   
     dpdk.launchLuaOnCore(c, "runFastPath", lpmTable, distributor,
       core.rxQueues,
       slowQueue,
@@ -253,35 +209,6 @@ function master(freq, ...)
   local virtMem = memory.createMemPool()
   local virtBufs = virtMem:bufArray(16)
 
-  -- main loop on core 0:
- -- while dpdk.running() do
- --   for _, port in pairs(config.ports) do
-      --port.virtualDev:rxBurst()
-      --port.virtualDev:txBurst()
-   --   port.virtualDev:handleRequest()
-      --local nrx = 0
-     -- local nrx = port.virtualDev:rxBurst(virtBufs, 16)
-      -- we use the arp tx queue :P
-      -- TODO: is this a good idea? or should we have a separate queue
-      --  for forwarding linux kernel packets?
-      --if(nrx > 0) then
-        --printf("send %d packets from kernel to network", nrx)
-       -- port.arpTxQueue:sendN(virtBufs, nrx)
-      --end
-    --end
-    --if telnetUi then
-      --telnetUi:handle()
-    --end
- --   config.arpInstance:handle()
-   -- slowPathInstance:handle()
-  --end
-  -- release all virtual interfaces
-  --for p_name, port in pairs(config.ports) do
-    --if(port.virtualDev) then
-      --port.virtualDev:release()
-    --end
-  --end
-  --kni.close()
 
   dpdk.waitForSlaves()
 end
