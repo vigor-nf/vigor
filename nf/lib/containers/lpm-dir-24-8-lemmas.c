@@ -12,7 +12,7 @@
   ensures z == Zsign(false);
   {
     assert z == Zsign(_);
-    switch(z){
+    switch(z) {
       case Zsign(b0): 
       case Zdigit(z0, b1):
     }
@@ -26,11 +26,11 @@
           Z_length(Z_and(z1, z2)) == Z_length(z1)             :
           Z_length(Z_and(z1, z2)) == Z_length(z2);
   {
-    switch(z1){
+    switch(z1) {
       case Zsign(b1): assert int_of_nat(Z_length(z1)) <= int_of_nat(Z_length(z2));
                       assert Z_length(z1) == zero;
                       
-      case Zdigit(z10, b10): switch(z2){
+      case Zdigit(z10, b10): switch(z2) {
           case Zsign(b2): assert int_of_nat(Z_length(z1)) > int_of_nat(Z_length(z2));
           case Zdigit(z20, b20): Z_and_length(z10, z20);
         };

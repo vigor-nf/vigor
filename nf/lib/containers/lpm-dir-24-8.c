@@ -1,5 +1,7 @@
 #include "lpm-dir-24-8.h"
 
+//@ #include "lpm-dir-24-8-lemmas.gh"
+
 /*@
   predicate table(struct lpm* t, dir_24_8 dir) = 
     malloc_block_lpm(t) &*&
@@ -33,13 +35,13 @@
   @*/
 
 /*@
-  fixpoint bool is_none<t>(option<t> mapped){
+  fixpoint bool is_none<t>(option<t> mapped) {
     return mapped == none;
   }
-@*/
+  @*/
 
 /*@
-  fixpoint bool check_INVALID(uint16_t current){
+  fixpoint bool check_INVALID(uint16_t current) {
     return current == INVALID;
   }
   @*/
@@ -49,10 +51,10 @@
     requires 0 <= i &*& i < length(xs);
     ensures map(f, update(i, y, xs)) == update(i, f(y), map(f, xs));
   {
-    switch(xs){
+    switch(xs) {
       case nil:
       case cons(x, xs0):
-        if(i != 0){
+        if (i != 0) {
           map_update(i-1, y, xs0, f);
         }
     }
@@ -66,7 +68,7 @@
     ensures map(f, update_n(xs, start, n, y)) ==
             update_n(map(f, xs), start, n, f(y));
   {
-    switch(n){
+    switch(n) {
       case zero:
       case succ(n0):
         list<t> updated = update(start, y, xs);
@@ -83,7 +85,7 @@
                    update_n(xs, start, count, y)) ==
             update_n(xs, start, succ(count), y);
   {
-    switch(count){
+    switch(count) {
       case zero:
       case succ(n): 
         loop_update_n(start+1, n, y, update(start, y, xs));
@@ -96,7 +98,7 @@
     requires true == p(e);
     ensures true == forall(repeat_n(size, e), p); 
   { 
-     switch(size){
+     switch(size) {
        case zero:
        case succ(n): repeat_n_forall(n, e, p);
      }
@@ -108,7 +110,7 @@
     requires true;
     ensures append(repeat_n(size, e), cons(e, nil)) == repeat_n(succ(size), e);
   {
-    switch(size){
+    switch(size) {
       case zero:
       case succ(n): repeat_n_append(e, n);
     }
@@ -126,7 +128,7 @@
             append(repeat_n(j, INVALID), cons(INVALID, nil)) &*&
             t[i+1..size] |-> _;
   {
-    switch(j){
+    switch(j) {
       case zero:
       case succ(n): 
         assert int_of_nat(succ(n)) == int_of_nat(n)+1;
@@ -159,10 +161,10 @@
              true == validation_func(INVALID);
     ensures true == forall(entries, validation_func);
   {
-    switch(entries){
+    switch(entries) {
       case nil:
       case cons(x, xs): 
-        switch(size){
+        switch(size) {
           case zero:
           case succ(n): enforce_map_invalid_is_valid(xs, n, validation_func);
         }
@@ -176,7 +178,7 @@
     ensures map(entry_24_mapping, repeat_n(size, INVALID)) ==
             repeat_n(size, none);
     {
-      switch(size){
+      switch(size) {
         case zero:
         case succ(n): invalid_24_none_holds(n);
       }
@@ -189,14 +191,14 @@
     ensures map(entry_long_mapping, repeat_n(size, INVALID)) ==
             repeat_n(size, none); 
   {
-    switch(size){
+    switch(size) {
       case zero:
       case succ(n): invalid_long_none_holds(n);
     }
   }
   @*/
 
-struct lpm{
+struct lpm {
   uint16_t* lpm_24;
   uint16_t* lpm_long;
   uint16_t  lpm_long_index;
@@ -206,18 +208,16 @@ void fill_invalid(uint16_t *t, uint32_t size)
 //@ requires t[0..size] |-> _ &*& size > 0;
 /*@ ensures t[0.. size] |-> ?inv_list &*&
             inv_list == repeat_n(nat_of_int(size), INVALID) &*&
-            true == forall(inv_list, check_INVALID);
-@*/
+            true == forall(inv_list, check_INVALID); @*/
 { 
-  for(uint32_t i = 0; ; i++)
+  for (uint32_t i = 0; ; i++)
   /*@ invariant 0 <= i &*& i <= size &*&
                 t[0..i] |-> ?updated &*&
                 updated == repeat_n(nat_of_int(i), INVALID) &*&
                 true == forall(updated, check_INVALID) &*&
-                t[i..size] |-> _;
-  @*/
+                t[i..size] |-> _; @*/
   {
-    if(i == size){
+    if (i == size) {
       break;
     } 
     
@@ -256,9 +256,7 @@ uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
 uint32_t lpm_24_extract_first_index(uint32_t data)
 //@ requires true;
 /*@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*&
-            result == index24_from_ipv4(Z_of_int(data, N32));
-
-@*/
+            result == index24_from_ipv4(Z_of_int(data, N32)); @*/
 {
   //@ Z d = Z_of_uintN(data, N32);
   //@ shiftright_def(data, d, N8);
@@ -278,17 +276,17 @@ uint32_t compute_rule_size(uint8_t prefixlen)
             prefixlen < 25 ? 
               result == pow_nat(2, nat_of_int(24-prefixlen))
             : 
-              result == pow_nat(2, nat_of_int(32-prefixlen));
-@*/
+              result == pow_nat(2, nat_of_int(32-prefixlen)); @*/
 {	
-  if(prefixlen < 25){
+  if (prefixlen < 25) {
     uint32_t res[25] = { 0x1000000, 0x800000, 0x400000, 0x200000, 0x100000,
-                         0x80000, 0x40000, 0x20000, 0x10000, 0x8000, 0x4000,
-                         0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100 ,0x80,
-                         0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
+                         0x80000,   0x40000,  0x20000,  0x10000,  0x8000,
+                         0x4000,    0x2000,   0x1000,   0x800,    0x400,
+                         0x200,     0x100 ,   0x80,     0x40,     0x20,
+                         0x10,      0x8,      0x4,      0x2,      0x1};
     uint32_t v = res[prefixlen];
     return v;
-  }else{
+  } else {
     uint32_t res[8] = {0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1};
     uint32_t v = res[prefixlen-25];
     return v;
@@ -297,9 +295,7 @@ uint32_t compute_rule_size(uint8_t prefixlen)
 
 bool lpm_24_entry_flag(uint16_t entry)
 /*@ requires entry != INVALID &*& true == valid_entry24(entry) &*&
-    entry_24_mapping(entry) == some(?p) &*& p == pair(?b, _);
-@*/
-
+             entry_24_mapping(entry) == some(?p) &*& p == pair(?b, _); @*/
 //@ ensures result == extract_flag(entry) &*& result == b;
 {
   return (entry >> 15) == 1;
@@ -314,8 +310,7 @@ uint16_t lpm_24_entry_set_flag(uint16_t entry)
             true == valid_entry24(result) &*&
             fst(get_someOption24(entry_24_mapping(result))) == true &*&
             snd(get_someOption24(entry_24_mapping(result))) ==
-            Z_of_int(entry, N16);
-@*/
+            Z_of_int(entry, N16); @*/
 {
   //@ bitor_limits(entry, lpm_24_FLAG_MASK, N16);
   uint16_t res = (uint16_t)(entry | lpm_24_FLAG_MASK);
@@ -335,14 +330,12 @@ uint16_t lpm_24_entry_set_flag(uint16_t entry)
 uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
                                       uint8_t base_index)
 /*@ requires 0 <= base_index &*& base_index < lpm_LONG_OFFSET_MAX &*&
-             0 <= prefixlen &*& prefixlen <= 32;
-@*/
+             0 <= prefixlen &*& prefixlen <= 32; @*/
 /*@ ensures result ==
             compute_starting_index_long(init_rule(data, prefixlen, 0),
                                         base_index) &*&
             0 <= result &*&
-            result <= 0xFFFF;//dummy route, unused
-@*/
+            result <= 0xFFFF; @*/ //dummy route, unused
 {   
   //@ lpm_rule rule = init_rule(data, prefixlen, 0); //any route is OK
   
@@ -367,26 +360,25 @@ uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
 struct lpm* lpm_allocate()
 //@ requires true;
 /*@ ensures result == 0 ? 
-      true 
-    : 
-      table(result, dir_init());
-@*/
+              true 
+            : 
+              table(result, dir_init()); @*/
 {	
   struct lpm* _lpm = malloc(sizeof(struct lpm));
-  if(_lpm == 0){
+  if (_lpm == 0) {
     return 0;
   }
     
   uint16_t* lpm_24 = (uint16_t*) malloc(lpm_24_MAX_ENTRIES *
                                         sizeof(uint16_t));
-  if(lpm_24 == 0){
+  if (lpm_24 == 0) {
     free(_lpm);
     return 0;
   }
     
   uint16_t* lpm_long = (uint16_t*) malloc(lpm_LONG_MAX_ENTRIES *
                                           sizeof(uint16_t));
-  if(lpm_long == 0){
+  if (lpm_long == 0) {
     free(lpm_24);
     free(_lpm);
     return 0;
@@ -462,8 +454,7 @@ void lpm_free(struct lpm *_lpm)
 int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
 //@ requires table(_lpm, ?dir);
 /*@ ensures table(_lpm, dir) &*&
-            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir);
-@*/
+            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir); @*/
 {
 
   //@ open table(_lpm, dir);
@@ -487,7 +478,7 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
   //Prove that the retrieved elem is valid
   //@ forall_nth(t_24, valid_entry24, index);
 	
-  if(value != INVALID && lpm_24_entry_flag(value)){
+  if (value != INVALID && lpm_24_entry_flag(value)) {
   //the value found in lpm_24 is a base index for an entry in lpm_long,
   //go look at the index corresponding to the key and this base index
     //Prove that the value retrieved by lookup_lpm_24
@@ -516,9 +507,9 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
 
     //@ close table(_lpm, dir);
     
-    if(value_long == INVALID){
+    if (value_long == INVALID) {
       return INVALID;
-    }else{
+    } else {
       //@ valid_next_hop_long(value_long, value_l);
       return value_long;
     }
@@ -526,9 +517,9 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
   //the value found in lpm_24 is the next hop, just return it
     //@ close table(_lpm, dir);
     
-    if(value == INVALID){
+    if (value == INVALID) {
       return INVALID;
-    }else{
+    } else {
     //@ valid_next_hop24(value, value24);
       return value;
     }
@@ -537,15 +528,13 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
 
 int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 /*@ requires table(_lpm, ?dir) &*&
-              rule(_rule, ?ipv4, ?plen, ?route);
-@*/
+              rule(_rule, ?ipv4, ?plen, ?route); @*/
 /*@ ensures table(_lpm,
                   add_rule(dir,
                            init_rule(ipv4, plen, route)
                   )
             )
-            &*& rule(_rule, ipv4, plen, route);
-@*/
+            &*& rule(_rule, ipv4, plen, route); @*/
 {
   //@ open rule(_rule, ipv4, plen, route);
   //@ open table(_lpm, dir);
@@ -581,7 +570,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
   //@ assert (masked_ipZ == Z_of_int(masked_ip, N32));
 
   //If prefixlen is smaller than 24, simply store the value in lpm_24
-  if(prefixlen < 25){
+  if (prefixlen < 25) {
 
     uint32_t first_index = lpm_24_extract_first_index(masked_ip);
     // @ assert first_index == index24_from_ipv4(masked_ipZ);
@@ -609,16 +598,15 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     @*/
     
     //fill all entries between [first index and last index[ with value
-    for(uint32_t i = first_index; ; i++)
+    for (uint32_t i = first_index; ; i++)
     /*@ invariant first_index <= i &*& i <= last_index &*&
                   lpm_24[0..lpm_24_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry24) &*&
                   updated == update_n(t_24, first_index,
                                       nat_of_int(i-first_index),
-                                      value);
-    @*/
+                                      value); @*/
     {
-      if(i == last_index){
+      if (i == last_index) {
         break;
       }
       
@@ -668,11 +656,11 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     bool need_new_index;
     uint16_t new_long_index;
     
-    if(lpm_24_value == INVALID){
+    if (lpm_24_value == INVALID) {
       need_new_index = true;
       // @ assert value24 == none;
       // @ assert need_new_index == is_new_index_needed(value24);
-    }else{
+    } else {
       need_new_index = !lpm_24_entry_flag(lpm_24_value);
       // @ assert need_new_index == !extract_flag(lpm_24_value);
       // @ assert value24 == some(?p);
@@ -681,15 +669,16 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     
     // @ assert need_new_index == is_new_index_needed(value24);
       
-    if(need_new_index){
-      if(_lpm->lpm_long_index >= lpm_LONG_OFFSET_MAX){
+    if (need_new_index) {
+      if (_lpm->lpm_long_index >= lpm_LONG_OFFSET_MAX) {
         // @ assert long_index >= 256;
-        printf("No more available index for lpm_long!\n");fflush(stdout);
+        printf("No more available index for lpm_long!\n");
+        fflush(stdout);
         //@ close rule(_rule, ipv4, plen, route);
         //@ close table(_lpm, dir);
         return -1;
 		
-      }else{
+      } else {
       //generate next index and store it in lpm_24
         base_index = (uint8_t)(_lpm->lpm_long_index);
         // @ assert 0 <= base_index &*& base_index < 256;
@@ -716,7 +705,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
                                    entry_24_mapping(new_entry24));
         @*/
       }      
-    }else{
+    } else {
       new_long_index = _lpm->lpm_long_index;
       
       base_index = (uint8_t)(lpm_24_value & 0x7FFF);
@@ -768,16 +757,15 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     // @ assert length(updated_map) == length(map_l);
 
     //Store value in lpm_long entries
-    for(uint32_t i = first_index; ; i++)
+    for (uint32_t i = first_index; ; i++)
     /*@ invariant first_index <= i &*& i <= last_index &*&
                   lpm_long[0..lpm_LONG_MAX_ENTRIES] |-> ?updated &*&
                   true == forall(updated, valid_entry_long) &*&
                   updated == update_n(t_l, first_index, 
                                       nat_of_int(i-first_index),
-                                      value);
-    @*/
+                                      value); @*/
     { 
-      if(i == last_index){
+      if (i == last_index) {
         break;
       }
       //@ forall_update(updated, valid_entry_long, i, value);
