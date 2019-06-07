@@ -1,3 +1,6 @@
+#ifndef __LPM_DIR_24_8_LEMMAS_GH_INCLUDED__
+#define __LPM_DIR_24_8_LEMMAS_GH_INCLUDED__
+
 #include "lpm-dir-24-8.gh"
 
 // 0x8000 is tbl24 flag mask
@@ -97,3 +100,5 @@ lemma void first_index_depends_on_prefixlen(lpm_rule new_rule,
            0 <= int_of_Z(ipv4) &*& int_of_Z(ipv4) <= 0xFFFFFFFF;
   ensures compute_starting_index_long(new_rule, base_index) <=
           (16777216) - compute_rule_size(prefixlen);
+
+#endif//__LPM_DIR_24_8_LEMMAS_GH_INCLUDED__
