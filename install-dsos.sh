@@ -73,3 +73,19 @@ pushd "$BUILDDIR"
     popd
   fi
 popd
+
+cp -r "$BUILDDIR/klee-uclibc" "$BUILDDIR/klee-uclibc-binary"
+
+pushd "$BUILDDIR/klee-uclibc-binary"
+  ./configure \
+   --make-native \
+   --with-llvm-config="../llvm/Release/bin/llvm-config" \
+   --with-cc="../llvm/Release/bin/clang"
+
+  # Use our minimalistic config
+  cp "$VNDSDIR/install/klee-uclibc.config" '.config'
+
+  make clean
+  make -j $(nproc)
+  ln -vs "$BUILDDIR/klee-uclibc-binary/lib/libc.a" "$VNDSDIR/nf"
+popd
