@@ -45,6 +45,7 @@ sudo apt-get update
 sudo apt-get install -y \
                      ca-certificates software-properties-common patch `# to download and install stuff` \
                      libpcap-dev libnuma-dev `# for DPDK` \
+                     xoriso `# for building the DSOS iso` \
                      wget build-essential git python `# for more or less everything`
 
 # Install the right headers
