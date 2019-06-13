@@ -696,13 +696,15 @@ let render_ir ir fout ~render_assertions =
       (* Out_channel.output_string cout (render_context_assumptions *)
       (*                                   tip_input_assumptions); *)
       Out_channel.output_string cout (render_assignments ir.arguments);
-      Out_channel.output_string cout (render_hist_calls ir.hist_calls);
+      (* Yes, this is stupid; but right before a deadline I will not spend hours refactoring import.ml to fix it. *)
+      let stupid_fix = Str.global_replace (Str.regexp_string "(next_time_0 - vector_data_reset_1_8)") "(uint64_t)(next_time_0 - vector_data_reset_1_8)" in
+      Out_channel.output_string cout (stupid_fix (render_hist_calls ir.hist_calls));
       Out_channel.output_string cout (render_semantic_checks ir.semantic_checks);
-      Out_channel.output_string cout (render_tip_fun_call
+      Out_channel.output_string cout (stupid_fix (render_tip_fun_call
                                         ir.tip_call ir.export_point
                                         hist_symbols
                                         ~render_assertions
-                                        ir.cmplxs);
+                                        ir.cmplxs));
       Out_channel.output_string cout (render_final ir.finishing
                                         ~catch_leaks:render_assertions);
       Out_channel.output_string cout "}\n")

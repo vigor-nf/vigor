@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <sys/socket.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#endif
 
 
 int
@@ -17,6 +19,7 @@ stub_socket(int family, int type, int protocol)
 	return -1;
 }
 
+#ifdef KLEE_VERIFICATION
 
 __attribute__((constructor))
 static void
@@ -24,3 +27,13 @@ stub_socket_init(void)
 {
 	klee_alias_function("socket", "stub_socket");
 }
+
+#else
+
+int
+socket(int family, int type, int protocol)
+{
+	return stub_socket(family, type, protocol);
+}
+
+#endif

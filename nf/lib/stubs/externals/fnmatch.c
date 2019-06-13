@@ -1,7 +1,11 @@
 #include <fnmatch.h>
 #include <string.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 int
 fnmatch(const char *pattern, const char *string, int flags)

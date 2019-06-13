@@ -21,6 +21,12 @@
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
 
+#ifdef DSOS
+#  define MAIN nf_main
+#else//DSOS
+#  define MAIN main
+#endif//DSOS
+
 #include <inttypes.h>
 
 #ifdef KLEE_VERIFICATION
@@ -113,7 +119,7 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
       txq,
       TX_QUEUE_SIZE,
       rte_eth_dev_socket_id(device),
-      NULL // default config
+      NULL
     );
     if (retval != 0) {
       return retval;
@@ -188,7 +194,7 @@ lcore_main(void)
 // --- Main ---
 
 int
-main(int argc, char* argv[])
+MAIN(int argc, char* argv[])
 {
   // Initialize the Environment Abstraction Layer (EAL)
   int ret = rte_eal_init(argc, argv);
@@ -220,9 +226,9 @@ main(int argc, char* argv[])
   for (uint16_t device = 0; device < nb_devices; device++) {
     ret = nf_init_device(device, mbuf_pool);
     if (ret == 0) {
-      NF_INFO("Initialized device %" PRIu8 ".", device);
+      NF_INFO("Initialized device %" PRIu16 ".", device);
     } else {
-      rte_exit(EXIT_FAILURE, "Cannot init device %" PRIu8 ", ret=%d", device, ret);
+      rte_exit(EXIT_FAILURE, "Cannot init device %" PRIu16 ", ret=%d", device, ret);
     }
   }
 

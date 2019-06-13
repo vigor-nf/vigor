@@ -27,12 +27,15 @@ struct policer_config config;
 
 struct State* dynamic_ft;
 
-int policer_expire_entries(uint64_t time) {
-  if (time < config.burst / config.rate)
+int policer_expire_entries(vigor_time_t time) {
+  vigor_time_t exp_time = VIGOR_TIME_SECONDS_MULTIPLIER * config.burst / config.rate;
+
+  if (time < exp_time)
     return 0;
 
+  uint64_t time_u = (uint64_t) time;
   // OK because time >= config.burst / config.rate >= 0
-  uint64_t min_time = time - config.burst / config.rate;
+  vigor_time_t min_time = time_u - exp_time;
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
                                  dynamic_ft->dyn_map,
@@ -41,10 +44,12 @@ int policer_expire_entries(uint64_t time) {
 
 bool
 dyn_val_condition(void* key, int index, void* state) {
-  return ((struct DynamicValue*) key)->bucket_time <= recent_time();
+  return 0 <= ((struct DynamicValue*) key)->bucket_time AND
+    ((struct DynamicValue*) key)->bucket_time <= recent_time() AND
+    ((struct DynamicValue*) key)->bucket_size <= config.burst;
 }
 
-bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
+bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
   int index = -1;
   int present = map_get(dynamic_ft->dyn_map, &dst, &index);
   if (present) {
@@ -53,12 +58,24 @@ bool policer_check_tb(uint32_t dst, uint16_t size, uint64_t time) {
     struct DynamicValue* value = 0;
     vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
 
-    value->bucket_size +=
-        (time - value->bucket_time) * config.rate;
-    if (value->bucket_size > config.burst) {
+    assert(0 <= time);
+    uint64_t time_u = (uint64_t) time;
+    assert(sizeof(vigor_time_t) == sizeof(int64_t));
+    assert(value->bucket_time >= 0);
+    assert(value->bucket_time <= time_u);
+    uint64_t time_diff = time_u - value->bucket_time;
+    if (time_diff < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate) {
+      uint64_t added_tokens = time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+      vigor_note(0 <= time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER);
+      assert(value->bucket_size <= config.burst);
+      value->bucket_size += added_tokens;
+      if (value->bucket_size > config.burst) {
+        value->bucket_size = config.burst;
+      }
+    } else {
       value->bucket_size = config.burst;
     }
-    value->bucket_time = time;
+    value->bucket_time = time_u;
 
     bool fwd = false;
     if (value->bucket_size > size) {

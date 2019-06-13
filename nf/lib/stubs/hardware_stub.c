@@ -1,3 +1,5 @@
+#ifdef VIGOR_STUB_HARDWARE
+
 #include "lib/stubs/hardware_stub.h"
 #include "lib/stubs/core_stub.h"
 
@@ -12,8 +14,11 @@
 #include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
 #include "lib/packet-io.h"
+#include "lib/stubs/packet-io-stub-control.h"
 
 #include <klee/klee.h>
+
+#include "lib/kernel/dsos_pci.h"
 
 
 typedef uint32_t (*stub_register_read)(struct stub_device* dev, uint32_t offset);
@@ -878,6 +883,17 @@ stub_register_tdt_write(struct stub_device* dev, uint32_t offset, uint32_t new_v
 	// 43-45: Reserved
 	// 46-63: Payload length (== buffer length in our case)
 	uint64_t buf_props = descr[1];
+
+        // VVV just the 0 in new_value doesn't work anymore
+        // On the other side, apparently this descriptor type
+        // breaks, if it is not send
+	if ( ! ( GET_BIT(buf_props, 20) == 1 &&
+                 GET_BIT(buf_props, 21) == 1 &&
+	         GET_BIT(buf_props, 22) == 0 &&
+                 GET_BIT(buf_props, 23) == 0 )) {
+		// No? Probably this is not to send a packet, then.
+		return new_value;
+	}
 
 	uint16_t buf_len = buf_props & 0xFF;
         if ( !( GET_BIT(buf_props, 20) == 1 &&
@@ -2377,6 +2393,32 @@ stub_hardware_init(void)
 	}
 }
 
+struct dsos_pci_nic *stub_hardware_get_nics(int *n)
+{
+	struct dsos_pci_nic *devs;
+
+	devs = malloc(STUB_DEVICES_COUNT * sizeof(struct dsos_pci_nic));
+	if (!devs) {
+		return NULL;
+	}
+
+	memset(devs, 0, STUB_DEVICES_COUNT * sizeof(struct dsos_pci_nic));
+
+	for (int i = 0; i < STUB_DEVICES_COUNT; i++) {
+		devs[i].vendor_id = 32902;
+		devs[i].device_id = 4347;
+		devs[i].subsystem_id = 0;
+		devs[i].subsystem_vendor_id = 0;
+		devs[i].class_code = 131072;
+
+		devs[i].resources[0].start = DEVICES[i].mem;
+		devs[i].resources[0].size = DEVICES[i].mem_len;
+		devs[i].resources[0].is_mem = true;
+	}
+
+	*n = STUB_DEVICES_COUNT;
+	return devs;
+}
 
 void
 stub_hardware_receive_packet(uint16_t device)
@@ -2407,15 +2449,12 @@ stub_hardware_reset_receive(uint16_t device)
 	free_called = false;
 }
 
+#else // VIGOR_STUB_HARDWARE
 
-// Helper methods - not part of the stubs
+#include <assert.h>
 
-char*
-stub_pci_name(int index)
-{
-	klee_assert(index >= 0 && index < 10); // simpler
+/* With "real" hardware these should never be called */
+void stub_hardware_init(void) { assert(0); }
+struct dsos_pci_nic *stub_hardware_get_nics(int *n) { assert(0); }
 
-	char buffer[1024];
-	snprintf(buffer, sizeof(buffer), "0000:00:00.%d", index);
-	return strdup(buffer);
-}
+#endif // VIGOR_STUB_HARDWARE

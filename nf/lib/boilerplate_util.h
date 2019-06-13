@@ -12,10 +12,13 @@
 #  define IGNORE(x)
 #endif //_NO_VERIFAST_
 
-//TODO: replace this with a cheaper(performancewise) equivalent:
-/*@
-  fixpoint long long _wrap(long long x) { return x % INT_MAX; }
-  @*/
+//@ fixpoint int crc32_hash(int acc, int x);
+unsigned __builtin_ia32_crc32si(unsigned acc, unsigned int x);
+/*@ requires true; @*/
+/*@ ensures result == crc32_hash(acc, x); @*/
+unsigned long long __builtin_ia32_crc32di(unsigned long long acc, unsigned long long x);
+/*@ requires true; @*/
+/*@ ensures result == crc32_hash(acc, x); @*/
 
 // KLEE doesn't tolerate && in a klee_assume (see klee/klee#809),
 // so we replace them with & during symbex but interpret them as && in the validator
@@ -25,13 +28,6 @@
 #  define AND &&
 #endif // KLEE_VERIFICATION
 
-static inline unsigned long long wrap(unsigned long long x)
-//@ requires true;
-//@ ensures result == _wrap(x) &*& INT_MIN <= result &*& result <= INT_MAX;
-{
-  //@ div_rem(x, INT_MAX);
-  return x % INT_MAX;
-}
 
 static void null_init(void* obj)
 /*@ requires chars(obj, sizeof(uint32_t), _); @*/
@@ -57,6 +53,17 @@ concretize_devices(uint16_t *device, uint16_t count) {
 }
 #endif//KLEE_VERIFICATION
 
+#ifdef KLEE_VERIFICATION
+// Put an expression into the asumption heap, provided it is true
+static inline void vigor_note(int cond) {
+  klee_assert(cond);
+  klee_assume(cond);
+}
+#else//KLEE_VERIFICATION
+static inline void vigor_note(int cond) {
+  IGNORE(cond);
+}
+#endif//KLEE_VERIFICATION
 
 
 #endif//_BOILERPLATE_UTIL_H_INCLUDED_

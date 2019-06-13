@@ -2,7 +2,11 @@
 #include <numaif.h>
 #include <stdbool.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 static bool NUMA_AVAILABLE = false;
 static bool NUMA_NODEMASK_CREATED = false;

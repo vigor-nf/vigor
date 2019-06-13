@@ -142,6 +142,16 @@ let gen_eq_function_decl compinfo =
 
 let gen_logical_hash compinfo =
   let field_name fname = fname ^ "_f" in
+  let rec cutoff ftype =
+    match ftype with
+    | TInt (ILong, _)
+    | TInt (IULong, _)
+    | TInt (ILongLong, _)
+    | TInt (IULongLong, _) ->
+      " & 0xffffffff"
+    | TNamed (tinfo,_) -> cutoff tinfo.ttype
+    | _ -> ""
+  in
   let rec basic_hash fname ftype =
     match ftype with
     | TInt (ILong, _)
@@ -152,11 +162,9 @@ let gen_logical_hash compinfo =
          to make sure it fits in uint64_t*)
       "(" ^ fname ^ "&0xfffffffffff)"
     | TInt (IChar, _)
-    | TInt (ISChar, _) ->
-      "(" ^ fname ^ "&0xff)"
+    | TInt (ISChar, _)
     | TInt (IShort, _)
-    | TInt (IInt, _) -> (* peel off the sign bit*)
-      "(" ^ fname ^ "&0xfffffff)"
+    | TInt (IInt, _)
     | TInt (IUChar, _)
     | TInt (IBool, _)
     | TInt (IUShort, _)
@@ -171,7 +179,7 @@ let gen_logical_hash compinfo =
     | {ftype=TArray (field_t, Some (Const (CInt64 (c, _, _))), _);fname;_} ->
       let rec arr_fields (i : int64) =
         if 1L < i then
-          "(" ^ (arr_fields (Int64.sub i 1L)) ^ "*31 + "
+          "crc32_hash(" ^ (arr_fields (Int64.sub i 1L)) ^ ", "
           ^ (basic_hash (fname ^ "_" ^ (Int64.to_string (Int64.sub i 1L)))
                field_t) ^ ")"
         else if i = 1L then
@@ -184,14 +192,36 @@ let gen_logical_hash compinfo =
       (P.sprint ~width:100 (d_type () field.ftype))
     | {fname;ftype;_} -> (basic_hash (field_name fname) ftype)
   in
+  let field_hash_0 field =
+    match field with
+    | {ftype=TComp (field_str,_);fname;_} ->
+         "crc32_hash(0, " ^ (lhash_name field_str) ^ "(" ^ (field_name fname) ^ "))"
+    | {ftype=TArray (field_t, Some (Const (CInt64 (c, _, _))), _);fname;_} ->
+      let rec arr_fields (i : int64) =
+        if 1L < i then
+          "crc32_hash(" ^ (arr_fields (Int64.sub i 1L)) ^ ", "
+          ^ (basic_hash (fname ^ "_" ^ (Int64.to_string (Int64.sub i 1L)))
+               field_t) ^ ")"
+        else if i = 1L then
+          "crc32_hash(0, " ^ fname ^ "_0)"
+        else failwith "A 0-element array"
+      in
+      arr_fields c
+    | {ftype=TArray (field_t, _, _);_} ->
+      failwith "An of unsupported array count " ^
+      (P.sprint ~width:100 (d_type () field.ftype))
+    | {fname;ftype;_} -> "crc32_hash(0, " ^ (basic_hash (field_name fname) ftype) ^ ")" ^
+                         (cutoff ftype)
+  in
   let rec gen_exp_r fields acc =
     match fields with
-    | hd::tl -> gen_exp_r tl ("(" ^ acc ^ " * 31 + " ^ (field_hash hd) ^ ")")
+    | hd::tl -> gen_exp_r tl ("crc32_hash(" ^ acc ^ ", " ^ (field_hash hd) ^ ")" ^
+                              (cutoff hd.ftype))
     | [] -> acc
   in
   let gen_exp fields =
     match fields with
-    | hd::tl -> gen_exp_r tl (field_hash hd)
+    | hd::tl -> gen_exp_r tl (field_hash_0 hd)
     | [] -> "0"
   in
   "/*@\nfixpoint unsigned " ^ (lhash_name compinfo) ^ "(" ^
@@ -213,8 +243,8 @@ let gen_logical_hash compinfo =
          (P.sprint ~width:100 (d_type () ftype))
        | _ -> fname ^ "_f"
      ) compinfo.cfields)) ^ "):\n" ^
-  "    return _wrap(" ^ (gen_exp compinfo.cfields) ^
-  ");\n  }\n} @*/"
+  "    return " ^ (gen_exp compinfo.cfields) ^
+  ";\n  }\n} @*/"
 
 let hash_contract compinfo =
   "//@ requires [?f]" ^ (predicate_name compinfo) ^ "(obj, ?v);\n" ^
@@ -230,17 +260,16 @@ let gen_hash compinfo =
     | TInt (IULongLong, _) ->
       (* Take only the least signigicant 44 bits,
          to make sure it fits in uint64_t*)
-      "(unsigned long long)(" ^ fname ^ "&0xfffffffffff)"
+      "(unsigned int)(__builtin_ia32_crc32di(hash, (unsigned long long)(" ^ fname ^ "&0xfffffffffff))&0xffffffff)"
     | TInt (IChar, _)
-    | TInt (ISChar, _) ->
-      "(unsigned long long)(" ^ fname ^ "&0xff)"
-    | TInt (IShort, _)
-    | TInt (IInt, _) -> (* peel off the sign bit*)
-      "(unsigned long long)(" ^ fname ^ "&0xfffffff)"
-    | TInt (IUChar, _)
     | TInt (IBool, _)
+    | TInt (IUChar, _)
+    | TInt (ISChar, _)
     | TInt (IUShort, _)
-    | TInt (IUInt, _) -> fname
+    | TInt (IShort, _)
+    | TInt (IUInt, _)
+    | TInt (IInt, _) -> (* peel off the sign bit*)
+      "__builtin_ia32_crc32si(hash, " ^ fname ^ ")"
     | TNamed (tinfo,_) -> basic_hash fname tinfo.ttype
     | _ -> "<unsupported field type>"
   in
@@ -271,30 +300,27 @@ let gen_hash compinfo =
      ) compinfo.cfields)) ^
   "  //@ close [f]" ^ (predicate_name compinfo) ^ "(obj, v);\n" ^
   "\n" ^
-  "  unsigned long long hash = 0;\n" ^
-  (String.concat "  hash *= 31;\n" (List.map (fun {fname;ftype;_} ->
+  "  unsigned hash = 0;\n" ^
+  (String.concat "" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (field_str,_) ->
          "  unsigned " ^ fname ^ "_hash = " ^
          (hash_fun_name field_str) ^ "(&id->" ^ fname ^ ");\n" ^
-         "  hash += " ^ fname ^ "_hash;\n"
+         "  hash = __builtin_ia32_crc32si(hash, " ^ fname ^ "_hash);\n"
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            let curr_field = fname ^ "_" ^ current in
-           if 1L < i then
-             "  hash += " ^ (basic_hash curr_field field_t) ^ ";\n" ^
-             "  hash *= 31;\n" ^ (arr_fields (Int64.sub i 1L))
-           else if 1L = i then
-             "  hash += " ^ (basic_hash curr_field field_t) ^ ";\n"
+           if 1L <= i then
+             "  hash = " ^ (basic_hash curr_field field_t) ^ ";\n"
+               ^ (arr_fields (Int64.sub i 1L))
            else ""
          in
          arr_fields c
        | _ ->
-         "  hash += " ^ (basic_hash ("id->" ^ fname) ftype) ^ ";\n"
+         "  hash = " ^ (basic_hash ("id->" ^ fname) ftype) ^ ";\n"
      ) compinfo.cfields)) ^
-  "  hash = wrap(hash);\n" ^
-  "  return (unsigned) hash;\n" ^
+  "  return hash;\n" ^
   "}"
 
 let gen_hash_dummy compinfo =
@@ -433,7 +459,7 @@ let gen_log_fun compinfo =
        | TArray (field_t, _, _) ->
          failwith "An of unsupported array count " ^
          (P.sprint ~width:100 (d_type () ftype))
-       | _ -> 
+       | _ ->
          "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
      ) compinfo.cfields)) ^ "\n" ^
   "  NF_DEBUG(\"}\");\n" ^
@@ -559,3 +585,4 @@ begin
   | E.Error -> ()
 end;
 exit (if !E.hadErrors then 1 else 0)
+

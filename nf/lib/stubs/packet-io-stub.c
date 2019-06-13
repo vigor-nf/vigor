@@ -50,6 +50,10 @@ void packet_set_next_chunk_layout(void* p, uint32_t length,
   global_chunk_layouts[global_n_borrowed_chunks].set = true;
 }
 
+bool packet_is_last_borrowed_chunk(void* p, void* chunk) {
+  return chunk == &global_chunks[(global_n_borrowed_chunks - 1)*MAX_CHUNK_SIZE];
+}
+
 void packet_set_next_chunk_constraints(void* p, chunk_constraint constraint) {
   global_chunk_constraints[global_n_borrowed_chunks] = constraint;
 }

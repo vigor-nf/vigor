@@ -1,9 +1,9 @@
 from state import flow_emap, dyn_vals
-EXP_TIME = 10
 LAN_DEVICE = 0
 WAN_DEVICE = 1
 BURST = 125000
 RATE = 12500
+EXP_TIME = 10000000000
 WORD_SIZE = 4
 ETHER_IP_HDRLEN = 34
 
@@ -24,8 +24,12 @@ else:
             flow_idx = flow_emap.get(ip_addrc(h2.daddr))
             flow_emap.refresh_idx(flow_idx, now)
             flow = dyn_vals.get(flow_idx)
-            bucket_size = flow.bucket_size + (now - flow.bucket_time)*RATE
-            if BURST < bucket_size:
+            bucket_size = 0
+            if now - flow.bucket_time < EXP_TIME:
+                bucket_size = flow.bucket_size + (now - flow.bucket_time)*RATE / 1000000000
+                if BURST < bucket_size:
+                    bucket_size = BURST
+            else:
                 bucket_size = BURST
             if packet_size < bucket_size:
                 bucket_size = bucket_size - packet_size

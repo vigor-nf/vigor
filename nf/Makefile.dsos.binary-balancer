@@ -1,0 +1,12 @@
+BALANCER_DIR = vigbalancer
+NF_SOURCES := $(BALANCER_DIR)/lb_main.c \
+	$(BALANCER_DIR)/lb_balancer.c \
+	$(BALANCER_DIR)/lb_config.c \
+	$(BALANCER_DIR)/lb_flow.h.gen.c \
+	$(BALANCER_DIR)/lb_backend.h.gen.c \
+	$(BALANCER_DIR)/ip_addr.h.gen.c \
+	$(BALANCER_DIR)/lb_state.c
+
+NF_ARGUMENTS=-DNF_ARGUMENTS='"lb", "--no-shconf", "--", "--flow-expiration", "6000000000000", "--flow-capacity", "65536", "--backend-capacity", "20", "--cht-height", "97", "--backend-expiration", "6000000000000"'
+
+include Makefile.dsos.binary

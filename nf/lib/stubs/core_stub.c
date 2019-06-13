@@ -10,8 +10,13 @@
 #include <rte_mbuf_ptype.h>
 #include <rte_memory.h>
 #include <rte_mempool.h>
+#include <rte_ethdev.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 
 #if 0
@@ -179,12 +184,13 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 	free(buf_symbol);
 
 	// Explicitly make the content symbolic - validator depends on an user_buf symbol for the proof
-	struct stub_mbuf_content* buf_content_symbol = (struct stub_mbuf_content*) malloc(sizeof(struct stub_mbuf_content));
+        klee_assert(sizeof(struct stub_mbuf_content) <= pool->elt_size);
+	struct stub_mbuf_content* buf_content_symbol = (struct stub_mbuf_content*) malloc(pool->elt_size);
 	if (buf_content_symbol == NULL) {
 		rte_pktmbuf_free(*mbufp);
 		return false;
 	}
-	klee_make_symbolic(buf_content_symbol, sizeof(struct stub_mbuf_content), "user_buf");
+	klee_make_symbolic(buf_content_symbol, pool->elt_size, "user_buf");
 	memcpy((char*) *mbufp + mbuf_size, buf_content_symbol, sizeof(struct stub_mbuf_content));
 	free(buf_content_symbol);
 
@@ -244,3 +250,4 @@ stub_core_mbuf_free(struct rte_mbuf* mbuf)
 
 	rte_mbuf_raw_free(mbuf);
 }
+

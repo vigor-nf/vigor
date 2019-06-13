@@ -6,7 +6,11 @@
 #include <sys/syscall.h>
 #include <sys/types.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#else
+#include <dsos-klee.h>
+#endif
 
 unsigned int
 sleep(unsigned int seconds)
@@ -48,5 +52,11 @@ __syscall_rt_sigaction(int signum, const struct sigaction *act,
 
 	// sigaction() returns 0 on success; on error, -1 is returned, and errno is set to indicate the error.
 	// -- http://man7.org/linux/man-pages/man2/sigaction.2.html
+	return 0;
+}
+
+int
+sigaction(int signum, const struct sigaction *act, struct sigaction *oldact) {
+	// Same as above
 	return 0;
 }

@@ -98,16 +98,15 @@ void policer_config_cmdline_print_usage(void)
   NF_INFO("Usage:\n"
          "[DPDK EAL options] --\n"
          "\t--lan <device>: LAN device,"
-         " default: %" PRIu32 ".\n"
+         " default: %" PRIu16 ".\n"
          "\t--wan <device>: WAN device,"
-         " default: %" PRIu32 ".\n"
+         " default: %" PRIu16 ".\n"
          "\t--rate <rate>: policer rate in bytes/s,"
          " default: %" PRIu32 ".\n"
          "\t--burst <size>: policer burst size in bytes,"
          " default: %" PRIu32 ".\n"
-         "\t--capacity <n>: dynamic mac learning table capacity,"
-         " default: %" PRIu32 ".\n"
-         "\t--config <fname>: static filtering table configuration file.\n",
+         "\t--capacity <n>: policer table capacity,"
+         " default: %" PRIu32 ".\n",
          DEFAULT_LAN,
          DEFAULT_WAN,
          DEFAULT_RATE,

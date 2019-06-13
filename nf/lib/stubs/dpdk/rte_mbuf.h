@@ -23,7 +23,25 @@
 
 #define rte_pktmbuf_mtod_offset(m, t, o) ((t)((char *)(m)->buf_addr + (m)->data_off + (o)))
 #define rte_pktmbuf_mtod(m, t) rte_pktmbuf_mtod_offset(m, t, 0)
+/**
+ * Offload the IP checksum in the hardware. The flag PKT_TX_IPV4 should
+ * also be set by the application, although a PMD will only check
+ * PKT_TX_IP_CKSUM.
+ *  - set the IP checksum field in the packet to 0
+ *  - fill the mbuf offload information: l2_len, l3_len
+ */
+#define PKT_TX_IP_CKSUM      (1ULL << 54)
 
+/**
+ * Packet is IPv4. This flag must be set when using any offload feature
+ * (TSO, L3 or L4 checksum) to tell the NIC that the packet is an IPv4
+ * packet. If the packet is a tunneled packet, this flag is related to
+ * the inner headers.
+ */
+#define PKT_TX_IPV4          (1ULL << 55)
+
+#define PKT_TX_TCP_CKSUM     (1ULL << 52) /**< TCP cksum of TX pkt. computed by NIC. */
+#define PKT_TX_UDP_CKSUM     (3ULL << 52) /**< UDP cksum of TX pkt. computed by NIC. */
 
 // HACK: We need rte_mbuf fully defined for the core_stub VeriFast contracts
 //       but we can't have core_stub depend on rte_mbuf.h because rte_mbuf.h includes core_stub.h

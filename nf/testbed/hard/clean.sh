@@ -3,4 +3,4 @@
 
 echo "[clean] Cleaning machines..."
 ssh $TESTER_HOST "bash ~/scripts/clean/tester.sh"
-. ./clean/middlebox.sh
+# . ./clean/middlebox.sh

@@ -29,26 +29,80 @@ nf_has_tcpudp_header(struct ipv4_hdr* header)
 }
 
 void
-nf_set_ipv4_checksum(struct ipv4_hdr* header)
+nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4_header)
 {
-	// TODO: See if can be offloaded to hardware
-	header->hdr_checksum = 0;
-	return;// FIXME: Get the checksum back!
+	/*
+		https://doc.dpdk.org/guides/prog_guide/mbuf_lib.html#meta-information
 
-	if (header->next_proto_id == IPPROTO_TCP) {
-		struct tcp_hdr* tcp_header = (struct tcp_hdr*)(header + 1);
-		tcp_header->cksum = 0;
-		tcp_header->cksum = rte_ipv4_udptcp_cksum(header, tcp_header);
-	} else if (header->next_proto_id == IPPROTO_UDP) {
-		struct udp_hdr * udp_header = (struct udp_hdr*)(header + 1);
-		udp_header->dgram_cksum = 0;
-		udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(header, udp_header);
+		In order to use hardware offloading of header checksum we need to set
+		a few parameters in the mbuf structure before sending the packet.
+
+		We need to set
+			* the IPv4 checksum to 0
+			* the l2 length to the size of the Ethernet header
+			* the l3 length to the size of the IPv4 header
+			* the offloading flags to PKT_TX_IPV4 | PKT_TX_IP_CKSUM ORed with
+				either PKT_TX_TCP_CKSUM or PKT_TX_UDP_CKSUM depending on the type
+				of the packet (setting both all the time doesn't work, the NIC
+				will not send the packet)
+			* the TCP/UDP header to the IPv4 pseudoheader checksum
+
+		If any of these are wrong the NIC will not send the packet
+
+		The NIC itself and the tx queue need to be configured for this as well,
+		see nf_init_device.
+	*/
+
+  ip_header->hdr_checksum = 0;
+
+  mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
+  mbuf->l2_len = sizeof(struct ether_hdr);
+  mbuf->l3_len = sizeof(struct ipv4_hdr);
+
+	if (ip_header->next_proto_id == IPPROTO_TCP) {
+		struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
+		tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
+                mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
+	} else if (ip_header->next_proto_id == IPPROTO_UDP) {
+		struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
+		udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
+                mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
 	}
-
-  // FIXME: this is misleading. we don't really compute any checksum here,
-  // see rte_ipv4_udptcp_cksum and rte_ipv4_udptcp_cksum, they return 0!
-	header->hdr_checksum = rte_ipv4_cksum(header);
 }
+
+#ifdef KLEE_VERIFICATION
+void
+nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
+  klee_trace_ret();
+  klee_trace_param_u64((uint64_t)ip_header, "ip_header");
+  klee_trace_param_u64((uint64_t)l4_header, "l4_header");
+  klee_trace_param_u64((uint64_t)packet, "packet");
+  // Make sure the packet pointer points to the TCPUDP continuation
+  assert(packet_is_last_borrowed_chunk(packet, l4_header));
+  ip_header->hdr_checksum = klee_int("checksum");
+}
+#else//KLEE_VERIFICATION
+void
+nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
+  // Make sure the packet pointer points to the TCPUDP continuation
+  // This check is exercised during verification, no need to repeat it.
+  //void* payload = nf_borrow_next_chunk(packet, rte_be_to_cpu_16(ip_header->total_length) - sizeof(struct tcpudp_hdr));
+  //assert((char*)payload == ((char*)l4_header + sizeof(struct tcpudp_hdr)));
+
+  ip_header->hdr_checksum = 0; // Assumed by cksum calculation
+  if (ip_header->next_proto_id == IPPROTO_TCP) {
+    struct tcp_hdr* tcp_header = (struct tcp_hdr*) l4_header;
+    tcp_header->cksum = 0; // Assumed by cksum calculation
+    tcp_header->cksum = rte_ipv4_udptcp_cksum(ip_header, tcp_header);
+  } else if (ip_header->next_proto_id == IPPROTO_UDP) {
+    struct udp_hdr * udp_header = (struct udp_hdr*) l4_header;
+    udp_header->dgram_cksum = 0; // Assumed by cksum calculation
+    udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(ip_header, udp_header);
+  }
+  ip_header->hdr_checksum = rte_ipv4_cksum(ip_header);
+}
+#endif//KLEE_VERIFICATION
+
 
 uintmax_t
 nf_util_parse_int(const char* str, const char* name,

@@ -95,7 +95,6 @@ void lb_config_cmdline_print_usage(void)
 {
 	NF_INFO("Usage:\n"
 		"[DPDK EAL options] --\n"
-		"\t--backend <mac>: backend MAC address (one per backend, configured sequentially).\n"
 		"\t--flow-expiration <time>: flow expiration time (ns).\n"
 		"\t--flow-capacity <n>: flow table capacity.\n"
    		"\t--backend-capacity <n>: backend table capacity.\n"

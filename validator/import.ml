@@ -68,7 +68,9 @@ let parse_int str =
   (* As another hack: handle -300 in 64bits. *)
   else if (String.equal str "18446744073709551316") then Some (-300)
   else if (String.equal str "18446744073709551556") then Some (-60)
+  else if (String.equal str "18446744073709551596") then Some (-20)
   else if (String.equal str "18446744063709551616") then Some (-10000000000)
+  else if (String.equal str "18446744073709551562") then Some (-54)
   else
     try Some (int_of_string str)
     with _ -> None
@@ -452,11 +454,15 @@ let get_sint_in_bounds v =
   else if (String.equal v "18446744073709551316") then -300
   (* and -60 *)
   else if (String.equal v "18446744073709551556") then -60
-  (* and -10000000000 *)
+  (* and -20 *)
+  else if (String.equal v "18446744073709551596") then -20
+  (* and -10 000 000 000 in 128bit *)
   else if (String.equal v "18446744063709551616") then -10000000000
+  else if (String.equal v "18446744073709551562") then -54
   else
     let integer_val = Int.of_string v in
-    if Int.(integer_val > 2147483647) then
+    if Int.(integer_val <> 10000000000) && (* We want this 10B - the policer exp time*)
+       Int.(integer_val > 2147483647) then
       integer_val - 2*2147483648
     else
       integer_val
@@ -778,6 +784,10 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     let guess = {precise=Unknown;s=Sure Sgn;w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
     {v=Bop(Modulo, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
+  | Sexp.List [Sexp.Atom "UDiv"; Sexp.Atom width; value; divisor] ->
+    let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
+    let mt = ttype_of_guess guess in
+    {v=Bop(Div, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "URem"; Sexp.Atom width; value; divisor] ->
     let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in

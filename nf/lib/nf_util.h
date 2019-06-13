@@ -80,7 +80,9 @@ bool ether_to_ipv4_constraint(void* arg) {
 
 bool nf_has_tcpudp_header(struct ipv4_hdr* header);
 
-void nf_set_ipv4_checksum(struct ipv4_hdr* header);
+void nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4_header);
+
+void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet);
 
 uintmax_t nf_util_parse_int(const char* str, const char* name,
                             int base, char next);
@@ -165,8 +167,9 @@ struct ipv4_hdr* nf_then_get_ipv4_header(void* p, uint8_t** ip_options,
   }
   *wellformed = true;
   uint16_t ip_options_length = (ihl - IP_MIN_SIZE_WORDS) * WORD_SIZE;
+  uint16_t unread_len = packet_get_unread_length(p);
   if (ip_options_length != 0) {
-    if (packet_get_unread_length(p) < ip_options_length) {
+    if (unread_len < ip_options_length) {
       *ip_options = NULL;
       *wellformed = false;
     } else {
@@ -176,6 +179,11 @@ struct ipv4_hdr* nf_then_get_ipv4_header(void* p, uint8_t** ip_options,
       *ip_options = (uint8_t*)nf_borrow_next_chunk(p, ip_options_length);
     }
   }
+#ifndef KLEE_VERIFICATION
+  if (unread_len < rte_be_to_cpu_16(hdr->total_length) - sizeof(struct ipv4_hdr)) {
+      *wellformed = false;
+  }
+#endif
   return hdr;
 }
 

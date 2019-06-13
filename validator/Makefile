@@ -42,6 +42,9 @@ validate-policer: clean
 	python3 translate-spec.py $(SPEC) policer_forwarding_property.tmpl
 	./test_all.sh ../nf/vigpolicer/klee-last out ../nf policer_fspec.cma
 
+validate-nat-dsos: clean
+	./test_all.sh ../nf/klee-last out ../nf nat_fspec.cmo
+
 validate-fw: clean
 	$(eval SPEC ?= fw-spec.py)
 	python3 translate-spec.py $(SPEC) fw_forwarding_property.tmpl

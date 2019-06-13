@@ -9,7 +9,12 @@ local timer  = require "timer"
 local log    = require "log"
 
 -- set addresses here
+-- icnalsp3s3 - icnalsp3s4
+-- local DST_MAC		= "90:e2:ba:55:14:64" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+
+-- icnalsp3s2 - icnalsp3s1
 local DST_MAC			= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
+
 local SRC_IP_BASE		= "192.160.0.1 " -- actual address will be SRC_IP_BASE + random(0, flows)
 local DST_IP			= "192.168.4.10"
 local SRC_PORT			= 234
@@ -65,6 +70,7 @@ function master(args)
 			local packetsSent
 			local packetsRecv
 			local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, nflws, args.timeout)
+			-- local timerTask = mg.startTask("timerSlave", txDev:getTxQueue(1), rxDev:getRxQueue(1), args.size, args.flows, args.timeout)
 			packetsSent, packetsRecv = loadTask:wait()
 			local loss = (packetsSent - packetsRecv)/packetsSent
 			printf("total: %d flows, %d rate, %d sent, %f lost",

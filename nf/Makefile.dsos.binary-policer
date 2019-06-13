@@ -1,0 +1,10 @@
+POLICER_DIR = vigpolicer
+NF_SOURCES := $(POLICER_DIR)/policer_main.c \
+	$(POLICER_DIR)/policer_config.c \
+	$(POLICER_DIR)/policer_state.c \
+	$(POLICER_DIR)/dynamic_value.h.gen.c \
+	$(POLICER_DIR)/ip_addr.h.gen.c
+
+NF_ARGUMENTS=-DNF_ARGUMENTS='"policer", "--no-shconf", "--", "--lan", "1", "--wan", "0", "--rate", "1250000000", "--burst", "125000000", "--capacity", "65536"'
+
+include Makefile.dsos.binary

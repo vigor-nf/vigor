@@ -115,6 +115,7 @@ def renderExpr(expr):
         if   isinstance(expr.op, ast.Sub): sign = '-'
         elif isinstance(expr.op, ast.Add): sign = '+'
         elif isinstance(expr.op, ast.Mult): sign = '*'
+        elif isinstance(expr.op, ast.Div): sign = '/'
         elif isinstance(expr.op, ast.BitAnd): sign = '&'
         else: sign = '???'
         return "({} {} {})".format(left, sign, right)
@@ -159,7 +160,7 @@ def genOutcome(portsHeaders):
     assert isinstance(ports, ast.List)
     assert isinstance(headers, ast.List)
     if ports.elts:
-        return "assert sent_on_ports == {}; assert sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
+        return "assert sent_on_ports == {};\nassert sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
     else:
         return "assert sent_on_ports == nil;"
 

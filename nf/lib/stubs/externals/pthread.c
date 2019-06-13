@@ -1,7 +1,9 @@
 #include <sched.h>
 #include <pthread.h>
 
+#ifdef KLEE_VERIFICATION
 #include <klee/klee.h>
+#endif
 
 
 pthread_t
@@ -14,8 +16,13 @@ pthread_self(void)
 int
 pthread_getaffinity_np(pthread_t thread, size_t cpusetsize, cpu_set_t* cpuset)
 {
+#ifdef KLEE_VERIFICATION
 	// We're running in a symbolic executor. the concept of "affinity" is meaningless
 	int ret = klee_int("pthread_getaffinity_np_return");
+#else
+	// We're not verifying here, pretend that the function succeeded
+	int ret = 0;
+#endif
 
 	// However, we might be given uninitialized memory, so we need to set it
 	if (ret >= 0) {
@@ -31,7 +38,12 @@ int
 pthread_setaffinity_np(pthread_t thread, size_t cpusetsize, const cpu_set_t* cpuset)
 {
 	// Same remark as getaffinity
-	return klee_int("pthread_setaffinity_np_return");
+#ifdef KLEE_VERIFICATION
+	int ret = klee_int("pthread_getaffinity_np_return");
+#else
+	int ret = 0;
+#endif
+	return ret;
 }
 
 int
