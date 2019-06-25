@@ -1,136 +1,158 @@
 local mg     = require "moongen"
 local memory = require "memory"
 local device = require "device"
-local ts     = require "timestamping"
-local filter = require "filter"
-local hist   = require "histogram"
 local stats  = require "stats"
 local timer  = require "timer"
-local log    = require "log"
 
--- set addresses here
-local DST_MAC		= "90:e2:ba:55:14:11" -- resolved via ARP on GW_IP or DST_IP, can be overriden with a string here
-local SRC_IP_BASE	= "10.0.0.1" -- actual address will be SRC_IP_BASE + random(0, flows)
-local DST_IP		= "192.168.4.10"
-local SRC_PORT		= 234
-local DST_PORT		= 319
+
+local BATCH_SIZE = 64 -- packets
+local RATE_MIN = 0 -- Mbps
+local RATE_MAX = 10000 -- Mbps
+
+local HEATUP_DURATION = 5 -- seconds
+local HEATUP_RATE = 20 -- Mbps
+
+local SRC_ETH	= "00:00:00:00:00:00"
+local DST_ETH	= "00:00:00:00:00:FF"
+local SRC_IP	= "10.0.0.0"
+local DST_IP	= "10.0.0.255"
+local SRC_PORT	= 0
+
 
 function configure(parser)
 	parser:description("Generates UDP traffic and measure latencies. Edit the source to modify constants like IPs.")
 	parser:argument("txDev", "Device to transmit from."):convert(tonumber)
 	parser:argument("rxDev", "Device to receive from."):convert(tonumber)
-	parser:option("-r --rate", "Transmit rate in Mbit/s."):default(10000):convert(tonumber)
-	parser:option("-f --flows", "Number of flows (randomized source IP)."):default(4):convert(tonumber)
-	parser:option("-s --size", "Packet size."):default(60):convert(tonumber)
-	parser:option("-u --upheat", "Heatup time before beginning of latency measurement"):default(2):convert(tonumber)
-	parser:option("-t --timeout", "Time to run the test"):default(0):convert(tonumber)
+	parser:option("-r --rate", "Transmit rate in Mbit/s."):convert(tonumber)
+	parser:option("-p --packetsize", "Packet size."):convert(tonumber)
+	parser:option("-s --steps", "Binary search steps."):convert(tonumber)
+	parser:option("-d --duration", "Step duration."):convert(tonumber)
 end
 
-function setRate(queue, packetSize, rate_mbps)
-	queue:setRate(rate_mbps - (packetSize + 4) * 8 / 1000);
+
+function runTask(txQueue, rxQueue, packetSize, flowCount, duration)
+	local mempool = memory.createMemPool(function(buf)
+		buf:getUdpPacket():fill{
+			ethSrc = SRC_ETH,
+			ethDst = DST_ETH,
+			ip4Src = SRC_IP,
+			ip4Dst = DST_IP,
+			udpSrc = SRC_PORT,
+			pktLength = packetSize
+		}
+	end)
+
+	-- "nil" == no output
+	local txCounter = stats:newDevTxCounter(txQueue, "nil")
+	local rxCounter = stats:newDevRxCounter(rxQueue, "nil")
+	local bufs = mempool:bufArray(BATCH_SIZE)
+	local sendTimer = timer:new(duration)
+
+	local dstPort = 0
+	while sendTimer:running() and mg.running() do
+		bufs:alloc(packetSize)
+		for _, buf in ipairs(bufs) do
+			local pkt = buf:getUdpPacket()
+			pkt.udp.dst = dstPort
+			-- incAndWrap does this in a supposedly fast way; in practice it's actually slower!
+			-- with incAndWrap this code cannot do 10G line rate
+			dstPort = (dstPort + 1) % flowCount
+		end
+
+		bufs:offloadIPChecksums() -- UDP checksum is optional, let's do the least possible amount of work
+		txQueue:send(bufs)
+		txCounter:update()
+		rxCounter:update()
+	end
+
+	txCounter:finalize()
+	rxCounter:finalize()
+
+	return txCounter.total, rxCounter.total
 end
+
+function moongenRate(packetSize, rate)
+	-- The rate the user wants is in total Mbits/s
+	-- But MoonGen will send it as if the packet size was packetsize+4 (the 4 is for the hardware-offloaded MAC CRC)
+	-- when in fact there are 20 bytes of framing on top of that (preamble, start delimiter, interpacket gap)
+	-- Thus we must find the "moongen rate" at which MoonGen will transmit at the true rate the user wants
+	-- Easiest way to do that is to convert in packets-per-second
+	-- Beware, we count packets in bytes and rate in bits so we need to convert!
+	-- Also, MoonGen internally calls DPDK in which the rate is an uint16_t, let's avoid floats...
+	-- Furthermore, it seems from tests that rates less than 10 are just ignored...
+	local byteRate = rate * 1024 * 1024 / 8
+	local packetsPerSec = byteRate / (packetSize + 24)
+	local moongenByteRate = packetsPerSec * (packetSize + 4)
+	local moongenRate = moongenByteRate * 8 / (1024 * 1024)
+	if moongenRate < 10 then
+		printf("WARNING - Rate %f (corresponding to desired rate %d) too low, will be set to 10 instead.", moongenRate, rate)
+		moongenRate = 10
+	end
+	return math.floor(moongenRate)
+end
+
+function run(name, outFile, txQueue, rxQueue, rate, packetSize, flowCount, duration)
+	printf("%s - %d Mbps, %d-byte packets, %d flows, for %d seconds", name, rate, packetSize, flowCount, duration)
+	txQueue:setRate(moongenRate(packetSize, rate))
+	local task = mg.startTask("runTask", txQueue, rxQueue, packetSize, flowCount, duration)
+	local tx, rx = task:wait()
+	local loss = (tx - rx) / tx
+
+	printf(" -> %d sent, %d received, %f loss", tx, rx, loss)
+
+	if outFile ~= nil then
+		-- Order is important, don't break backwards compatibility
+		outFile:write(flowCount .. " " .. rate .. " " .. tx .. " " .. tx/duration .. " " .. loss .. "\n")
+	end
+
+	return loss
+end
+
 
 function master(args)
-	txDev = device.config{port = args.txDev, rxQueues = 3, txQueues = 3}
-	rxDev = device.config{port = args.rxDev, rxQueues = 3, txQueues = 3}
+	-- Do not change the name of this file unless you change the rest of the scripts that depend on it!
+	local outFile = io.open("mf-find-mg-1p.txt", "w")
+	outFile:write("#flows rate #pkt #pkt/s loss\n")
+
+	-- We don't need RX on the txDev or vice-versa, but MoonGen insists rxQueues >= 1 and txQueues >= 1
+	local txDev = device.config{port = args.txDev, rxQueues = 1, txQueues = 1}
+	local rxDev = device.config{port = args.rxDev, rxQueues = 1, txQueues = 1}
 	device.waitForLinks()
-	local file = io.open("mf-find-mg-1p.txt", "w")
-	file:write("#flows rate #pkt #pkt/s loss\n")
-	local maxRate = args.rate
-	if maxRate <= 0 then
-		maxRate = 10000
-	end
-	local minRate = 10
-	local rate = minRate + (maxRate - minRate)/2
- 	for _,nflws in pairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+
+	local txQueue = txDev:getTxQueue(0)
+	local rxQueue = rxDev:getRxQueue(0)
+
+	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
 		-- Heatup phase
-		printf("heatup at %d rate for %d flows - %d secs", minRate, nflws, args.upheat);
-		setRate(txDev:getTxQueue(0), args.size, minRate);
-		local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, nflws, args.upheat)
-		local snt, rcv = loadTask:wait()
-		printf("heatup results: %d sent, %f loss", snt, (snt-rcv)/snt);
-		if (rcv < snt/100) then
-			printf("unsuccessful exiting");
+		local heatupLoss = run("Heatup", nil, txQueue, rxQueue, HEATUP_RATE, args.packetsize, flowCount, HEATUP_DURATION)
+
+		if heatupLoss > 0.001 then
+			printf("Heatup caused significant loss; exiting.")
 			return	
 		end
-		mg.waitForTasks()
-		local steps = 11;
-		local upperbound = maxRate
-		local lowerbound = minRate
-		-- Testing phase
-		for i = 1, steps  do
-			printf("running step %d/%d for %d flows, %d Mbps", i, steps, nflws, rate);
-			setRate(txDev:getTxQueue(0), args.size, rate);
-			local packetsSent
-			local packetsRecv
-			local loadTask = mg.startTask("loadSlave", txDev:getTxQueue(0), rxDev, args.size, nflws, args.timeout)
-			packetsSent, packetsRecv = loadTask:wait()
-			local loss = (packetsSent - packetsRecv)/packetsSent
-			printf("total: %d flows, %d rate, %d sent, %f lost",
-				nflws, rate, packetsSent, loss);
-			mg.waitForTasks()
-			if (i+1 == steps) then
-				file:write(nflws .. " " .. rate .. " " .. packetsSent .. " " ..
-					   packetsSent/args.timeout .. " " .. loss .. "\n")
-			end
+
+		local upperBound = RATE_MAX
+		local lowerBound = RATE_MIN
+		local rate = upperBound
+
+		-- Binary search phase
+		for i = 1, (args.steps - 1) do
+			local loss = run("Search step " .. i, nil, txQueue, rxQueue, rate, args.packetsize, flowCount, args.duration)
 			if (loss < 0.001) then
-				lowerbound = rate
-				rate = rate + (upperbound - rate)/2
+				-- Minimize pointless iterations
+				if rate == upperBound then
+					break
+				end
+
+				lowerBound = rate
+				rate = rate + (upperBound - rate)/2
 			else
-				upperbound = rate
-				rate = lowerbound + (rate - lowerbound)/2
+				upperBound = rate
+				rate = lowerBound + (rate - lowerBound)/2
 			end
 		end
-	end
-end
 
-local function fillUdpPacket(buf, len)
-	buf:getUdpPacket():fill{
-		ethSrc = queue,
-		ethDst = DST_MAC,
-		ip4Src = SRC_IP,
-		ip4Dst = DST_IP,
-		udpSrc = SRC_PORT,
-		udpDst = DST_PORT,
-		pktLength = len
-	}
-end
-
-function loadSlave(queue, rxDev, size, flows, duration)
-	local mempool = memory.createMemPool(function(buf)
-		fillUdpPacket(buf, size)
-	end)
-	local bufs = mempool:bufArray()
-	local counter = 0
-	local finished = timer:new(duration)
-	local fileTxCtr = stats:newDevTxCounter("txpkts", queue, "CSV", "txpkts.csv")
-	local fileRxCtr = stats:newDevRxCounter("rxpkts", rxDev, "CSV", "rxpkts.csv")
-	local txCtr = stats:newDevTxCounter(flows .. " tx", queue, "nil")
-	local rxCtr = stats:newDevRxCounter(flows .. " rx", rxDev, "nil")
-	local baseIP = parseIPAddress(SRC_IP_BASE)
-	local baseSRCP = SRC_PORT
-	local baseDSTP = DST_PORT
-	while finished:running() and mg.running() do
-		bufs:alloc(size)
-		for i, buf in ipairs(bufs) do
-			local pkt = buf:getUdpPacket()
-			-- pkt.ip4.src:set(baseIP + counter)
-			pkt.ip4.src:set(baseIP)
-			-- pkt.udp.src = (baseSRCP + counter)
-			pkt.udp.dst = (baseDSTP + counter)
-			counter = incAndWrap(counter, flows)
-		end
-		-- UDP checksums are optional, so using just IPv4 checksums would be sufficient here
-		bufs:offloadUdpChecksums()
-		queue:send(bufs)
-		txCtr:update()
-		fileTxCtr:update()
-		rxCtr:update()
-		fileRxCtr:update()
+		-- Final phase
+		run("Final step", outFile, txQueue, rxQueue, rate, args.packetsize, flowCount, args.duration)
 	end
-	txCtr:finalize()
-	fileTxCtr:finalize()
-	rxCtr:finalize()
-	fileRxCtr:finalize()
-	return txCtr.total, rxCtr.total
 end
