@@ -8,27 +8,9 @@
 # Parameters:
 # $1: The app, either a known name or a DPDK NAT-like app.
 #     Known names: "netfilter".
-#     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "~/vnds/nat"
-# $2: The scenario, one of the following:
-#     "mg-1p": Measure throughput: find the rate at which the middlebox
-#              starts losing 1% of packets.
-#     "mg-existing-flows-latency": Measure the forwarding latency for existing
-#                                  flows.
-#     "mg-new-flows-latency": Measure the forwarding latency for new flows.
-#     "loopback": Measure throughput.
-#                 Tester and middlebox are connected together in a loop,
-#                 using 2 interfaces on each, in different subnets; server is ignored.
-#     "1p": Measure throughput.
-#           Find the point at which the middlebox starts dropping 1% of packets.
-#     "passthrough": Measure latency.
-#                    Tester sends packets to server, which pass through the middlebox;
-#                    all machines are in the same subnet.
-#     "rr": Measure latency.
-#           Tester sends packets to server, which are modified by the middlebox;
-#           there are two subnets, tester-middlebox and middlebox-server.
-#           a.k.a. request/response
-
+#     Otherwise, a folder name containing a DPDK NAT-like app
 MIDDLEBOX=$1
+# $2: The scenario, see run.sh for details
 SCENARIO=$2
 
 if [ -z $MIDDLEBOX ]; then
@@ -51,10 +33,10 @@ fi
 
 if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     case $SCENARIO in
-	"mg-new-flows-latency")
+	"latency")
 	    EXPIRATION_TIME=1
 	    ;;
-        "1p"|"loopback"|"mg-1p"|"mg-existing-flows-latency"|"rr"|"passthrough")
+        "throughput")
             EXPIRATION_TIME=60
             ;;
     esac
@@ -66,17 +48,11 @@ else
     EXPIRATION_TIME=60
 
     case $SCENARIO in
-        "mg-new-flows-latency")
-            SIMPLE_SCENARIO="loopback"
+        "latency")
             EXPIRATION_TIME=1000000000 #One second
             ;;
-        "1p"|"loopback"|"mg-1p"|"mg-existing-flows-latency")
-            SIMPLE_SCENARIO="loopback"
+        "throughput")
             EXPIRATION_TIME=60000000000 #One minute
-            ;;
-        "rr"|"passthrough")
-            SIMPLE_SCENARIO="rr"
-            EXPIRATION_TIME=60
             ;;
         *)
             echo "Unknown scenario $SCENARIO" 1>&2
@@ -86,7 +62,7 @@ else
 
     # Run the app in the background
     # The arguments are not always necessary, but they'll be ignored if unneeded
-    (bash ./bench/run-middlebox.sh $SIMPLE_SCENARIO "$MIDDLEBOX" \
+    (bash ./bench/run-middlebox.sh "$MIDDLEBOX" \
         "$EXPIRATION_TIME" \
         0<&- &>"$LOG_FILE") &
 

@@ -9,24 +9,7 @@
 # $1: The app, either a known name or a DPDK NAT-like app.
 #     Known names: "netfilter".
 #     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "~/vnds/nat"
-# $2: The scenario, one of the following:
-#     "mg-1p": Measure throughput: find the rate at which the middlebox
-#              starts losing 1% of packets.
-#     "mg-existing-flows-latency": Measure the forwarding latency for existing
-#                                  flows.
-#     "mg-new-flows-latency": Measure the forwarding latency for new flows.
-#     "loopback": Measure throughput.
-#                 Tester and middlebox are connected together in a loop,
-#                 using 2 interfaces on each, in different subnets; server is ignored.
-#     "1p": Measure throughput.
-#           Find the point at which the middlebox starts dropping 1% of packets.
-#     "passthrough": Measure latency.
-#                    Tester sends packets to server, which pass through the middlebox;
-#                    all machines are in the same subnet.
-#     "rr": Measure latency.
-#           Tester sends packets to server, which are modified by the middlebox;
-#           there are two subnets, tester-middlebox and middlebox-server.
-#           a.k.a. request/response
+# $2: The scenario, see run.sh for details
 # $3: The type of NF, either NAT/Br/LB/Pol/FW/NOP
 #     For running programs such as netfilter please provide the NF it is being used as a baseline for:.
 
@@ -63,11 +46,11 @@ fi
 # Clean first, just in case
 . ./clean.sh
 
-. init.sh $MIDDLEBOX $SCENARIO
+. init.sh $MIDDLEBOX
 
 . start-middlebox.sh $MIDDLEBOX $SCENARIO
 
-. run.sh $MIDDLEBOX $SCENARIO $NF_TYPE $RESULTS_FILE
+. run.sh $SCENARIO $NF_TYPE $RESULTS_FILE
 
 . stop-middlebox.sh $MIDDLEBOX
 

@@ -13,6 +13,4 @@ sudo apt-get install -yqq \
 
 . ~/scripts/init-machines/install-dpdk.sh
 
-. ~/scripts/init-machines/install-pktgen.sh
-
 . ~/scripts/init-machines/install-moongen.sh

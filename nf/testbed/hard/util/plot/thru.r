@@ -1,3 +1,5 @@
+# NOTE: This file has not been changed after some naming changes in the benchmark setup.
+
 library(plyr)
 library(ggplot2)
 

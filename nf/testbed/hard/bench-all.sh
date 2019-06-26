@@ -17,11 +17,9 @@ case $NF_LIST in
 	"Vigor")
 		MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw" )
 		;;
-	
 	"Baselines")
 		MIDDLEBOXES=("$CLICK_PREFIX/click-nat" "$CLICK_PREFIX/click-nop" "$CLICK_PREFIX/click-bridge" "$CLICK_PREFIX/click-fw" "$CLICK_PREFIX/click-lb" )
 		;;
-		
 	"All")
 		MIDDLEBOXES=("$VNDS_PREFIX/vignat" "$VNDS_PREFIX/vigbridge" "$VNDS_PREFIX/unverified-nop" "$VNDS_PREFIX/vigbalancer" "$VNDS_PREFIX/vigpolicer" "$VNDS_PREFIX/vigfw" "$CLICK_PREFIX/click-nat" "$CLICK_PREFIX/click-nop" "$CLICK_PREFIX/click-bridge" "$CLICK_PREFIX/click-fw" "$CLICK_PREFIX/click-lb" )
 		;;
@@ -29,9 +27,9 @@ case $NF_LIST in
 		echo "[bench] Unknown parameter passed. Please pass one of Vigor/Baselines/All"
 	        exit 1
 		;;
-esac	
+esac
 
-SCENARIOS=("mg-new-flows-latency" "mg-1p")
+SCENARIOS=("latency" "throughput")
 declare -A NF_TYPES
 NF_TYPES[$VNDS_PREFIX/vignat]=NAT
 NF_TYPES[$VNDS_PREFIX/vigbridge]=Br
@@ -49,9 +47,7 @@ NF_TYPES[$CLICK_PREFIX/click-lb]=LB
 mkdir -p $NOW
 
 for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
-    # The second parameter should not matter (it doesn't for mg-* scenarios,
-    # but unfortunately it does for the old ones, so to not try this for those)
-    . ./init.sh $MIDDLEBOX "mg-1p"
+    . ./init.sh $MIDDLEBOX
     NF_TYPE=${NF_TYPES[$MIDDLEBOX]}
     if [ -z $NF_TYPE ]; then
 	    echo "[bench] NF_TYPE unspecified for $MIDDLEBOX"
@@ -63,7 +59,7 @@ for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
         . ./start-middlebox.sh $MIDDLEBOX $SCENARIO
         CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
         RESULTS_FILE="$NOW/$CLEAN_APP_NAME-$SCENARIO.results"
-        . ./run.sh $MIDDLEBOX $SCENARIO $NF_TYPE  $RESULTS_FILE
+        . ./run.sh $SCENARIO $NF_TYPE  $RESULTS_FILE
         . ./stop-middlebox.sh $MIDDLEBOX
     done
 done

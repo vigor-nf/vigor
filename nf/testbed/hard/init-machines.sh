@@ -8,5 +8,4 @@ done
 
 echo "[init] Initializing all machines..."
 ssh $TESTER_HOST 'bash ~/scripts/init-machines/tester.sh'
-#ssh $SERVER_HOST 'bash ~/scripts/init-machines/server.sh'
 . ./init-machines/middlebox.sh
