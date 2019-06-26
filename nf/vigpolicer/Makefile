@@ -1,6 +1,3 @@
-# Binary name
-APP := policer
-
 # Runtime and verification files
 NF_FILES := policer_main.c policer_config.c dynamic_value.h.gen.c ../lib/stubs/ether_addr.h.gen.c ip_addr.h.gen.c policer_state.c
 

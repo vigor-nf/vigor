@@ -1,6 +1,3 @@
-# Binary name
-APP := bridge
-
 # Runtime and verification files
 NF_FILES := bridge_main.c bridge_config.c stat_key.h.gen.c dyn_value.h.gen.c ../lib/stubs/ether_addr.h.gen.c bridge_state.c
 

@@ -41,17 +41,17 @@ fi
 
 
 # Initialize the machines, i.e. software+scripts
-. ./init-machines.sh
+./init-machines.sh
 
 # Clean first, just in case
-. ./clean.sh
+./clean.sh
 
-. init.sh $MIDDLEBOX
+./init.sh $MIDDLEBOX
 
-. start-middlebox.sh $MIDDLEBOX $SCENARIO
+./start-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
 
-. run.sh $SCENARIO $NF_TYPE $RESULTS_FILE
+./run.sh $SCENARIO $NF_TYPE $RESULTS_FILE
 
-. stop-middlebox.sh $MIDDLEBOX
+./stop-middlebox.sh $MIDDLEBOX
 
-. clean.sh
+./clean.sh

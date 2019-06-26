@@ -1,6 +1,3 @@
-# Binary name
-APP := fw
-
 # Runtime and verification files
 NF_FILES := fw_main.c fw_config.c \
             flow.h.gen.c fw_flowmanager.c \

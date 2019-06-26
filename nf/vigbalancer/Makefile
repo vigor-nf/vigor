@@ -1,6 +1,3 @@
-# Binary name
-APP := lb
-
 # Need 3 devices otherwise the concept of a load-balancer doesn't make sense
 NF_DEVICES := 3
 

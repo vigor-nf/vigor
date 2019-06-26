@@ -1,6 +1,3 @@
-# Binary name
-APP := nat
-
 # Runtime and verification files
 NF_FILES := nat_main.c nat_config.c \
             flow.h.gen.c nat_flowmanager.c \

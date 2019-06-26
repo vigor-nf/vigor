@@ -24,6 +24,9 @@ KLEE_UCLIBC ?= $(KLEE_INCLUDE)/../../klee-uclibc
 # DPDK stuff
 include $(RTE_SDK)/mk/rte.vars.mk
 
+# Same name for everyone, makes it easier to run them all with the same script
+APP := nf
+
 # allow the use of extglob in paths
 SHELL = /bin/bash -O extglob -c
 

@@ -30,7 +30,6 @@ if [ -f "$RESULTS_FILE" ]; then
 fi
 
 
-LAYER=0
 EXTRA=''
 case $NF_TYPE in
     "Br") LAYER=2;;

@@ -1,13 +1,5 @@
-
-
-include $(RTE_SDK)/mk/rte.vars.mk
-
-# binary name
-APP = router
-
-
-# sources  normal mode
-SRCS-y := router.c parse_utils.c \
+# Runtime and verification files
+NF_FILES := router.c parse_utils.c \
           ../nf_main.c \
           ../lib/nf_util.c \
           ../lib/packet-io.c \
@@ -16,20 +8,16 @@ SRCS-y := router.c parse_utils.c \
           ../lib/containers/double-chain.c \
 	  	  ../lib/containers/lpm-dir-24-8.c
 
+AUTO_GEN_FILES := ???
 
-# gcc flags
-CFLAGS += -O3
-CFLAGS += -I.. -I../..
-CFLAGS += -std=c99
-CFLAGS += -D_POSIX_C_SOURCE=199309L
-CFLAGS += -g 
+# Must generate the flow.h* files before building the app
+all: $(AUTO_GEN_FILES) $(APP)
 
-# disable warnings triggered by DPDK
-CFLAGS += -Wno-implicit-function-declaration
-CFLAGS += -Wno-nested-externs
+# Verification files
+NF_VERIF_FILES := ???
 
+# Verification arguments
+NF_VERIF_ARGS := ???
 
-
-include $(RTE_SDK)/mk/rte.extapp.mk
-
-
+# Include parent (in a convoluted way cause of DPDK)
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

@@ -218,9 +218,10 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 		local median, stdev = latencyTask:wait()
 		local loss = (tx - rx) / tx
 		
-		if loss > 0.0001 then
+		if loss > 0.01 then
 			io.write("Too much loss!\n")
-			error("Cannot measure latency when there is too much loss.")
+			outFile:write(flowCount .. "\t" .. "too much loss" .. "\n")
+			break
 		else
 			io.write("median " .. median .. ", stdev " .. stdev .. "\n")
 			outFile:write(flowCount .. "\t" .. LATENCY_LOAD_RATE .. "\t" .. median .. "\t" .. stdev .. "\n")

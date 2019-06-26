@@ -56,7 +56,7 @@ for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
 
     for SCENARIO in ${SCENARIOS[@]}; do
 	echo "Benching Middlebox $MIDDLEBOX in Scenario $SCENARIO"
-        . ./start-middlebox.sh $MIDDLEBOX $SCENARIO
+        . ./start-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
         CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
         RESULTS_FILE="$NOW/$CLEAN_APP_NAME-$SCENARIO.results"
         . ./run.sh $SCENARIO $NF_TYPE  $RESULTS_FILE
