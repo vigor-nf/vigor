@@ -2,10 +2,8 @@
 . ./config.sh
 
 echo "[init] Cloning scripts..."
-for h in $TESTER_HOST; do
-    rsync -q -t -r --exclude '*.log' --exclude '*.results' ./ $h:scripts
-done
+rsync -a -q --exclude '*.log' --exclude '*.results' ./ $TESTER_HOST:scripts
 
 echo "[init] Initializing all machines..."
-ssh $TESTER_HOST 'bash ~/scripts/init-machines/tester.sh'
+ssh $TESTER_HOST '~/scripts/init-machines/tester.sh'
 . ./init-machines/middlebox.sh

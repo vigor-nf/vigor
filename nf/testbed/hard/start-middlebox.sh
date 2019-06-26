@@ -1,7 +1,6 @@
 #!/bin/bash
 . ./config.sh
 set -eux
-
 # Parameters:
 # $1: The app, either a known name or a folder name containing a DPDK NAT-like app
 MIDDLEBOX=$1
@@ -16,7 +15,7 @@ if [ -z $MIDDLEBOX ]; then
 fi
 
 CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
-LOG_FILE="$(realpath "bench-$CLEAN_APP_NAME-$SCENARIO-init.log")"
+LOG_FILE="$(realpath "bench-$CLEAN_APP_NAME-$SCENARIO.log")"
 
 if [ -f "$LOG_FILE" ]; then
     rm "$LOG_FILE"
@@ -29,7 +28,7 @@ case $SCENARIO in
 esac
 
 if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
-    bash ./util/netfilter-short-timeout.sh $EXPIRATION_TIME
+    ./util/netfilter-short-timeout.sh $EXPIRATION_TIME
 else
     EXPIRATION_TIME="$(echo "$EXPIRATION_TIME * 1000 * 1000 * 1000" | bc)"
 

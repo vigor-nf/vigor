@@ -47,7 +47,7 @@ NF_TYPES[$CLICK_PREFIX/click-lb]=LB
 mkdir -p $NOW
 
 for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
-    . ./init.sh $MIDDLEBOX
+    ./init.sh $MIDDLEBOX
     NF_TYPE=${NF_TYPES[$MIDDLEBOX]}
     if [ -z $NF_TYPE ]; then
 	    echo "[bench] NF_TYPE unspecified for $MIDDLEBOX"
@@ -56,12 +56,12 @@ for MIDDLEBOX in ${MIDDLEBOXES[@]}; do
 
     for SCENARIO in ${SCENARIOS[@]}; do
 	echo "Benching Middlebox $MIDDLEBOX in Scenario $SCENARIO"
-        . ./start-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
+        ./start-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
         CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
         RESULTS_FILE="$NOW/$CLEAN_APP_NAME-$SCENARIO.results"
-        . ./run.sh $SCENARIO $NF_TYPE  $RESULTS_FILE
-        . ./stop-middlebox.sh $MIDDLEBOX
+        ./run.sh $SCENARIO $NF_TYPE  $RESULTS_FILE
+        sudo killall -9 nf
     done
 done
 
-. ./clean.sh
+./clean.sh

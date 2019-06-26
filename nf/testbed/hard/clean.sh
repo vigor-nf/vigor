@@ -2,5 +2,5 @@
 . ./config.sh
 
 echo "[clean] Cleaning machines..."
-ssh $TESTER_HOST "bash ~/scripts/clean/tester.sh"
-# . ./clean/middlebox.sh
+ssh $TESTER_HOST "~/scripts/clean/tester.sh"
+./clean/middlebox.sh

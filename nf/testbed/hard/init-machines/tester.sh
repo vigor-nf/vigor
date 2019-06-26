@@ -11,6 +11,6 @@ sudo apt-get install -yqq \
     make binutils gcc \
     bc cmake
 
-. ~/scripts/init-machines/install-dpdk.sh
+~/scripts/init-machines/install-dpdk.sh
 
-. ~/scripts/init-machines/install-moongen.sh
+~/scripts/init-machines/install-moongen.sh

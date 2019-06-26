@@ -33,11 +33,11 @@ fi
 # Bash "strict mode"
 set -euxo pipefail
 
-echo '# The configuration paths for VNDS dependencies' >> "$PATHSFILE"
-
-# Source the paths file at login
-echo ". $PATHSFILE" >> "$HOME/.profile"
-
+if [ ! -f "$PATHSFILE" ]; then
+  echo '# The configuration paths for VNDS dependencies' > "$PATHSFILE"
+  # Source the paths file at login
+  echo ". $PATHSFILE" >> "$HOME/.profile"
+fi
 
 ### DPDK initialization
 sudo apt-get update

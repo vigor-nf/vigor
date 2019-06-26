@@ -173,9 +173,9 @@ function heatUp(txQueue, rxQueue, layer, packetSize, flowCount)
 		io.write("Heating up for " .. HEATUP_DURATION .. " seconds at " .. HEATUP_RATE .. " Mbps with " .. flowCount .. " flows... ")
 		local tx, rx = startMeasureThroughput(txQueue, rxQueue, HEATUP_RATE, layer, packetSize, flowCount, HEATUP_DURATION):wait()
 		local loss = (tx - rx) / tx
-		if loss > 0.01 then
-			io.write("Over 1% loss!\n")
-			error("Heatup caused significant loss.")
+		if loss > 0.001 then
+			io.write("Over 0.1% loss!\n")
+			os.exit(1)
 		end
 
 		io.write("OK\n")
@@ -218,7 +218,7 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 		local median, stdev = latencyTask:wait()
 		local loss = (tx - rx) / tx
 		
-		if loss > 0.01 then
+		if loss > 0.001 then
 			io.write("Too much loss!\n")
 			outFile:write(flowCount .. "\t" .. "too much loss" .. "\n")
 			break
@@ -295,7 +295,8 @@ function master(args)
 	elseif args.type == 'throughput' then
 		measureFunc = measureMaxThroughputWithLowLoss
 	else
-		error("Unknown type.")
+		print("Unknown type.")
+		os.exit(1)
 	end
 
 	measureFunc(txDev, rxDev, args.layer, args.packetsize, args.duration, args.reverse)

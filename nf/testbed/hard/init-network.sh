@@ -18,6 +18,6 @@ if [ ! -d ./init-network/$1 ]; then
     exit 4
 fi
 
-ssh $TESTER_HOST "bash ~/scripts/init-network/tester.sh"
+ssh $TESTER_HOST "~/scripts/init-network/tester.sh"
 
-. ./init-network-$1/middlebox.sh
+. ./init-network/$1/middlebox.sh
