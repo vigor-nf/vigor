@@ -86,7 +86,7 @@ function _latencyTask(txQueue, rxQueue, layer, flowCount, duration)
 	local sendTimer = timer:new(duration - 1) -- we just slept for a second earlier, so deduce that	
 	local rateLimiter = timer:new(1 / flowCount) -- ASSUMPTION: The NF is running with 1 second expiry time
 	local counter = 0
-	
+
 	while sendTimer:running() and mg.running() do
 		-- Minimum size for these packets is 84
 		local packetSize = 84
@@ -118,7 +118,7 @@ function _throughputTask(txQueue, rxQueue, layer, packetSize, flowCount, duratio
 	local packetConfig = packetThroughputConfigs[layer]
 	local sendTimer = timer:new(duration)
 	local counter = 0
-	
+
 	while sendTimer:running() and mg.running() do
 		bufs:alloc(packetSize)
 		for _, buf in ipairs(bufs) do
@@ -171,13 +171,13 @@ end
 -- Heats up with packets at the given layer, with the given size and number of flows. Errors if the loss is over 1%.
 function heatUp(txQueue, rxQueue, layer, packetSize, flowCount)
 		io.write("Heating up for " .. HEATUP_DURATION .. " seconds at " .. HEATUP_RATE .. " Mbps with " .. flowCount .. " flows... ")
-		local rx, tx = startMeasureThroughput(txQueue, rxQueue, HEATUP_RATE, layer, packetSize, flowCount, HEATUP_DURATION):wait()
+		local tx, rx = startMeasureThroughput(txQueue, rxQueue, HEATUP_RATE, layer, packetSize, flowCount, HEATUP_DURATION):wait()
 		local loss = (tx - rx) / tx
 		if loss > 0.01 then
 			io.write("Over 1% loss!\n")
 			error("Heatup caused significant loss.")
 		end
-		
+
 		io.write("OK\n")
 end
 
@@ -196,13 +196,13 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 	local rxReverseQueue = txDev:getRxQueue(0)
 	local txLatencyQueue = txDev:getTxQueue(1)
 	local rxLatencyQueue = rxDev:getRxQueue(1)
-	
- 	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
- 		heatUp(txThroughputQueue, rxThroughputQueue, layer, packetSize, flowCount)
- 		
- 		if reverseFlowCount > 0 then
- 			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount)
- 		end
+
+	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+		heatUp(txThroughputQueue, rxThroughputQueue, layer, packetSize, flowCount)
+		
+		if reverseFlowCount > 0 then
+			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount)
+		end
 
 		io.write("Measuring latency for " .. flowCount .. " flows... ")
 		local throughputTask = startMeasureThroughput(txThroughputQueue, rxThroughputQueue, LATENCY_LOAD_RATE, layer, packetSize, flowCount, duration)
@@ -215,7 +215,7 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 		end			
 
 		local tx, rx = throughputTask:wait()
-		local median, stdev = latencyTask:wait()		
+		local median, stdev = latencyTask:wait()
 		local loss = (tx - rx) / tx
 		
 		if loss > 0.0001 then
@@ -239,12 +239,12 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 	local txReverseQueue = rxDev:getTxQueue(0) -- yes, the rx/tx inversion is voluntary here
 	local rxReverseQueue = txDev:getRxQueue(0)
 
- 	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
- 		heatUp(txQueue, rxQueue, layer, packetSize, flowCount)
- 		
- 		if reverseFlowCount > 0 then
- 			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount)
- 		end
+	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+		heatUp(txQueue, rxQueue, layer, packetSize, flowCount)
+		
+		if reverseFlowCount > 0 then
+			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount)
+		end
 
 		io.write("Running binary search with " .. flowCount .. " flows...\n")
 		local upperBound = RATE_MAX
@@ -253,24 +253,24 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 		-- Binary search phase
 		for i = 1, 10 do
 			io.write("Step " .. i .. ": " .. rate .. " Mbps... ")
-			local rx, tx = startMeasureThroughput(txQueue, rxQueue, rate, layer, packetSize, flowCount, duration):wait()
+			local tx, rx = startMeasureThroughput(txQueue, rxQueue, rate, layer, packetSize, flowCount, duration):wait()
 			
 			-- We may have been interrupted
 			if not mg.running() then
 				io.write("Interrupted\n")
 				os.exit(0)
 			end
-			
+
 			local loss = (tx - rx) / tx
 			io.write(tx .. " sent, " .. rx .. " received, loss = " .. loss .. "\n")
-			
+
 			-- Stop if the first step is already successful, let's not do pointless iterations
 			if (i == 10) or (loss < 0.001 and rate == upperBound) then
 				outFile:write(flowCount .. "\t" .. rate .. "\t" .. tx .. "\t" .. tx/duration .. "\t" .. loss .. "\n")
 				break
 			end
-			
-			if (loss < 0.001) then				
+
+			if (loss < 0.001) then
 				lowerBound = rate
 				rate = rate + (upperBound - rate)/2
 			else
@@ -296,31 +296,6 @@ function master(args)
 	else
 		error("Unknown type.")
 	end
-	
+
 	measureFunc(txDev, rxDev, args.layer, args.packetsize, args.duration, args.reverse)
 end
-			-- DST is tricky here, we want to make sure we're fully using the NF parallelization
-			-- regardless of the number of cores, so we have to generate packets that first go in the bottom half of ports, then top, then bottom...
-			-- and this recursively! the first time it's in the top it should be in the top half of that, the second time in the bottom half, etc.
-			-- except this is lua so we can't do easy bit ops (we're running on luaJIT 2.1 beta)
---[[			rem = counter % 8
-			if rem == 0 then
-				pkt.udp.dst = 1 -- not 0, just in case, but it'll be routed to the same as 0
-			elseif rem == 1 then
-				pkt.udp.dst = 0x8000
-			elseif rem == 2 then
-				pkt.udp.dst = 0x4000
-			elseif rem == 3 then
-				pkt.udp.dst = 0xC000
-			elseif rem == 4 then
-				pkt.udp.dst = 0x2000
-			elseif rem == 5 then
-				pkt.udp.dst = 0xA000
-			elseif rem == 6 then
-				pkt.udp.dst = 0x6000
-			elseif rem == 7 then
-				pkt.udp.dst = 0xE000
-			else
-				printf("WTF")
-			end
---]]
