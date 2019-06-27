@@ -1,6 +1,6 @@
 #!/bin/bash
 . ./config.sh
-set -eux
+
 # Parameters:
 # $1: The app, either a known name or a folder name containing a DPDK NAT-like app
 MIDDLEBOX=$1
@@ -49,12 +49,11 @@ else
 
     pushd $MIDDLEBOX >> /dev/null
         echo "[bench] Building $MIDDLEBOX..."
-        sudo rm build -rf
-        make clean
-        make
+        make clean > "$LOG_FILE"
+        make >> "$LOG_FILE"
 
         echo "[bench] Running $MIDDLEBOX..."
-        sudo ./build/nf -l 8 -n 2 -- $ARGS > "$LOG_FILE" 2>&1 &
+        sudo ./build/nf -l 8 -n 2 -- $ARGS >> "$LOG_FILE" 2>&1 &
     popd >> /dev/null
 
     # Wait for it to have started

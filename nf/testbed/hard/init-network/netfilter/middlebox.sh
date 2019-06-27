@@ -5,7 +5,7 @@
 echo "[init] Binding middlebox interfaces to Linux..."
 for pci in "$MB_PCI_INTERNAL" "$MB_PCI_EXTERNAL"; do
   if ! sudo "$RTE_SDK/usertools/dpdk-devbind.py" --status | grep -F "$pci" | grep -q "drv=$KERN_NIC_DRIVER"; then
-    sudo "$RTE_SDK/usertools/dpdk-devbind.py" --bind "$KERN_NIC_DRIVER" "$pci"
+    sudo "$RTE_SDK/usertools/dpdk-devbind.py" --force --bind "$KERN_NIC_DRIVER" "$pci"
   fi
 done
 
@@ -16,7 +16,6 @@ sudo ip addr add $MB_IP_EXTERNAL/24 dev $MB_DEVICE_EXTERNAL
 sudo ifconfig $MB_DEVICE_INTERNAL up
 sudo ip addr flush dev $MB_DEVICE_INTERNAL
 sudo ip addr add $MB_IP_INTERNAL/24 dev $MB_DEVICE_INTERNAL
-sudo ifconfig $MB_DEVICE_TO_SRV down
 
 echo "[init] Configuring middlebox forwarding rules..."
 sudo sysctl -w net.ipv4.ip_forward=1

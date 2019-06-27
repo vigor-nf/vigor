@@ -13,6 +13,6 @@ for pci in "$MB_PCI_INTERNAL" "$MB_PCI_EXTERNAL"; do
       LOADED_DPDK=1
     fi
 
-    sudo "$RTE_SDK/usertools/dpdk-devbind.py" --bind "$DPDK_NIC_DRIVER" "$pci"
+    sudo "$RTE_SDK/usertools/dpdk-devbind.py" --force --bind "$DPDK_NIC_DRIVER" "$pci"
   fi
 done

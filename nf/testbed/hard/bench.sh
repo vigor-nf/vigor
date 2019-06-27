@@ -41,6 +41,7 @@ fi
 
 
 ./init-machines.sh
+./clean.sh
 ./init-network.sh $MIDDLEBOX
 ./run-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
 ./run-benchmark.sh $SCENARIO $NF_TYPE $RESULTS_FILE
