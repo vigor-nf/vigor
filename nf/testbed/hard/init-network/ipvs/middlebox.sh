@@ -4,7 +4,7 @@
 
 echo "[init] Binding middlebox interfaces to Linux..."
 for pci in "$MB_PCI_INTERNAL" "$MB_PCI_EXTERNAL"; do
-  if sudo "$RTE_SDK/usertools/dpdk-devbind.py" --status | grep -F "$pci" | grep -q "drv=$DPDK_NIC_DRIVER"; then
+  if ! sudo "$RTE_SDK/usertools/dpdk-devbind.py" --status | grep -F "$pci" | grep -q "drv=$KERN_NIC_DRIVER"; then
     sudo "$RTE_SDK/usertools/dpdk-devbind.py" --bind "$KERN_NIC_DRIVER" "$pci"
   fi
 done
