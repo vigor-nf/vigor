@@ -1,14 +1,15 @@
 #!/bin/bash
 # See http://dpdk.org/doc/quick-start
 
+# TODO would be nice to reuse the main install script...
+
 # DPDK release to install
-DPDK_RELEASE=17.11
+DPDK_RELEASE='17.11'
 
-
-pushd $HOME >> /dev/null
+pushd "$HOME" >> /dev/null
 
 # Check if it's already installed; we manually create a file with the version
-if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != $DPDK_RELEASE ]; then
+if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != "$DPDK_RELEASE" ]; then
     echo "[init] DPDK not found or obsolete, installing..."
 
     # Install required packages
@@ -22,7 +23,7 @@ if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != $DPDK_RELEASE ]; then
     # Download DPDK
     wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
     tar xf dpdk.tar.xz
-    mv dpdk-$DPDK_RELEASE dpdk
+    mv "dpdk-$DPDK_RELEASE" dpdk
     rm dpdk.tar.xz
 
     # Compile it
@@ -32,7 +33,7 @@ if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != $DPDK_RELEASE ]; then
     make install -j T=x86_64-native-linuxapp-gcc DESTDIR=.
 
     # Write out the version for next run
-    echo $DPDK_RELEASE > .version
+    echo "$DPDK_RELEASE" > .version
 fi
 
 popd >> /dev/null

@@ -1,12 +1,5 @@
 #!/bin/bash
 . ./config.sh
 
-echo "[clean] Unbinding middlebox interfaces from Linux..."
-sudo ifconfig $MB_DEVICE_INTERNAL down
-sudo ifconfig $MB_DEVICE_EXTERNAL down
-
-echo "[clean] Unbinding middlebox interfaces from DPDK..."
-sudo ${RTE_SDK}/usertools/dpdk-devbind.py -b $KERN_NIC_DRIVER $MB_PCI_INTERNAL $MB_PCI_EXTERNAL && echo "OK"
-
 echo "[clean] Killing middlebox..."
 sudo killall -9 nf

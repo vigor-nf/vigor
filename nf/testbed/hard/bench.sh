@@ -7,9 +7,9 @@
 
 # Parameters:
 # $1: The app, either a known name or a DPDK NAT-like app.
-#     Known names: "netfilter".
-#     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "~/vnds/nat"
-# $2: The scenario, see run.sh for details
+#     Known names: "netfilter", "ipvs".
+#     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "/home/solal/vnds/nf/vignat"
+# $2: The scenario, see run-benchmark.sh for details
 # $3: The type of NF, either NAT/Br/LB/Pol/FW/NOP
 #     For running programs such as netfilter please provide the NF it is being used as a baseline for:.
 
@@ -27,8 +27,8 @@ if [ -z $SCENARIO ]; then
     exit 2
 fi
 
-if [ -z $NF_TYPE ]; then 
-    echo "[bench] NF Type not specified " 1>&2
+if [ -z $NF_TYPE ]; then
+    echo "[bench] NF type not specified " 1>&2
     exit 3
 fi
 
@@ -40,14 +40,8 @@ if [ -f "$RESULTS_FILE" ]; then
 fi
 
 
-# Initialize the machines, i.e. software+scripts
 ./init-machines.sh
-
-./init.sh $MIDDLEBOX
-
-./start-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
-
-./run.sh $SCENARIO $NF_TYPE $RESULTS_FILE
-
-echo "[clean] Killing middlebox..."
-sudo killall -9 nf
+./init-network.sh $MIDDLEBOX
+./run-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
+./run-benchmark.sh $SCENARIO $NF_TYPE $RESULTS_FILE
+./clean.sh

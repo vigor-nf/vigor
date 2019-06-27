@@ -4,7 +4,7 @@ set -eux
 # Parameters:
 # $1: The app, either a known name or a folder name containing a DPDK NAT-like app
 MIDDLEBOX=$1
-# $2: The scenario, see run.sh for details
+# $2: The scenario, see run-middlebox.sh for details
 SCENARIO=$2
 # $3: The type of NF, see bench.sh for details
 NF_TYPE=$3
