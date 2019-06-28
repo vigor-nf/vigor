@@ -1,3 +1,10 @@
+--[[                             !!! BEWARE !!!
+
+This benchmark saturates a 10G link, i.e. can send ~14.8 millions of packets per second.
+This leaves VERY little budget for anything besides sending packets.
+If you make ANY changes, try sending packets at 10G and make sure the right amount of packets is sent!
+]]--
+
 local ffi	= require "ffi"
 local device	= require "device"
 local hist	= require "histogram"
