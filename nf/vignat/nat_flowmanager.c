@@ -13,7 +13,7 @@
 #include "nat_state.h"
 
 struct FlowManager {
-  struct State* state;
+	struct State* state;
 	vigor_time_t expiration_time; /*seconds*/
 };
 
@@ -32,30 +32,28 @@ flow_manager_allocate(uint16_t starting_port,
                       uint16_t nat_device,
                       vigor_time_t expiration_time,
                       uint64_t max_flows) {
-	struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
-	if (manager == NULL) {
-		return NULL;
-	}
+  struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
+  if (manager == NULL) {
+  	return NULL;
+  }
   manager->state = alloc_state(max_flows, starting_port, nat_ip, nat_device);
   if (manager->state == NULL) {
     return NULL;
   }
 
-	manager->expiration_time = expiration_time;
+  manager->expiration_time = expiration_time;
 
-//vector_set_entry_condition(manager->state->fv, flow_consistency, manager);
-
-	return manager;
+  return manager;
 }
 
 bool
 flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
                            uint16_t internal_device, vigor_time_t time,
                            uint16_t* external_port) {
-	int index;
+  int index;
   if (dchain_allocate_new_index(manager->state->heap, &index, time) == 0) {
-		return false;
-	}
+    return false;
+  }
 
   *external_port = manager->state->start_port + index;
 
@@ -64,7 +62,7 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
   memcpy((void*)key, (void*)id, sizeof(struct FlowId));
   map_put(manager->state->fm, key, index);
   vector_return(manager->state->fv, index, key);
-	return true;
+  return true;
 }
 
 void
@@ -84,7 +82,7 @@ flow_manager_expire(struct FlowManager* manager, vigor_time_t time) {
 	assert(sizeof(int64_t) <= sizeof(vigor_time_t));
 	vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
 
-  expire_items_single_map(manager->state->heap, manager->state->fv, manager->state->fm, last_time);
+	expire_items_single_map(manager->state->heap, manager->state->fv, manager->state->fm, last_time);
 }
 
 
@@ -93,12 +91,12 @@ flow_manager_get_internal(struct FlowManager* manager, struct FlowId* id,
                           vigor_time_t time,
                           uint16_t* external_port) {
 	int index;
-  if (map_get(manager->state->fm, id, &index) == 0) {
+	if (map_get(manager->state->fm, id, &index) == 0) {
 		return false;
 	}
-  *external_port = index + manager->state->start_port;
-  dchain_rejuvenate_index(manager->state->heap, index, time);
-  return true;
+	*external_port = index + manager->state->start_port;
+	dchain_rejuvenate_index(manager->state->heap, index, time);
+	return true;
 }
 
 bool
@@ -117,5 +115,5 @@ flow_manager_get_external(struct FlowManager* manager, uint16_t external_port,
 
   dchain_rejuvenate_index(manager->state->heap, index, time);
 
-	return true;
+  return true;
 }

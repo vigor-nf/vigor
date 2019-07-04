@@ -36,7 +36,7 @@ void nf_core_init()
 
 int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 {
-  const int in_port = mbuf->port;
+	const int in_port = mbuf->port;
 	NF_DEBUG("It is %" PRId64, now);
 
 	flow_manager_expire(flow_manager, now);
@@ -44,26 +44,25 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
 	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
-  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
+	if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
 		NF_DEBUG("Not IPv4, dropping");
 		return in_port;
-  }
-  uint8_t* ip_options;
-  bool wellformed = true;
+	}
+	uint8_t* ip_options;
+	bool wellformed = true;
 	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
-  if (!wellformed) {
+	if (!wellformed) {
 		NF_DEBUG("Malformed IPv4, dropping");
 		return in_port;
-  }
-  assert(ipv4_header != NULL);
+	}
+	assert(ipv4_header != NULL);
 
-  if (!nf_has_tcpudp_header(ipv4_header) ||
-      packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)) {
+	if (!nf_has_tcpudp_header(ipv4_header) || packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return in_port;
 	}
 	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(mbuf_pkt(mbuf));
-  assert(tcpudp_header != NULL);
+	assert(tcpudp_header != NULL);
 
 	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
 
@@ -71,17 +70,17 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	if (in_port == config.wan_device) {
 		NF_DEBUG("Device %" PRIu16 " is external", in_port);
 
-    struct FlowId internal_flow;
+		struct FlowId internal_flow;
 		if (flow_manager_get_external(flow_manager, tcpudp_header->dst_port, now, &internal_flow)) {
 			NF_DEBUG("Found internal flow.");
-      log_FlowId(&internal_flow);
+			log_FlowId(&internal_flow);
 
-      if (internal_flow.dst_ip != ipv4_header->src_addr ||
-          internal_flow.dst_port != tcpudp_header->src_port ||
-          internal_flow.protocol != ipv4_header->next_proto_id) {
-        NF_DEBUG("Spoofing attempt, dropping.");
-        return in_port;
-      }
+			if (internal_flow.dst_ip != ipv4_header->src_addr ||
+			    internal_flow.dst_port != tcpudp_header->src_port ||
+			    internal_flow.protocol != ipv4_header->next_proto_id) {
+				NF_DEBUG("Spoofing attempt, dropping.");
+				return in_port;
+			}
 
 			ipv4_header->dst_addr = internal_flow.src_ip;
 			tcpudp_header->dst_port = internal_flow.src_port;
@@ -91,21 +90,21 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 			return in_port;
 		}
 	} else {
-    struct FlowId id = {
-      .src_port = tcpudp_header->src_port,
-      .dst_port = tcpudp_header->dst_port,
-      .src_ip = ipv4_header->src_addr,
-      .dst_ip = ipv4_header->dst_addr,
-      .protocol = ipv4_header->next_proto_id,
-      .internal_device = in_port
-    };
+		struct FlowId id = {
+			.src_port = tcpudp_header->src_port,
+			.dst_port = tcpudp_header->dst_port,
+			.src_ip = ipv4_header->src_addr,
+			.dst_ip = ipv4_header->dst_addr,
+			.protocol = ipv4_header->next_proto_id,
+			.internal_device = in_port
+		};
 
-    NF_DEBUG("For id:");
-    log_FlowId(&id);
+		NF_DEBUG("For id:");
+		log_FlowId(&id);
 
 		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config.wan_device);
 
-    uint16_t external_port;
+		uint16_t external_port;
 		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
 			NF_DEBUG("New flow");
 
@@ -124,7 +123,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
  	nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
 
-  concretize_devices(&dst_device, rte_eth_dev_count());
+	concretize_devices(&dst_device, rte_eth_dev_count());
 
 	ether_header->s_addr = config.device_macs[dst_device];
 	ether_header->d_addr = config.endpoint_macs[dst_device];
