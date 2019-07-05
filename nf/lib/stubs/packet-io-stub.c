@@ -4,8 +4,8 @@
 #include "lib/packet-io.h"
 #include "packet-io-stub-control.h"
 
-#define MAX_CHUNK_SIZE 100
-#define PREALLOC_CHUNKS 10
+#define MAX_CHUNK_SIZE 41
+#define PREALLOC_CHUNKS 4
 
 //struct Packet {
 int global_sent;
