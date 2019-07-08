@@ -38,7 +38,7 @@ else
         "Br") ARGS="--capacity 65536 --expire $EXPIRATION_TIME";;
         "LB") ARGS="--flow-capacity 65536 --flow-expiration $EXPIRATION_TIME --cht-height 97 --backend-capacity 20 --backend-expiration 60000000000";;
         "Pol") ARGS='--wan 1 --lan 0 --capacity 65536 --rate 375000000 --burst 3750000000';;
-        "FW") ETH_DEST=1; ARGS="--wan 0 --max-flows 65536 --expire $EXP_TIME";;
+        "FW") ETH_DEST=1; ARGS="--wan 0 --max-flows 65536 --expire $EXPIRATION_TIME";;
         "NOP") ETH_DEST=1; ARGS='--wan 0 --lan-dev 1';;
         *) echo "Unknown NF type $NF_TYPE" 1>&2; exit 4;;
     esac
