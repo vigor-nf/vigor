@@ -8,6 +8,7 @@
 
 #include "nat_config.h"
 #include "lib/nf_forward.h"
+#include "lib/nf_time.h"
 #include "lib/nf_util.h"
 
 struct nat_config config;
@@ -26,7 +27,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 	// and all packets from WAN to the main LAN port, and let the recipient ignore the useless ones.
 
 	uint16_t dst_device;
-  const int in_port = mbuf->port;
+	const int in_port = mbuf->port;
 	if (in_port == config.wan_device) {
 		dst_device = config.lan_main_device;
 	} else {
@@ -51,4 +52,8 @@ void nf_config_cmdline_print_usage(void) {
 
 void nf_print_config() {
   nat_print_config(&config);
+}
+
+void nf_loop_iteration_border(unsigned lcore_id, vigor_time_t time) {
+	// Nothing, this nop is not meant to be verified as-is, just useful to do quick prototyping of verified stuff
 }
