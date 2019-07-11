@@ -396,6 +396,7 @@ void dchain_impl_init(struct dchain_cell *cells, int size)
                           empty_cells_seg(nat_of_int(i - FREE_LIST_HEAD),
                                           FREE_LIST_HEAD));
                   @*/
+    //@ decreases size + INDEX_SHIFT - 1 - i;
   {
     //@ open dcellsp(cells + i, size + DCHAIN_RESERVED - i, _);
     //@ dcell_limits(cells + i);

@@ -574,6 +574,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             0 <= i &*& i <= backend_capacity &*&
             ints(permutations, cht_height*backend_capacity, ?p) &*&
             true == forall(split(p, nat_of_int(i), cht_height), is_permutation); @*/
+    //@ decreases backend_capacity - i;
     {
         uint32_t offset_absolut = i * 31;
         uint64_t offset = loop(offset_absolut, cht_height);
@@ -591,6 +592,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
                 true == forall(split(p_in, nat_of_int(i), cht_height), is_permutation) &*&
                 true == is_sub_permutation(chunk(p_in, i * cht_height, i * cht_height + j), cht_height) &*&
                 true == forall(zip_index(chunk(p_in, i * cht_height, i * cht_height + j), 0), (is_modulo_permutation)(offset, shift, cht_height)); @*/
+        //@ decreases cht_height - j;
         {
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i, backend_capacity);
             //@ mul_bounds(cht_height, MAX_CHT_HEIGHT, i + 1, backend_capacity);
@@ -667,6 +669,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             ints(next, cht_height, ?n_init) &*&
             true == forall(take(i, n_init), (eq)(0));
     @*/
+    //@ decreases cht_height - i;
     {
         next[i] = 0;
         //@ list<int> n_init_update = update(i, 0, n_init);
@@ -717,6 +720,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         true == forall(vals, is_one) &*&
         true == forall2(split_varlim(map(fst, vals), backend_capacity, n), cht_invariant(p_transpose, i * backend_capacity, backend_capacity, cht_height, nat_of_int(cht_height)), eq) // invariant on cht
     ; @*/
+    //@ decreases cht_height - i;
     {
         for (uint32_t j = 0; j < backend_capacity; ++j)
         /*@invariant
@@ -735,6 +739,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
             true == forall(vals_in, is_one) &*&
             true == forall2(split_varlim(map(fst, vals_in), backend_capacity, n_in), cht_invariant(p_transpose, i * backend_capacity + j, backend_capacity, cht_height, nat_of_int(cht_height)), eq) // invariant on cht
         ; @*/
+        //@ decreases backend_capacity - j;
         {
             uint32_t *value;
 
@@ -995,6 +1000,7 @@ int cht_find_preferred_available_backend(uint64_t hash, struct Vector *cht, stru
 
         true == forall(chunk(map(fst, values), start * backend_capacity, start * backend_capacity + i), (sup)( (eq)(false), (dchain_allocated_fp)(ch)))
     ;@*/
+    //@ decreases backend_capacity - i;
     {
         //@ mul_bounds(start, cht_height, backend_capacity, backend_capacity);
         //@ mul_bounds(start+1, cht_height, backend_capacity, backend_capacity);

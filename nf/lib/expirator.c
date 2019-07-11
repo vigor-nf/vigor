@@ -72,6 +72,7 @@ int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
                   dchain_nodups(expire_n_indexes(ch, time, count)) &*&
                   0 <= count &*&
                   count <= length(dchain_get_expired_indexes_fp(ch, time)); @*/
+    //@ decreases length(dchain_get_expired_indexes_fp(ch, time)) - count;
   {
     /*@ dmap<K1,K2,V> cur_m = dmap_erase_all_fp
                                (m, take(count, dchain_get_expired_indexes_fp
@@ -181,6 +182,7 @@ int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
                   0 <= count &*&
                   count <= length(dchain_get_expired_indexes_fp(ch, time));
       @*/
+    //@ decreases length(dchain_get_expired_indexes_fp(ch, time)) - count;
   {
     /*@ mvc_coherent_bounds(cur_m, cur_v, cur_ch);
       @*/
