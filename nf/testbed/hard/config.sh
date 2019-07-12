@@ -38,3 +38,6 @@ TESTER_IP_EXTERNAL=192.168.4.10
 # Do not change unless Linux or DPDK change!
 KERN_NIC_DRIVER=ixgbe
 DPDK_NIC_DRIVER=igb_uio
+
+export RTE_SDK=$HOME/dpdk
+export RTE_TARGET=x86_64-native-linuxapp-gcc
