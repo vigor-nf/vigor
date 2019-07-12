@@ -150,6 +150,9 @@ opam install ocamlfind core sexplib menhir -y
 # Codegenerator dependencies
 opam install goblint-cil -y
 
+# VFIDE dependency
+opam install lablgtk -y
+
 
 ### Z3 v4.5
 
