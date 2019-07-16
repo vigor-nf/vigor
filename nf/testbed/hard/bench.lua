@@ -240,7 +240,7 @@ end
 function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, duration, reverseFlowCount)
 	-- Do not change the name and format of this file unless you change the rest of the scripts that depend on it!
 	local outFile = io.open(RESULTS_FILE_NAME, "w")
-	outFile:write("#flows\trate (Mbps)\t#pkts\t#pkts/sec\tloss\n")
+	outFile:write("#flows\tMbps\t#packets\t#pkts/s\tloss\n")
 
 	local txQueue = txDev:getTxQueue(0)
 	local rxQueue = rxDev:getRxQueue(0)
@@ -258,6 +258,9 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 		local upperBound = RATE_MAX
 		local lowerBound = RATE_MIN
 		local rate = upperBound
+		local bestRate = 0
+		local bestTx = 0
+		local bestLoss = 1
 		-- Binary search phase
 		for i = 1, 10 do
 			io.write("Step " .. i .. ": " .. rate .. " Mbps... ")
@@ -272,18 +275,28 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 			local loss = (tx - rx) / tx
 			io.write(tx .. " sent, " .. rx .. " received, loss = " .. loss .. "\n")
 
-			-- Stop if the first step is already successful, let's not do pointless iterations
-			if (i == 10) or (loss < 0.001 and rate == upperBound) then
-				outFile:write(flowCount .. "\t" .. rate .. "\t" .. tx .. "\t" .. tx/duration .. "\t" .. loss .. "\n")
-				break
-			end
-
 			if (loss < 0.001) then
+				bestRate = rate
+				bestTx = tx
+				bestLoss = loss
+
 				lowerBound = rate
 				rate = rate + (upperBound - rate)/2
 			else
 				upperBound = rate
 				rate = lowerBound + (rate - lowerBound)/2
+			end
+
+			-- Stop if the first step is already successful, let's not do pointless iterations
+			if (i == 10) or (loss < 0.001 and bestRate == upperBound) then
+				-- Note that we write 'bestRate' here, i.e. the last rate with < 0.001 loss, not the current one
+				-- (which may cause > 0.001 loss since our binary search is bounded in steps)
+				outFile:write(flowCount .. "\t" ..
+						math.floor(bestRate) .. "\t" ..
+						bestTx .. "\t" ..
+						math.floor(bestTx/duration) .. "\t" ..
+						bestLoss .. "\n")
+				break
 			end
 		end
 	end

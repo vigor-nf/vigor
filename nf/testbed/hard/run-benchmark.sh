@@ -40,5 +40,5 @@ case $NF_TYPE in
 esac
 
 echo "[bench] Benchmarking..."
-ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/bench.lua -p 60 -d 20 $EXTRA $SCENARIO $LAYER 1 0"
+ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/bench.lua -p 60 -d 10 $EXTRA $SCENARIO $LAYER 1 0"
 scp $TESTER_HOST:results.tsv "./$RESULTS_FILE"
