@@ -2,7 +2,7 @@ This repository contains the Vigor verification toolchain, along with the verifi
 
 # Prerequisites
 
-The install script assumes you are using Ubuntu 16.04, though Debian may also work. You could also install the dependencies manually.
+The install script assumes you are using Ubuntu 18.04 (16.04 will likely do), though Debian may also work. You could also install the dependencies manually.
 
 To run verification with hardware models, you need a lot of RAM (100+ GB).
 

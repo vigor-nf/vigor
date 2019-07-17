@@ -1,5 +1,5 @@
 # Minimize image size using a small base
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 
 ARG host_kernel_ver
 ENV HOST_KERNEL_VER=$host_kernel_ver
