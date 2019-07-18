@@ -46,7 +46,7 @@ void bridge_config_init(struct bridge_config* config,
     switch (opt) {
     case 't':
       config->expiration_time = nf_util_parse_int(optarg, "exp-time", 10, '\0');
-      if (config->expiration_time == 0) {
+      if (config->expiration_time <= 0) {
         PARSE_ERROR("Expiration time must be strictly positive.\n");
       }
       break;
