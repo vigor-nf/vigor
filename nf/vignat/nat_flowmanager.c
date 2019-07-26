@@ -14,7 +14,7 @@
 
 struct FlowManager {
 	struct State* state;
-	vigor_time_t expiration_time; /*seconds*/
+	vigor_time_t expiration_time; /*nanoseconds*/
 };
 
 bool
