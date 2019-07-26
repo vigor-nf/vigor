@@ -1,13 +1,12 @@
 #!/bin/bash
 
 pushd $HOME >> /dev/null
-if [ ! -f moon-gen/.built ]; then
-    git clone --depth=1 git://github.com/emmericp/MoonGen.git moon-gen
+  if [ ! -f moon-gen/.built ]; then
+      git clone --depth=1 git://github.com/emmericp/MoonGen.git moon-gen
 
-    cd moon-gen
-    ./build.sh
+      cd moon-gen
+      sudo ./build.sh
 
-    touch .built
-fi
-
+      touch .built
+  fi
 popd >> /dev/null
