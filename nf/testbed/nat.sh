@@ -1,17 +1,29 @@
 sudo apt-get update
-sudo apt-get install -y tcpdump git wget build-essential libpcap-dev linux-headers-3.13.0-86 linux-headers-3.13.0-86-generic libglib2.0-dev daemon
+KERNEL_VER=$(uname -r | sed 's/-generic//')
+sudo apt-get install -y tcpdump git wget build-essential libpcap-dev libglib2.0-dev daemon libnuma-dev python linux-headers-${KERNEL_VER} linux-headers-${KERNEL_VER}-generic
 
-wget http://dpdk.org/browse/dpdk/snapshot/dpdk-2.2.0.tar.gz -O dpdk.tar.gz
-tar xf dpdk.tar.gz
-mv dpdk-* dpdk
-rm dpdk.tar.gz
+### DPDK
+DPDK_RELEASE='17.11'
+BUILDDIR=$(pwd)
 
-cd dpdk
-sed -ri 's,(PMD_PCAP=).*,\1y,' config/common_linuxapp
-make config T=x86_64-native-linuxapp-gcc
-make install -j2 T=x86_64-native-linuxapp-gcc DESTDIR=.
+pushd "$BUILDDIR"
+  if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != "$DPDK_RELEASE" ]; then
+    rm -rf dpdk # in case it already exists
 
-export RTE_SDK=/home/vagrant/dpdk
+    wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
+    tar xf dpdk.tar.xz
+    rm dpdk.tar.xz
+    mv "dpdk-$DPDK_RELEASE" dpdk
+
+    pushd dpdk
+      make install -j2 T=x86_64-native-linuxapp-gcc DESTDIR=.
+
+      echo "$DPDK_RELEASE" > .version
+    popd
+  fi
+popd
+
+export RTE_SDK=$BUILDDIR/dpdk
 export RTE_TARGET=x86_64-native-linuxapp-gcc
 
 . /nat/testbed/redeploy-nat.sh

@@ -103,7 +103,7 @@ bind_nics_to_igb_uio()
 	  if  /sbin/lsmod  | grep -q igb_uio ; then
 		    PCI_PATH=$1
         echo "Binding PCI device: $PCI_PATH ..."
-		    sudo ${RTE_SDK}/tools/dpdk_nic_bind.py -b igb_uio $PCI_PATH && echo "OK"
+		    sudo ${RTE_SDK}/usertools/dpdk-devbind.py -b igb_uio $PCI_PATH && echo "OK"
 	  else
 		    echo "# Please load the 'igb_uio' kernel module before querying or "
 		    echo "# adjusting NIC device bindings"
@@ -113,7 +113,7 @@ bind_nics_to_igb_uio()
 #
 ######---------------------------------######
 
-cd /nat
+cd /nat/vignat
 
 rm build -r && make
 
