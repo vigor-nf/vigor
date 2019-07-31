@@ -9,9 +9,9 @@ set -euxo pipefail
 
 sudo apt update
 sudo apt -y install qemu-system-x86 build-essential wget bison flex \
-  libgmp3-dev libmpc-dev libmpfr-dev texinfo libcloog-isl-dev libisl-dev gnupg \
-  xoriso `# for building the DSOS iso` \
-  nasm git grub
+  libgmp3-dev libmpc-dev libmpfr-dev texinfo libcloog-isl-dev libisl-0.18-dev gnupg \
+  xorriso `# for building the DSOS iso` \
+  nasm git grub-pc
 
 DSOS_TARGET=x86_64-elf
 
