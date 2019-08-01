@@ -51,14 +51,14 @@ struct rte_eth_dev_info {
 
 // Sanity checks
 // Documentation of rte_ethdev indicates the configure/tx/rx/started order
-extern bool devices_configured[STUB_DEVICES_COUNT];
-extern bool devices_tx_setup[STUB_DEVICES_COUNT];
-extern bool devices_rx_setup[STUB_DEVICES_COUNT];
-extern bool devices_started[STUB_DEVICES_COUNT];
-extern bool devices_promiscuous[STUB_DEVICES_COUNT];
+bool devices_configured[STUB_DEVICES_COUNT];
+bool devices_tx_setup[STUB_DEVICES_COUNT];
+bool devices_rx_setup[STUB_DEVICES_COUNT];
+bool devices_started[STUB_DEVICES_COUNT];
+bool devices_promiscuous[STUB_DEVICES_COUNT];
 
 // To allocate mbufs
-extern struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
+struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
 
 
 static inline uint16_t
