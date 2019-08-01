@@ -8,7 +8,6 @@
 #include <sys/types.h>
 
 #include <rte_common.h>
-#include <rte_config.h>
 #include <rte_ethdev.h>
 
 #include <cmdline_parse_etheraddr.h>
@@ -35,6 +34,9 @@ void fw_config_init(struct fw_config* config,
     {"wan",            required_argument,    NULL, 'w'},
     {NULL,             0,            NULL,  0 }
   };
+
+  config->device_macs = calloc(nb_devices, sizeof(struct ether_addr));
+  config->endpoint_macs = calloc(nb_devices, sizeof(struct ether_addr));
 
   // Set the devices' own MACs
   for (uint16_t device = 0; device < nb_devices; device++) {

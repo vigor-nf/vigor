@@ -2,7 +2,6 @@
 
 #include <inttypes.h>
 
-#include <rte_config.h>
 #include <rte_ether.h>
 #include "lib/nf_time.h"
 

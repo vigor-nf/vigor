@@ -1,5 +1,4 @@
 #include <stdbool.h>
-#include <rte_config.h>
 #include <rte_ethdev.h>
 
 bool devices_configured[STUB_DEVICES_COUNT];

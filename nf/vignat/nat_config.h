@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 
-#include <rte_config.h>
 #include <rte_ether.h>
 #include "lib/nf_time.h"
 
@@ -19,10 +18,10 @@ struct nat_config {
 	uint32_t external_addr;
 
 	// MAC addresses of devices
-	struct ether_addr device_macs[RTE_MAX_ETHPORTS];
+	struct ether_addr* device_macs;
 
 	// MAC addresses of the endpoints the devices are linked to
-	struct ether_addr endpoint_macs[RTE_MAX_ETHPORTS];
+	struct ether_addr* endpoint_macs;
 
 	// External port at which to start allocating flows
 	// i.e. ports will be allocated in [start_port, start_port + max_flows]

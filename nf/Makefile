@@ -54,7 +54,6 @@ CFLAGS += -O3
 include $(RTE_SDK)/mk/rte.extapp.mk
 
 ### VeriFast verification ###
-# we use DPDK stubs in there (e.g. rte_config.h)
 LIBVIG_SRC_ARITH := $(SELF_DIR)/lib/containers/arith.c \
                     $(SELF_DIR)/lib/containers/modulo.c
 LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.o \
@@ -164,8 +163,8 @@ VERIF_DPDK_INCLUDES := -I $(RTE_SDK)/$(RTE_TARGET)/include \
 			-I $(RTE_SDK)/drivers/bus/vdev \
 			-I $(RTE_SDK)/drivers/bus/pci \
 			-I $(RTE_SDK)/drivers/net/ixgbe
-# And then some special DPDK includes: builtin_stubs for built-ins DPDK uses, and rte_config which many DPDK files use without including
-VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h --include=rte_config.h
+# And then some special DPDK includes: builtin_stubs for built-ins DPDK uses
+VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h
 
 # Files for DPDK
 # Low-level stubs for specific functions

@@ -7,7 +7,6 @@
 #include <sys/types.h>
 
 #include <rte_common.h>
-#include <rte_config.h>
 #include <rte_ethdev.h>
 
 #include <cmdline_parse_etheraddr.h>

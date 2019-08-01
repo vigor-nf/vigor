@@ -62,8 +62,7 @@ DPDK_INCLUDES += -I $(RTE_SDK)/drivers/bus/vdev
 DPDK_INCLUDES += -I $(RTE_SDK)/drivers/bus/pci
 DPDK_INCLUDES += -I $(RTE_SDK)/drivers/net/ixgbe
 DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_kni
-DPDK_INCLUDES += --include=$(STUBS_DIR)/builtin_stub.h --include=rte_config.h
-# DPDK_INCLUDES += --include=rte_config.h
+DPDK_INCLUDES += --include=$(STUBS_DIR)/builtin_stub.h
 
 DPDK_DEFS := -D__linux__ -U_FORTIFY_SOURCE
 DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSE

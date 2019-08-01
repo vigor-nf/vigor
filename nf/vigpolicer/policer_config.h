@@ -2,8 +2,6 @@
 
 #include <stdint.h>
 
-// TODO can't really include rte_max_ethports here but need it :/
-
 #define CONFIG_FNAME_LEN 512
 
 struct policer_config {
