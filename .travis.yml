@@ -10,7 +10,7 @@ before_install:
 install:
   - docker run -dt --name=vignat-deps azaostro/vignat-deps
   - docker cp . vignat-deps:/home/vigor/
-  - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/nf
+  - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/
 
 script:
   - docker exec vignat-deps /bin/bash test-vigor.sh
