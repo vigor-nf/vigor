@@ -9,6 +9,7 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
+#include "lib/boilerplate_util.h"
 #include "lib/nf_forward.h"
 #include "lib/nf_log.h"
 #include "lib/nf_time.h"
