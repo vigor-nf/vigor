@@ -75,7 +75,7 @@ validate_file() {
     VERIF_RESULT="${UNIQUE_PREFIX}.vf_result"
     cp $FNAME $UNIQUE_PREFIX.src
     CMD1="$BASE_DIR/validator.byte $FSPEC_PLUGIN $FNAME $UNIQUE_PREFIX $VERIFAST $SPEC_DIR"
-    echo "(cd $BASE_DIR && make all) && $CMD1" > "${UNIQUE_PREFIX}.cmd"
+    echo "cd $BASE_DIR && $CMD1" > "${UNIQUE_PREFIX}.cmd"
     $CMD1 &> $VALID_RESULT
     VERIF_RESULT="${UNIQUE_PREFIX}.verify.stdout"
     analyze_result $VALID_RESULT $VERIF_RESULT $FNAME
@@ -103,7 +103,7 @@ fi
 command -v $VERIFAST >/dev/null 2>&1 ||
     { echo >&2 "I require custom VeriFast in the PATH.  Aborting."; exit 1; }
 
-(cd $BASE_DIR && make all)
+cd $BASE_DIR
 if [ $? != 0 ]; then exit 1; fi
 mkdir -p $WORK_DIR
 rm -f $REPORT_FNAME

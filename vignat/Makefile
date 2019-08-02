@@ -25,10 +25,10 @@ NF_VERIF_ARGS := --lan-dev 0 \
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
 
 flow.h.gen.c flow.h.gen.h: flow.h
-	bash ../../codegen/generate.sh flow.h
+	bash ../codegen/generate.sh flow.h
 
 ../lib/stubs/ether_addr.h.gen.h: ../lib/stubs/ether_addr.h
-	bash ../../codegen/generate.sh ../lib/stubs/ether_addr.h
+	bash ../codegen/generate.sh ../lib/stubs/ether_addr.h
 
 nat_loop.h nat_loop.c nat_state.h nat_state.c: nat_data_spec.ml
-	bash ../../codegen/gen-loop-boilerplate.sh nat_data_spec.ml
+	bash ../codegen/gen-loop-boilerplate.sh nat_data_spec.ml

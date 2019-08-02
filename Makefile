@@ -124,16 +124,11 @@ VERIF_FILES := $(SELF_DIR)/nf_main.c $(SELF_DIR)/lib/nf_util.c
 # Specific NF
 VERIF_FILES += $(NF_FILES)
 # NF base stubs
-VERIF_FILES += ../lib/stubs/containers/map-stub.c ../lib/stubs/containers/double-map-stub.c \
-               ../lib/stubs/containers/double-chain-stub.c \
-               ../lib/stubs/containers/vector-stub.c \
-               ../lib/stubs/containers/cht-stub.c \
-               ../lib/stubs/containers/expirator-stub.c \
-               ../lib/stubs/packet-io-stub.c
+VERIF_FILES += $(SELF_DIR)/lib/stubs/containers/!(batcher)-stub.c $(SELF_DIR)/lib/stubs/*-stub.c
 # Specific NF stubs
 VERIF_FILES += $(NF_VERIF_FILES)
 # Environment stubs
-VERIF_FILES += ../lib/stubs/externals/*.c ../lib/stubs/core_stub.c ../lib/stubs/time_stub.c
+VERIF_FILES += $(SELF_DIR)/lib/stubs/externals/*.c $(SELF_DIR)/lib/stubs/core_stub.c $(SELF_DIR)/lib/stubs/time_stub.c
 # DPDK cmdline parsing library, always included, we don't want/need to stub it
 VERIF_FILES += $(RTE_SDK)/lib/librte_cmdline/*.c
 # ...and the string function it uses
@@ -157,7 +152,7 @@ VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h --include=rte_config.h
 
 # Files for DPDK
 # Low-level stubs for specific functions
-VERIF_DPDK_FILES := ../lib/stubs/dpdk_low_level_stub.c
+VERIF_DPDK_FILES := $(SELF_DIR)/lib/stubs/dpdk_low_level_stub.c
 # Platform-independent and Linux-specific EAL
 VERIF_DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
 # Default ring mempool driver
