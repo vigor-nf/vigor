@@ -37,3 +37,4 @@ klee-last
 .DS_Store
 *.swp
 .vscode/*
+*.vfmanifest

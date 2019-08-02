@@ -3,14 +3,7 @@
 
 #include <stdint.h>
 #include <limits.h>
-
-#include "include_ignored_by_verifast.h"
-
-#ifdef _NO_VERIFAST_
-#  define IGNORE(x) (void)(x)
-#else //_NO_VERIFAST_
-#  define IGNORE(x)
-#endif //_NO_VERIFAST_
+#include "lib/ignore.h"
 
 //@ fixpoint int crc32_hash(int acc, int x);
 unsigned __builtin_ia32_crc32si(unsigned acc, unsigned int x);

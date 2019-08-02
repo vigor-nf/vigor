@@ -90,7 +90,6 @@ verifast:
 	@$(VERIFAST_COMMAND) -prover="Z3v4.5" -emit_vfmanifest $(LIBVIG_SRC_Z3)
 	@$(VERIFAST_COMMAND) -emit_vfmanifest $(LIBVIG_SRC)
 	@$(VERIFAST_COMMAND) -emit_vfmanifest -D CAPACITY_POW2 $(LIBVIG_SRC)
-	@$(VERIFAST_CLEAN_COMMAND)
 
 
 ### KLEE verification ###
