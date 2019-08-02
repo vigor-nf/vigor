@@ -88,5 +88,5 @@ pushd "$BUILDDIR/klee-uclibc-binary"
 
   make clean
   make -j $(nproc)
-  ln -vs "$BUILDDIR/klee-uclibc-binary/lib/libc.a" "$VNDSDIR/nf"
+  ln -vs "$BUILDDIR/klee-uclibc-binary/lib/libc.a" "$VNDSDIR"
 popd

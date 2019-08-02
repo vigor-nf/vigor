@@ -8,7 +8,7 @@ NF_LIST=$1
 # Clean first, just in case
 . ./clean.sh
 
-VNDS_PREFIX="$HOME/projects/Vigor/vnds/nf"
+VNDS_PREFIX="$HOME/projects/Vigor/vnds"
 CLICK_PREFIX="$HOME/projects/Vigor/fastclick/conf/vnds-baselines"
 NOW=$(date +"%d.%m.%Y_%H_%M")
 

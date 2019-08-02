@@ -8,7 +8,7 @@
 # Parameters:
 # $1: The app, either a known name or a DPDK NAT-like app.
 #     Known names: "netfilter", "ipvs".
-#     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "/home/solal/vnds/nf/vignat"
+#     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "/home/solal/vnds/vignat"
 # $2: The scenario, see run-benchmark.sh for details
 # $3: The type of NF, either NAT/Br/LB/Pol/FW/NOP
 #     For running programs such as netfilter please provide the NF it is being used as a baseline for:.
