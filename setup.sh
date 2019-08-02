@@ -1,5 +1,4 @@
 #!/bin/bash
-# Tested on Ubuntu 16.04, Ubuntu 18.04, Debian Stretch, and the Linux Subsystem for Windows
 # $1: "dpdk-only" to only install DPDK, or no argument to install everything
 
 # Setup
@@ -19,11 +18,10 @@ case $(uname -r) in
     ;;
 esac
 
-echo "install mode: $VIGOR_INSTALL_MODE"
 
-if [ "$BUILDDIR" -ef "$VNDSDIR" ] && [ "$OS" != "docker" ] && [ "$VIGOR_INSTALL_MODE" != "travis" ] ; then
+if [ "$BUILDDIR" -ef "$VNDSDIR" ] && [ "$OS" != "docker" ]; then
   echo 'It is not recommented to install the dependencies into the project root directory.'
-  echo "We recommend you to run the script from the parent directory like this: . $VNDSDIR/install.sh"
+  echo "We recommend you to run the script from the parent directory like this: . $VNDSDIR/setup.sh"
   read -p "Continue installing into $BUILDDIR? [y/n]" -n 1 -r
   echo # move to a new line
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
@@ -34,29 +32,34 @@ fi
 # Bash "strict mode"
 set -euxo pipefail
 
-echo '# The configuration paths for VNDS dependencies' > "$PATHSFILE"
-
-# Source the paths file at login
-echo ". $PATHSFILE" >> "$HOME/.profile"
-
+if [ ! -f "$PATHSFILE" ]; then
+  echo '# The configuration paths for VNDS dependencies' > "$PATHSFILE"
+  # Source the paths file at login
+  echo ". $PATHSFILE" >> "$HOME/.profile"
+fi
 
 ### DPDK initialization
 sudo apt-get update
 
 sudo apt-get install -y \
+                     ca-certificates software-properties-common patch `# to download and install stuff` \
                      libpcap-dev libnuma-dev `# for DPDK` \
                      wget build-essential git python `# for more or less everything`
 
-# On the Linux subsystem for Windows, uname -r includes a "-Microsoft" token
-KERNEL_VER=$(uname -r | sed 's/-Microsoft//')
+# Install the right headers
+if [ "$OS" = 'windows' ]; then
+  # Fix the kernel dir, WSL gives a weird version in uname -r
+  sudo apt install "linux-headers-4.4.0-43-generic"
+  export RTE_KERNELDIR="/usr/src/linux-headers-4.4.0-43-generic/"
+elif [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
+  KERNEL_VER=$(uname -r | sed 's/-generic//')
+  if [ "$OS" = 'docker' ]; then
+      echo "Warning: the host($HOST_KERNEL_VER) and guest($KERNEL_VER)\
+          OS kernels must be somewhat compatible (because the guest uses the host kernel)"
+  fi
 
-# Install the right headers; we do *not* install headers on Docker since it uses the underlying kernel
-if [ "$OS" = 'microsoft' ]; then
-  # Fix the kernel dir, since the Linux subsystem for Windows doesn't have an actual Linux kernel...
-  sudo apt install "linux-headers-$KERNEL_VER-generic"
-  export RTE_KERNELDIR="/usr/src/linux-headers-$KERNEL_VER-generic/"
-elif [ "$OS" = 'linux' ] || [ "$VIGOR_INSTALL_MODE" = "travis" ] ; then
   sudo apt-get install -y "linux-headers-$KERNEL_VER"
+  sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
 
 
@@ -78,12 +81,11 @@ pushd "$BUILDDIR"
 
     pushd dpdk
       # Apply the Vigor patches
-      for p in "$VNDSDIR/install/"dpdk.*.patch; do
+      for p in "$VNDSDIR/setup/"dpdk.*.patch; do
         patch -p1 < "$p"
       done
 
-      make config T=x86_64-native-linuxapp-gcc
-      make install -j $(nproc) T=x86_64-native-linuxapp-gcc DESTDIR=.
+      make install -j T=x86_64-native-linuxapp-gcc DESTDIR=.
 
       echo "$DPDK_RELEASE" > .version
     popd
@@ -99,6 +101,12 @@ fi
 
 ### Non-DPDK initialization
 
+# make sure we have the right OCaml packages on trusty, use their PPAs...
+if [ $(lsb_release -r | awk '{ print $2 }') = '14.04' ]; then
+  sudo add-apt-repository -y ppa:avsm/ppa
+  sudo apt-get update
+fi
+
 sudo apt-get install -y \
                      time `# to measure verification time` \
                      bison flex zlib1g-dev libncurses5-dev libcap-dev cmake subversion `# for KLEE/LLVM` \
@@ -106,7 +114,7 @@ sudo apt-get install -y \
                      opam m4 `# for OCaml; m4 is not a dependency in theory but it is in practice` \
 
 # for VeriFast
-# directly from VeriFast's readme
+# inspired from VeriFast's readme
 sudo apt-get install -y --no-install-recommends \
                      ca-certificates m4 \
                      ocaml-native-compilers gcc camlp4 patch unzip libgtk2.0-dev \
@@ -127,8 +135,7 @@ echo 'PATH='"$HOME/.opam/system/bin"':$PATH' >> "$PATHSFILE"
 echo ". $HOME/.opam/opam-init/init.sh" >> "$PATHSFILE"
 . "$PATHSFILE"
 
-# For Z3 ml bindings
-# VeriFast requires Z3 in ocamlfind; install it now so that it puts itself in ocamlfind
+# for Z3 ML bindings
 # Num is required for Big_int
 opam install ocamlfind num -y
 
@@ -140,7 +147,10 @@ opam install ocamlfind camlp4 -y
 opam install ocamlfind core sexplib menhir -y
 
 # Codegenerator dependencies
-opam install goblint-cil
+opam install goblint-cil -y
+
+# VFIDE dependency
+opam install lablgtk -y
 
 
 ### Z3 v4.5
@@ -164,13 +174,15 @@ pushd "$BUILDDIR/z3"
       # Install the new libz3.so
       sudo ln -s "$BUILDDIR/z3/build/libz3.so" "/usr/lib/libz3.so"
       sudo ldconfig
+      # Install it in .opam as well, VeriFast wants it there...
+      ln -s /usr/lib/libz3.so ~/.opam/4.06.0/.
   popd
 popd
 
 
 ### VeriFast
 
-git clone --depth 1 --branch export_path_conditions https://github.com/vignat/verifast "$BUILDDIR/verifast"
+git clone --depth 1 https://github.com/vignat/verifast "$BUILDDIR/verifast"
 pushd "$BUILDDIR/verifast/src"
   make verifast # should be just "make" but the verifast checks fail due to a non auto lemma
   echo 'PATH='"$BUILDDIR/verifast/bin"':$PATH' >> "$PATHSFILE"
@@ -198,12 +210,12 @@ pushd "$BUILDDIR/klee-uclibc"
    --with-cc="../llvm/Release/bin/clang"
 
   # Use our minimalistic config
-  cp "$VNDSDIR/install/klee-uclibc.config" '.config'
+  cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
   make -j $(nproc)
 popd
 
-git clone --depth 1 --branch timed-access-dirty-rebased https://github.com/vignat/klee.git "$BUILDDIR/klee"
+git clone --depth 1 https://github.com/vignat/klee.git "$BUILDDIR/klee"
 pushd "$BUILDDIR/klee"
   mkdir build
   pushd build
@@ -213,7 +225,7 @@ pushd "$BUILDDIR/klee"
      cmake \
      -DENABLE_UNIT_TESTS=OFF \
      -DBUILD_SHARED_LIBS=OFF \
-     -DENABLE_KLEE_ASSERTS=OFF \
+     -DENABLE_KLEE_ASSERTS=ON \
      -DLLVM_CONFIG_BINARY="$BUILDDIR/llvm/Release/bin/llvm-config" \
      -DLLVMCC="$BUILDDIR/llvm/Release/bin/clang" \
      -DLLVMCXX="$BUILDDIR/llvm/Release/bin/clang++" \

@@ -15,8 +15,7 @@ SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 # Default value for devices
 NF_DEVICES ?= 2
 
-# If KLEE_BUILD_PATH is not defined (such as in the paths saved by install.sh),
-# try to compute it based on KLEE_INCLUDE.
+# If KLEE paths are not defined (eg because the user installed deps themselves), try to compute it based on KLEE_INCLUDE.
 KLEE_BUILD_PATH ?= $(KLEE_INCLUDE)/../build
 KLEE_UCLIBC ?= $(KLEE_INCLUDE)/../../klee-uclibc
 
