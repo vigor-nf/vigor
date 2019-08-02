@@ -69,8 +69,6 @@ void array_rq_init(struct ArrayRq *arr_out)
 {
   // No need for tracing, as it is a nested call in the
   // formally verified domain.
-  /* klee_trace_ret(); */
-  /* klee_trace_param_i32((uint32_t)arr_out, "arr_out"); */
   array_rq_model_cell = malloc(sizeof(ARRAY_RQ_EL_TYPE));
   klee_make_symbolic(array_rq_model_cell, sizeof(ARRAY_RQ_EL_TYPE),
                      "array_rq_model_cell");
@@ -278,7 +276,7 @@ void array_rq_end_access(struct ArrayRq *arr)
   //@ close arrp_rq(update(idx, rq, lst), arr);
 }
 
-/* @
+/*@
   lemma void construct_rq_element(ARRAY_RQ_EL_TYPE *p)
   requires p->port_id |-> ?pid &*&
            0 <= pid &*& pid < RTE_MAX_ETHPORTS &*&

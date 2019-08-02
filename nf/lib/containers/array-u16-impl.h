@@ -39,8 +39,6 @@ void array_u16_init(struct ArrayU16 *arr_out)
 {
   // No need for tracing, as it is a nested call in the
   // formally verified domain.
-  /* klee_trace_ret(); */
-  /* klee_trace_param_i32((uint32_t)arr_out, "arr_out"); */
   if (!array_u16_cell_is_exposed)
     klee_allow_access(&array_u16_model_cell, sizeof(ARRAY_U16_EL_TYPE));
   klee_make_symbolic(&array_u16_model_cell, sizeof(ARRAY_U16_EL_TYPE),

@@ -78,13 +78,12 @@
   predicate map_record_property<kt>(fixpoint(kt,int,bool) prop) = true;
   @*/
 
-/**
- * Values and keys are void*, and the actual keys and values should be managed
- * by the client application.
- *
- * I could not use integer keys, because need to operate with keys like
- * int_key/ext_key that are much bigger than a 32bit integer.
- */
+
+// Values and keys are void*, and the actual keys and values should be managed
+// by the client application.
+//
+// I could not use integer keys, because need to operate with keys like
+// int_key/ext_key that are much bigger than a 32bit integer.
 void map_impl_init/*@ <kt> @*/ (int* busybits, map_keys_equality* cmp,
                                 void** keyps, unsigned* khs, int* chns,
                                 int* vals, unsigned capacity);

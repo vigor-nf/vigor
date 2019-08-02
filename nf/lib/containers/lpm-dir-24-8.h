@@ -23,19 +23,17 @@
 
 #define MAX_NEXT_HOP_VALUE 0x7FFF
 
-/*
- * http://tiny-tera.stanford.edu/~nickm/papers/Infocom98_lookup.pdf
- * */
+// http://tiny-tera.stanford.edu/~nickm/papers/Infocom98_lookup.pdf
 
 // I assume that the rules will be in ascending order of prefixlen
 // Each new rule will simply overwrite any existing rule where it should exist
-/*	The entries in lpm_24 are as follows:
- * 		bit15: 0->next hop, 1->lpm_long lookup
- * 		bit14-0: value of next hop or index in lpm_long
- */
-/*	The entries in lpm_long are as follows:
- * 	bit15-0: value of next hop
- */
+//	The entries in lpm_24 are as follows:
+// 		bit15: 0->next hop, 1->lpm_long lookup
+// 		bit14-0: value of next hop or index in lpm_long
+//
+//	The entries in lpm_long are as follows:
+// 	bit15-0: value of next hop
+//
 //max next hop value is 2^15 - 1.
 
 

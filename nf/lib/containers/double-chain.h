@@ -9,8 +9,8 @@
 //@ #include "stdex.gh"
 
 struct DoubleChain;
-/* Makes sure the allocator structur fits into memory, and particularly into
-   32 bit address space. @*/
+// Makes sure the allocator structur fits into memory, and particularly into
+// 32 bit address space.
 #define IRANG_LIMIT (1048576)
 
 // kinda hacky, but makes the proof independent of vigor_time_t... sort of
@@ -360,15 +360,13 @@ struct DoubleChain;
   }
   @*/
 
-/**
-   Allocate memory and initialize a new double chain allocator. The produced
-   allocator will operate on indexes [0-index).
 
-   @param index_range - the limit on the number of allocated indexes.
-   @param chain_out - an output pointer that will hold the pointer to the newly
-                      allocated allocator in the case of success.
-   @returns 0 if the allocation failed, and 1 if the allocation is successful.
-*/
+//   Allocate memory and initialize a new double chain allocator. The produced
+//   allocator will operate on indexes [0-index).
+//   @param index_range - the limit on the number of allocated indexes.
+//   @param chain_out - an output pointer that will hold the pointer to the newly
+//                      allocated allocator in the case of success.
+//   @returns 0 if the allocation failed, and 1 if the allocation is successful.
 int dchain_allocate(int index_range, struct DoubleChain** chain_out);
 /*@ requires *chain_out |-> ?old_val &*&
              0 < index_range &*& index_range <= IRANG_LIMIT; @*/
@@ -378,15 +376,12 @@ int dchain_allocate(int index_range, struct DoubleChain** chain_out);
               double_chainp(empty_dchain_fp(index_range, 0), chp));
             @*/
 
-/**
-   Allocate a fresh index. If there is an unused, or expired index in the range,
-   allocate it.
-
-   @param chain - pointer to the allocator.
-   @param index_out - output pointer to the newly allocated index.
-   @param time - current time. Allocator will note this for the new index.
-   @returns 0 if there is no space, and 1 if the allocation is successful.
- */
+//   Allocate a fresh index. If there is an unused, or expired index in the range,
+//   allocate it.
+//   @param chain - pointer to the allocator.
+//   @param index_out - output pointer to the newly allocated index.
+//   @param time - current time. Allocator will note this for the new index.
+//   @returns 0 if there is no space, and 1 if the allocation is successful.
 int dchain_allocate_new_index(struct DoubleChain* chain,
                               int* index_out, vigor_time_t time);
 /*@ requires double_chainp(?ch, chain) &*&
@@ -400,15 +395,13 @@ int dchain_allocate_new_index(struct DoubleChain* chain,
              0 <= ni &*& ni < dchain_index_range_fp(ch) &*&
              double_chainp(dchain_allocate_fp(ch, ni, time), chain)); @*/
 
-/**
-   Update the index timestamp. Needed to keep the index from expiration.
 
-   @param chain - pointer to the allocator.
-   @param index - the index to rejuvenate.
-   @param time - the current time, it will replace the old timestamp.
-   @returns 1 if the timestamp was updated, and 0 if the index is not tagged as
-            allocated.
- */
+//   Update the index timestamp. Needed to keep the index from expiration.
+//   @param chain - pointer to the allocator.
+//   @param index - the index to rejuvenate.
+//   @param time - the current time, it will replace the old timestamp.
+//   @returns 1 if the timestamp was updated, and 0 if the index is not tagged as
+//            allocated.
 int dchain_rejuvenate_index(struct DoubleChain* chain,
                             int index, vigor_time_t time);
 /*@ requires double_chainp(?ch, chain) &*&
@@ -421,16 +414,14 @@ int dchain_rejuvenate_index(struct DoubleChain* chain,
             (result == 0 &*&
              double_chainp(ch, chain)); @*/
 
-/**
-   Make space in the allocator by expiring the least recently used index.
 
-   @param chain - pointer to the allocator.
-   @param index_out - output pointer to the expired index.
-   @param time - the time border, separating expired indexes from non-expired
-                 ones.
-   @returns 1 if the oldest index is older then current time and is expired,
-   0 otherwise.
- */
+//   Make space in the allocator by expiring the least recently used index.
+//   @param chain - pointer to the allocator.
+//   @param index_out - output pointer to the expired index.
+//   @param time - the time border, separating expired indexes from non-expired
+//                ones.
+//   @returns 1 if the oldest index is older then current time and is expired,
+//   0 otherwise.
 int dchain_expire_one_index(struct DoubleChain* chain,
                             int* index_out, vigor_time_t time);
 /*@ requires double_chainp(?ch, chain) &*&

@@ -256,18 +256,6 @@ void array_bat_end_access(struct ArrayBat *arr)
   //@ close arrp_bat(update(index, x, lst), arr);
 }
 
-/* @
-   //TODO
-  lemma void construct_bat_element(ARRAY_BAT_EL_TYPE *p)
-  requires p->len |-> ?l &*&
-           pointers((void*)&p->batch, ARRAY_BAT_CAPACITY, _) &*&
-           struct_Batcher_padding(p);
-  ensures batcherpp(_, p);
-  {
-    
-  }
-  @*/
-
 #endif//KLEE_VERIFICATION
 
 #endif//_ARRAY_BAT_IMPL_H_INCLUDED_

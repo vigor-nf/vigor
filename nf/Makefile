@@ -56,13 +56,15 @@ include $(RTE_SDK)/mk/rte.extapp.mk
 ### VeriFast verification ###
 LIBVIG_SRC_ARITH := $(SELF_DIR)/lib/containers/arith.c \
                     $(SELF_DIR)/lib/containers/modulo.c
-LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.o \
-              $(SELF_DIR)/lib/containers/modulo.o \
+LIBVIG_SRC_Z3 := $(subst .c,.o,$(LIBVIG_SRC_ARITH)) \
+                 $(SELF_DIR)/lib/containers/bitopsutils.c \
+                 $(SELF_DIR)/lib/containers/mod_pow2.c \
+                 $(SELF_DIR)/lib/containers/lpm-dir-24-8-lemmas.c \
+                 $(SELF_DIR)/lib/containers/lpm-dir-24-8.c
+LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
               $(SELF_DIR)/lib/containers/double-chain-impl.c \
               $(SELF_DIR)/lib/containers/double-chain.c \
               $(SELF_DIR)/lib/containers/map-impl.c \
-              $(SELF_DIR)/lib/containers/bitopsutils.o \
-              $(SELF_DIR)/lib/containers/mod_pow2.o \
               $(SELF_DIR)/lib/containers/map-impl-pow2.c \
               $(SELF_DIR)/lib/containers/double-map.c \
               $(SELF_DIR)/lib/containers/vector.c \
@@ -76,31 +78,21 @@ LIBVIG_SRC := $(SELF_DIR)/lib/containers/arith.o \
               $(SELF_DIR)/lib/coherence.c \
               $(SELF_DIR)/lib/expirator.c
 
-LIBVIG_SRC_Z3 := $(SELF_DIR)/lib/containers/arith.o \
-                 $(SELF_DIR)/lib/containers/modulo.o \
-                 $(SELF_DIR)/lib/containers/bitopsutils.c \
-                 $(SELF_DIR)/lib/containers/mod_pow2.c \
-                 $(SELF_DIR)/lib/containers/lpm-dir-24-8-lemmas.c \
-                 $(SELF_DIR)/lib/containers/lpm-dir-24-8.c
-
-LIBVIG_MAP_CAP_POW2 := $(SELF_DIR)/lib/containers/arith.o \
-                       $(SELF_DIR)/lib/containers/modulo.o \
-                       $(SELF_DIR)/lib/containers/bitopsutils.o \
-                       $(SELF_DIR)/lib/containers/mod_pow2.o \
-                       $(SELF_DIR)/lib/containers/map-impl-pow2.o \
-                       $(SELF_DIR)/lib/containers/listutils-lemmas.o \
-                       $(SELF_DIR)/lib/containers/map.c
-
+VERIFAST_COMMAND := verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared
+VERIFAST_CLEAN_COMMAND := rm -rf $(SELF_DIR)/**/*.vfmanifest
 verifast:
-	rm -f $(SELF_DIR)/lib/*.vfmanifest $(SELF_DIR)/lib/**/*.vfmanifest
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest $(LIBVIG_SRC_ARITH)
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -prover="Z3v4.5" -shared -emit_vfmanifest \
-    $(LIBVIG_SRC_Z3)
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -emit_vfmanifest \
-    $(LIBVIG_SRC)
-	verifast -I $(SELF_DIR) -I $(SELF_DIR)/lib/stubs/dpdk -allow_assume -shared -D CAPACITY_POW2 \
-		$(LIBVIG_MAP_CAP_POW2)
-	rm $(SELF_DIR)/lib/*.vfmanifest $(SELF_DIR)/lib/**/*.vfmanifest
+	@printf '\n\n!!!\n\n'
+	@printf 'This is gonna take a while, go make a nice cup of tea...\n\n'
+	@printf 'Note that we are verifying the code twice, once with the power-of-two optimization for the map and once without\n'
+	@printf 'Also, some parts of the proof can only be verified with Z3 and some with the standard VeriFast solver, so we split the verification in parts...\n'
+	@printf '\n!!!\n\n'
+	@$(VERIFAST_CLEAN_COMMAND)
+	@$(VERIFAST_COMMAND) -emit_vfmanifest $(LIBVIG_SRC_ARITH)
+	@$(VERIFAST_COMMAND) -prover="Z3v4.5" -emit_vfmanifest $(LIBVIG_SRC_Z3)
+	@$(VERIFAST_COMMAND) -emit_vfmanifest $(LIBVIG_SRC)
+	@$(VERIFAST_COMMAND) -emit_vfmanifest -D CAPACITY_POW2 $(LIBVIG_SRC)
+	@$(VERIFAST_CLEAN_COMMAND)
+
 
 ### KLEE verification ###
 
@@ -271,5 +263,7 @@ loc-dsos:
 	echo 'todo'
 
 loc-libvig:
-	cloc --force-lang 'Pig Latin',gh  $(LIBVIG_SRC) lib/containers/*.gh
-	@echo 'NOTE: C comments + Pig Latin == VeriFast annotations'
+	@# Bit of a hack for this one, cloc can't be given a custom language but for some reason it knows about Pig Latin, which is never gonna happen in our codebase, so...
+	@cloc --quiet --force-lang 'Pig Latin',gh  $(subst .o,.c,$(LIBVIG_SRC)) $(SELF_DIR)/lib/containers/*.gh | sed 's/Pig Latin/VeriFast /g'
+	@echo "NOTE: Annotations == VeriFast code + C comments - $$(grep '//[^@]' $(subst .o,.c,$(LIBVIG_SRC)) | wc -l) (that last number is the non-VeriFast C comments)"
+	@if grep -F '/*' $(subst .o,.c,$(LIBVIG_SRC)) | grep -vF '/*@'; then echo 'ERROR: There are multiline non-VeriFast comments in the C code, the total above is wrong!'; fi

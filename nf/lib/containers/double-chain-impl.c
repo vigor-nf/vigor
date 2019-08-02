@@ -593,69 +593,6 @@ void dchain_impl_init(struct dchain_cell *cells, int size)
     glue_cells_body(cells+INDEX_SHIFT, drop(INDEX_SHIFT, cls), i - INDEX_SHIFT);
   }
   @*/
-/* @
-  lemma void free_list_above_alloc(list<dcell> cls, list<int> fl, int ind)
-  requires free_listp(cls, fl, FREE_LIST_HEAD, ind);
-  ensures free_listp(cls, fl, FREE_LIST_HEAD, ind) &*&
-          ALLOC_LIST_HEAD < dchain_cell_get_next(nth(ind, cls));
-  {
-    open free_listp(cls, fl, 1, ind);
-    switch(fl) {
-      case nil: break;
-      case cons(h,t):
-        open free_listp(cls, t, 1, h);
-        close free_listp(cls, t, 1, h);
-     };
-     close free_listp(cls, fl, 1, ind);
-  }
-  @ */
-
-
-/* @
-  lemma void free_mem_symm(list<dcell> cls, list<int> fl,
-                           int x, int i, int start)
-  requires free_listp(cls, fl, start, i) &*& true == mem(x, fl);
-  ensures free_listp(cls, fl, start, i) &*&
-          dchain_cell_get_next(nth(x,cls)) ==
-          dchain_cell_get_prev(nth(x,cls));
-  {
-    switch(fl) {
-      case nil:
-        return;
-      case cons(h,t):
-        open free_listp(cls, fl, start, i);
-        if (h == x) {
-          open free_listp(cls, t, start, h);
-          close free_listp(cls, t, start, h);
-        }
-        else {
-          free_mem_symm(cls, t, x, h, start);
-        }
-        close free_listp(cls, fl, start, i);
-    }
-  }
-
-  lemma void alloc_mem_asymm(list<dcell> cls, list<int> al, int x, int i, int start)
-  requires alloc_listp(cls, al, start, i) &*& true == mem(x, al);
-  ensures alloc_listp(cls, al, start, i) &*&
-          dchain_cell_get_next(nth(x, cls)) !=
-          dchain_cell_get_prev(nth(x, cls));
-  {
-    switch(al) {
-      case nil:
-        return;
-      case cons(h,t):
-        open alloc_listp(cls, al, start, i);
-        if (h == x) {
-          open alloc_listp(cls, t, start, h);
-          close alloc_listp(cls, t, start, h);
-        } else {
-          alloc_mem_asymm(cls, t, x, h, start);
-        }
-        close alloc_listp(cls, al, start, i);
-    }
-  }
-  @ */
 /*@
 
   lemma void free_alloc_disjoint(list<int> al, list<int> fl, int x, nat size)
@@ -1276,7 +1213,7 @@ int dchain_impl_allocate_new_index(struct dchain_cell *cells, int *index)
   //@ dcellsp_length(cells);
   //@ assert free_listp(cls, ?fl, 1, 1);
   //@ assert alloc_listp(cls, ?al, 0, 0);
-  /* No more empty cells. */
+  // No more empty cells
   //@ mul_nonnegative(size, sizeof(struct dchain_cell));
   //@ dcells_limits(cells);
   //@ extract_heads(cells, cls);
@@ -1305,11 +1242,11 @@ int dchain_impl_allocate_new_index(struct dchain_cell *cells, int *index)
   //@ dcells_limits(cells+INDEX_SHIFT);
   //@ extract_cell(cells, cls, allocated);
   struct dchain_cell* allocp = cells + allocated;
-  /* Extract the link from the "empty" chain. */
+  // Extract the link from the "empty" chain.
   fl_head->next = allocp->next;
   fl_head->prev = fl_head->next;
 
-  /* Add the link to the "new"-end "alloc" chain. */
+  // Add the link to the "new"-end "alloc" chain.
   allocp->next = ALLOC_LIST_HEAD;
   allocp->prev = al_head->prev;
   //@ dcell nalloc = dcell(dchain_cell_get_prev(nth(ALLOC_LIST_HEAD,cls)),ALLOC_LIST_HEAD);
@@ -1922,7 +1859,7 @@ int dchain_impl_free_index(struct dchain_cell *cells, int index)
   int freed_prev = freedp->prev;
   int freed_next = freedp->next;
   //@ glue_cells(cells, cls, freed);
-  /* The index is already free. */
+  // The index is already free.
   if (freed_next == freed_prev) {
     if (freed_prev != ALLOC_LIST_HEAD) {
       //@ lbounded_then_start_nonmem(al, ALLOC_LIST_HEAD);
@@ -1969,7 +1906,7 @@ int dchain_impl_free_index(struct dchain_cell *cells, int index)
     }
   @*/
 
-  /* Extract the link from the "alloc" chain. */
+  // Extract the link from the "alloc" chain.
   //@ mul_nonnegative(freed_prev, sizeof(struct dchain_cell));
   struct dchain_cell* freed_prevp = cells + freed_prev;
   freed_prevp->next = freed_next;
@@ -2027,7 +1964,7 @@ int dchain_impl_free_index(struct dchain_cell *cells, int index)
     @*/
   //@ extract_cell(cells, ncls2, freed);
 
-  /* Add the link to the "free" chain. */
+  // Add the link to the "free" chain.
   freedp->next = fr_head->next;
   freedp->prev = freedp->next;
   //@ int fr_fst = dchain_cell_get_next(nth(FREE_LIST_HEAD, cls));
@@ -2189,7 +2126,7 @@ int dchain_impl_get_oldest_index(struct dchain_cell *cells, int *index)
   //@ dcells_limits(cells);
   //@ extract_heads(cells, cls);
   struct dchain_cell *al_head = cells + ALLOC_LIST_HEAD;
-  /* No allocated indexes. */
+  // No allocated indexes.
   if (al_head->next == al_head->prev) {
     if (al_head->next == ALLOC_LIST_HEAD) {
       //@ alloc_list_empty(cls, al, ALLOC_LIST_HEAD);
@@ -2277,7 +2214,7 @@ int dchain_impl_rejuvenate_index(struct dchain_cell *cells, int index)
   int lifted_prev = liftedp->prev;
   //@ forall_nth(cls, (dbounded)(size+INDEX_SHIFT), lifted);
   //@ glue_cells(cells, cls, lifted);
-  /* The index is not allocated. */
+  // The index is not allocated.
   if (lifted_next == lifted_prev) {
     if (lifted_next != ALLOC_LIST_HEAD) {
       //@ lbounded_then_start_nonmem(al, ALLOC_LIST_HEAD);
@@ -2289,7 +2226,7 @@ int dchain_impl_rejuvenate_index(struct dchain_cell *cells, int index)
       //@ close dchainip(dc, cells);
       return 0;
     } else {
-      /* There is only one element allocated - no point in changing anything */
+      // There is only one element allocated - no point in changing anything
       //@ assert lifted_prev == ALLOC_LIST_HEAD;
       //@ assert lifted_next == ALLOC_LIST_HEAD;
       //@ lbounded_then_start_nonmem(fl, ALLOC_LIST_HEAD);
@@ -2339,7 +2276,7 @@ int dchain_impl_rejuvenate_index(struct dchain_cell *cells, int index)
 
   //@ assert false == mem(lifted_prev, fl);
   //@ assert false == mem(lifted_next, fl);
-  /* Unlink it from the middle of the "alloc" chain. */
+  // Unlink it from the middle of the "alloc" chain.
   /*@
     if (lifted_prev != ALLOC_LIST_HEAD) {
       dcells_limits(cells+INDEX_SHIFT);
@@ -2391,7 +2328,7 @@ int dchain_impl_rejuvenate_index(struct dchain_cell *cells, int index)
 
   //@ extract_cell(cells, ncls2, lifted);
 
-  /* Link it at the very end - right before the special link. */
+  // Link it at the very end - right before the special link.
   liftedp->next = ALLOC_LIST_HEAD;
   liftedp->prev = al_head_prev;
 

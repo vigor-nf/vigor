@@ -250,9 +250,7 @@ uint32_t build_mask_from_prefixlen(uint8_t prefixlen)
   return ip_masks[prefixlen];
 }
 
-/**
- * Extract the 24 MSB of an uint8_t array and returns them
- */
+// Extract the 24 MSB of an uint8_t array and returns them
 uint32_t lpm_24_extract_first_index(uint32_t data)
 //@ requires true;
 /*@ ensures 0 <= result &*& result < pow_nat(2, nat_of_int(24)) &*&
@@ -267,9 +265,7 @@ uint32_t lpm_24_extract_first_index(uint32_t data)
 }
 
 
-/**
- * Computes how many entries the rule will take
- */
+// Computes how many entries the rule will take
 uint32_t compute_rule_size(uint8_t prefixlen)
 //@ requires prefixlen <= 32;
 /*@ ensures result == compute_rule_size(prefixlen) &*&
@@ -700,7 +696,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
         lpm_24[lpm_24_index] = new_entry24;
         
         //@ assert lpm_24[0..lpm_24_MAX_ENTRIES] |-> ?updated_t_24;
-        /* @ assert map(entry_24_mapping, updated_t_24) ==
+        /*@ assert map(entry_24_mapping, updated_t_24) ==
                    update_n(map_24, lpm_24_index, N1,
                                    entry_24_mapping(new_entry24));
         @*/
@@ -715,7 +711,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
       
       // @ assert true == valid_entry24(lpm_24_value);
       // @ assert true == extract_flag(lpm_24_value);
-      /* @ assert 0 <= extract_value(lpm_24_value) &*&
+      /*@ assert 0 <= extract_value(lpm_24_value) &*&
                  extract_value(lpm_24_value) <= 0xFF;
       @*/
       // @ assert snd(p) == Z_of_int(extract_value(lpm_24_value),N16);

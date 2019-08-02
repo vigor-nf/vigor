@@ -16,16 +16,6 @@
   @*/
 
 
-/* @
-  lemma void erase_nothing<K1,K2,V>(dmap<K1,K2,V> m)
-  requires true;
-  ensures dmap_erase_all_fp(m, nil) == m;
-  {
-    switch(m) { case dmap(ks1, ks2, idxs):
-    }
-  }
-  @*/
-
 int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
                                  struct DoubleMap* map,
                                  vigor_time_t time)
