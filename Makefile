@@ -246,16 +246,16 @@ verify-dsos: verify-dsos-nf.bc
 
 # cloc instead of sloccount because the latter does not report comments, and all VeriFast annotations are comments
 
-loc: all
-	cloc $(SRCS-y) $(AUTO_GEN_FILES)
+count-loc: all
+	@cloc $(SRCS-y) $(AUTO_GEN_FILES)
 
-loc-dpdk:
-	cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
+count-fullstack-loc:
+	@cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
 
-loc-dsos:
-	echo 'todo'
+count-spec-loc:
+	@cloc spec.py
 
-loc-libvig:
+count-lib-loc:
 	@# Bit of a hack for this one, cloc can't be given a custom language but for some reason it knows about Pig Latin, which is never gonna happen in our codebase, so...
 	@cloc --quiet --force-lang 'Pig Latin',gh  $(subst .o,.c,$(LIBVIG_SRC)) $(SELF_DIR)/lib/containers/*.gh | sed 's/Pig Latin/VeriFast /g'
 	@echo "NOTE: Annotations == VeriFast code + C comments - $$(grep '//[^@]' $(subst .o,.c,$(LIBVIG_SRC)) | wc -l) (that last number is the non-VeriFast C comments)"

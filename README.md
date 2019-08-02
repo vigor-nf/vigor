@@ -57,7 +57,9 @@ To **verify with hardware models**, run `make symbex-fullstack validate`.
 
 To **verify using a pay-as-you-go specification**, add `VIGOR_SPEC=your_spec.py` before the verify command.
 
-To **count the lines of code of the NF**, run `make count-nf-loc`.
+To **count the lines of code of the NF**, run `make count-loc`.
+
+To **count the lines of code of the NF including DPDK**, run  `make count-fullstack-loc`.
 
 To **count the lines of code of the spec**, run `make count-spec-loc`.
 

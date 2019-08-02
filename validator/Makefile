@@ -20,11 +20,7 @@ vig%: clean validator.byte
 	./test_all.sh ../$@/klee-last out .. $@_fspec.cma
 
 # Regression test suite
-test-results/%.done: regression-tests/%
-	./run-test.sh $* test-results
-	touch $@
-
-check: $(patsubst regression-tests/%,test-results/%.done,$(wildcard regression-tests/*))
-
-loc-spec:
-	cloc --by-file !(translate-spec).py
+#test-results/%.done: regression-tests/%
+#	./run-test.sh $* test-results
+#	touch $@
+#check: $(patsubst regression-tests/%,test-results/%.done,$(wildcard regression-tests/*))
