@@ -13,4 +13,4 @@ install:
   - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/
 
 script:
-  - docker exec vignat-deps /bin/bash test-vigor.sh
+  - docker exec vignat-deps /bin/bash .travis-test.sh
