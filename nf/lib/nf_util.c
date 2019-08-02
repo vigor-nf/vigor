@@ -15,6 +15,10 @@
 
 #include "nf_util.h"
 
+#ifdef KLEE_VERIFICATION
+#include <klee/klee.h>
+#endif
+
 void* chunks_borrowed[MAX_N_CHUNKS];
 size_t chunks_borrowed_num = 0;
 

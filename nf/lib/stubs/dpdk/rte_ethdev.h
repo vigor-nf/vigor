@@ -7,6 +7,8 @@
 #include "lib/packet-io.h"
 #include "lib/stubs/packet-io-stub-control.h"
 
+#include <rte_mbuf.h>
+
 #include <klee/klee.h>
 
 struct rte_eth_link {

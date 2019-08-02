@@ -163,7 +163,7 @@ VERIF_DPDK_INCLUDES := -I $(RTE_SDK)/$(RTE_TARGET)/include \
 			-I $(RTE_SDK)/drivers/bus/pci \
 			-I $(RTE_SDK)/drivers/net/ixgbe
 # And then some special DPDK includes: builtin_stubs for built-ins DPDK uses
-VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h
+VERIF_DPDK_INCLUDES += --include=lib/stubs/builtin_stub.h --include=rte_config.h
 
 # Files for DPDK
 # Low-level stubs for specific functions
