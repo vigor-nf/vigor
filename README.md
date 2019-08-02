@@ -9,19 +9,18 @@ To **compile and run** Vigor NFs, you need:
 
 - At least 16 GB of RAM, 8 GB of which is allocated as 4096x2MB hugepages; see the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#linux-gsg-hugepages) to set up hugepages.
 - A DPDK-compatible NIC with at least two ports, bound to DPDK using the `dpdk-devbind.py` tool.
-- To run `install.sh no-verify`.
-
+- To run `setup.sh no-verify`.
 
 To **verify** NFs using **DPDK models**, you need:
 
 - ??? TODO: Measure max RAM usage of verifying NFs with dpdk stubs, pad a healthy margin ???
-- To run `install.sh` (no arguments)
+- To run `setup.sh` (no arguments)
 
 To **verify** NFs using **hardware models**, you need:
 
 - At least 128 GB of RAM
 - As many CPU cores as you can find, since the Vigor Validator is embarassingly parallelizable
-- To run `install.sh` (no arguments)
+- To run `setup.sh` (no arguments)
 
 To **benchmark** Vigor NFs, you need:
 
@@ -50,11 +49,11 @@ Pick the NF you want to work with by `cd`-ing to its folder.
 
 To **compile**, run `make`.
 
-To **run**, compile then run `./build/nf`, which will display the command-line arguments you need to pass to the NF.
+To **run**, run `make run` to use recommended arguments, or compile then run `./build/nf` which will display the command-line arguments you need to pass to the NF.
 
 To **verify with DPDK models**, run `make symbex validate`.
 
-To **verify with hardware models**, run `make symbex-hw validate`.
+To **verify with hardware models**, run `make symbex-fullstack validate`.
 
 To **verify using a pay-as-you-go specification**, add `VIGOR_SPEC=your_spec.py` before the verify command.
 
@@ -63,6 +62,8 @@ To **count the lines of code of the NF**, run `make count-nf-loc`.
 To **count the lines of code of the spec**, run `make count-spec-loc`.
 
 To **count the lines of code of libVig**, run `make count-lib-loc`.
+
+To **count the lines of code of the DSOS**, run `make count-os-loc`
 
 To **benchmark**, run `make benchmark-throughput` or `make benchmark-latency`.
 
@@ -79,5 +80,5 @@ We depend on, and are grateful for:
 - [KLEE](https://klee.github.io), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/klee)
 - [KLEE-uClibc](https://github.com/klee/klee-uclibc)
 - [OCaml](https://ocaml.org)
-- [VeriFast](https://people.cs.kuleuven.be/~bart.jacobs/verifast)
+- [VeriFast](https://people.cs.kuleuven.be/~bart.jacobs/verifast), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/verifast)
 - [Z3](https://github.com/Z3Prover/z3/wiki)
