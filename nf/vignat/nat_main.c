@@ -45,7 +45,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
 	NF_DEBUG("packet type: %d", mbuf->packet_type);
-	if (mbuf->packet_type == 0 ||
+	if (mbuf->packet_type != 0 &&
       !RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
 		NF_DEBUG("Not IPv4, dropping");
 		return in_port;
