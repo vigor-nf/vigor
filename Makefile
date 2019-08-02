@@ -204,16 +204,6 @@ verify-dpdk: verify-dpdk-nf.bc $(AUTO_GEN_FILES)
 	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 	$(CLEAN_COMMAND)
 
-verify-driver: $(AUTO_GEN_FILES)
-	echo "verify-driver is not supported anymore"
-	$(CLEAN_COMMAND)
-	# Use DPDK stuff + stub driver
-	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_DRIVER $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/driver_stub.c $(VERIF_FLAGS)
-	$(LINK_COMMAND)
-	$(OPT_COMMAND)
-	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
-	$(CLEAN_COMMAND)
-
 verify-hardware-nf.bc: $(AUTO_GEN_FILES)
 	$(CLEAN_COMMAND)
 	# Use DPDK stuff + stub hardware
