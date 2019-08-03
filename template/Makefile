@@ -1,0 +1,24 @@
+# ===
+# This Makefile describes the NF, add the necessary files and command-line arguments here.
+# ===
+
+# All non-generated NF files
+NF_FILES := main.c config.c
+
+# All structure files whose implementation should be auto-generated
+NF_AUTOGEN_SRCS := flow.h
+
+# Arguments used during symbolic execution
+NF_VERIF_ARGS := --lan-dev 0 \
+                 --wan 1 \
+                 --expire 10 \
+                 --starting-port 0 \
+                 --max-flows 65536 \
+                 --extip 0.0.0.0 \
+                 --eth-dest 0,01:23:45:67:89:00 \
+                 --eth-dest 1,01:23:45:67:89:01
+
+
+
+# DO NOT CHANGE - Include parent (in a convoluted way cause of DPDK)
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

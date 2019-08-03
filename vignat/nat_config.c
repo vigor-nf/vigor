@@ -13,18 +13,23 @@
 #include <cmdline_parse_etheraddr.h>
 #include <cmdline_parse_ipaddr.h>
 
+#include "nf.h"
 #include "libvig/nf_util.h"
 #include "libvig/nf_log.h"
 
 
 #define PARSE_ERROR(format, ...) \
-		nat_config_cmdline_print_usage(); \
+		nf_config_usage(); \
 		rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
 
-void nat_config_init(struct nat_config* config,
-                     int argc, char** argv)
+void nf_config_init(int argc, char** argv)
 {
+	config = malloc(sizeof(struct nf_config));
+	if (config == NULL) {
+		rte_exit(EXIT_FAILURE, "No memory for config");
+	}
+
 	uint16_t nb_devices = rte_eth_dev_count();
 
 	struct option long_options[] = {
@@ -116,7 +121,7 @@ void nat_config_init(struct nat_config* config,
 	optind = 1;
 }
 
-void nat_config_cmdline_print_usage(void)
+void nf_config_usage(void)
 {
 	NF_INFO("Usage:\n"
 		"[DPDK EAL options] --\n"
@@ -130,7 +135,7 @@ void nat_config_cmdline_print_usage(void)
 	);
 }
 
-void nat_print_config(struct nat_config* config)
+void nf_config_print(void)
 {
 	NF_INFO("\n--- NAT Config ---\n");
 

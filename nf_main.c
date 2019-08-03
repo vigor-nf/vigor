@@ -10,7 +10,7 @@
 #include <rte_mbuf.h>
 
 #include "libvig/boilerplate_util.h"
-#include "libvig/nf_forward.h"
+#include "nf.h"
 #include "libvig/nf_log.h"
 #include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
@@ -169,14 +169,14 @@ lcore_main(void)
     }
   }
 
-  nf_core_init();
+  nf_init();
 
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
   VIGOR_LOOP_BEGIN
     struct rte_mbuf* mbuf;
     if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
-      uint16_t dst_device = nf_core_process(mbuf, VIGOR_NOW);
+      uint16_t dst_device = nf_process(mbuf, VIGOR_NOW);
       nf_return_all_chunks(mbuf_pkt(mbuf));
 
       if (dst_device == VIGOR_DEVICE) {
@@ -207,7 +207,7 @@ MAIN(int argc, char* argv[])
 
   // NF-specific config
   nf_config_init(argc, argv);
-  nf_print_config();
+  nf_config_print();
 
   // Create a memory pool
   unsigned nb_devices = rte_eth_dev_count();

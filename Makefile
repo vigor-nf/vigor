@@ -255,3 +255,11 @@ count-lib-loc:
 # Validation
 validate: autogen
 	cd $(SELF_DIR)/validator && make $(notdir $(shell pwd))
+
+
+# New NF
+new-nf:
+	@read -p 'NF short name, e.g. "nat": ' name; \
+	 mkdir vig$name; \
+	 cp template/* vig$name/.; \
+	 echo 'Go to the vig$name folder, and check out the comments in each file.'

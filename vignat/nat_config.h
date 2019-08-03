@@ -3,11 +3,11 @@
 #include <stdint.h>
 
 #include <rte_ether.h>
+
 #include "libvig/nf_time.h"
 
 
-
-struct nat_config {
+struct nf_config {
 	// "Main" LAN (i.e. internal) device, used for dumb forwarding
 	uint16_t lan_main_device;
 
@@ -33,11 +33,3 @@ struct nat_config {
 	// Size of the flow table
 	uint32_t max_flows;
 };
-
-
-void nat_config_init(struct nat_config* config,
-                     int argc, char** argv);
-
-void nat_config_cmdline_print_usage(void);
-
-void nat_print_config(struct nat_config* config);

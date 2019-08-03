@@ -32,47 +32,51 @@ To **benchmark** Vigor NFs, you need:
 
 # Compiling, Running, Verifying and Benchmarking Vigor NFs
 
-There are currently five Vigor NFs, each in its own folder:
+There are currently five Vigor NFs:
 
-- `vigbridge`, a bridge with MAC learning according to [IEEE 802.1Q-2014](https://standards.ieee.org/standard/802_1Q-2014.html) sections 8.7 and 8.8
-- `vigfw`, a firewall whose specification we invented
-- `viglb`, a load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)
-- `vignat`, a NAT according to RFC 3022
-- `vigpolicer`, a traffic policer whose specification we invented
+| NF            | Folder      | Description                                                                                                                         |
+| ------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://standards.ieee.org/standard/802_1Q-2014.html) sections 8.7 and 8.8 |
+| Firewall      | `vigfw`     | Firewall whose specification we invented                                                                                            |
+| Load balancer | `viglb`     | Load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)                                               |
+| NAT           | `vignat`    | NAT according to [RFC 3022](https://www.ietf.org/rfc/rfc3022.txt)                                                                   |
+| Policer       | `vigpol`    | Traffic policer whose specification we invented                                                                                     |
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
 - ??? TODO baselines ???
 
 
-Pick the NF you want to work with by `cd`-ing to its folder.
+Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
 
-To **compile**, run `make`.
+| Target(s)                  | Description                                | Expected duration |
+| -------------------------- | ------------------------------------------ | ----------------- |
+| Default                    | Compile the NF                             | <1min             |
+| `run`                      | Run the NF using recommended arguments     | <1min to start    |
+| `symbex validate`          | Verify the NF with DPDK models             | <1min to symbex, then ??? to validate
+| `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | ??? to symbex, then ??? to validate
+| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | ??? to symbex then ??? to validate
+| `count-loc`                | Count lines of code of the NF              | <1min             |
+| `count-dpdk-loc`           | Count lines of code in DPDK                | <1min             |
+| `count-dsos-loc`           | Count lines of code in the DSOS            | <1min             |
+| `count-spec-loc`           | Count lines of code in the specification   | <1min             |
+| `count-libvig-loc`         | Count lines of code of libVig              | <1min             |
+| `benchmark-throughput`     | Benchmark the NF's throughput              | ???               |
+| `benchmark-latency`        | Benchmark the NF's latency                 | ???               |
 
-To **run**, run `make run` to use recommended arguments, or compile then run `./build/nf` which will display the command-line arguments you need to pass to the NF.
+To run with your own arguments, compile then run `./build/nf` which will display the command-line arguments you need to pass to the NF.
 
-To **verify with DPDK models**, run `make symbex validate`.
+To verify using a pay-as-you-go specification, add `VIGOR_SPEC=your_spec.py` before a verification command.
 
-To **verify with hardware models**, run `make symbex-fullstack validate`.
-
-To **verify using a pay-as-you-go specification**, add `VIGOR_SPEC=your_spec.py` before the verify command.
-
-To **count the lines of code of the NF**, run `make count-loc`.
-
-To **count the lines of code of the NF including DPDK**, run  `make count-fullstack-loc`.
-
-To **count the lines of code of the spec**, run `make count-spec-loc`.
-
-To **count the lines of code of libVig**, run `make count-lib-loc`.
-
-To **count the lines of code of the DSOS**, run `make count-os-loc`
-
-To **benchmark**, run `make benchmark-throughput` or `make benchmark-latency`.
+For instance:
+- To verify the "broadcast" pay-as-you-go property of the  Vigor bridge using DPDK models, run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
+- To benchmark the Vigor policer's throughput, run `cd vigpol` then `make benchmark-throughput`
 
 
-For instance, to verify the "broadcast" pay-as-you-go property of VigBridge using DPDK models,
-run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
+# Writing your own NF
 
+- Run `make new-nf` at the root of the repository, and answer the prompts.
+- ???
 
 # Dependencies
 
