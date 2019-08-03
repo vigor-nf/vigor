@@ -2,9 +2,11 @@
 
 #include <stdint.h>
 
+#include "nf.h"
+
 #define CONFIG_FNAME_LEN 512
 
-struct policer_config {
+struct nf_config {
   // LAN (i.e. internal) device
   uint16_t lan_device;
 
@@ -20,11 +22,3 @@ struct policer_config {
   // Size of the dynamic filtering table
   uint32_t dyn_capacity;
 };
-
-
-void policer_config_init(struct policer_config* config,
-                        int argc, char** argv);
-
-void policer_config_cmdline_print_usage(void);
-
-void policer_print_config(struct policer_config* config);

@@ -22,12 +22,16 @@ const uint32_t DEFAULT_BURST = 100000; // 100kB
 const uint32_t DEFAULT_CAPACITY = 128; // IPs
 
 #define PARSE_ERROR(format, ...) \
-    policer_config_cmdline_print_usage(); \
+    nf_config_usage(); \
     rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
-void policer_config_init(struct policer_config* config,
-                        int argc, char** argv)
+void nf_config_init(int argc, char** argv)
 {
+  config = malloc(sizeof(struct nf_config));
+  if (config == NULL) {
+    rte_exit(EXIT_FAILURE, "Not enough memory for config");
+  }
+
   // Set the default values
   config->lan_device = DEFAULT_LAN;
   config->wan_device = DEFAULT_WAN;
@@ -93,7 +97,7 @@ void policer_config_init(struct policer_config* config,
   optind = 1;
 }
 
-void policer_config_cmdline_print_usage(void)
+void nf_config_usage(void)
 {
   NF_INFO("Usage:\n"
          "[DPDK EAL options] --\n"
@@ -114,7 +118,7 @@ void policer_config_cmdline_print_usage(void)
          DEFAULT_CAPACITY);
 }
 
-void policer_print_config(struct policer_config* config)
+void nf_config_print(void)
 {
   NF_INFO("\n--- Policer Config ---\n");
 
