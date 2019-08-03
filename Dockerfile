@@ -1,4 +1,4 @@
-FROM ubuntu:xenial
+FROM ubuntu:bionic
 
 # Linux version (WITHOUT the -generic)
 ARG kernel_ver

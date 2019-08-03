@@ -54,8 +54,7 @@ if [ "$OS" = 'windows' ]; then
 elif [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
   KERNEL_VER=$(uname -r | sed 's/-generic//')
   if [ "$OS" = 'docker' ]; then
-      echo "Warning: the host($HOST_KERNEL_VER) and guest($KERNEL_VER)\
-          OS kernels must be somewhat compatible (because the guest uses the host kernel)"
+      echo "Warning: the guest uses the host kernel, so the guest should be able to install headers for the host's kernel..."
   fi
 
   sudo apt-get install -y "linux-headers-$KERNEL_VER"
