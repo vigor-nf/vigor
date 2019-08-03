@@ -1,7 +1,8 @@
 open Core
 open Ir
+open Common_fspec
 
-let validate_prefix fin intermediate_pref verifast_bin proj_root =
+let validate_prefix fin intermediate_pref verifast_bin proj_root nf_name =
   let spec_mod =  match !Fspec_api.spec with
     | Some m -> m
     | None -> failwith "Failed: could not find function spec dynamic module"
@@ -23,11 +24,12 @@ let validate_prefix fin intermediate_pref verifast_bin proj_root =
                        intermediate_fout ^ " " ^
                        export_fout));
   let ir =
-    Import.build_ir Spec.fun_types fin Spec.preamble Spec.boundary_fun Spec.finishing_fun
-      Spec.eventproc_iteration_begin Spec.eventproc_iteration_end
+    Import.build_ir (fun_types Spec.containers Spec.records) fin (gen_preamble (nf_name ^ "/loop.h") Spec.containers)
+     "loop_invariant_produce" "loop_invariant_consume"
+     "loop_invariant_produce" "loop_invariant_consume"
   in
   let ir = {ir with semantic_checks = if (ir.complete_event_loop_iteration) then
-                        Spec.user_check_for_complete_iteration
+                        ((abstract_state_capture Spec.containers) ^ (In_channel.read_all "forwarding_property.tmpl"))
                       else ""}
   in
   Out_channel.write_all ir_fname ~data:(Sexp.to_string (sexp_of_ir ir));
@@ -54,4 +56,4 @@ let load_plug fname =
 
 let () =
   load_plug Sys.argv.(1);
-  validate_prefix Sys.argv.(2) Sys.argv.(3) Sys.argv.(4) Sys.argv.(5)
+  validate_prefix Sys.argv.(2) Sys.argv.(3) Sys.argv.(4) Sys.argv.(5) Sys.argv.(6)

@@ -10,6 +10,8 @@ let flow_id_struct = Ir.Str ( "FlowId", ["src_port", Uint16;
                                          "dst_ip", Uint32;
                                          "protocol", Uint8;] )
 
+module Iface : Fspec_api.Spec =
+struct
 (* FIXME: borrowed from ../nf/vigfw/fw_data_spec.ml *)
 let containers = ["fm", Map ("FlowId", "max_flows", "");
                   "fv", Vector ("FlowId", "max_flows", "");
@@ -22,18 +24,6 @@ let containers = ["fm", Map ("FlowId", "max_flows", "");
 let records = String.Map.of_alist_exn
     ["FlowId", flow_id_struct;
      "uint32_t", Uint32;]
-
-module Iface : Fspec_api.Spec =
-struct
-  let preamble = gen_preamble "vigfw/fw_loop.h" containers
-  let fun_types = fun_types containers records
-  let boundary_fun = "loop_invariant_produce"
-  let finishing_fun = "loop_invariant_consume"
-  let eventproc_iteration_begin = "loop_invariant_produce"
-  let eventproc_iteration_end = "loop_invariant_consume"
-  let user_check_for_complete_iteration =
-    (abstract_state_capture containers) ^
-    (In_channel.read_all "fw_forwarding_property.tmpl")
 end
 
 (* Register the module *)

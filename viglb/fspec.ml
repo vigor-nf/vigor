@@ -15,6 +15,9 @@ let lb_backend_struct = Ir.Str ( "LoadBalancedBackend", ["nic", Uint16;
 
 let ip_addr_struct = Ir.Str("ip_addr", ["addr", Uint32])
 
+
+module Iface : Fspec_api.Spec =
+struct
 (* FIXME: borrowed from ../nf/vigbalancer/lb_data_spec.ml*)
 let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "lb_flow_id_condition");
                   "flow_heap", Vector ("LoadBalancedFlow", "flow_capacity", "");
@@ -37,18 +40,6 @@ let records = String.Map.of_alist_exn
      "ip_addr", ip_addr_struct;
      "uint32_t", Uint32;
      "LoadBalancedBackend", lb_backend_struct]
-
-module Iface : Fspec_api.Spec =
-struct
-  let preamble = gen_preamble "vigbalancer/lb_loop.h" containers
-  let fun_types = fun_types containers records
-  let boundary_fun = "loop_invariant_produce"
-  let finishing_fun = "loop_invariant_consume"
-  let eventproc_iteration_begin = "loop_invariant_produce"
-  let eventproc_iteration_end = "loop_invariant_consume"
-  let user_check_for_complete_iteration =
-    (abstract_state_capture containers) ^
-    (In_channel.read_all "balancer_forwarding_property.tmpl")
 end
 
 (* Register the module *)

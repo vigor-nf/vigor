@@ -1,6 +1,17 @@
 open Core
 open Ir
 
+(* FIXME: borrowed from ../codegen/data_spec.ml *)
+type container = Map of string * string * string
+               | Vector of string * string * string
+               | CHT of string * string
+               | DChain of string
+               | Int
+               | UInt
+               | UInt32
+               | EMap of string * string * string * string
+
+
 type lemma_params = {ret_name: string; ret_val: string;
                      args: string list;
                      arg_exps: tterm list;
@@ -93,13 +104,8 @@ let vigor_time_t = Sint64
 
 module type Spec =
 sig
-  val preamble  : string
-  val fun_types : fun_spec Core.String.Map.t
-  val boundary_fun : string
-  val finishing_fun : string
-  val eventproc_iteration_begin : string
-  val eventproc_iteration_end : string
-  val user_check_for_complete_iteration : string
+  val records: ttype String.Map.t
+  val containers: (string * container) list
 end
 
 let spec : (module Spec) option ref = ref None

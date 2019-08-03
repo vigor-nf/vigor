@@ -250,3 +250,8 @@ count-lib-loc:
 	@cloc --quiet --force-lang 'Pig Latin',gh  $(subst .o,.c,$(LIBVIG_SRC)) $(SELF_DIR)/lib/containers/*.gh | sed 's/Pig Latin/VeriFast /g'
 	@echo "NOTE: Annotations == VeriFast code + C comments - $$(grep '//[^@]' $(subst .o,.c,$(LIBVIG_SRC)) | wc -l) (that last number is the non-VeriFast C comments)"
 	@if grep -F '/*' $(subst .o,.c,$(LIBVIG_SRC)) | grep -vF '/*@'; then echo 'ERROR: There are multiline non-VeriFast comments in the C code, the total above is wrong!'; fi
+
+
+# Validation
+validate: autogen
+	cd $(SELF_DIR)/validator && make $(notdir $(shell pwd))

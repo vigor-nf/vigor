@@ -3,15 +3,6 @@ open Str
 open Fspec_api
 open Ir
 
-(* FIXME: borrowed from ../codegen/data_spec.ml *)
-type container = Map of string * string * string
-               | Vector of string * string * string
-               | CHT of string * string
-               | DChain of string
-               | Int
-               | UInt
-               | UInt32
-               | EMap of string * string * string * string
 
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
