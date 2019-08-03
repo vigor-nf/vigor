@@ -4,26 +4,16 @@
 
 set -euxo pipefail
 
-# TODO: make verify-* (use travis jobs to parellelize)
 for nf in vig*; do
   pushd "$nf"
     make clean
     make
-    make verify-dpdk
+    make symbex validate
   popd
 done
 
-echo "All symbex succeeded"
+echo "All NFs succeeded"
 
 make verifast
 
 echo "All verifast checks pass"
-
-pushd validator
-  make all
-  mkdir test-results
-  make check -j$(nproc)
-  rm -r test-results
-popd
-
-echo "All validator checks pass"
