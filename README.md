@@ -5,6 +5,11 @@ This repository contains the Vigor verification toolchain and network functions 
 Our scripts assume you are using Ubuntu 18.04, with an active Internet connection to download dependencies.
 Older Ubuntus, or other Debian-based distros, may work but have not been tested.
 
+As an alternative to installing the dependencies on your own machine, we provide a Docker image: `dslab-epfl/vigor`.
+However, you must still use Ubuntu 18.04 as a host, since the guest uses the host's kernel and DPDK needs kernel headers to compile.
+This image can be generated with the `./Docker-create.sh` script.
+SOSPTODO: Arseniy please create a dslab-epfl org on Docker Hub (and write down the password somewhere shared...), generate the image (which has to include the released version of this repo) and publish it.
+
 To **compile and run** Vigor NFs, you need:
 
 - At least 16 GB of RAM, 8 GB of which is allocated as 4096x2MB hugepages; see the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#linux-gsg-hugepages) to set up hugepages.
