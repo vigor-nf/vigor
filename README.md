@@ -75,8 +75,8 @@ For instance:
 
 # Writing your own NF
 
-- Run `make new-nf` at the root of the repository, and answer the prompts.
-- ???
+- Run `make new-nf` at the root of the repository, and answer the prompt.
+
 
 # Dependencies
 
