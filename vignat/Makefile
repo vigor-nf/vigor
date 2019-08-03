@@ -1,6 +1,5 @@
 # Runtime and verification files
-NF_FILES := nat_main.c nat_config.c \
-            flow.h.gen.c nat_flowmanager.c
+NF_FILES := nat_main.c nat_config.c nat_flowmanager.c
 
 # Auto-generated files' sources
 NF_AUTOGEN_SRCS := flow.h
