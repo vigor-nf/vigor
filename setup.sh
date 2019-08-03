@@ -202,7 +202,7 @@ pushd "$BUILDDIR/llvm"
   . "$PATHSFILE"
 popd
 
-git clone --depth 1 --branch fix_no_buffers https://github.com/vignat/klee-uclibc.git "$BUILDDIR/klee-uclibc"
+git clone --depth 1 https://github.com/klee/klee-uclibc.git "$BUILDDIR/klee-uclibc"
 pushd "$BUILDDIR/klee-uclibc"
   ./configure \
    --make-llvm-lib \
