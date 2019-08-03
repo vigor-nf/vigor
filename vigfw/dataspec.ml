@@ -8,8 +8,4 @@ let containers = ["fm", Map ("FlowId", "max_flows", "");
                   "fw_device", UInt32;
                   "flow_emap", EMap ("FlowId", "fm", "fv", "heap")]
 
-let loop_header_fname = "fw_loop.h"
-let state_header_fname = "fw_state.h"
-let loop_stub_fname = "fw_loop.c"
-let state_fname = "fw_state.c"
 let custom_includes = ["flow.h.gen.h"]
