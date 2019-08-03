@@ -15,7 +15,6 @@
 #include <rte_mbuf.h>
 #include <cmdline_parse_etheraddr.h>
 
-#include "libvig/nf_forward.h"
 #include "libvig/nf_util.h"
 #include "libvig/nf_log.h"
 #include "bridge_config.h"
@@ -25,22 +24,21 @@
 #include "libvig/containers/vector.h"
 #include "libvig/expirator.h"
 
+#include "nf.h"
 #include "state.h"
-
-struct bridge_config config;
 
 struct State* mac_tables;
 
 int bridge_expire_entries(vigor_time_t time) {
-  if (time < config.expiration_time) return 0;
+  if (time < config->expiration_time) return 0;
 
   // This is convoluted - we want to make sure the sanitization doesn't
   // extend our vigor_time_t value in 128 bits, which would confuse the validator.
   // So we "prove" by hand that it's OK...
-  // We know time >= 0 since time >= config.expiration_time
+  // We know time >= 0 since time >= config->expiration_time
   assert(sizeof(vigor_time_t) <= sizeof(int64_t));
   uint64_t time_u = (uint64_t) time; // OK since assert above passed and time > 0
-  uint64_t min_time_u = time_u - config.expiration_time; // OK because time >= expiration_time >= 0
+  uint64_t min_time_u = time_u - config->expiration_time; // OK because time >= expiration_time >= 0
   assert(sizeof(int64_t) <= sizeof(vigor_time_t));
   vigor_time_t min_time = (vigor_time_t) min_time_u; // OK since the assert above passed
 
@@ -129,15 +127,15 @@ static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_
 
 #ifndef DSOS
 static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
-  if (config.static_config_fname[0] == '\0') {
+  if (config->static_config_fname[0] == '\0') {
     // No static config
     return;
   }
 
-  FILE* cfg_file = fopen(config.static_config_fname, "r");
+  FILE* cfg_file = fopen(config->static_config_fname, "r");
   if (cfg_file == NULL) {
     rte_exit(EXIT_FAILURE, "Error opening the static config file: %s",
-             config.static_config_fname);
+             config->static_config_fname);
   }
 
   unsigned number_of_lines = 0;
@@ -280,9 +278,9 @@ static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_
 
 #endif//KLEE_VERIFICATION
 
-void nf_core_init(void) {
+void nf_init(void) {
   unsigned stat_capacity = CAPACITY_UPPER_LIMIT - 1;
-  unsigned capacity = config.dyn_capacity;
+  unsigned capacity = config->dyn_capacity;
 
   mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count());
   if (mac_tables == NULL) {
@@ -296,7 +294,7 @@ void nf_core_init(void) {
   }
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
+int nf_process(struct rte_mbuf* mbuf, vigor_time_t now) {
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
@@ -315,16 +313,4 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
   }
 
   return forward_to;
-}
-
-void nf_config_init(int argc, char** argv) {
-  bridge_config_init(&config, argc, argv);
-}
-
-void nf_config_cmdline_print_usage(void) {
-  bridge_config_cmdline_print_usage();
-}
-
-void nf_print_config() {
-  bridge_print_config(&config);
 }

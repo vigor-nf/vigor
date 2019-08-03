@@ -3,11 +3,9 @@
 #include <stdint.h>
 #include "libvig/nf_time.h"
 
-// TODO can't really include rte_max_ethports here but need it :/
-
 #define CONFIG_FNAME_LEN 512
 
-struct bridge_config {
+struct nf_config {
   // Expiration time of flows in seconds
   vigor_time_t expiration_time;
 
@@ -17,11 +15,3 @@ struct bridge_config {
   // The static configuration file name
   char static_config_fname[CONFIG_FNAME_LEN];
 };
-
-
-void bridge_config_init(struct bridge_config* config,
-                        int argc, char** argv);
-
-void bridge_config_cmdline_print_usage(void);
-
-void bridge_print_config(struct bridge_config* config);

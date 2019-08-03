@@ -13,6 +13,7 @@
 #include <cmdline_parse_etheraddr.h>
 #include <cmdline_parse_ipaddr.h>
 
+#include "nf.h"
 #include "libvig/nf_util.h"
 #include "libvig/nf_log.h"
 
@@ -20,12 +21,16 @@ const vigor_time_t DEFAULT_EXP_TIME = 300000000000l;//nanoseconds
 const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses
 
 #define PARSE_ERROR(format, ...) \
-    bridge_config_cmdline_print_usage(); \
+    nf_config_usage(); \
     rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
-void bridge_config_init(struct bridge_config* config,
-                        int argc, char** argv)
+void nf_config_init(int argc, char** argv)
 {
+  config = malloc(sizeof(struct nf_config));
+  if (config == NULL) {
+    rte_exit(EXIT_FAILURE, "Not enough memory for config");
+  }
+
   // Set the default values
   config->expiration_time = DEFAULT_EXP_TIME; //seconds
   config->dyn_capacity = DEFAULT_CAPACITY; //MAC addresses
@@ -73,7 +78,7 @@ void bridge_config_init(struct bridge_config* config,
   optind = 1;
 }
 
-void bridge_config_cmdline_print_usage(void)
+void nf_config_usage(void)
 {
   NF_INFO("Usage:\n"
          "[DPDK EAL options] --\n"
@@ -85,7 +90,7 @@ void bridge_config_cmdline_print_usage(void)
          DEFAULT_CAPACITY);
 }
 
-void bridge_print_config(struct bridge_config* config)
+void nf_config_print(void)
 {
   NF_INFO("\n--- Bridge Config ---\n");
 
