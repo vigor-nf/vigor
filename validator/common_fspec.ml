@@ -1177,8 +1177,8 @@ let gen_preamble nf_loop containers =
 #include \"libvig/containers/double-chain.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
-  "enum LMA_enum {" ^ (String.concat ~sep:", " lma_literals) ^
-  ", LMA_INVALID};\n" ^
+  "enum LMA_enum {" ^ (match lma_literals with | _ :: _ -> (String.concat ~sep:", " lma_literals) ^ ", " | _ -> "") ^
+  "LMA_INVALID};\n" ^
   "void to_verify()\n\
    /*@ requires true; @*/ \n\
    /*@ ensures true; @*/\n{\n\
@@ -1220,7 +1220,7 @@ let gen_preamble nf_loop containers =
    int map_allocation_order = 0;\n\
    int dchain_allocation_order = 0;\n\
    int expire_items_single_map_order = 0;\n\
-   enum LMA_enum last_map_accessed = " ^ (List.hd_exn lma_literals) ^ ";\n" ^
+   enum LMA_enum last_map_accessed = " ^ (match lma_literals with | hd :: _ -> hd | _ -> "0") ^ ";\n" ^
   (String.concat ~sep:"" (List.map containers ~f:(fun (_,ctyp) ->
        match ctyp with
        | EMap (typ, _, _, _) -> "//@ " ^ (ityp_name typ) ^ " " ^ (lsim_variable_name typ) ^ ";\n"

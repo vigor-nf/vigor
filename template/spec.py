@@ -3,15 +3,20 @@
 # ===
 
 # ===
-# Import state like this:
+# Import state if needed like this:
+# from state import flow_emap
 # ===
-from state import flow_emap
 
 
 # ===
 # You can declare constants
 # ===
 SOME_VALUE = 42
+
+# ===
+# You can also use the non-container values from the state as-is:
+# ===
+assert example_value == 42
 
 # ===
 # Variable 'a_packet_received' is true if a packet was received, false otherwise
@@ -50,4 +55,4 @@ if 1 == 2:
 return ([1 - received_on_port],
 	[ether(h1, saddr=..., daddr=...),
 	 ipv4(h2, cksum=..., saddr=..., daddr=...),
-	 tcpudp(src_port=..., daddr=...)])
+	 tcpudp(src_port=..., dst_port=...)])

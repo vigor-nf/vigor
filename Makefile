@@ -260,6 +260,6 @@ validate: autogen
 # New NF
 new-nf:
 	@read -p 'NF short name, e.g. "nat": ' name; \
-	 mkdir vig$name; \
-	 cp template/* vig$name/.; \
-	 echo 'Go to the vig$name folder, and check out the comments in each file.'
+	 mkdir vig$${name}; \
+	 cp template/* vig$${name}/.; \
+	 echo "Go to the vig$${name} folder, and check out the comments in each file."

@@ -111,18 +111,18 @@ let gen_invariant_consume_decl containers =
   (untraced_funs_args containers "                            ") ^
   ");\n" ^
   "/*@ requires " ^
-  (concat_flatten_map " &*& "
+  (concat_flatten_map ""
      (fun (name, cnt) ->
         match cnt with
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_,_)
-        | DChain _ -> ["*" ^ name ^ " |-> ?_" ^ name]
+        | DChain _ -> ["*" ^ name ^ " |-> ?_" ^ name ^ " &*& "]
         | Int -> []
         | UInt -> []
         | UInt32 -> []
         | EMap (_, _, _, _) -> []
-     ) containers []) ^ " &*&" ^
+     ) containers []) ^
   "\n             evproc_loop_invariant(" ^
   (concat_flatten_map ", "
 
@@ -138,18 +138,18 @@ let gen_invariant_consume_decl containers =
         | EMap (_, _, _, _) -> []
      ) containers ["lcore_id"; "time"]) ^ "); @*/\n" ^
   "/*@ ensures " ^
-  (concat_flatten_map " &*& "
+  (concat_flatten_map ""
      (fun (name, cnt) ->
         match cnt with
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
-        | DChain _ -> ["*" ^ name ^ " |-> _" ^ name]
+        | DChain _ -> ["*" ^ name ^ " |-> _" ^ name ^ " &*& "]
         | Int -> []
         | UInt -> []
         | UInt32 -> []
         | EMap (_, _, _, _) -> []
-     ) containers []) ^ "; @*/"
+     ) containers []) ^ "true; @*/"
 
 let gen_invariant_produce_decl containers =
   "void loop_invariant_produce(" ^
