@@ -25,7 +25,7 @@
 #include "lib/containers/vector.h"
 #include "lib/expirator.h"
 
-#include "bridge_state.h"
+#include "state.h"
 
 struct bridge_config config;
 

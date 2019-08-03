@@ -11,9 +11,5 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "dev_count", UInt32;
                   "dyn_emap", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
-let loop_header_fname = "bridge_loop.h"
-let state_header_fname = "bridge_state.h"
-let loop_stub_fname = "bridge_loop.c"
-let state_fname = "bridge_state.c"
 let custom_includes = ["stat_key.h.gen.h";
                        "dyn_value.h.gen.h"]
