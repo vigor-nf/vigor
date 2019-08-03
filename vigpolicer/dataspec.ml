@@ -9,9 +9,5 @@ let containers = ["dyn_map", Map ("ip_addr", "capacity", "");
                   "flow_emap", EMap ("ip_addr", "dyn_map", "dyn_keys", "dyn_heap");
                  ]
 
-let loop_header_fname = "policer_loop.h"
-let state_header_fname = "policer_state.h"
-let loop_stub_fname = "policer_loop.c"
-let state_fname = "policer_state.c"
 let custom_includes = ["dynamic_value.h.gen.h";
                        "ip_addr.h.gen.h"]

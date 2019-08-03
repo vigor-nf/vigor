@@ -16,7 +16,7 @@
 #include "lib/nf_util.h"
 #include "lib/nf_log.h"
 #include "policer_config.h"
-#include "policer_state.h"
+#include "state.h"
 
 #include "lib/containers/double-chain.h"
 #include "lib/containers/map.h"
@@ -66,7 +66,10 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
     uint64_t time_diff = time_u - value->bucket_time;
     if (time_diff < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate) {
       uint64_t added_tokens = time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wtautological-compare"
       vigor_note(0 <= time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER);
+#pragma GCC diagnostic pop
       assert(value->bucket_size <= config.burst);
       value->bucket_size += added_tokens;
       if (value->bucket_size > config.burst) {
