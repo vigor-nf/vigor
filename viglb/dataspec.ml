@@ -16,10 +16,6 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "
                   "", EMap ("ip_addr", "ip_to_backend_id", "backend_ips", "active_backends");
                  ]
 
-let loop_header_fname = "lb_loop.h"
-let state_header_fname = "lb_state.h"
-let loop_stub_fname = "lb_loop.c"
-let state_fname = "lb_state.c"
 let custom_includes = ["lb_flow.h.gen.h";
                        "lb_backend.h.gen.h";
                        "ip_addr.h.gen.h"]

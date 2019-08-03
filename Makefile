@@ -100,7 +100,8 @@ verifast:
 
 # Basic flags: only compile, emit debug code, in LLVM format, with checks for overflows
 #              (but not unsigned overflows - they're not UB and DPDK depends on them)
-VERIF_FLAGS := -c -g -emit-llvm -fsanitize=signed-integer-overflow
+#              also no unused-value, DPDK triggers that...
+VERIF_FLAGS := -c -g -emit-llvm -fsanitize=signed-integer-overflow -Wno-unused-value
 
 # Basic includes: NF root and KLEE
 VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE)
@@ -201,8 +202,8 @@ autogen:
 	  $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; \
 	fi
 
-# Built-in DPDK default target, make it aware of autogen
-all: autogen
+# Built-in DPDK default target, make it aware of autogen, and make it clean every time because our dependency tracking is nonexistent...
+all: clean autogen
 
 symbex: clean autogen
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) -DVIGOR_STUB_DPDK $(VERIF_INCLUDES) -I $(SELF_DIR)/lib/stubs/dpdk $(VERIF_FILES) $(VERIF_FLAGS)

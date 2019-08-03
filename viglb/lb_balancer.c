@@ -1,5 +1,5 @@
 #include "lb_balancer.h"
-#include "lb_state.h"
+#include "state.h"
 
 #include "lib/containers/map.h"
 #include "lib/containers/vector.h"
