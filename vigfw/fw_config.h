@@ -3,11 +3,13 @@
 #include <stdint.h>
 
 #include <rte_ether.h>
+
+#include "nf.h"
 #include "libvig/nf_time.h"
 
 
 
-struct fw_config {
+struct nf_config {
   // WAN device, i.e. external
   uint16_t wan_device;
 
@@ -23,11 +25,3 @@ struct fw_config {
   // Size of the flow table
   uint32_t max_flows;
 };
-
-
-void fw_config_init(struct fw_config* config,
-                    int argc, char** argv);
-
-void fw_config_cmdline_print_usage(void);
-
-void fw_print_config(struct fw_config* config);

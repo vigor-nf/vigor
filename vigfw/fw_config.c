@@ -18,13 +18,17 @@
 
 
 #define PARSE_ERROR(format, ...)                  \
-  fw_config_cmdline_print_usage();               \
+  nf_config_usage();               \
   rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
 
-void fw_config_init(struct fw_config* config,
-                    int argc, char** argv)
+void nf_config_init(int argc, char** argv)
 {
+  config = malloc(sizeof(struct nf_config));
+  if (config == NULL) {
+    rte_exit(EXIT_FAILURE, "Not enough memory for config");
+  }
+
   uint16_t nb_devices = rte_eth_dev_count();
 
   struct option long_options[] = {
@@ -90,7 +94,7 @@ void fw_config_init(struct fw_config* config,
   optind = 1;
 }
 
-void fw_config_cmdline_print_usage(void)
+void nf_config_usage(void)
 {
   NF_INFO("Usage:\n"
           "[DPDK EAL options] --\n"
@@ -101,7 +105,7 @@ void fw_config_cmdline_print_usage(void)
           );
 }
 
-void fw_print_config(struct fw_config* config)
+void nf_config_print(void)
 {
   NF_INFO("\n--- FW Config ---\n");
 
