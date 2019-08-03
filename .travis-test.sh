@@ -10,8 +10,6 @@ for nf in vig*; do
     make clean
     make
     make verify-dpdk
-    make verify-hardware-nf.bc
-    make verify-dsos-nf.bc
   popd
 done
 

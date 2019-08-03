@@ -26,7 +26,7 @@ let records = String.Map.of_alist_exn
 
 module Iface : Fspec_api.Spec =
 struct
-  let preamble = gen_preamble "vignat/nat_loop.h" containers
+  let preamble = gen_preamble "vignat/loop.h" containers
   let fun_types = fun_types containers records
   let boundary_fun = "loop_invariant_produce"
   let finishing_fun = "loop_invariant_consume"

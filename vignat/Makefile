@@ -1,15 +1,9 @@
 # Runtime and verification files
 NF_FILES := nat_main.c nat_config.c \
-            flow.h.gen.c nat_flowmanager.c \
-            nat_state.c
+            flow.h.gen.c nat_flowmanager.c
 
-AUTO_GEN_FILES := flow.h.gen.c flow.h.gen.h ../lib/stubs/ether_addr.h.gen.h nat_loop.h nat_loop.c nat_state.h nat_state.c
-
-# Must generate the flow.h* files before building the app
-all: $(AUTO_GEN_FILES) $(APP)
-
-# Verification files
-NF_VERIF_FILES := nat_loop.c
+# Auto-generated files' sources
+NF_AUTOGEN_SRCS := flow.h
 
 # Verification arguments
 NF_VERIF_ARGS := --lan-dev 0 \
@@ -23,12 +17,3 @@ NF_VERIF_ARGS := --lan-dev 0 \
 
 # Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
-
-flow.h.gen.c flow.h.gen.h: flow.h
-	bash ../codegen/generate.sh flow.h
-
-../lib/stubs/ether_addr.h.gen.h: ../lib/stubs/ether_addr.h
-	bash ../codegen/generate.sh ../lib/stubs/ether_addr.h
-
-nat_loop.h nat_loop.c nat_state.h nat_state.c: nat_data_spec.ml
-	bash ../codegen/gen-loop-boilerplate.sh nat_data_spec.ml

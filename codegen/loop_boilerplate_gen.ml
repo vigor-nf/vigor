@@ -478,7 +478,7 @@ let gen_loop_iteration_border_call containers =
   ");\n}\n"
 
 let () =
-  let cout = open_out Nf_data_spec.loop_header_fname in
+  let cout = open_out "loop.h" in
   fprintf cout "#ifndef _LOOP_H_INCLUDED_\n";
   fprintf cout "#define _LOOP_H_INCLUDED_\n";
   fprintf cout "#include \"lib/containers/double-chain.h\"\n";
@@ -496,17 +496,17 @@ let () =
   fprintf cout "%s\n" (gen_loop_iteration_border_decl containers);
   fprintf cout "#endif//_LOOP_H_INCLUDED_\n";
   close_out cout;
-  let cout = open_out Nf_data_spec.state_header_fname in
+  let cout = open_out "state.h" in
   fprintf cout "#ifndef _STATE_H_INCLUDED_\n";
   fprintf cout "#define _STATE_H_INCLUDED_\n";
-  fprintf cout "#include \"%s\"\n" Nf_data_spec.loop_header_fname;
+  fprintf cout "#include \"loop.h\"\n";
   fprintf cout "%s\n" (gen_struct containers);
   fprintf cout "%s;\n" (gen_allocation_proto containers);
   fprintf cout "#endif//_STATE_H_INCLUDED_\n";
   close_out cout;
-  let cout = open_out Nf_data_spec.loop_stub_fname in
+  let cout = open_out "loop.c" in
   fprintf cout "#include <klee/klee.h>\n";
-  fprintf cout "#include \"%s\"\n" Nf_data_spec.loop_header_fname;
+  fprintf cout "#include \"loop.h\"\n";
   fprintf cout "#include \"lib/stubs/time_stub_control.h\"\n";
   fprintf cout "#include \"lib/stubs/containers/double-chain-stub-control.h\"\n";
   fprintf cout "#include \"lib/stubs/containers/map-stub-control.h\"\n";
@@ -516,8 +516,8 @@ let () =
   fprintf cout "%s\n" (gen_loop_invariant_produce_stub containers);
   fprintf cout "%s\n" (gen_loop_iteration_border_stub containers);
   close_out cout;
-  let cout = open_out Nf_data_spec.state_fname in
-  fprintf cout "#include \"%s\"\n" Nf_data_spec.state_header_fname;
+  let cout = open_out "state.c" in
+  fprintf cout "#include \"state.h\"\n";
   fprintf cout "#include <stdlib.h>\n";
   fprintf cout "#ifdef KLEE_VERIFICATION\n";
   fprintf cout "#include \"lib/stubs/containers/double-chain-stub-control.h\"\n";

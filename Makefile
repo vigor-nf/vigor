@@ -1,9 +1,7 @@
 # Skeleton Makefile for Vigor NFs
 # Variables that should be defined by inheriting Makefiles:
-# - APP := <binary name>
 # - NF_DEVICES := <number of devices during verif-time, default 2>
 # - NF_FILES := <NF files for both runtime and verif-time>
-# - NF_VERIF_FILES := <verif-time only NF files>
 # - NF_VERIF_ARGS := <arguments to pass to the NF at verif-time>
 
 # -----------------------------------------------------------------------
@@ -26,8 +24,11 @@ include $(RTE_SDK)/mk/rte.vars.mk
 # Same name for everyone, makes it easier to run them all with the same script
 APP := nf
 
-# allow the use of extglob in paths
-SHELL = /bin/bash -O extglob -c
+# allow the use of advanced globs in paths
+SHELL = /bin/bash -O extglob -O globstar -c
+
+# Add the state file to the NF sources
+NF_FILES += state.c
 
 # NF base source
 SRCS-y := $(SELF_DIR)/nf_main.c \
@@ -125,8 +126,8 @@ VERIF_FILES := $(SELF_DIR)/nf_main.c $(SELF_DIR)/lib/nf_util.c
 VERIF_FILES += $(NF_FILES)
 # NF base stubs
 VERIF_FILES += $(SELF_DIR)/lib/stubs/containers/!(batcher)-stub.c $(SELF_DIR)/lib/stubs/*-stub.c
-# Specific NF stubs
-VERIF_FILES += $(NF_VERIF_FILES)
+# NF loop file
+VERIF_FILES += loop.c
 # Environment stubs
 VERIF_FILES += $(SELF_DIR)/lib/stubs/externals/*.c $(SELF_DIR)/lib/stubs/core_stub.c $(SELF_DIR)/lib/stubs/time_stub.c
 # DPDK cmdline parsing library, always included, we don't want/need to stub it
@@ -169,7 +170,7 @@ VERIF_DPDK_FILES += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_{fdir,flow,ethdev,ipsec,p
 
 # Commands
 # Cleanup
-CLEAN_COMMAND := rm -f *.bc *.os
+CLEAN_COMMAND := rm -rf build *.bc *.os {loop,state}.{c,h} $(SELF_DIR)/**/*.gen.{c,h}
 # Compilation
 COMPILE_COMMAND := clang
 # Linking with klee-uclibc, but without some methods we are stubbing (not sure why they're in klee-uclibc.bca)
@@ -185,39 +186,34 @@ OPT_COMMAND := opt -basicaa -basiccg -internalize -internalize-public-api-list=m
 VERIF_COMMAND := /usr/bin/time -v \
                  klee -no-externals -allocate-determ -allocate-determ-start-address=0x00040000000 -allocate-determ-size=1000 -dump-call-traces -dump-call-trace-prefixes -solver-backend=z3 -exit-on-error -max-memory=750000 -search=dfs -condone-undeclared-havocs --debug-report-symbdex
 
-clean: clean-gen clean-verify
+clean-vigor:
+	@$(CLEAN_COMMAND)
 
-clean-verify:
-	$(CLEAN_COMMAND)
+clean: clean-vigor
 
-clean-gen:
-	rm -f $(AUTO_GEN_FILES)
+# DPDK's weird makefiles call this twice, once in the proper dir and once in build/, we only care about the former
+autogen:
+	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
+	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS) $(SELF_DIR)/lib/stubs/ether_addr.h; \
+	  $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; \
+	fi
 
-verify-dpdk-nf.bc: $(AUTO_GEN_FILES)
-	$(CLEAN_COMMAND)
-	# Use DPDK stub headers
-	$(COMPILE_COMMAND) $(VERIF_DEFS) -DVIGOR_STUB_DPDK $(VERIF_INCLUDES) -I $(SELF_DIR)/lib/stubs/dpdk $(VERIF_FILES) $(VERIF_FLAGS)
-	$(LINK_COMMAND)
-	$(OPT_COMMAND)
+# Built-in DPDK default target, make it aware of autogen
+all: autogen
 
-verify-dpdk: verify-dpdk-nf.bc $(AUTO_GEN_FILES)
-	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
-	$(CLEAN_COMMAND)
+symbex: clean autogen
+	@$(COMPILE_COMMAND) $(VERIF_DEFS) -DVIGOR_STUB_DPDK $(VERIF_INCLUDES) -I $(SELF_DIR)/lib/stubs/dpdk $(VERIF_FILES) $(VERIF_FLAGS)
+	@$(LINK_COMMAND)
+	@$(OPT_COMMAND)
+	@$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 
-verify-hardware-nf.bc: $(AUTO_GEN_FILES)
-	$(CLEAN_COMMAND)
-	# Use DPDK stuff + stub hardware
-	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_HARDWARE $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(VERIF_FLAGS)
-	$(LINK_COMMAND)
-	$(OPT_COMMAND)
+symbex-fullstack: clean autogen
+	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) -DVIGOR_STUB_HARDWARE $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(VERIF_FLAGS)
+	@$(LINK_COMMAND)
+	@$(OPT_COMMAND)
+	@$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
 
-verify-hardware: verify-hardware-nf.bc
-	$(VERIF_COMMAND) $(NF_VERIF_BASE_ARGS) $(NF_VERIF_ARGS)
-	$(CLEAN_COMMAND)
-
-verify-dsos-nf.bc: $(AUTO_GEN_FILES)
-	$(CLEAN_COMMAND)
-	# Use DPDK stuff + stub hardware
+verify-dsos-nf.bc: clean autogen
 	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_DPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DVIGOR_STUB_HARDWARE -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_DPDK_INCLUDES) $(VERIF_FILES) $(VERIF_DPDK_FILES) $(SELF_DIR)/lib/stubs/hardware_stub.c $(SELF_DIR)/lib/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
 	ar x $(KLEE_UCLIBC)/lib/libc.a
 	rm -f sleep.os vfprintf.os socket.os exit.os fflush.os fflush_unlocked.os
@@ -236,10 +232,10 @@ verify-dsos: verify-dsos-nf.bc
 
 # cloc instead of sloccount because the latter does not report comments, and all VeriFast annotations are comments
 
-count-loc: all
+count-loc: autogen
 	@cloc $(SRCS-y) $(AUTO_GEN_FILES)
 
-count-fullstack-loc:
+count-fullstack-loc: autogen
 	@cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_DPDK_FILES)
 
 count-spec-loc:

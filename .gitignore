@@ -32,8 +32,8 @@ klee-*/
 klee-last
 *.csv
 */*.gen.*
-*/*_loop.*
-*/*_state.*
+*/loop.*
+*/state.*
 .DS_Store
 *.swp
 .vscode/*
