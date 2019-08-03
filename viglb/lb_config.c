@@ -17,20 +17,24 @@
 
 
 #define PARSE_ERROR(format, ...) \
-		lb_config_cmdline_print_usage(); \
+		nf_config_usage(); \
 		rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
 
-void lb_config_init(struct lb_config* config,
-                    int argc, char** argv)
+void nf_config_init(int argc, char** argv)
 {
+	config = malloc(sizeof(struct nf_config));
+	if (config == NULL) {
+		rte_exit(EXIT_FAILURE, "Not enough mem for config");
+	}
+
 	// Init
 	struct option long_options[] = {
 		{"flow-expiration",	required_argument,	NULL, 'x'},
 		{"flow-capacity",	required_argument,	NULL, 'f'},
-    {"backend-capacity", required_argument, NULL, 's'},
-    {"cht-height", required_argument, NULL, 'h'},
-    {"backend-expiration", required_argument, NULL, 't'},
+		{"backend-capacity", required_argument, NULL, 's'},
+		{"cht-height", required_argument, NULL, 'h'},
+		{"backend-expiration", required_argument, NULL, 't'},
 		{NULL, 			0,			NULL,  0 }
 	};
 
@@ -83,14 +87,14 @@ void lb_config_init(struct lb_config* config,
 	// Reset getopt
 	optind = 1;
 
-  // Fill in the mac addresses
-  config->device_macs = malloc(sizeof(struct ether_addr) * rte_eth_dev_count());
-  for (int i = 0; i < rte_eth_dev_count(); ++i) {
-    rte_eth_macaddr_get(i, &config->device_macs[i]);
-  }
+	// Fill in the mac addresses
+	config->device_macs = malloc(sizeof(struct ether_addr) * rte_eth_dev_count());
+	for (int i = 0; i < rte_eth_dev_count(); ++i) {
+		rte_eth_macaddr_get(i, &config->device_macs[i]);
+	}
 }
 
-void lb_config_cmdline_print_usage(void)
+void nf_config_usage(void)
 {
 	NF_INFO("Usage:\n"
 		"[DPDK EAL options] --\n"
@@ -102,8 +106,10 @@ void lb_config_cmdline_print_usage(void)
 	);
 }
 
-void lb_print_config(struct lb_config* config)
+void nf_config_print(void)
 {
+// FIXME why are we giving 20 backends and 3 devs for verif when the config assumes #backends == #devs?
+#ifndef KLEE_VERIFICATION
 	NF_INFO("\n--- LoadBalancer Config ---\n");
 
 	for (uint16_t b = 0; b < config->backend_count; b++) {
@@ -120,4 +126,5 @@ void lb_print_config(struct lb_config* config)
 	NF_INFO("Backend capacity: %" PRIu32, config->backend_capacity);
 
 	NF_INFO("\n--- --- ------ ---\n");
+#endif
 }

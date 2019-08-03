@@ -13,24 +13,23 @@
 
 #include "lb_config.h"
 #include "lb_balancer.h"
-#include "libvig/nf_forward.h"
+#include "nf.h"
 #include "libvig/nf_log.h"
 #include "libvig/nf_util.h"
 
-struct lb_config config;
 struct LoadBalancer* balancer;
 
-void nf_core_init()
+void nf_init(void)
 {
-	balancer = lb_allocate_balancer(config.flow_capacity, config.backend_capacity,
-                                  config.cht_height, config.backend_expiration_time,
-                                  config.flow_expiration_time);
+	balancer = lb_allocate_balancer(config->flow_capacity, config->backend_capacity,
+                                  config->cht_height, config->backend_expiration_time,
+                                  config->flow_expiration_time);
 	if (balancer == NULL) {
 		rte_exit(EXIT_FAILURE, "Could not allocate balancer");
 	}
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
+int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 {
 	lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
@@ -80,7 +79,7 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
   if (backend.nic != 0) { // If not dropped
     ipv4_header->dst_addr = backend.ip;
-    ether_header->s_addr = config.device_macs[backend.nic];
+    ether_header->s_addr = config->device_macs[backend.nic];
     ether_header->d_addr = backend.mac;
 
     // Checksum
@@ -89,18 +88,3 @@ int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
 	return backend.nic;
 }
-
-
-void nf_config_init(int argc, char** argv) {
-  lb_config_init(&config, argc, argv);
-}
-
-void nf_config_cmdline_print_usage(void) {
-  lb_config_cmdline_print_usage();
-}
-
-void nf_print_config() {
-  lb_print_config(&config);
-}
-
-
