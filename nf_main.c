@@ -9,16 +9,16 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
-#include "lib/boilerplate_util.h"
-#include "lib/nf_forward.h"
-#include "lib/nf_log.h"
-#include "lib/nf_time.h"
-#include "lib/nf_util.h"
-#include "lib/packet-io.h"
+#include "libvig/boilerplate_util.h"
+#include "libvig/nf_forward.h"
+#include "libvig/nf_log.h"
+#include "libvig/nf_time.h"
+#include "libvig/nf_util.h"
+#include "libvig/packet-io.h"
 
 #ifdef KLEE_VERIFICATION
-#  include "lib/stubs/time_stub_control.h"
-#  include "lib/stubs/hardware_stub.h"
+#  include "libvig/stubs/time_stub_control.h"
+#  include "libvig/stubs/hardware_stub.h"
 #  include <klee/klee.h>
 #endif//KLEE_VERIFICATION
 

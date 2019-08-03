@@ -1171,10 +1171,10 @@ let gen_dchain_params containers =
 let gen_preamble nf_loop containers =
   let lma_literals = gen_lma_literals containers in
   "\
-#include \"lib/expirator.h\"\n\
-#include \"lib/stubs/time_stub_control.h\"\n\
-#include \"lib/containers/map.h\"\n\
-#include \"lib/containers/double-chain.h\"\n\
+#include \"libvig/expirator.h\"\n\
+#include \"libvig/stubs/time_stub_control.h\"\n\
+#include \"libvig/containers/map.h\"\n\
+#include \"libvig/containers/double-chain.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
   "enum LMA_enum {" ^ (String.concat ~sep:", " lma_literals) ^

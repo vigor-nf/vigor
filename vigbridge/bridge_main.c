@@ -1,5 +1,5 @@
 #ifdef KLEE_VERIFICATION
-#include "lib/stubs/containers/map-stub-control.h" //for map_reset
+#include "libvig/stubs/containers/map-stub-control.h" //for map_reset
 #endif//KLEE_VERIFICATION
 #include <assert.h>
 #include <errno.h>
@@ -15,15 +15,15 @@
 #include <rte_mbuf.h>
 #include <cmdline_parse_etheraddr.h>
 
-#include "lib/nf_forward.h"
-#include "lib/nf_util.h"
-#include "lib/nf_log.h"
+#include "libvig/nf_forward.h"
+#include "libvig/nf_util.h"
+#include "libvig/nf_log.h"
 #include "bridge_config.h"
 
-#include "lib/containers/double-chain.h"
-#include "lib/containers/map.h"
-#include "lib/containers/vector.h"
-#include "lib/expirator.h"
+#include "libvig/containers/double-chain.h"
+#include "libvig/containers/map.h"
+#include "libvig/containers/vector.h"
+#include "libvig/expirator.h"
 
 #include "state.h"
 

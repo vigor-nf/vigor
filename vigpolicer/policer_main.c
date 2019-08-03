@@ -12,16 +12,16 @@
 #include <rte_mbuf.h>
 #include <rte_byteorder.h>
 
-#include "lib/nf_forward.h"
-#include "lib/nf_util.h"
-#include "lib/nf_log.h"
+#include "libvig/nf_forward.h"
+#include "libvig/nf_util.h"
+#include "libvig/nf_log.h"
 #include "policer_config.h"
 #include "state.h"
 
-#include "lib/containers/double-chain.h"
-#include "lib/containers/map.h"
-#include "lib/containers/vector.h"
-#include "lib/expirator.h"
+#include "libvig/containers/double-chain.h"
+#include "libvig/containers/map.h"
+#include "libvig/containers/vector.h"
+#include "libvig/expirator.h"
 
 struct policer_config config;
 

@@ -5,10 +5,10 @@
 #include <string.h>//for memcpy
 #include <rte_ethdev.h>
 
-#include "lib/containers/double-chain.h"
-#include "lib/containers/map.h"
-#include "lib/containers/vector.h"
-#include "lib/expirator.h"
+#include "libvig/containers/double-chain.h"
+#include "libvig/containers/map.h"
+#include "libvig/containers/vector.h"
+#include "libvig/expirator.h"
 
 #include "state.h"
 

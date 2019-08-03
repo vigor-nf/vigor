@@ -13,8 +13,8 @@
 #include <cmdline_parse_etheraddr.h>
 #include <cmdline_parse_ipaddr.h>
 
-#include "lib/nf_util.h"
-#include "lib/nf_log.h"
+#include "libvig/nf_util.h"
+#include "libvig/nf_log.h"
 
 const vigor_time_t DEFAULT_EXP_TIME = 300000000000l;//nanoseconds
 const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses

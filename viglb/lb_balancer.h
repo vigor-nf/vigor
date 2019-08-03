@@ -2,10 +2,10 @@
 #define _LB_BALANCER_H_INCLUDED_
 
 
-#include "lib/stubs/mbuf_content.h"
-#include "lib/containers/vector.h"
-#include "lib/containers/double-chain.h"
-#include "lib/containers/cht.h"
+#include "libvig/stubs/mbuf_content.h"
+#include "libvig/containers/vector.h"
+#include "libvig/containers/double-chain.h"
+#include "libvig/containers/cht.h"
 
 #include "lb_flow.h.gen.h"
 #include "lb_backend.h.gen.h"

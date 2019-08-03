@@ -21,7 +21,7 @@ for FILE_PATH in $@; do
   swap $FILE_PATH $PREPROC_FILE_PATH
   rm $PREPROC_FILE_PATH
   # Check the generated file
-  if ! verifast -I $CODEGENDIR/.. -I $CODEGENDIR/../lib/stubs/dpdk -c $FILE_PATH.gen.c > /dev/null; then
+  if ! verifast -I $CODEGENDIR/.. -I $CODEGENDIR/../libvig/stubs/dpdk -c $FILE_PATH.gen.c > /dev/null; then
     echo 'Oh no! The generated code does not verify!'
     exit 1
   fi

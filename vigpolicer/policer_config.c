@@ -12,8 +12,8 @@
 #include <rte_ethdev.h>
 #include <cmdline_parse_etheraddr.h>
 
-#include "lib/nf_util.h"
-#include "lib/nf_log.h"
+#include "libvig/nf_util.h"
+#include "libvig/nf_log.h"
 
 const uint32_t DEFAULT_LAN = 1;
 const uint32_t DEFAULT_WAN = 0;

@@ -13,9 +13,9 @@
 
 #include "lb_config.h"
 #include "lb_balancer.h"
-#include "lib/nf_forward.h"
-#include "lib/nf_log.h"
-#include "lib/nf_util.h"
+#include "libvig/nf_forward.h"
+#include "libvig/nf_log.h"
+#include "libvig/nf_util.h"
 
 struct lb_config config;
 struct LoadBalancer* balancer;

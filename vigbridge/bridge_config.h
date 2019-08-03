@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "lib/nf_time.h"
+#include "libvig/nf_time.h"
 
 // TODO can't really include rte_max_ethports here but need it :/
 

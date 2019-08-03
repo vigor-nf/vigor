@@ -3,7 +3,7 @@
 #include <inttypes.h>
 
 #include <rte_ether.h>
-#include "lib/nf_time.h"
+#include "libvig/nf_time.h"
 
 
 struct lb_config {

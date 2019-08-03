@@ -2,7 +2,7 @@
 #define _FLOWMANAGER_H_INCLUDED_
 
 #include "flow.h.gen.h"
-#include "lib/nf_time.h"
+#include "libvig/nf_time.h"
 
 #include <stdbool.h>
 #include <stdint.h>
