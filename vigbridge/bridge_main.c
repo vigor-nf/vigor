@@ -1,5 +1,5 @@
 #ifdef KLEE_VERIFICATION
-#include "libvig/stubs/containers/map-stub-control.h" //for map_reset
+#include "libvig/stubs/containers/map_stub-control.h" //for map_reset
 #endif//KLEE_VERIFICATION
 #include <assert.h>
 #include <errno.h>

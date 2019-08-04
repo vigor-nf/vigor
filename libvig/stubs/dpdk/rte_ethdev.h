@@ -5,7 +5,7 @@
 
 #include "libvig/stubs/core_stub.h"
 #include "libvig/packet-io.h"
-#include "libvig/stubs/packet-io-stub-control.h"
+#include "libvig/stubs/packet-io_stub-control.h"
 
 #include <rte_mbuf.h>
 
@@ -185,7 +185,7 @@ rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
 }
 
 //TODO: this belongs to rte_mbuf.h
-// but is here to present a single dpdk-stub API.
+// but is here to present a single dpdk_stub API.
 static inline
 struct rte_mbuf*
 rte_pktmbuf_clone(struct rte_mbuf* frame, struct rte_mempool* clone_pool) {

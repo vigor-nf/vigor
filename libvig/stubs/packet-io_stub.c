@@ -2,7 +2,7 @@
 #include <klee/klee.h>
 #include "libvig/stubs/containers/str-descr.h"
 #include "libvig/packet-io.h"
-#include "packet-io-stub-control.h"
+#include "packet-io_stub-control.h"
 
 #define MAX_CHUNK_SIZE 41
 #define PREALLOC_CHUNKS 4

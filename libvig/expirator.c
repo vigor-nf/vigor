@@ -1,6 +1,5 @@
 #include <assert.h>
 #include "libvig/containers/double-chain.h"
-#include "libvig/coherence.h"
 #include "libvig/expirator.h"
 
 

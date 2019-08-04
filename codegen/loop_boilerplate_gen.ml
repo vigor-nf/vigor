@@ -508,9 +508,9 @@ let () =
   fprintf cout "#include <klee/klee.h>\n";
   fprintf cout "#include \"loop.h\"\n";
   fprintf cout "#include \"libvig/stubs/time_stub_control.h\"\n";
-  fprintf cout "#include \"libvig/stubs/containers/double-chain-stub-control.h\"\n";
-  fprintf cout "#include \"libvig/stubs/containers/map-stub-control.h\"\n";
-  fprintf cout "#include \"libvig/stubs/containers/vector-stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/double-chain_stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/map_stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/vector_stub-control.h\"\n";
   fprintf cout "%s\n" (gen_loop_reset_impl containers);
   fprintf cout "%s\n" (gen_loop_invariant_consume_stub containers);
   fprintf cout "%s\n" (gen_loop_invariant_produce_stub containers);
@@ -520,9 +520,9 @@ let () =
   fprintf cout "#include \"state.h\"\n";
   fprintf cout "#include <stdlib.h>\n";
   fprintf cout "#ifdef KLEE_VERIFICATION\n";
-  fprintf cout "#include \"libvig/stubs/containers/double-chain-stub-control.h\"\n";
-  fprintf cout "#include \"libvig/stubs/containers/map-stub-control.h\"\n";
-  fprintf cout "#include \"libvig/stubs/containers/vector-stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/double-chain_stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/map_stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/vector_stub-control.h\"\n";
   fprintf cout "#endif//KLEE_VERIFICATION\n";
   fprintf cout "struct State* allocated_nf_state = NULL;\n";
   fprintf cout "%s\n" (gen_entry_condition_decls containers);

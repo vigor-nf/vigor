@@ -14,7 +14,7 @@
 #include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
 #include "libvig/packet-io.h"
-#include "libvig/stubs/packet-io-stub-control.h"
+#include "libvig/stubs/packet-io_stub-control.h"
 
 #include <klee/klee.h>
 

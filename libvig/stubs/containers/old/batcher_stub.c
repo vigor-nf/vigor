@@ -1,3 +1,4 @@
+#if 0
 #include "libvig/containers/batcher.h"
 #include <klee/klee.h>
 
@@ -75,3 +76,4 @@ int batcher_is_empty(struct Batcher *bat)
   klee_assert(bat == batcher_initialized);
   return alloc_len <= 0;
 }
+#endif

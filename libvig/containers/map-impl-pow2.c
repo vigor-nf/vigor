@@ -1,3 +1,4 @@
+#ifdef CAPACITY_POW2
 #include "map-impl-pow2.h"
 
 #include "libvig/ignore.h"
@@ -2673,3 +2674,4 @@ unsigned map_impl_size/*@ <kt> @*/(int* busybits, unsigned capacity)
     no_dup_keys_to_no_dups(m);
   }
   @*/
+#endif // CAPACITY_POW2

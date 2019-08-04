@@ -1,6 +1,6 @@
 #include <klee/klee.h>
 #include "libvig/expirator.h"
-#include "libvig/stubs/containers/double-chain-stub-control.h"
+#include "libvig/stubs/containers/double-chain_stub-control.h"
 
 int expire_items(struct DoubleChain* chain, struct DoubleMap* map,
                  vigor_time_t time) {

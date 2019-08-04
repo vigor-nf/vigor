@@ -17,7 +17,7 @@
 
 #ifdef KLEE_VERIFICATION
 #include "libvig/stubs/containers/str-descr.h"
-#include "libvig/stubs/packet-io-stub-control.h"
+#include "libvig/stubs/packet-io_stub-control.h"
 #endif//KLEE_VERIFICATION
 
 // rte_ether

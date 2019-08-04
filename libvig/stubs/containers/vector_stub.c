@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "libvig/containers/vector.h"
-#include "vector-stub-control.h"
+#include "vector_stub-control.h"
 
 #define PREALLOC_SIZE (256)
 #define NUM_ELEMS (3)
