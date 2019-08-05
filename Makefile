@@ -97,7 +97,7 @@ CLEAN_COMMAND := rm -rf build *.bc *.os {loop,state}.{c,h} $(SELF_DIR)/**/*.gen.
 COMPILE_COMMAND := clang
 # Linking with klee-uclibc, but without some methods we are stubbing (not sure why they're in klee-uclibc.bca)
 LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-uclibc.bca && \
-                rm -f sleep.os vfprintf.os   socket.os exit.os && \
+                rm -f sleep.os vfprintf.os socket.os exit.os fflush_unlocked.os fflush.os && \
                 llvm-link -o nf_raw.bc  *.os *.bc
 # Optimization; analyze and remove as much provably dead code as possible (exceptions are stubs; also, mem* functions, not sure why it DCEs them since they are used...maybe related to LLVM having intrinsics for them?)
 # We tried adding '-constprop -ipconstprop -ipsccp -correlated-propagation -loop-deletion -dce -die -dse -adce -deadargelim -instsimplify'; this works but the traced prefixes seem messed up :(
@@ -198,9 +198,9 @@ symbex-withdpdk: clean autogen
 
 
 
-# ===========================
-# Symbex with hardware models
-# ===========================
+# ====================================
+# Symbex with hardware models and DSOS
+# ====================================
 
 # Convert the bash-style NF arguments (nf --no-shconf -- -n 3 -m 6) into
 # C-style char*[] comma separated list
@@ -209,10 +209,8 @@ symbex-withdpdk: clean autogen
 dquote := \"
 NF_ARGUMENTS_MACRO := -DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),nf.bc $(NF_VERIF_ARGS))\"
 symbex-withdsos: clean autogen
-	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DDSOS -D__linux__ -libc=none $(VERIF_INCLUDES) $(VERIF_WITHDPDK_INCLUDES) $(VERIF_FILES) $(VERIF_WITHDPDK_FILES) $(SELF_DIR)/libvig/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
-	ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-uclibc.bca
-	rm -f sleep.os vfprintf.os socket.os exit.os fflush.os fflush_unlocked.os
-	llvm-link -o nf_raw.bc  *.os *.bc
+	$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DDSOS $(VERIF_INCLUDES) $(VERIF_WITHDPDK_INCLUDES) $(VERIF_FILES) $(VERIF_WITHDPDK_FILES) $(SELF_DIR)/libvig/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
+	$(LINK_COMMAND)
 	$(OPT_COMMAND)
 	$(VERIF_COMMAND) $(NF_VERIF_ARGS)
 

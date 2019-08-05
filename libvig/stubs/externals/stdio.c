@@ -27,6 +27,7 @@ static FILE* fopencookie_ret = NULL;
 
 #ifdef DSOS
 int vprintf1(const char *fmt, va_list va);
+#endif
 
 int
 fflush(FILE* stream)
@@ -34,7 +35,6 @@ fflush(FILE* stream)
 	klee_assert(stream == stderr || stream == stdout || (stream != NULL && stream == fopencookie_ret));
 	return 0;
 }
-#endif//DSOS
 
 int
 vfprintf(FILE* stream, const char* format, _G_va_list __arg)
