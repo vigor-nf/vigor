@@ -143,7 +143,8 @@ struct ipv4_hdr* nf_then_get_ipv4_header(struct ether_hdr* ether_header,
 					 void* p, uint8_t** ip_options) {
   *ip_options = NULL;
 
-  if ((!nf_has_ipv4_header(ether_header)) | (packet_get_unread_length(p) < sizeof(struct ipv4_hdr))) {
+  uint16_t unread_len = packet_get_unread_length(p);
+  if ((!nf_has_ipv4_header(ether_header)) | (unread_len < sizeof(struct ipv4_hdr))) {
     return NULL;
   }
 
@@ -151,12 +152,11 @@ struct ipv4_hdr* nf_then_get_ipv4_header(struct ether_hdr* ether_header,
   struct ipv4_hdr* hdr = (struct ipv4_hdr*)nf_borrow_next_chunk(p, sizeof(struct ipv4_hdr));
 
   uint8_t ihl = hdr->version_ihl & 0x0f;
-  uint16_t unread_len = packet_get_unread_length(p);
-  if ((ihl < IP_MIN_SIZE_WORDS) | (unread_len < rte_be_to_cpu_16(hdr->total_length) - sizeof(struct ipv4_hdr))) {
+  if ((ihl < IP_MIN_SIZE_WORDS) | (unread_len < rte_be_to_cpu_16(hdr->total_length))) {
       return NULL;
   }
   uint16_t ip_options_length = (ihl - IP_MIN_SIZE_WORDS) * WORD_SIZE;
-  if ((ip_options_length != 0) & (unread_len >= ip_options_length)) {
+  if ((ip_options_length != 0) & (unread_len - sizeof(struct ipv4_hdr) >= ip_options_length)) {
       // Do not really trace the ip options chunk, as it's length
       // is unknown statically
       CHUNK_LAYOUT_IMPL(p, 1, NULL, 0, NULL, 0, "ipv4_options");
