@@ -40,23 +40,18 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	// ===
 
 	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
-	if (mbuf->packet_type != 0 && !RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
+	uint8_t* ip_options;
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+	if (ipv4_header == NULL) {
 		NF_DEBUG("Not IPv4, dropping");
 		return mbuf->port;
 	}
-	uint8_t* ip_options;
-	bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
-	if (!wellformed) {
-		NF_DEBUG("Malformed IPv4, dropping");
-		return mbuf->port;
-	}
 
-	if (!nf_has_tcpudp_header(ipv4_header) || packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)) {
+	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(ipv4_header, mbuf_pkt(mbuf));
+	if (tcpudp_header == NULL) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return mbuf->port;
 	}
-	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(mbuf_pkt(mbuf));
 	// You could do something with the headers here...
 	// ...which would probably require you to recompute the checksums
  	nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));

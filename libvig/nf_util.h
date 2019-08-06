@@ -30,8 +30,6 @@ struct ipv4_hdr;
 #define IP_MIN_SIZE_WORDS 5
 #define WORD_SIZE 4
 
-extern uint32_t global_packet_type;
-
 #ifdef KLEE_VERIFICATION
 static struct str_field_descr ether_fields[] = {
   {offsetof(struct ether_hdr, ether_type), sizeof(uint16_t), 0, "ether_type"},
@@ -69,14 +67,10 @@ static struct nested_field_descr ether_nested_fields[] = {
   {offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes"},
   {offsetof(struct ether_hdr, s_addr), 0, sizeof(uint8_t), 6, "addr_bytes"}
 };
-
-static
-bool ether_to_ipv4_constraint(void* arg) {
-  struct ether_hdr* header = arg;
-  return ((global_packet_type & 0x10) == 0x10)? (header->ether_type & 0x10) == 0x10 : true;
-}
 #endif//KLEE_VERIFICATION
 
+
+bool nf_has_ipv4_header(struct ether_hdr* header);
 
 bool nf_has_tcpudp_header(struct ipv4_hdr* header);
 
@@ -108,12 +102,8 @@ void* nf_borrow_next_chunk(void* p, size_t length) {
 #ifdef KLEE_VERIFICATION
 #  define CHUNK_LAYOUT_IMPL(pkt, len, fields, n_fields, nests, n_nests, tag) \
   packet_set_next_chunk_layout(pkt, len, fields, n_fields, nests, n_nests, tag)
-#  define CHUNK_CONSTRAINT(pkt, constraint) \
-  packet_set_next_chunk_constraints(pkt, constraint)
 #else//KLEE_VERIFICATION
 #  define CHUNK_LAYOUT_IMPL(pkt, len, fields, n_fields, nests, n_nests, tag) \
-  /*nothing*/
-#  define CHUNK_CONSTRAINT(pkt, constraint)     \
   /*nothing*/
 #endif//KLEE_VERIFICATION
 
@@ -144,51 +134,42 @@ void nf_return_all_chunks(void* p) {
 static inline
 struct ether_hdr* nf_then_get_ether_header(void* p) {
   CHUNK_LAYOUT_N(p, ether_hdr, ether_fields, ether_nested_fields);
-  CHUNK_CONSTRAINT(p, ether_to_ipv4_constraint);
   void* hdr = nf_borrow_next_chunk(p, sizeof(struct ether_hdr));
   return (struct ether_hdr*)hdr;
 }
 
 static inline
-struct ipv4_hdr* nf_then_get_ipv4_header(void* p, uint8_t** ip_options,
-                                         bool* wellformed) {
-  if (packet_get_unread_length(p) < sizeof(struct ipv4_hdr)) {
-    *ip_options = NULL;
-    *wellformed = false;
+struct ipv4_hdr* nf_then_get_ipv4_header(struct ether_hdr* ether_header,
+					 void* p, uint8_t** ip_options) {
+  *ip_options = NULL;
+
+  if ((!nf_has_ipv4_header(ether_header)) | (packet_get_unread_length(p) < sizeof(struct ipv4_hdr))) {
     return NULL;
   }
+
   CHUNK_LAYOUT(p, ipv4_hdr, ipv4_fields);
   struct ipv4_hdr* hdr = (struct ipv4_hdr*)nf_borrow_next_chunk(p, sizeof(struct ipv4_hdr));
+
   uint8_t ihl = hdr->version_ihl & 0x0f;
-  if (ihl < IP_MIN_SIZE_WORDS) { //Malformed ipv4 packet
-    *ip_options = NULL;
-    *wellformed = false;
-    return hdr;
-  }
-  *wellformed = true;
-  uint16_t ip_options_length = (ihl - IP_MIN_SIZE_WORDS) * WORD_SIZE;
   uint16_t unread_len = packet_get_unread_length(p);
-  if (ip_options_length != 0) {
-    if (unread_len < ip_options_length) {
-      *ip_options = NULL;
-      *wellformed = false;
-    } else {
+  if ((ihl < IP_MIN_SIZE_WORDS) | (unread_len < rte_be_to_cpu_16(hdr->total_length) - sizeof(struct ipv4_hdr))) {
+      return NULL;
+  }
+  uint16_t ip_options_length = (ihl - IP_MIN_SIZE_WORDS) * WORD_SIZE;
+  if ((ip_options_length != 0) & (unread_len >= ip_options_length)) {
       // Do not really trace the ip options chunk, as it's length
       // is unknown statically
       CHUNK_LAYOUT_IMPL(p, 1, NULL, 0, NULL, 0, "ipv4_options");
       *ip_options = (uint8_t*)nf_borrow_next_chunk(p, ip_options_length);
-    }
   }
-#ifndef KLEE_VERIFICATION
-  if (unread_len < rte_be_to_cpu_16(hdr->total_length) - sizeof(struct ipv4_hdr)) {
-      *wellformed = false;
-  }
-#endif
   return hdr;
 }
 
 static inline
-struct tcpudp_hdr* nf_then_get_tcpudp_header(void* p) {
+struct tcpudp_hdr* nf_then_get_tcpudp_header(struct ipv4_hdr* ip_header, void* p) {
+  if ((!nf_has_tcpudp_header(ip_header)) | (packet_get_unread_length(p) < sizeof(struct tcpudp_hdr))) {
+    return NULL;
+  }
   CHUNK_LAYOUT(p, tcpudp_hdr, tcpudp_fields);
   return (struct tcpudp_hdr*)nf_borrow_next_chunk(p, sizeof(struct tcpudp_hdr));
 }
@@ -202,7 +183,6 @@ static inline
 bool nf_receive_packet(uint16_t src_device, struct rte_mbuf** mbuf) {
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
   if (actual_rx_len != 0) {
-    global_packet_type = (**mbuf).packet_type;
     //TODO: for multi-mbuf packets, make sure to differentiate
     // between pkt_len and data_len
     packet_state_total_length(mbuf_pkt(*mbuf), &(**mbuf).pkt_len);

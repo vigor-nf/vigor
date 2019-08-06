@@ -78,7 +78,7 @@ stub_core_mbuf_create(uint16_t device, struct rte_mempool* pool, struct rte_mbuf
 	(*mbufp)->nb_segs = 1; // TODO do we want to make a possibility of multiple packets? Or we could just prove the NF never touches this...
 	(*mbufp)->port = device;
 	(*mbufp)->ol_flags = 0;
-	// packet_type is symbolic
+	// packet_type is symbolic, NFs should use the content of the packet as the source of truth
 	(*mbufp)->pkt_len =  packet_length;
 	(*mbufp)->data_len = data_length;
 	// vlan_tci is symbolic

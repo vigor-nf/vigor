@@ -128,23 +128,14 @@ void nf_init(void) {
 int nf_process(struct rte_mbuf* mbuf, vigor_time_t now) {
   NF_DEBUG("Received packet");
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
-
-  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
-      !(mbuf->packet_type == 0 &&
-        ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4))) {
-    NF_DEBUG("Not IPv4, dropping");
-    return in_port;
-  }
+  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
   uint8_t* ip_options;
-  bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
-  if (!wellformed) {
-		NF_DEBUG("Malformed IPv4, dropping");
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+  if (ipv4_header == NULL) {
+		NF_DEBUG("Not IPv4, dropping");
     return in_port;
   }
-  assert(ipv4_header != NULL);
 
   policer_expire_entries(now);
 

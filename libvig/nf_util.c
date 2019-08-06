@@ -22,7 +22,11 @@
 void* chunks_borrowed[MAX_N_CHUNKS];
 size_t chunks_borrowed_num = 0;
 
-uint32_t global_packet_type = 0;
+bool
+nf_has_ipv4_header(struct ether_hdr* header)
+{
+	return header->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv4);
+}
 
 bool
 nf_has_tcpudp_header(struct ipv4_hdr* header)

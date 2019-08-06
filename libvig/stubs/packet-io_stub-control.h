@@ -11,8 +11,6 @@ void packet_set_next_chunk_layout(void* p, uint32_t length,
                                   struct nested_field_descr* nests, int n_nests,
                                   const char* tname);
 
-void packet_set_next_chunk_constraints(void* p, chunk_constraint constraint);
-
 bool packet_is_last_borrowed_chunk(void* p, void* chunk);
 
 #endif//_PACKET_IO_STUB_CONTROL_H_INCLUDED_

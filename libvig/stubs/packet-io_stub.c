@@ -27,7 +27,6 @@ bool receive_succeded = false;
     uint32_t n_nests;
     const char* tname;
   } global_chunk_layouts[PREALLOC_CHUNKS];
-chunk_constraint global_chunk_constraints[PREALLOC_CHUNKS];
 
 //void* global_packet_buffer;
 //};
@@ -52,10 +51,6 @@ void packet_set_next_chunk_layout(void* p, uint32_t length,
 
 bool packet_is_last_borrowed_chunk(void* p, void* chunk) {
   return chunk == &global_chunks[(global_n_borrowed_chunks - 1)*MAX_CHUNK_SIZE];
-}
-
-void packet_set_next_chunk_constraints(void* p, chunk_constraint constraint) {
-  global_chunk_constraints[global_n_borrowed_chunks] = constraint;
 }
 
 // The main IO primitive.
@@ -99,9 +94,6 @@ void packet_borrow_next_chunk(void* p, size_t length, void** chunk) {
                                         layout->nests[i].name,
                                         TD_OUT);
     }
-  }
-  if (global_chunk_constraints[global_n_borrowed_chunks]) {
-    klee_assume(global_chunk_constraints[global_n_borrowed_chunks](ret));
   }
   global_chunk_lengths[global_n_borrowed_chunks] = length;
   global_n_borrowed_chunks++;
@@ -175,7 +167,6 @@ bool packet_receive(uint16_t src_device, void** p, uint32_t* len) {
     //klee_assume(sizeof(struct ether_hdr) <= global_packet_len);
     for (uint32_t i = 0; i < PREALLOC_CHUNKS; ++i) {
       global_chunk_layouts[i].set = false;
-      global_chunk_constraints[i] = NULL;
     }
     return true;
   }
