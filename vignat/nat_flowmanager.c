@@ -14,7 +14,7 @@
 
 struct FlowManager {
 	struct State* state;
-	vigor_time_t expiration_time; /*nanoseconds*/
+	uint32_t expiration_time; /*nanoseconds*/
 };
 
 bool
@@ -30,7 +30,7 @@ struct FlowManager*
 flow_manager_allocate(uint16_t starting_port,
                       uint32_t nat_ip,
                       uint16_t nat_device,
-                      vigor_time_t expiration_time,
+                      uint32_t expiration_time,
                       uint64_t max_flows) {
   struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
   if (manager == NULL) {
@@ -67,21 +67,10 @@ flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
 
 void
 flow_manager_expire(struct FlowManager* manager, vigor_time_t time) {
-	// too early, nothing can expire yet.
-	if (time < manager->expiration_time) {
-		return;
-	}
-
-	// This is convoluted - we want to make sure the sanitization doesn't
-	// extend our vigor_time_t value in 128 bits, which would confuse the validator.
-	// So we "prove" by hand that it's OK...
-	if (time < 0) return; // we don't support the past
-	assert(sizeof(vigor_time_t) <= sizeof(int64_t));
-	uint64_t time_u = (uint64_t) time; // OK since assert above passed and time > 0
-	uint64_t last_time_u = time_u - manager->expiration_time; // OK because time >= expiration_time >= 0
-	assert(sizeof(int64_t) <= sizeof(vigor_time_t));
-	vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
-
+	assert(time >= 0); // we don't support the past
+	assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
+	uint64_t time_u = (uint64_t) time; // OK because of the two asserts
+	vigor_time_t last_time = time_u - manager->expiration_time;
 	expire_items_single_map(manager->state->heap, manager->state->fv, manager->state->fm, last_time);
 }
 

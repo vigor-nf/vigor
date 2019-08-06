@@ -158,7 +158,7 @@ void nf_config_print(void)
 	}
 
 	NF_INFO("Starting port: %" PRIu16, config->start_port);
-	NF_INFO("Expiration time: %" PRVIGT "ns", config->expiration_time);
+	NF_INFO("Expiration time: %" PRIu32 "ns", config->expiration_time);
 	NF_INFO("Max flows: %" PRIu32, config->max_flows);
 
 	NF_INFO("\n--- --- ------ ---\n");
