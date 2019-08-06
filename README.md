@@ -12,19 +12,18 @@ SOSPTODO: Arseniy please create a dslab-epfl org on Docker Hub (and write down t
 
 To **compile and run** Vigor NFs, you need:
 
-- At least 16 GB of RAM, 8 GB of which is allocated as 4096x2MB hugepages; see the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#linux-gsg-hugepages) to set up hugepages.
+- 16 GB of RAM, 8 GB of which is allocated as 4096x2MB hugepages; see the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#linux-gsg-hugepages) to set up hugepages.
 - A DPDK-compatible NIC with at least two ports, bound to DPDK using the `dpdk-devbind.py` tool.
 - To run `setup.sh no-verify`.
 
 To **verify** NFs using **DPDK models**, you need:
 
-- ??? TODO: Measure max RAM usage of verifying NFs with dpdk stubs, pad a healthy margin ???
+- 16 GB of RAM
 - To run `setup.sh` (no arguments)
 
 To **verify** NFs using **hardware models**, you need:
 
-- At least 128 GB of RAM
-- As many CPU cores as you can find, since the Vigor Validator is embarassingly parallelizable
+- 256 GB for the bridge, firewall, NAT and policer; 1 TB for the load balancer.
 - To run `setup.sh` (no arguments)
 
 To **benchmark** Vigor NFs, you need:
@@ -58,9 +57,9 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | -------------------------- | ------------------------------------------ | ----------------- |
 | Default                    | Compile the NF                             | <1min             |
 | `run`                      | Run the NF using recommended arguments     | <1min to start    |
-| `symbex validate`          | Verify the NF with DPDK models             | <1min to symbex, then ??? to validate
-| `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | ??? to symbex, then ??? to validate
-| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | ??? to symbex then ??? to validate
+| `symbex validate`          | Verify the NF with DPDK models             | 1min to symbex, hours to validate |
+| `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | <1h to symbex, hours to validate |
+| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | <1h to symbex, hours to validate |
 | `count-loc`                | Count lines of code of the NF              | <1min             |
 | `count-dpdk-loc`           | Count lines of code in DPDK                | <1min             |
 | `count-dsos-loc`           | Count lines of code in the DSOS            | <1min             |
