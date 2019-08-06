@@ -77,6 +77,13 @@ For instance:
 - To benchmark the Vigor policer's throughput, run `cd vigpol` then `make benchmark-throughput`
 
 
+# Using the DSOS
+
+Vigor includes a Domain-Specific Operating System (DSOS) that is simple enough to be symbolically executed, besides trusted boot code.
+
+TODO describe how to make a dsos image with an NF and run it on a commodity server here...
+
+
 # Writing your own NF
 
 - Run `make new-nf` at the root of the repository, and answer the prompt.
