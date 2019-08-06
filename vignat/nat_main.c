@@ -65,8 +65,8 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 			NF_DEBUG("Found internal flow.");
 			log_FlowId(&internal_flow);
 
-			if (internal_flow.dst_ip != ipv4_header->src_addr ||
-			    internal_flow.dst_port != tcpudp_header->src_port ||
+			if (internal_flow.dst_ip != ipv4_header->src_addr |
+			    internal_flow.dst_port != tcpudp_header->src_port |
 			    internal_flow.protocol != ipv4_header->next_proto_id) {
 				NF_DEBUG("Spoofing attempt, dropping.");
 				return in_port;
