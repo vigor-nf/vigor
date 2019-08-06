@@ -3,7 +3,7 @@ EXP_TIME = 10
 EXT_IP_ADDR = ext_ip
 EXT_PORT = 1
 
-if a_packet_received and EXP_TIME <= now:
+if a_packet_received:
     flow_emap.expire_all(now - EXP_TIME)
 
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
