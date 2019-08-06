@@ -9,11 +9,11 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
-#include "lib/nf_forward.h"
-#include "lib/nf_log.h"
-#include "lib/nf_time.h"
-#include "lib/nf_util.h"
-#include "lib/packet-io.h"
+#include "libvig/nf_forward.h"
+#include "libvig/nf_log.h"
+#include "libvig/nf_time.h"
+#include "libvig/nf_util.h"
+#include "libvig/packet-io.h"
 #include "router.h"
 
 #include <inttypes.h>

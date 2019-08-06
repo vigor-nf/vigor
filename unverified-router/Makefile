@@ -11,11 +11,11 @@ APP = router
 # sources  normal mode
 SRCS-y := router.c parse_utils.c \
           ../nf_main.c \
-          ../lib/nf_util.c \
-          ../lib/packet-io.c \
-          ../lib/nf_time.c \
-          ../lib/containers/double-chain-impl.c \
-          ../lib/containers/double-chain.c \
+          ../libvig/nf_util.c \
+          ../libvig/packet-io.c \
+          ../libvig/nf_time.c \
+          ../libvig/containers/double-chain-impl.c \
+          ../libvig/containers/double-chain.c \
 
 
 

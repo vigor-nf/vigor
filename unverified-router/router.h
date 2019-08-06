@@ -7,7 +7,7 @@
 #define CACHE_SIZE 32
 
 
-#include "lib/nf_time.h"
+#include "libvig/nf_time.h"
 #include <rte_lpm.h>
 #include "parse_utils.h"
 #include <stdio.h>
@@ -20,8 +20,8 @@
 #include <rte_mbuf.h>
 #include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
-#include "lib/nf_forward.h"
-#include "lib/nf_util.h"
+#include "libvig/nf_forward.h"
+#include "libvig/nf_util.h"
 
 
 

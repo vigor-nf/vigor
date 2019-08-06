@@ -7,9 +7,9 @@
 #include <rte_mbuf.h>
 
 #include "nat_config.h"
-#include "lib/nf_forward.h"
-#include "lib/nf_time.h"
-#include "lib/nf_util.h"
+#include "nf.h"
+#include "libvig/nf_time.h"
+#include "libvig/nf_util.h"
 
 struct nat_config config;
 
