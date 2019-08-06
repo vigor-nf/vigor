@@ -13,8 +13,13 @@ SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 # Default value for arguments
 NF_DEVICES ?= 2
 NF_AUTOGEN_SRCS += $(SELF_DIR)/libvig/stubs/ether_addr.h
-NF_FILES += state.c $(subst .h,.h.gen.c,$(NF_AUTOGEN_SRCS))
+NF_FILES += $(subst .h,.h.gen.c,$(NF_AUTOGEN_SRCS))
 NF_VERIF_ARGS := --no-shconf -- $(NF_VERIF_ARGS)
+
+# Add state.c to the NF files, but only if it will be generated (so that we can compile stateless NFs)
+ifneq (,$(wildcard dataspec.ml))
+NF_FILES += state.c
+endif
 
 # If KLEE paths are not defined (eg because the user installed deps themselves), try to compute it based on KLEE_INCLUDE.
 KLEE_BUILD_PATH ?= $(KLEE_INCLUDE)/../build
@@ -117,7 +122,7 @@ clean: clean-vigor
 autogen:
 	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
 	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
-	  $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; \
+	  if [ -e 'dataspec.ml' ]; then $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
 	fi
 
 # Built-in DPDK default target, make it aware of autogen, and make it clean every time because our dependency tracking is nonexistent...

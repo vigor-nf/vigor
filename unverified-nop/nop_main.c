@@ -11,13 +11,11 @@
 #include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
 
-struct nat_config config;
-
-void nf_core_init(void)
+void nf_init(void)
 {
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_process(struct rte_mbuf* mbuf, time_t now)
 {
 	// Mark now as unused, we don't care about time
 	(void) now;
@@ -28,32 +26,16 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 
 	uint16_t dst_device;
 	const int in_port = mbuf->port;
-	if (in_port == config.wan_device) {
-		dst_device = config.lan_main_device;
+	if (in_port == config->wan_device) {
+		dst_device = config->lan_main_device;
 	} else {
-		dst_device = config.wan_device;
+		dst_device = config->wan_device;
 	}
 
 	// L2 forwarding
 	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
-	ether_header->s_addr = config.device_macs[dst_device];
-	ether_header->d_addr = config.endpoint_macs[dst_device];
+	ether_header->s_addr = config->device_macs[dst_device];
+	ether_header->d_addr = config->endpoint_macs[dst_device];
 
 	return dst_device;
-}
-
-void nf_config_init(int argc, char** argv) {
-  nat_config_init(&config, argc, argv);
-}
-
-void nf_config_cmdline_print_usage(void) {
-  nat_config_cmdline_print_usage();
-}
-
-void nf_print_config() {
-  nat_print_config(&config);
-}
-
-void nf_loop_iteration_border(unsigned lcore_id, vigor_time_t time) {
-	// Nothing, this nop is not meant to be verified as-is, just useful to do quick prototyping of verified stuff
 }
