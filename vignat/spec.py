@@ -10,7 +10,7 @@ h3 = pop_header(tcpudp, on_mismatch=([],[]))
 h2 = pop_header(ipv4, on_mismatch=([],[]))
 h1 = pop_header(ether, on_mismatch=([],[]))
 assert a_packet_received
-assert ((h1.type & 0x10) == 0x10) # 0x10 -> IPv4
+assert h1.type == 8 # big-endian 0x0800 -> IPv4
 assert h2.npid == 6 or h2.npid == 17 # 6/17 -> TCP/UDP
 if received_on_port == EXT_PORT:
     flow_indx = h3.dst_port - start_port

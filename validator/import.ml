@@ -638,6 +638,10 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
                          ];
               ] ->
     {v=Bop(Or, get_sexp_value_raw left Boolean ~at, get_sexp_value_raw right Boolean ~at);t=Boolean}
+  | Sexp.List [Sexp.Atom "Shl"; Sexp.Atom "w32"; target; shift;] ->
+    {v=Bop(Shl, (get_sexp_value_raw target Uint32 ~at), (get_sexp_value_raw shift Uint32 ~at));t}
+  | Sexp.List [Sexp.Atom "AShr"; Sexp.Atom "w32"; target; shift;] ->
+    {v=Bop(AShr, (get_sexp_value_raw target Uint32 ~at), (get_sexp_value_raw shift Uint32 ~at));t}
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w8"; Sexp.Atom "0"; src;] ->
     get_sexp_value_raw src t ~at
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
@@ -753,8 +757,9 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     (*FIXME: or here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
     {v=Bop (Or,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
-  | Sexp.List [Sexp.Atom f; Sexp.Atom _; lhs; rhs]
-    when (String.equal f "And") ->
+  | Sexp.List [Sexp.Atom "Or"; Sexp.Atom "w32"; lhs; rhs] ->
+    {v=Bop (Bit_or, (get_sexp_value_raw lhs Uint32 ~at), (get_sexp_value_raw rhs Uint32 ~at));t}
+  | Sexp.List [Sexp.Atom "And"; Sexp.Atom _; lhs; rhs] ->
     begin 
       match rhs with
       | Sexp.List [Sexp.Atom "w32"; Sexp.Atom n] when is_int n ->

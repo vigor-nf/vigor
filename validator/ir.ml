@@ -4,8 +4,8 @@ open Core
 module Sexp = Core.Sexp
 
 type bop = Eq | Le | Lt | Ge | Gt
-         | Add | Sub | Mul | Div | Modulo
-         | And | Or | Bit_and [@@deriving sexp]
+         | Add | Sub | Mul | Div | Modulo | Shl | AShr
+         | And | Or | Bit_and | Bit_or [@@deriving sexp]
 
 
 type ttype = | Ptr of ttype
@@ -127,9 +127,12 @@ let render_bop = function
   | Mul -> "*"
   | Div -> "/"
   | Modulo -> "%"
+  | Shl -> "<<"
+  | AShr -> ">>"
   | And -> "&&"
   | Or -> "||"
   | Bit_and -> "&"
+  | Bit_or -> "|"
 
 let render_utility = function
   | Ptr_placeholder addr -> "?placeholder addr:" ^ (Int64.to_string addr)
