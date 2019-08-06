@@ -6,9 +6,8 @@ set -euxo pipefail
 
 for nf in vig*; do
   pushd "$nf"
-    make clean
     make
-    make symbex validate
+    make symbex #validate is too slow for Travis :(
   popd
 done
 
