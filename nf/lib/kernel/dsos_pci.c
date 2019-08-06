@@ -192,7 +192,7 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, uint32_t function, str
 	 * We need to enable bus mastering for each device so that they are able
 	 * to initiate DMA transfers. This is requried for IXGBE to function properly.
 	 * Enabling bus mastering for a device is done by setting bit 2 in the command
-	 * register (register 1).
+	 * register (register 0x4).
 	 */
 	uint32_t status_command_reg = dsos_read_pci_reg(bus, dev, function, PCI_STATUS_COMMAND_REGISTER);
 	status_command_reg |= PCI_COMMAND_MASTER;
