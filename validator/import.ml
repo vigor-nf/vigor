@@ -495,10 +495,10 @@ let eliminate_false_eq_0 exp t =
 let rec is_bool_expr exp =
   match exp with
   | Sexp.List [Sexp.Atom f; _; _] when is_bool_fun f -> true
-  | Sexp.List [Sexp.Atom a; _; lhs; rhs] when String.equal a "And" ->
+  | Sexp.List [Sexp.Atom "And"; _; lhs; rhs] ->
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (is_bool_expr lhs) || (is_bool_expr rhs)
-  | Sexp.List [Sexp.Atom ext; _; e] when String.equal ext "ZExt" ->
+  | Sexp.List [Sexp.Atom "ZExt"; _; e] ->
     is_bool_expr e
   | _ -> false
 
@@ -688,11 +688,9 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     when t = Sint64 ->
     let srct = (guess_type src Sunknown) in
     make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
-  | Sexp.List [Sexp.Atom f; Sexp.Atom offset; src;]
-    when (String.equal f "Extract") && (String.equal offset "0") ->
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "0"; src;] ->
     get_sexp_value_raw src Boolean ~at
-  | Sexp.List [Sexp.Atom f; Sexp.Atom w; arg]
-    when (String.equal f "SExt") && (String.equal w "w64") ->
+  | Sexp.List [Sexp.Atom "SExt"; Sexp.Atom "w64"; arg] ->
     {v=Cast(Uint64,get_sexp_value_raw arg Uint32 ~at);t=Uint64}
   | Sexp.List [Sexp.Atom "Mul"; Sexp.Atom width; lhs; rhs] ->
     let mt = guess_type_l [lhs;rhs] Unknown in
@@ -750,10 +748,9 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
     {v=Bop (And,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
-  | Sexp.List [Sexp.Atom f; lhs; rhs]
-    when (String.equal f "Or") &&
-         ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
-    (*FIXME: and here, but really that is a bool expression, I know it*)
+  | Sexp.List [Sexp.Atom "Or"; Sexp.Atom _; lhs; rhs]
+    when ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
+    (*FIXME: or here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
     {v=Bop (Or,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
   | Sexp.List [Sexp.Atom f; Sexp.Atom _; lhs; rhs]
