@@ -157,7 +157,7 @@ static int dsos_pci_probe_dev(uint32_t bus, uint32_t dev, uint32_t function, str
 	}
 
 	/*
-	 * We assume that out points to invalid memory. Because PCI devices are
+	 * We assume that out points to valid memory. Because PCI devices are
 	 * always little-endian, it is not necessary to perform byte-swapping.
 	 */
 	out->vendor_id = vendor_id;
