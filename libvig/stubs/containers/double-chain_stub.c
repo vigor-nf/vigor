@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -10,7 +11,7 @@
 #define DENY(chain) klee_forbid_access((chain), sizeof(struct DoubleChain), "allocated_chain_do_not_dereference")
 
 struct DoubleChain {
-  int out_of_space;
+  bool out_of_space;
   int new_index;
   int is_index_allocated;
 };
@@ -31,7 +32,7 @@ int dchain_allocate(int index_range, struct DoubleChain** chain_out) {
       klee_assume(0 <= (*chain_out)->new_index);
       klee_assume((*chain_out)->new_index < index_range);
       (*chain_out)->is_index_allocated = 0;
-      (*chain_out)->out_of_space = klee_int("out_of_space");
+      (*chain_out)->out_of_space = klee_int("out_of_space") != 0;
       DENY(*chain_out);
       return 1;
     } else {
@@ -111,17 +112,17 @@ int dchain_free_index(struct DoubleChain* chain, int index) {
 
   klee_assert(chain != NULL);
   ALLOW(chain);
-  chain->out_of_space = 0;
+  chain->out_of_space = false;
   DENY(chain);
   return 1;
 }
 
-void dchain_make_space(struct DoubleChain* chain) {
+void dchain_make_space(struct DoubleChain* chain, int nfreed) {
   //Do not trace. this function is internal for the Expirator model.
   ALLOW(chain);
-  klee_assert(chain->is_index_allocated == 0);
+  klee_assert(nfreed == 0 | chain->is_index_allocated == 0);
   //Do not trace internal stub control functions.
-  chain->out_of_space = 0;
+  chain->out_of_space &= nfreed == 0;
   DENY(chain);
 }
 
@@ -132,6 +133,6 @@ void dchain_reset(struct DoubleChain* chain, int index_range) {
   klee_assume(0 <= chain->new_index);
   klee_assume(chain->new_index < index_range);
   chain->is_index_allocated = 0;
-  chain->out_of_space = klee_int("out_of_space");
+  chain->out_of_space = klee_int("out_of_space") != 0;
   DENY(chain);
 }

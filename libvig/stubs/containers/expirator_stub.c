@@ -10,9 +10,7 @@ int expire_items(struct DoubleChain* chain, struct DoubleMap* map,
   klee_trace_param_i64(time, "exp_time");
   int nfreed = klee_int("number_of_freed_flows");
   klee_assume(0 <= nfreed);
-  if (nfreed > 0) {
-    dchain_make_space(chain);
-  }
+  dchain_make_space(chain, nfreed);
   //Tell dchain model that we freed some indexes here
   return nfreed;
 }
@@ -28,8 +26,6 @@ int expire_items_single_map(struct DoubleChain* chain,
   klee_trace_param_i64(time, "time");
   int nfreed = klee_int("unmber_of_freed_flows");
   klee_assume(0 <= nfreed);
-  if (0 < nfreed) {
-    dchain_make_space(chain);
-  }
+  dchain_make_space(chain, nfreed);
   return nfreed;
 }

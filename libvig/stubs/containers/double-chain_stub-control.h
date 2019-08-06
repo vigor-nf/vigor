@@ -3,7 +3,7 @@
 
 #include "libvig/containers/double-chain.h"
 
-void dchain_make_space(struct DoubleChain* chain);
+void dchain_make_space(struct DoubleChain* chain, int nfreed);
 
 void dchain_reset(struct DoubleChain* chain, int index_range);
 
