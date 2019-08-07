@@ -2,7 +2,7 @@ NAT_DIR = vignat
 NF_SOURCES := $(NAT_DIR)/nat_main.c \
 	$(NAT_DIR)/nat_config.c \
 	$(NAT_DIR)/flow.h.gen.c \
-	$(NAT_DIR)/nat_state.c \
+	$(NAT_DIR)/state.c \
 	$(NAT_DIR)/nat_flowmanager.c
 
 # icnalsp3s2

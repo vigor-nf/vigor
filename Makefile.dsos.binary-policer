@@ -1,7 +1,7 @@
-POLICER_DIR = vigpolicer
+POLICER_DIR = vigpol
 NF_SOURCES := $(POLICER_DIR)/policer_main.c \
 	$(POLICER_DIR)/policer_config.c \
-	$(POLICER_DIR)/policer_state.c \
+	$(POLICER_DIR)/state.c \
 	$(POLICER_DIR)/dynamic_value.h.gen.c \
 	$(POLICER_DIR)/ip_addr.h.gen.c
 

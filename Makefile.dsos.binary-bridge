@@ -1,7 +1,7 @@
 BRIDGE_DIR = vigbridge
 NF_SOURCES := $(BRIDGE_DIR)/bridge_main.c \
 	$(BRIDGE_DIR)/bridge_config.c \
-	$(BRIDGE_DIR)/bridge_state.c \
+	$(BRIDGE_DIR)/state.c \
 	$(BRIDGE_DIR)/dyn_value.h.gen.c \
 	$(BRIDGE_DIR)/stat_key.h.gen.c
 
