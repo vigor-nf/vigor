@@ -2358,7 +2358,7 @@ stub_hardware_init(void)
 		struct stub_device stub_dev = {
 			.name = stub_pci_name(n),
 			.mem = NULL,
-			.mem_len = 1 << 20, // 2^20 bytes
+			.mem_len = sizeof(REGISTERS)/sizeof(struct stub_register) * sizeof(uint32_t),
 			.mem_shadow = NULL,
 			.current_mdi_address = -1,
 			.i2c_state = -1,
