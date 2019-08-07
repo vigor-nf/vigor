@@ -10,7 +10,7 @@ NF_AUTOGEN_SRCS := lb_flow.h lb_backend.h ip_addr.h
 # CHT height must be a prime number
 NF_VERIF_ARGS := --flow-expiration 10 \
                  --flow-capacity 65536 \
-                 --backend-capacity 20 \
+                 --backend-capacity 32 \
                  --cht-height 97 \
                  --backend-expiration 60
 

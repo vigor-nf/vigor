@@ -44,6 +44,7 @@ NF_COMMON_SOURCES := $(NF_DIR)/nf_main.c \
 	$(wildcard $(RTE_SDK)/lib/librte_cmdline/*.c) \
 	$(CONTAINERS_DIR)/map.c \
 	$(CONTAINERS_DIR)/map-impl.c \
+        $(CONTAINERS_DIR)/map-impl-pow2.c \
 	$(CONTAINERS_DIR)/double-map.c \
 	$(CONTAINERS_DIR)/double-chain.c \
 	$(CONTAINERS_DIR)/double-chain-impl.c \
@@ -132,6 +133,7 @@ MULTIBOOT1_OBJ := $(patsubst %.asm, %.o, $(MULTIBOOT1_SRC))
 MULTIBOOT2_OBJ := $(patsubst %.asm, %.o, $(MULTIBOOT2_SRC))
 
 CFLAGS := -march=native -ffreestanding -flto -O3
+CFLAGS += -DCAPACITY_POW2
 
 CRTI_SRC = $(KERNEL_DIR)/asm/crti.asm
 CRTI_OBJ := $(patsubst %.asm, %.o, $(CRTI_SRC))
