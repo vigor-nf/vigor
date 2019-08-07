@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <rte_byteorder.h>
 #include <rte_mbuf.h>
 #include <rte_mbuf_ptype.h>
 #include <rte_ether.h>

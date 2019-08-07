@@ -65,6 +65,8 @@
 #endif//KLEE_VERIFICATION
 
 
+struct nf_config* config;
+
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;
@@ -162,7 +164,6 @@ nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool)
 static void
 lcore_main(void)
 {
-  // TODO is this check useful?
   for (uint16_t device = 0; device < rte_eth_dev_count(); device++) {
     if (rte_eth_dev_socket_id(device) > 0 && rte_eth_dev_socket_id(device) != (int) rte_socket_id()) {
       NF_INFO("Device %" PRIu8 " is on remote NUMA node to polling thread.", device);

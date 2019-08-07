@@ -57,7 +57,7 @@ bool devices_configured[STUB_DEVICES_COUNT];
 bool devices_tx_setup[STUB_DEVICES_COUNT];
 bool devices_rx_setup[STUB_DEVICES_COUNT];
 bool devices_started[STUB_DEVICES_COUNT];
-bool devices_promiscuous[STUB_DEVICES_COUNT];
+int devices_promiscuous[STUB_DEVICES_COUNT];
 
 // To allocate mbufs
 struct rte_mempool* devices_rx_mempool[STUB_DEVICES_COUNT];
@@ -79,6 +79,7 @@ rte_eth_dev_configure(uint16_t port_id, uint16_t nb_rx_queue, uint16_t nb_tx_que
 	// TODO somehow semantically check eth_conf?
 
 	devices_configured[port_id] = true;
+	devices_promiscuous[port_id] = 0;
 	return 0;
 }
 
@@ -127,14 +128,15 @@ rte_eth_dev_start(uint16_t port_id)
 static inline void
 rte_eth_promiscuous_enable(uint16_t port_id)
 {
-	klee_assert(!devices_promiscuous[port_id]);
-	devices_promiscuous[port_id] = true;
+	klee_assert(devices_configured[port_id]);
+	klee_assert(devices_promiscuous[port_id] == 0);
+	devices_promiscuous[port_id] = 1;
 }
 
 static inline int
 rte_eth_promiscuous_get(uint16_t port_id)
 {
-	return devices_promiscuous[port_id] ? 1 : 0;
+	return devices_promiscuous[port_id];
 }
 
 static inline int

@@ -13,11 +13,11 @@
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
-#include "nf.h"
 #include "libvig/nf_log.h"
 #include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
 
+#include "nf.h"
 #include "nat_config.h"
 #include "nat_flow.h"
 #include "nat_map.h"

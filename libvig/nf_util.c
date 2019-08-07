@@ -36,6 +36,18 @@ nf_has_tcpudp_header(struct ipv4_hdr* header)
   return header->next_proto_id == IPPROTO_TCP | header->next_proto_id == IPPROTO_UDP;
 }
 
+#ifdef KLEE_VERIFICATION
+void
+nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
+  klee_trace_ret();
+  klee_trace_param_u64((uint64_t)ip_header, "ip_header");
+  klee_trace_param_u64((uint64_t)l4_header, "l4_header");
+  klee_trace_param_u64((uint64_t)packet, "packet");
+  // Make sure the packet pointer points to the TCPUDP continuation
+  assert(packet_is_last_borrowed_chunk(packet, l4_header));
+  ip_header->hdr_checksum = klee_int("checksum");
+}
+#else//KLEE_VERIFICATION
 void
 nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void *l4_header)
 {
@@ -78,18 +90,6 @@ nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr* ip_header, void 
 	}
 }
 
-#ifdef KLEE_VERIFICATION
-void
-nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
-  klee_trace_ret();
-  klee_trace_param_u64((uint64_t)ip_header, "ip_header");
-  klee_trace_param_u64((uint64_t)l4_header, "l4_header");
-  klee_trace_param_u64((uint64_t)packet, "packet");
-  // Make sure the packet pointer points to the TCPUDP continuation
-  assert(packet_is_last_borrowed_chunk(packet, l4_header));
-  ip_header->hdr_checksum = klee_int("checksum");
-}
-#else//KLEE_VERIFICATION
 void
 nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header, struct tcpudp_hdr* l4_header, void* packet) {
   // Make sure the packet pointer points to the TCPUDP continuation

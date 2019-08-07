@@ -33,7 +33,7 @@ struct stub_register {
 	stub_register_write write; // possibly NULL
 };
 
-static struct stub_register REGISTERS[0x20000]; // index == address
+static struct stub_register REGISTERS[0x10161]; // index == address
 
 // Incremented at each delay; in nanoseconds.
 static uint64_t TIME;
@@ -170,20 +170,20 @@ stub_device_start(struct stub_device* dev)
 	bool is_ip = is_ipv4 | is_ipv6;
 	bool is_ip_broadcast = is_ip & (klee_int("received_is_ip_broadcast") != 0);
 
-	bool has_ip_ext = is_ip & klee_int("received_has_ip_ext") != 0;
+	bool has_ip_ext = is_ip & (klee_int("received_has_ip_ext") != 0);
 
-	bool is_linksec = !is_ip & klee_int("received_is_linksec") != 0;
+	bool is_linksec = !is_ip & (klee_int("received_is_linksec") != 0);
 
 	bool not_ipsec = is_udp | is_tcp | is_sctp;
 	bool is_nfs = not_ipsec & (klee_int("received_is_nfs") != 0);
 
 	bool is_ipsec_esp = !not_ipsec & (klee_int("received_is_ipsec_esp") != 0);
-	bool is_ipsec_ah = !not_ipsec & (!is_ipsec_esp & klee_int("received_is_ipsec_ah") != 0);
+	bool is_ipsec_ah = !not_ipsec & (!is_ipsec_esp & (klee_int("received_is_ipsec_ah") != 0));
 #else
 	bool is_ip_broadcast = false, has_ip_ext = false, is_linksec = false, not_ipsec = true, is_nfs = false, is_ipsec_esp = false, is_ipsec_ah = false;
 #endif
 
-#define BIT(index, cond) SET_BIT(wb0, index, (cond) ? 1 : 0);
+#define BIT(index, cond) SET_BIT(wb0, index, cond);
 	BIT(4, is_ipv4);
 	BIT(5, is_ipv4 & has_ip_ext);
 	BIT(6, is_ipv6);
@@ -235,7 +235,7 @@ stub_device_start(struct stub_device* dev)
 			(((mbuf_content->ipv4.dst_addr & 0xFF) >= 0xE0) & ((mbuf_content->ipv4.dst_addr & 0xFF) < 0xF0))
 #endif
 			// Or just a broadcast, which can be pretty much anything
-			| is_ip_broadcast)) ? 1 : 0);
+			| is_ip_broadcast)));
 
 	if(is_ipv4) {
 		// TODO can we make version_ihl symbolic?

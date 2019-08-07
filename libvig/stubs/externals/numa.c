@@ -8,7 +8,7 @@
 #include <dsos-klee.h>
 #endif
 
-static bool NUMA_AVAILABLE = false;
+static int NUMA_AVAILABLE = 42;
 static bool NUMA_NODEMASK_CREATED = false;
 
 int
@@ -16,14 +16,18 @@ numa_available(void)
 {
 	// Before any other calls in this library can be used numa_available() must be called.
 	// If it returns -1, all other functions in this library are undefined.
-	NUMA_AVAILABLE = true; // TODO klee_int("numa_available") != 0;
-	return NUMA_AVAILABLE ? 0 : -1;
+	if (NUMA_AVAILABLE == 42) {
+		NUMA_AVAILABLE = -1;
+		// let's not double paths, just expose the dpdk bug...
+		//NUMA_AVAILABLE = klee_range(-1, 1, "numa_available"); // 1 is exclusive, this this will be -1 or 0 true;
+	}
+	return NUMA_AVAILABLE;
 }
 
 struct bitmask*
 numa_allocate_nodemask()
 {
-	klee_assert(NUMA_AVAILABLE);
+	klee_assert(NUMA_AVAILABLE == 0);
 
 	klee_assert(!NUMA_NODEMASK_CREATED);
 	NUMA_NODEMASK_CREATED = true;
@@ -38,7 +42,7 @@ numa_allocate_nodemask()
 void
 numa_bitmask_free(struct bitmask *bmp)
 {
-	klee_assert(NUMA_AVAILABLE);
+	klee_assert(NUMA_AVAILABLE == 0);
 
 	// It is an error to attempt to free this bitmask twice.
 	// --https://linux.die.net/man/3/numa_alloc_onnode
