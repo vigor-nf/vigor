@@ -17,7 +17,7 @@ vig%: clean validator.byte
 	corebuild -no-hygiene -lib dynlink -lib str common_fspec.cmo $@_fspec.cmo -cflag -unsafe-string
 	ocamlc -a _build/common_fspec.cmo _build/$@_fspec.cmo -o $@_fspec.cma
 	python3 translate-spec.py ../$@/spec.py forwarding_property.tmpl
-	./test_all.sh ../$@/klee-last out .. $@_fspec.cma $@
+	/usr/bin/time -v ./test_all.sh ../$@/klee-last out .. $@_fspec.cma $@
 
 # Regression test suite
 #test-results/%.done: regression-tests/%
