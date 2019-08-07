@@ -159,32 +159,18 @@ void lb_process_heartbit(struct LoadBalancer* balancer,
   }
 }
 
-void lb_expire_flows(struct LoadBalancer* balancer, vigor_time_t now) {
-  if (now < balancer->flow_expiration_time) return;
-
-  // This is hacky - we want to make sure the sanitization doesn't
-  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
-  // So we "prove" by hand that it's OK...
-  assert(sizeof(int64_t) == sizeof(vigor_time_t));
-  if (now < 0) return; // we don't support the past
-  uint64_t now_u = (uint64_t) now; // OK since assert above passed and now > 0
-  uint64_t last_time_u = now_u - balancer->flow_expiration_time; // OK because now >= flow_expiration_time >= 0
-  vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
-
+void lb_expire_flows(struct LoadBalancer* balancer, vigor_time_t time) {
+  assert(time >= 0); // we don't support the past
+  assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
+  uint64_t time_u = (uint64_t) time; // OK because of the two asserts
+  vigor_time_t last_time = time_u - balancer->flow_expiration_time;
   expire_items_single_map(balancer->state->flow_chain, balancer->state->flow_heap, balancer->state->flow_to_flow_id, last_time);
 }
 
-void lb_expire_backends(struct LoadBalancer* balancer, vigor_time_t now) {
-  if (now < balancer->backend_expiration_time) return;
-
-  // This is hacky - we want to make sure the sanitization doesn't
-  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
-  // So we "prove" by hand that it's OK...
-  assert(sizeof(int64_t) == sizeof(vigor_time_t));
-  if (now < 0) return; // we don't support the past
-  uint64_t now_u = (uint64_t) now; // OK since assert above passed and now > 0
-  uint64_t last_time_u = now_u - balancer->backend_expiration_time; // OK because now >= flow_expiration_time >= 0
-  vigor_time_t last_time = (vigor_time_t) last_time_u; // OK since the assert above passed
-
+void lb_expire_backends(struct LoadBalancer* balancer, vigor_time_t time) {
+  assert(time >= 0); // we don't support the past
+  assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
+  uint64_t time_u = (uint64_t) time; // OK because of the two asserts
+  vigor_time_t last_time = time_u - balancer->backend_expiration_time;
   expire_items_single_map(balancer->state->active_backends, balancer->state->backend_ips, balancer->state->ip_to_backend_id, last_time);
 }

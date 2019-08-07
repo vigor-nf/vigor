@@ -17,7 +17,7 @@ struct nf_config {
 	uint32_t flow_capacity;
 
 	// Expiration time of flows in seconds
-	vigor_time_t flow_expiration_time;
+	uint32_t flow_expiration_time;
 
   // The maximum number of backends we can ballance at the same time
   uint32_t backend_capacity;
@@ -30,5 +30,5 @@ struct nf_config {
   // The time for which the load balancer is willing to wait hoping to get
   // another heartbeat. If no heartbeat comes for a host for this time,
   // it is considered down and removed from the pool of backends.
-  vigor_time_t backend_expiration_time;
+  uint32_t backend_expiration_time;
 };
