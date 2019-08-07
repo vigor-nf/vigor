@@ -122,7 +122,7 @@ int dchain_allocate(int index_range, struct DoubleChain** chain_out)
 {
 
   struct DoubleChain* old_chain_out = *chain_out;
-  struct DoubleChain* chain_alloc = malloc(sizeof(struct DoubleChain));
+  struct DoubleChain* chain_alloc = (struct DoubleChain*) malloc(sizeof(struct DoubleChain));
   if (chain_alloc == NULL) return 0;
   *chain_out = (struct DoubleChain*) chain_alloc;
 
@@ -133,7 +133,7 @@ int dchain_allocate(int index_range, struct DoubleChain** chain_out)
                (index_range + DCHAIN_RESERVED), IRANG_LIMIT + DCHAIN_RESERVED);
     @*/
   struct dchain_cell* cells_alloc =
-    malloc(sizeof (struct dchain_cell)*(index_range + DCHAIN_RESERVED));
+    (struct dchain_cell*) malloc(sizeof (struct dchain_cell)*(index_range + DCHAIN_RESERVED));
   if (cells_alloc == NULL) {
     free(chain_alloc);
     *chain_out = old_chain_out;
@@ -141,7 +141,7 @@ int dchain_allocate(int index_range, struct DoubleChain** chain_out)
   }
   (*chain_out)->cells = cells_alloc;
 
-  vigor_time_t* timestamps_alloc = malloc(sizeof(vigor_time_t)*(index_range));
+  vigor_time_t* timestamps_alloc = (vigor_time_t*) malloc(sizeof(vigor_time_t)*(index_range));
   if (timestamps_alloc == NULL) {
     free((void*)cells_alloc);
     free(chain_alloc);

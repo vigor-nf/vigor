@@ -15,7 +15,8 @@
 //#endif
 //#endif
 
-#include "ruby/defines.h"
+// Changed to remove ruby/
+#include "defines.h"
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

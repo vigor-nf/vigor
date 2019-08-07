@@ -139,8 +139,9 @@ struct ether_hdr* nf_then_get_ether_header(void* p) {
 }
 
 static inline
-struct ipv4_hdr* nf_then_get_ipv4_header(struct ether_hdr* ether_header,
+struct ipv4_hdr* nf_then_get_ipv4_header(void* ether_header_,
 					 void* p, uint8_t** ip_options) {
+  struct ether_hdr* ether_header = (struct ether_hdr*) ether_header_; // we want it void* so it can be called with mbuf_pkt which returns void*
   *ip_options = NULL;
 
   uint16_t unread_len = packet_get_unread_length(p);

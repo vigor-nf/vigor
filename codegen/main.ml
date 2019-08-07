@@ -95,8 +95,8 @@ let gen_eq_function compinfo =
   "(void* a, void* b)\n" ^
   (eq_fun_contract compinfo) ^ "\n" ^
   "{\n  struct " ^ compinfo.cname ^
-  "* id1 = a;\n  struct " ^ compinfo.cname ^
-  "* id2 = b;\n" ^
+  "* id1 = (struct " ^ compinfo.cname ^ "*) a;\n  struct " ^ compinfo.cname ^
+  "* id2 = (struct " ^ compinfo.cname ^ "*) b;\n" ^
   "  //@ open [f1]" ^ (predicate_name compinfo) ^ "(a, aid);\n" ^
   "  //@ open [f2]" ^ (predicate_name compinfo) ^ "(b, bid);\n" ^
   let field_eq_name fname = fname ^ "_eq" in
@@ -276,7 +276,7 @@ let gen_hash compinfo =
   "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj)\n" ^
   (hash_contract compinfo) ^ "\n" ^
   "{\n" ^
-  "  struct " ^ compinfo.cname ^ "* id = obj;\n" ^
+  "  struct " ^ compinfo.cname ^ "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
   "\n" ^
   "  //@ open [f]" ^ (predicate_name compinfo) ^ "(obj, v);\n" ^
   (String.concat "" (List.map (fun {fname;ftype;_} ->

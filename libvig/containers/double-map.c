@@ -277,19 +277,19 @@ int dmap_allocate/*@ <K1,K2,V> @*/
   //@ open dmap_record_property1(_);
   //@ open dmap_record_property2(_);
   struct DoubleMap* old_map_val = *map_out;
-  struct DoubleMap* map_alloc = malloc(sizeof(struct DoubleMap));
+  struct DoubleMap* map_alloc = (struct DoubleMap*) malloc(sizeof(struct DoubleMap));
   if (map_alloc == NULL) return 0;
   *map_out = (struct DoubleMap*) map_alloc;
 
   //@ mul_bounds(value_size, 4096, capacity, CAPACITY_UPPER_LIMIT);
-  uint8_t* vals_alloc = malloc((uint32_t)value_size*capacity);
+  uint8_t* vals_alloc = (uint8_t*) malloc((uint32_t)value_size*capacity);
   if (vals_alloc == NULL) {
     free(map_alloc);
     *map_out = old_map_val;
     return 0;
   }
   (*map_out)->values = vals_alloc;
-  int* bbs_a_alloc = malloc(sizeof(int)*(int)keys_capacity);
+  int* bbs_a_alloc = (int*) malloc(sizeof(int)*(int)keys_capacity);
   if (bbs_a_alloc == NULL) {
     free(vals_alloc);
     free(map_alloc);
@@ -297,7 +297,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->bbs_a = bbs_a_alloc;
-  void** kps_a_alloc = malloc(sizeof(void*)*(int)keys_capacity);
+  void** kps_a_alloc = (void**) malloc(sizeof(void*)*(int)keys_capacity);
   if (kps_a_alloc == NULL) {
     free(bbs_a_alloc);
     free(vals_alloc);
@@ -306,7 +306,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->kps_a = kps_a_alloc;
-  unsigned* khs_a_alloc = malloc(sizeof(unsigned)*(int)keys_capacity);
+  unsigned* khs_a_alloc = (unsigned*) malloc(sizeof(unsigned)*(int)keys_capacity);
   if (khs_a_alloc == NULL) {
     free(kps_a_alloc);
     free(bbs_a_alloc);
@@ -316,7 +316,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->khs_a = khs_a_alloc;
-  int* chns_a_alloc = malloc(sizeof(int)*(int)keys_capacity);
+  int* chns_a_alloc = (int*) malloc(sizeof(int)*(int)keys_capacity);
   if (chns_a_alloc == NULL) {
     free(khs_a_alloc);
     free(kps_a_alloc);
@@ -327,7 +327,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->chns_a = chns_a_alloc;
-  int* inds_a_alloc = malloc(sizeof(int)*(int)keys_capacity);
+  int* inds_a_alloc = (int*) malloc(sizeof(int)*(int)keys_capacity);
   if (inds_a_alloc == NULL) {
     free(chns_a_alloc);
     free(khs_a_alloc);
@@ -339,7 +339,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->inds_a = inds_a_alloc;
-  int* bbs_b_alloc = malloc(sizeof(int)*(int)keys_capacity);
+  int* bbs_b_alloc = (int*) malloc(sizeof(int)*(int)keys_capacity);
   if (bbs_b_alloc == NULL) {
     free(inds_a_alloc);
     free(chns_a_alloc);
@@ -352,7 +352,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->bbs_b = bbs_b_alloc;
-  void** kps_b_alloc = malloc(sizeof(void*)*(int)keys_capacity);
+  void** kps_b_alloc = (void**) malloc(sizeof(void*)*(int)keys_capacity);
   if (kps_b_alloc == NULL) {
     free(bbs_b_alloc);
     free(inds_a_alloc);
@@ -366,7 +366,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->kps_b = kps_b_alloc;
-  unsigned* khs_b_alloc = malloc(sizeof(unsigned)*(int)keys_capacity);
+  unsigned* khs_b_alloc = (unsigned*) malloc(sizeof(unsigned)*(int)keys_capacity);
   if (khs_b_alloc == NULL) {
     free(kps_b_alloc);
     free(bbs_b_alloc);
@@ -381,7 +381,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->khs_b = khs_b_alloc;
-  int* inds_b_alloc = malloc(sizeof(int)*(int)keys_capacity);
+  int* inds_b_alloc = (int*) malloc(sizeof(int)*(int)keys_capacity);
   if (inds_b_alloc == NULL) {
     free(khs_b_alloc);
     free(kps_b_alloc);
@@ -397,7 +397,7 @@ int dmap_allocate/*@ <K1,K2,V> @*/
     return 0;
   }
   (*map_out)->inds_b = inds_b_alloc;
-  int* chns_b_alloc = malloc(sizeof(int)*(int)keys_capacity);
+  int* chns_b_alloc = (int*) malloc(sizeof(int)*(int)keys_capacity);
   if (chns_b_alloc == NULL) {
     free(inds_b_alloc);
     free(khs_b_alloc);
@@ -1119,7 +1119,7 @@ int dmap_put/*@ <K1,K2,V> @*/(struct DoubleMap* map, void* value, int index)
   //@ extract_value<K1,K2,V>(map->values, vals, index);
   void* my_value = map->values + index*map->value_size;
   uq_value_copy* cpy = map->cpy;
-  cpy(my_value, value);
+  cpy((char*) my_value, value);
 
   dmap_extract_keys *exk = map->exk;
   exk(my_value, &key_a, &key_b);
@@ -1216,7 +1216,7 @@ void dmap_get_value/*@ <K1,K2,V> @*/(struct DoubleMap* map, int index,
   //@ extract_value(map->values, vals, index);
   void* my_value = map->values + index*map->value_size;
   uq_value_copy* cpy = map->cpy;
-  cpy(value_out, my_value);
+  cpy((char*) value_out, (char*) my_value);
   //@ glue_values(map->values, vals, index);
   /*@ close dmappingp(m,
                       kp1, kp2, hsh1, hsh2,

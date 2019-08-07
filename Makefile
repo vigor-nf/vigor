@@ -19,6 +19,8 @@ NF_VERIF_ARGS := --no-shconf -- $(NF_VERIF_ARGS)
 # Add state.c to the NF files, but only if it will be generated (so that we can compile stateless NFs)
 ifneq (,$(wildcard dataspec.ml))
 NF_FILES += state.c
+else ifneq (,$(wildcard ../dataspec.ml))
+NF_FILES += state.c
 endif
 
 # If KLEE paths are not defined (eg because the user installed deps themselves), try to compute it based on KLEE_INCLUDE.

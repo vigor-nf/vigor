@@ -6,8 +6,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#pragma GCC diagnostic ignored "-fpermissive"
-
 #define TRUE 1
 
 #define FALSE 0

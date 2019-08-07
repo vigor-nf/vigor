@@ -13,7 +13,7 @@
 #include <rte_ip.h>
 #include <rte_mbuf.h>
 
-#include "libvig/nf_forward.h"
+#include "nf.h"
 #include "libvig/nf_log.h"
 #include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
@@ -22,8 +22,6 @@
 #include "nat_flow.h"
 #include "nat_map.h"
 
-
-struct nat_config config;
 
 // ICMP support is not implemented, as this NAT only exists for benchmarking purposes;
 // since the protocol type has to be checked anyway, an ICMP check would not significantly
@@ -74,10 +72,10 @@ nat_flows_by_time_refresh(void)
 }
 
 
-void nf_core_init(void)
+void nf_init(void)
 {
 	int power = 1;
-	while(power < config.max_flows) {
+	while(power < config->max_flows) {
 		power *= 2;
 	}
 
@@ -86,8 +84,8 @@ void nf_core_init(void)
 	flows_from_outside = nat_map_create(power);
 
 	// uint32_t for the port as max_flows is 1-based and thus may be 2^16.
-	for (uint32_t port = 0; port < config.max_flows; port++) {
-		available_ports.push_back((uint16_t) port + config.start_port);
+	for (uint32_t port = 0; port < config->max_flows; port++) {
+		available_ports.push_back((uint16_t) port + config->start_port);
 	}
 
 	current_timestamp = 0;
@@ -95,7 +93,7 @@ void nf_core_init(void)
 	NF_DEBUG("Initialized");
 }
 
-int nf_core_process(struct rte_mbuf* mbuf, time_t now)
+int nf_process(struct rte_mbuf* mbuf, time_t now)
 {
 	// Set this iteration's time
 	NF_DEBUG("It is %" PRId64, now);
@@ -105,11 +103,11 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		nat_flows_by_time_refresh();
 
 		nat_flow* expired_flow = flows_by_time.top();
-		while ((current_timestamp - expired_flow->last_packet_timestamp) > config.expiration_time) {
+		while ((current_timestamp - expired_flow->last_packet_timestamp) > config->expiration_time) {
 			struct nat_flow_id expired_from_outside;
 			expired_from_outside.src_addr = expired_flow->id.dst_addr;
 			expired_from_outside.src_port = expired_flow->id.dst_port;
-			expired_from_outside.dst_addr = config.external_addr;
+			expired_from_outside.dst_addr = config->external_addr;
 			expired_from_outside.dst_port = expired_flow->external_port;
 			expired_from_outside.protocol = expired_flow->id.protocol;
 
@@ -128,32 +126,23 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 
 	current_timestamp = now;
 
-  uint16_t in_port = mbuf->port;
+	uint16_t in_port = mbuf->port;
 
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
-
-  if (!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type)) {
+	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+	uint8_t* ip_options;
+	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+	if (ipv4_header == NULL) {
 		NF_DEBUG("Not IPv4, dropping");
 		return in_port;
-  }
-  uint8_t* ip_options;
-  bool wellformed = true;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(mbuf_pkt(mbuf), &ip_options, &wellformed);
-  if (!wellformed) {
-		NF_DEBUG("Malformed IPv4, dropping");
-		return in_port;
-  }
-  assert(ipv4_header != NULL);
-
-  if (!nf_has_tcpudp_header(ipv4_header) ||
-      packet_get_unread_length(mbuf_pkt(mbuf)) < sizeof(struct tcpudp_hdr)) {
+	}
+	struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(ipv4_header, mbuf_pkt(mbuf));
+	if (tcpudp_header == NULL) {
 		NF_DEBUG("Not TCP/UDP, dropping");
 		return in_port;
 	}
-  struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(mbuf_pkt(mbuf));
 
 	// Redirect packets
-	if (in_port == config.wan_device) {
+	if (in_port == config->wan_device) {
 		NF_DEBUG("External packet");
 
 		struct nat_flow_id flow_id = nat_flow_id_from_headers(ipv4_header, tcpudp_header);
@@ -168,16 +157,16 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		// Refresh
 		flow->last_packet_timestamp = current_timestamp;
 
-    // L2 forwarding
-		ether_header->s_addr = config.device_macs[flow->internal_device];
-		ether_header->d_addr = config.endpoint_macs[flow->internal_device];
+		// L2 forwarding
+		ether_header->s_addr = config->device_macs[flow->internal_device];
+		ether_header->d_addr = config->endpoint_macs[flow->internal_device];
 
 		// L3 forwarding
 		ipv4_header->dst_addr = flow->id.src_addr;
 		tcpudp_header->dst_port = flow->id.src_port;
 
 		// Checksum
-		nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
+		nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
 
 		return flow->internal_device;
 	} else {
@@ -209,7 +198,7 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 			struct nat_flow_id flow_from_outside;
 			flow_from_outside.src_addr = ipv4_header->dst_addr;
 			flow_from_outside.src_port = tcpudp_header->dst_port;
-			flow_from_outside.dst_addr = config.external_addr;
+			flow_from_outside.dst_addr = config->external_addr;
 			flow_from_outside.dst_port = flow_port;
 			flow_from_outside.protocol = ipv4_header->next_proto_id;
 
@@ -224,28 +213,16 @@ int nf_core_process(struct rte_mbuf* mbuf, time_t now)
 		flow->last_packet_timestamp = current_timestamp;
 
 		// L2 forwarding
-		ether_header->s_addr = config.device_macs[config.wan_device];
-		ether_header->d_addr = config.endpoint_macs[config.wan_device];
+		ether_header->s_addr = config->device_macs[config->wan_device];
+		ether_header->d_addr = config->endpoint_macs[config->wan_device];
 
 		// L3 forwarding
-		ipv4_header->src_addr = config.external_addr;
+		ipv4_header->src_addr = config->external_addr;
 		tcpudp_header->src_port = flow->external_port;
 
 		// Checksum
-		nf_set_ipv4_checksum(mbuf, ipv4_header, tcpudp_header);
+		nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
 
-		return config.wan_device;
+		return config->wan_device;
 	}
-}
-
-void nf_config_init(int argc, char** argv) {
-  nat_config_init(&config, argc, argv);
-}
-
-void nf_config_cmdline_print_usage(void) {
-  nat_config_cmdline_print_usage();
-}
-
-void nf_print_config() {
-  nat_print_config(&config);
 }

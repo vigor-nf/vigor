@@ -25,7 +25,7 @@
 
 void nf_config_init(int argc, char** argv)
 {
-	config = malloc(sizeof(struct nf_config));
+	config = (struct nf_config*) malloc(sizeof(struct nf_config));
 	if (config == NULL) {
 		rte_exit(EXIT_FAILURE, "No memory for config");
 	}
@@ -43,8 +43,8 @@ void nf_config_init(int argc, char** argv)
 		{NULL, 			0,			NULL,  0 }
 	};
 
-	config->device_macs = calloc(nb_devices, sizeof(struct ether_addr));
-	config->endpoint_macs = calloc(nb_devices, sizeof(struct ether_addr));
+	config->device_macs = (struct ether_addr*) calloc(nb_devices, sizeof(struct ether_addr));
+	config->endpoint_macs = (struct ether_addr*) calloc(nb_devices, sizeof(struct ether_addr));
 
 	// Set the devices' own MACs
 	for (uint16_t device = 0; device < nb_devices; device++) {

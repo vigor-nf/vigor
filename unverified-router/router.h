@@ -20,7 +20,7 @@
 #include <rte_mbuf.h>
 #include <rte_ip.h>
 #include <cmdline_parse_etheraddr.h>
-#include "libvig/nf_forward.h"
+#include "nf.h"
 #include "libvig/nf_util.h"
 
 
@@ -34,17 +34,4 @@ extern struct rte_lpm * lpm_dir;
  * insert all routes from the csv file to the lpm trie
  */
 void insert_all(FILE * f);
-
-
-/**
- * Routes packets using a LPM Trie
- */
-int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now);
-
-
-/**
- * Initialize the NF
- */
-void nf_core_init(void);
-
 #endif

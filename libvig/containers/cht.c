@@ -564,7 +564,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
     //@ assert(sizeof(int)*cht_height*backend_capacity < INT_MAX);
 
     // Generate the permutations of 0..(cht_height - 1) for each backend
-    int *permutations = malloc(sizeof(int) * (int)(cht_height * backend_capacity));
+    int *permutations = (int*) malloc(sizeof(int) * (int)(cht_height * backend_capacity));
     if (permutations == 0) {
         return 0;
     }
@@ -655,7 +655,7 @@ int cht_fill_cht(struct Vector *cht, uint32_t cht_height, uint32_t backend_capac
         //@ forall_append(perms, cons(new_elem, nil), is_permutation);
     }
 
-    int *next = malloc(sizeof(int) * (int)(cht_height));
+    int *next = (int*) malloc(sizeof(int) * (int)(cht_height));
     if (next == 0) {
         free(permutations);
         return 0;

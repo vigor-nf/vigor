@@ -106,17 +106,17 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
   #endif
 
   struct Map* old_map_val = *map_out;
-  struct Map* map_alloc = malloc(sizeof(struct Map));
+  struct Map* map_alloc = (struct Map*) malloc(sizeof(struct Map));
   if (map_alloc == NULL) return 0;
   *map_out = (struct Map*) map_alloc;
-  int* bbs_alloc = malloc(sizeof(int)*(int)capacity);
+  int* bbs_alloc = (int*) malloc(sizeof(int)*(int)capacity);
   if (bbs_alloc == NULL) {
     free(map_alloc);
     *map_out = old_map_val;
     return 0;
   }
   (*map_out)->busybits = bbs_alloc;
-  void** keyps_alloc = malloc(sizeof(void*)*(int)capacity);
+  void** keyps_alloc = (void**) malloc(sizeof(void*)*(int)capacity);
   if (keyps_alloc == NULL) {
     free(bbs_alloc);
     free(map_alloc);
@@ -124,7 +124,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
     return 0;
   }
   (*map_out)->keyps = keyps_alloc;
-  unsigned* khs_alloc = malloc(sizeof(unsigned)*(int)capacity);
+  unsigned* khs_alloc = (unsigned*) malloc(sizeof(unsigned)*(int)capacity);
   if (khs_alloc == NULL) {
     free(keyps_alloc);
     free(bbs_alloc);
@@ -133,7 +133,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
     return 0;
   }
   (*map_out)->khs = khs_alloc;
-  int* chns_alloc = malloc(sizeof(int)*(int)capacity);
+  int* chns_alloc = (int*) malloc(sizeof(int)*(int)capacity);
   if (chns_alloc == NULL) {
     free(khs_alloc);
     free(keyps_alloc);
@@ -143,7 +143,7 @@ int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
     return 0;
   }
   (*map_out)->chns = chns_alloc;
-  int* vals_alloc = malloc(sizeof(int)*(int)capacity);
+  int* vals_alloc = (int*) malloc(sizeof(int)*(int)capacity);
   if (vals_alloc == NULL) {
     free(chns_alloc);
     free(khs_alloc);

@@ -7,7 +7,7 @@ struct rte_lpm * lpm_dir;
 /**
  * Initialize the NF
  */
-void nf_core_init(void) {
+void nf_init(void) {
     
   //read routes from file        
   FILE *in_file  = fopen("routes", "r");
@@ -33,25 +33,16 @@ void nf_core_init(void) {
 /**
  * Routes packets using a LPM DIR-24-8
  */
-int nf_core_process(struct rte_mbuf* mbuf, vigor_time_t now) {
+int nf_process(struct rte_mbuf* mbuf, vigor_time_t now) {
 
   //as in policer
   const uint16_t in_port = mbuf->port;
   struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf->buf_addr);
 
-  if (unlikely(!RTE_ETH_IS_IPV4_HDR(mbuf->packet_type) &&
-    !(mbuf->packet_type == 0 &&
-    ether_header->ether_type == rte_cpu_to_be_16(ETHER_TYPE_IPv4)))) {            
-    printf("not an ipv4...\n"); fflush(stdout);
-    return in_port;
-  }
-
   uint8_t* ip_options;
-  bool wellformed = true;
-  struct ipv4_hdr* ip_hdr = nf_then_get_ipv4_header(mbuf->buf_addr, &ip_options, &wellformed);
-        
-  if (unlikely(!wellformed)) {
-    printf("router dropping packet...\n"); fflush(stdout);
+  struct ipv4_hdr* ip_hdr = nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+  if (ip_hdr == NULL) {
+    printf("not an ipv4...\n"); fflush(stdout);
     return in_port;
   }
 
@@ -156,7 +147,7 @@ void insert_all(FILE * f) {
         
       if (entries_count >= MAX_ROUTES_ENTRIES) {
         printf("Error too much entries in routes file !\n"); 
-        bort();
+        abort();
       }
         
       uint32_t  * ip_address= malloc(sizeof(uint32_t));
@@ -193,16 +184,7 @@ void insert_all(FILE * f) {
 
 }
 
-
-//Needed by nf_main.c
-void nf_config_init(int argc, char** argv) {
-  
-}
-
-void nf_config_cmdline_print_usage(void) {
-  
-}
-
-void nf_print_config() {
- 
-}
+// needed by nf.h
+void nf_config_init(int argc, char** argv) { }
+void nf_config_usage(void) { }
+void nf_config_print(void) { }

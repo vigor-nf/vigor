@@ -12,7 +12,7 @@ struct nf_config;
 void nf_init(void);
 int nf_process(struct rte_mbuf* pkt, vigor_time_t now);
 
-struct nf_config* config;
+static struct nf_config* config;
 void nf_config_init(int argc, char** argv);
 void nf_config_usage(void);
 void nf_config_print(void);

@@ -360,7 +360,7 @@ struct lpm* lpm_allocate()
             : 
               table(result, dir_init()); @*/
 {	
-  struct lpm* _lpm = malloc(sizeof(struct lpm));
+  struct lpm* _lpm = (struct lpm*) malloc(sizeof(struct lpm));
   if (_lpm == 0) {
     return 0;
   }
