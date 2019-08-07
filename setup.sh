@@ -176,7 +176,7 @@ opam install ocamlfind camlp4 -y
 # VFIDE dependency
 opam install lablgtk -y
 
-if [ ! -e "$BUILDDIR/verifast" ]; then git clone --depth 1 https://github.com/vignat/verifast "$BUILDDIR/verifast"; fi
+if [ ! -e "$BUILDDIR/verifast" ]; then git clone --depth 1 https://github.com/vigor-nf/verifast "$BUILDDIR/verifast"; fi
 pushd "$BUILDDIR/verifast/src"
   make verifast # should be just "make" but the verifast checks fail due to a non auto lemma
   echo 'PATH='"$BUILDDIR/verifast/bin"':$PATH' >> "$PATHSFILE"
@@ -215,7 +215,7 @@ pushd "$BUILDDIR/klee-uclibc"
   make -j $(nproc)
 popd
 
-if [ ! -e "$BUILDDIR/klee" ]; then git clone --depth 1 https://github.com/vignat/klee.git "$BUILDDIR/klee"; fi
+if [ ! -e "$BUILDDIR/klee" ]; then git clone --depth 1 https://github.com/vigor-nf/klee.git "$BUILDDIR/klee"; fi
 pushd "$BUILDDIR/klee"
   rm -rf build
   mkdir build
