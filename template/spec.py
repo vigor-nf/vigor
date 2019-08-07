@@ -51,7 +51,11 @@ if 1 == 2:
 # ===
 # Variable 'received_on_port' contains the port on which the input packet was received
 # ===
-# SOSPTODO Arseniy please describe the semantics of the ... operator
+# ... (Python's ellipsis) indicates the framework to ignore the corresponding field.
+# i.e. if you do not want to specify ether.saddr value, because it is set by the L2, you can
+# "skip" when specifying the ethernet header with 
+# ether(h1, saddr=...) - this will enforce the same ethernet header as h1,
+# but with an arbitrary saddr
 return ([1 - received_on_port],
 	[ether(h1, saddr=..., daddr=...),
 	 ipv4(h2, cksum=..., saddr=..., daddr=...),
