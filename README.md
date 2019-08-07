@@ -22,7 +22,7 @@ To **verify** NFs using **DPDK models**, you need:
 
 To **verify** NFs using **hardware models**, you need:
 
-- 256 GB for the bridge, firewall, NAT and policer; 1 TB for the load balancer.
+- 128 GB of RAM
 - To run `setup.sh` (no arguments)
 
 To **benchmark** Vigor NFs, you need:
@@ -47,7 +47,7 @@ There are currently five Vigor NFs:
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
-- ??? TODO baselines ???
+- ??? SOSPTODO baselines ???
 
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
@@ -56,7 +56,7 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | -------------------------- | ------------------------------------------ | ----------------- |
 | Default                    | Compile the NF                             | <1min             |
 | `run`                      | Run the NF using recommended arguments     | <1min to start    |
-| `symbex validate`          | Verify the NF with DPDK models             | 1min to symbex, hours to validate |
+| `symbex validate`          | Verify the NF with DPDK models             | <1min to symbex, hours to validate |
 | `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | <1h to symbex, hours to validate |
 | `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | <1h to symbex, hours to validate |
 | `count-loc`                | Count lines of code of the NF              | <1min             |
