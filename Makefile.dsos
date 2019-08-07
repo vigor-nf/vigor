@@ -1,6 +1,5 @@
 ### Use this to build an executable DSOS image
 SHELL := /bin/bash -O extglob -c
-export RTE_TARGET = x86_64-native-linuxapp-gcc
 
 CC = x86_64-elf-gcc
 NASM = nasm
@@ -15,10 +14,11 @@ LINKER_SCRIPT = linker.ld
 GRUB_CFG = grub.cfg
 LIBC = libc.a
 
-NF_DIR = .
-CONTAINERS_DIR = libvig/containers
-STUBS_DIR = libvig/stubs
-KERNEL_DIR = libvig/kernel
+# get current dir, see https://stackoverflow.com/a/8080530
+NF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+CONTAINERS_DIR = $(NF_DIR)/libvig/containers
+STUBS_DIR = $(NF_DIR)/libvig/stubs
+KERNEL_DIR = $(NF_DIR)/libvig/kernel
 
 NF_DEFS := -D_GNU_SOURCE
 NF_DEFS += -DDSOS
@@ -32,7 +32,12 @@ NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include-fixed
 NF_INCLUDES += -I /usr/include/x86_64-linux-gnu
 NF_INCLUDES += -I /usr/include
 
-NF_DEFS += $(NF_ARGUMENTS)
+# Convert the bash-style NF arguments (nf --no-shconf -- -n 3 -m 6) into
+# C-style char*[] comma separated list
+# of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for DSOS to put
+# into argv at compilation time.
+dquote := \"
+NF_DEFS += -DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))\"
 
 NF_COMMON_SOURCES := $(NF_DIR)/nf_main.c \
 	$(NF_DIR)/libvig/nf_util.c \
@@ -114,9 +119,9 @@ KERNEL_INCLUDES := -I $(KERNEL_DIR)
 # For DSOS debug output on the VGA buffer
 KERNEL_DEFS := -DDSOS_DEBUG
 
-OTHER_INCLUDES := -I libvig/stubs -I libvig --include $(NF_DIR)/libvig/misc_defs.h
+OTHER_INCLUDES := -I $(STUBS_DIR) -I $(NF_DIR)/libvig --include $(NF_DIR)/libvig/misc_defs.h
 
-C_SRCS = $(NF_SOURCES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
+C_SRCS = $(NF_FILES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
 BOOT_SRCS = $(KERNEL_DIR)/asm/boot.asm
