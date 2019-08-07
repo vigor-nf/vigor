@@ -450,7 +450,7 @@ let gen_log_fun compinfo =
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            if 0L < i then
-             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", " ^
+             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
              fname ^ "[" ^ current ^ "]" ^ ");\n" ^
              (arr_fields (Int64.sub i 1L))
            else ""
