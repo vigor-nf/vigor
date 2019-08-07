@@ -1,0 +1,77 @@
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include "libvig/stubs/core_stub.h"
+#include "libvig/containers/emap.h"
+#include "libvig/packet-io.h"
+#include "libvig/packet-headers.h"
+
+// VeriFast can't deal with bitwise AND, so we hardcode known cases.
+/*@
+lemma void bit_and_hack()
+requires true;
+ensures 0x00 == (0x00 & 0x10) 
+    &*& 0x00 == (0x01 & 0x10)
+    &*& 0x10 == (0x11 & 0x10)
+    &*& 0x00 == (0x41 & 0x10)
+    &*& 0x10 == (0x111 & 0x10)
+    &*& 0x10 == (0x211 & 0x10)
+    &*& 0x00 == (0x241 & 0x10);
+{
+  assume(false);
+}
+
+lemma_auto void bit_and_equiv(unsigned int i)
+requires i < 65536;
+ensures i == (i & 65535);
+{
+  assume(false);
+}
+
+// VeriFast can't reason about modulo either, let's help it a bit...
+lemma void modulo_hack()
+requires true;
+ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
+{
+  assume(false);
+}
+@*/
+
+void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header,
+                                 struct tcpudp_hdr* l4_header,
+                                 void* packet);
+/*@ requires ipv4_hdrp(ip_header, ipv4_hdrc(?vihl, ?tos, ?len, ?pid, ?foff,
+                                            ?ttl, ?npid, _, ?saddr, ?daddr)) &*&
+             tcpudp_hdrp(l4_header, tcpudp_hdrc(?srcp, ?dstp)) &*&
+             packetp(packet, ?payload_len, ?x); @*/
+/*@ ensures ipv4_hdrp(ip_header, ipv4_hdrc(vihl, tos, len, pid, foff,
+                                           ttl, npid, _, saddr, daddr)) &*&
+             tcpudp_hdrp(l4_header, tcpudp_hdrc(srcp, dstp)) &*&
+             packetp(packet, payload_len, x); @*/
+
+
+void umemcpy(void *array, void *array0, size_t count);
+    //@ requires uchars(array, count, ?cs) &*& [?f]uchars(array0, count, ?cs0);
+    //@ ensures uchars(array, count, cs0) &*& [f]uchars(array0, count, cs0);
+
+/*@ predicate hide_is_map_keys_equality<t>(map_keys_equality* fun,
+                                           predicate (void*;t) keyp) =
+      is_map_keys_equality<t>(fun, keyp);
+ @*/
+
+/*@ predicate hide_is_map_key_hash<t>(map_key_hash* fun,
+                                      predicate (void*;t) keyp,
+                                      fixpoint (t,int) hsh) =
+      is_map_key_hash<t>(fun, keyp, hsh);
+ @*/
+
+/*@ predicate hide_mapp<t>(struct Map* p,
+                           predicate (void*;t) kp,
+                           fixpoint (t,int) hsh,
+                           fixpoint (t,int,bool) recp,
+                           mapi<t> m) = mapp<t>(p, kp, hsh, recp, m); @*/
+
+/*@ predicate hide_vector<t>(struct Vector* vector,
+                             predicate (void*;t) entp,
+                             list<pair<t, real> > values,
+                             list<void*> addrs) = vectorp<t>(vector, entp, values, addrs); @*/

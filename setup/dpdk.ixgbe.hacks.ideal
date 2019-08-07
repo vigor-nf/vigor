@@ -1,0 +1,53 @@
+diff --git a/drivers/net/ixgbe/ixgbe_rxtx.c b/drivers/net/ixgbe/ixgbe_rxtx.c
+index 3a10300..f1ebc56 100644
+--- a/drivers/net/ixgbe/ixgbe_rxtx.c
++++ b/drivers/net/ixgbe/ixgbe_rxtx.c
+@@ -43,6 +43,10 @@
+ #include <unistd.h>
+ #include <inttypes.h>
+ 
++#ifdef KLEE_VERIFICATION
++#include <klee/klee.h>
++#endif
++
+ #include <rte_byteorder.h>
+ #include <rte_common.h>
+ #include <rte_cycles.h>
+@@ -265,6 +269,23 @@ tx_xmit_pkts(void *tx_queue, struct rte_mbuf **tx_pkts,
+ 	volatile union ixgbe_adv_tx_desc *tx_r = txq->tx_ring;
+ 	uint16_t n = 0;
+ 
++#ifdef KLEE_VERIFICATION
++	// Number of free descriptors is at most total number - 1 to avoid a race condition (see reset_tx_queue)
++	klee_assume(txq->nb_tx_free >= 0);
++	klee_assume(txq->nb_tx_free <= txq->nb_tx_desc - 1);
++
++	// Number of used descriptors -> same remark
++	klee_assume(txq->nb_tx_used >= 0);
++	klee_assume(txq->nb_tx_used <= txq->nb_tx_desc - 1);
++
++	// Combined, they must not be too much either
++	klee_assume(txq->nb_tx_free + txq->nb_tx_used <= txq->nb_tx_desc - 1);
++
++	// TDT register (represented by tx_tail) must be in range
++	klee_assume(txq->tx_tail >= 0);
++	klee_assume(txq->tx_tail < txq->nb_tx_desc);
++#endif
++
+ 	/*
+ 	 * Begin scanning the H/W ring for done descriptors when the
+ 	 * number of available descriptors drops below tx_free_thresh.  For
+@@ -1762,6 +1783,13 @@ uint16_t
+ ixgbe_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+ 		uint16_t nb_pkts)
+ {
++#ifdef KLEE_VERIFICATION
++	struct ixgbe_rx_queue* _rxq = rx_queue;
++	// The RDT register (represented by rx_tail) must be in range
++	klee_assume(_rxq->rx_tail >= 0);
++	klee_assume(_rxq->rx_tail < _rxq->nb_rx_desc);
++#endif
++
+ 	struct ixgbe_rx_queue *rxq;
+ 	volatile union ixgbe_adv_rx_desc *rx_ring;
+ 	volatile union ixgbe_adv_rx_desc *rxdp;

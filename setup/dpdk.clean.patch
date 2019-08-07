@@ -1,0 +1,69 @@
+diff --git a/lib/librte_eal/linuxapp/eal/eal.c b/lib/librte_eal/linuxapp/eal/eal.c
+index 3fb2188..952aa25 100644
+--- a/lib/librte_eal/linuxapp/eal/eal.c
++++ b/lib/librte_eal/linuxapp/eal/eal.c
+@@ -170,11 +170,11 @@ rte_eal_config_create(void)
+ 	void *rte_mem_cfg_addr;
+ 	int retval;
+ 
+-	const char *pathname = eal_runtime_config_path();
+-
+ 	if (internal_config.no_shconf)
+ 		return;
+ 
++	const char *pathname = eal_runtime_config_path();
++
+ 	/* map the config before hugepage address so that we don't waste a page */
+ 	if (internal_config.base_virtaddr != 0)
+ 		rte_mem_cfg_addr = (void *)
+@@ -223,11 +223,11 @@ rte_eal_config_attach(void)
+ {
+ 	struct rte_mem_config *mem_config;
+ 
+-	const char *pathname = eal_runtime_config_path();
+-
+ 	if (internal_config.no_shconf)
+ 		return;
+ 
++	const char *pathname = eal_runtime_config_path();
++
+ 	if (mem_cfg_fd < 0){
+ 		mem_cfg_fd = open(pathname, O_RDWR);
+ 		if (mem_cfg_fd < 0)
+diff --git a/lib/librte_eal/common/eal_common_options.c b/lib/librte_eal/common/eal_common_options.c
+index 4d7dbac..bcca599 100644
+--- a/lib/librte_eal/common/eal_common_options.c
++++ b/lib/librte_eal/common/eal_common_options.c
+@@ -959,7 +959,7 @@ eal_check_common_options(struct internal_config *internal_cfg)
+ 		RTE_LOG(ERR, EAL, "Invalid process type specified\n");
+ 		return -1;
+ 	}
+-	if (index(internal_cfg->hugefile_prefix, '%') != NULL) {
++	if (strchr(internal_cfg->hugefile_prefix, '%') != NULL) {
+ 		RTE_LOG(ERR, EAL, "Invalid char, '%%', in --"OPT_FILE_PREFIX" "
+ 			"option\n");
+ 		return -1;
+diff --git a/lib/librte_ether/rte_ethdev.c b/lib/librte_ether/rte_ethdev.c
+index 318af28..02b8ad8 100644
+--- a/lib/librte_ether/rte_ethdev.c
++++ b/lib/librte_ether/rte_ethdev.c
+@@ -485,7 +485,8 @@ rte_eth_dev_rx_queue_config(struct rte_eth_dev *dev, uint16_t nb_queues)
+ 		rxq = dev->data->rx_queues;
+ 
+ 		for (i = nb_queues; i < old_nb_queues; i++)
+-			(*dev->dev_ops->rx_queue_release)(rxq[i]);
++			if (rxq[i] != NULL)
++				(*dev->dev_ops->rx_queue_release)(rxq[i]);
+ 
+ 		rte_free(dev->data->rx_queues);
+ 		dev->data->rx_queues = NULL;
+@@ -639,7 +640,8 @@ rte_eth_dev_tx_queue_config(struct rte_eth_dev *dev, uint16_t nb_queues)
+ 		txq = dev->data->tx_queues;
+ 
+ 		for (i = nb_queues; i < old_nb_queues; i++)
+-			(*dev->dev_ops->tx_queue_release)(txq[i]);
++			if (txq[i] != NULL)
++				(*dev->dev_ops->tx_queue_release)(txq[i]);
+ 
+ 		rte_free(dev->data->tx_queues);
+ 		dev->data->tx_queues = NULL;

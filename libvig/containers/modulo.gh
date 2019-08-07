@@ -1,0 +1,121 @@
+#ifndef _MODULO_GH_INCLUDED_
+#define _MODULO_GH_INCLUDED_
+
+#include "arith.gh"
+
+lemma void div_mod(int g, int k, int l);
+requires g == (k % l) &*& l > 0;
+ensures (-l <= g) &*& (g < l);
+
+lemma void div_mod_gt_0(int mod, int div, int whole);
+requires mod == (div % whole) &*& whole > 0 &*& div >= 0;
+ensures (0 <= mod) &*& (mod < whole);
+
+fixpoint int loop_fp(int k, int capacity) {
+  return ((k%capacity + capacity)%capacity);
+}
+
+lemma void loop_lims(int k, int capacity);
+requires 0 < capacity;
+ensures 0 <= loop_fp(k, capacity) &*& loop_fp(k, capacity) < capacity;
+
+lemma void bar(int a, int b, int q, int r);
+requires 0 <= a &*& a < b &*& 0 <= r &*& a == q * b + r &*& r < b;
+ensures q == 0;
+
+lemma void quotidient_zero_pos(int a, int b, int q, int r);
+requires 0 <= a &*& a < b &*& 0 <= r &*& a == q * b + r &*& r < b;
+ensures q == 0;
+
+lemma void quotidient_zero_neg(int a, int b, int q, int r);
+requires -b < a &*& a <= 0 &*& -b < r &*& a == q * b + r &*& r <= 0;
+ensures q == 0;
+
+lemma void division_round_to_zero(int a, int b);
+requires -b < a &*& a < b;
+ensures a/b == 0;
+
+lemma void div_incr(int a, int b);
+requires 0 <= a &*& 0 < b;
+ensures true == ( (a+b)/b == a/b + 1 );
+
+lemma void loop_bijection(int k, int capacity);
+requires 0 <= k &*& k < capacity;
+ensures loop_fp(k, capacity) == k;
+
+lemma void mod_rotate(int a, int b);
+requires 0 <= a &*& 0 < b;
+ensures true == ((a+b)%b == a%b);
+
+lemma void loop_injection(int k, int capacity);
+requires 0 <= k &*& 0 < capacity;
+ensures loop_fp(k + capacity, capacity) == loop_fp(k, capacity);
+
+lemma void loop_injection_minus_n(int k, int capacity, int n);
+requires 0 <= k &*& 0 < capacity &*& 0 <= k + n*capacity &*& n < 0;
+ensures loop_fp(k + n*capacity, capacity) == loop_fp(k, capacity);
+
+lemma void loop_injection_n(int k, int capacity, int n);
+requires 0 <= k &*& 0 < capacity &*& 0 <= k + n*capacity;
+ensures loop_fp(k + n*capacity, capacity) == loop_fp(k, capacity);
+
+lemma void loop_fixp(int k, int capacity);
+requires 0 <= k &*& 0 < capacity;
+ensures loop_fp(k, capacity) == loop_fp(loop_fp(k, capacity), capacity);
+
+predicate save_for_now(bool x) = x;
+
+lemma void mod_bijection(int x, int y);
+requires -y < x &*& x < y;
+ensures x == x%y;
+
+lemma int loop_shift_inv(int x, int y, int capacity);
+requires 0 <= x &*& x < capacity &*& 0 <= y &*& y < capacity;
+ensures 0 <= result &*& result < capacity &*&
+        loop_fp(result + y, capacity) == x;
+
+lemma void inc_modulo_loop_hlp(int a, int quotient, int capacity);
+requires 0 <= a &*& 0 < capacity &*&
+         0 <= a - quotient * capacity &*&
+         a - quotient * capacity < capacity;
+ensures loop_fp(loop_fp(a, capacity) + 1, capacity) ==
+        loop_fp(a + 1, capacity);
+
+lemma void inc_modulo_loop(int a, int capacity);
+requires 0 <= a &*& 0 < capacity;
+ensures loop_fp(loop_fp(a, capacity) + 1, capacity) ==
+        loop_fp(a + 1, capacity);
+
+lemma void div_exact(int a, int b);
+    requires    0 <= a &*& 0 < b;
+    ensures     a*b/b == a;
+
+lemma void div_lt(int a, int b, int c);
+    requires    0 <= a &*& 0 < b &*& 0 < c &*& a < b*c;
+    ensures     a/c < b*c/c;
+
+lemma void div_ge(int a, int b, int c);
+    requires    0 <= a &*& 0 < c &*& a <= b;
+    ensures     a/c <= b/c;
+
+lemma void loop_fp_pop(int k, int capacity);
+    requires    0 <= k &*& 0 < capacity;
+    ensures     loop_fp(k, capacity) == k % capacity;
+
+lemma void mod_reduce(int a, int b, int k);
+    requires    0 <= a &*& 0 < b &*& 0 <= k;
+    ensures     (a + b*k) % b == a % b;
+
+lemma void div_minus_one(int a, int b);
+    requires    0 < a &*& 0 < b;
+    ensures     (a*b - 1) / b == a - 1;
+
+lemma void div_plus_one(int a, int b);
+    requires    0 < a &*& 1 < b;
+    ensures     (a*b + 1) / b == a;
+
+lemma void mod_rotate_mul(int a, int b);
+    requires    0 <= a &*& 0 < b;
+    ensures     ((a * b) % b) == 0;
+
+#endif//_MODULO_GH_INCLUDED_

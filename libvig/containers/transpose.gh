@@ -1,0 +1,51 @@
+#ifndef _TRANSPOSE_GH_INCLUDED_
+#define _TRANSPOSE_GH_INCLUDED_
+
+#include <nat.gh>
+#include "arith.gh"
+#include "modulo.gh"
+#include "listutils.gh"
+
+// ------------- extract_row/column -------------
+
+fixpoint int extract_row(int nb_cols, int n) {
+    return n / nb_cols;
+}
+
+fixpoint int extract_col(int nb_cols, int n) {
+    return n % nb_cols;
+}
+// ------------- transpose -------------
+
+fixpoint list<t> transpose_rec_row<t>(list<t> xs, int nb_cols, int idx_col_cst, int idx_row, nat it_row) {
+    switch(it_row) {
+        case zero: return nil;
+        case succ(it_row_pred): return cons( nth(idx_row * nb_cols + idx_col_cst, xs) , transpose_rec_row(xs, nb_cols, idx_col_cst, idx_row + 1, it_row_pred) );
+    }
+}
+
+fixpoint list<t> transpose_rec<t>(list<t> xs, int nb_rows, int nb_cols, int idx_col, nat it_col) {
+    switch(it_col) {
+        case zero: return nil;
+        case succ(it_col_pred): return append( transpose_rec_row(xs, nb_cols, idx_col, 0, nat_of_int(nb_rows)) , transpose_rec(xs, nb_rows, nb_cols, idx_col + 1, it_col_pred) );
+    }
+}
+
+fixpoint list<t> transpose<t>(list<t> xs, int nb_rows, int nb_cols) {
+    return transpose_rec(xs, nb_rows, nb_cols, 0, nat_of_int(nb_cols));
+}
+
+// ------------- transpose with filter_idx and count -------------
+
+fixpoint bool eq_idx_transpose(int nb_rows, int nb_cols, int x, int y) {
+    return y == extract_col(nb_cols, x) * nb_rows + extract_row(nb_cols, x);
+} 
+
+fixpoint list<int> gen_idx_transpose(list<int> idxs, int nb_rows, int nb_cols) {
+    switch(idxs) {
+        case nil: return nil;
+        case cons(i0, is0): return cons(extract_col(nb_cols, i0) * nb_rows + extract_row(nb_cols, i0), gen_idx_transpose(is0, nb_rows, nb_cols));
+    }
+}
+
+#endif //_LISTUTILS_GH_INCLUDED_

@@ -1,0 +1,2 @@
+# Used by benchmark scripts to avoid checking for dependencies every time
+.deps_version

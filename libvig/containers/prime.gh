@@ -1,0 +1,115 @@
+#ifndef _PRIME_GH_INCLUDED_
+#define _PRIME_GH_INCLUDED_
+
+#include <nat.gh>
+#include "modulo.gh"
+
+fixpoint int min(int x, int y) {
+    return x < y ? x : y;
+} 
+
+fixpoint bool divide(int quotient, int divisor) {
+    return (quotient/divisor)*divisor == quotient; 
+}
+
+fixpoint bool common_divide(int quotient1, int quotient2, int divisor) {
+    return divide(quotient1, divisor) && divide(quotient2, divisor);
+} 
+
+fixpoint bool no_divisors_upto(int x, nat bound) {
+   switch(bound) {
+     case zero: return true;
+     case succ(bound_pred):
+       return bound_pred == zero
+           ? true
+           : !divide(x, int_of_nat(bound)) && no_divisors_upto(x, bound_pred);
+   }
+}
+
+fixpoint bool is_prime_div(int x, nat divisor) {
+    switch(divisor) {
+        case zero: return false;
+        case succ(divisor_pred):
+            return divisor_pred == zero 
+                ? false
+                : divide(x, int_of_nat(divisor)) && no_divisors_upto(x, divisor_pred);
+    }
+
+}
+
+fixpoint bool is_prime(int x) {
+    return is_prime_div(x, nat_of_int(x));
+}
+
+fixpoint bool no_codivisors_upto(int x, int y, nat bound) {
+   switch(bound) {
+     case zero: return true;
+     case succ(bound_pred):
+       return bound_pred == zero
+           ? true
+           : !common_divide(x, y, int_of_nat(bound)) && no_codivisors_upto(x, y, bound_pred);
+   }
+}
+
+fixpoint bool are_coprime_div(int x, int y, nat divisor) {
+    switch(divisor) {
+        case zero: return false;
+        case succ(divisor_pred):
+            return divisor_pred == zero
+                ? false
+                : divisor_pred == succ(zero)
+                    ? false
+                : common_divide(x, y, int_of_nat(divisor)) && no_codivisors_upto(x, y, divisor_pred);
+    }
+
+}
+
+fixpoint bool are_coprime(int x, int y) {
+    return are_coprime_div(x, y, nat_of_int(min(x,y)));
+}
+
+// Assumption !
+lemma void prime_is_coprime_with_anything(int prime, int n);
+    requires    true == is_prime(prime) &*& 0 < n;
+    ensures     true == are_coprime(n, prime);
+
+lemma void modulo_less_than(int k, int m);
+    requires 0 <= k &*& k < m &*& 0 < m;
+    ensures k % m == k;
+
+// Assumption !
+lemma void modulo_add_constant(int offset, int mod, int a, int b);
+    requires 0 <= a &*& 0 <= b &*& 0 <= offset &*& 0 <= mod &*&
+             a % mod != b % mod;
+    ensures  (a + offset) % mod != (b + offset) % mod;
+
+// Assumption !
+lemma void modulo_mul_coprime(int k, int s, int m);
+    requires
+        0 < k &*& k < m &*&
+        0 < s &*& s < m &*&
+        0 < m &*& 
+        (k % m != 0) &*& true == are_coprime(s, m);
+    ensures
+        (k * s) % m != 0;
+
+// Assumption !
+lemma void modulo_mul_split(int a, int b, int m);
+    requires
+        0 <= a &*& 0 <= b &*& 
+        0 < m &*& 
+        (b - a) % m != 0;
+    ensures
+        b % m != a % m;
+
+lemma void modulo_permutation(int mul, int mod, int a, int b);
+    requires 
+        0 <= a &*& a < mod &*&
+        0 <= b &*& b < mod &*&
+        0 < mul &*& mul < mod &*&
+        0 < mod &*& a != b &*& 
+        true == are_coprime(mul, mod);
+    ensures
+        (mul * a) % mod != (mul * b) % mod;
+
+#endif //_PRIME_GH_INCLUDED_

@@ -1,0 +1,105 @@
+#ifndef _LISTUTILS_GH_INCLUDED_
+#define _LISTUTILS_GH_INCLUDED_
+
+#include <nat.gh>
+#include "stdex.gh"
+#include "arith.gh"
+
+// ------------- filter_idx -------------
+
+fixpoint list<int> filter_idx<t>(list<t> xs, int idx, fixpoint (t, bool) fp) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return fp(x0) ? cons(idx, filter_idx(xs0, idx + 1, fp)) : filter_idx(xs0, idx + 1, fp);
+    }
+}
+
+// ------------- index_of_fixpoint -------------
+
+fixpoint option<int> index_of_fp<t>(list<t> xs, int idx, fixpoint (t,bool) fp) {
+    switch(xs) {
+        case nil: return none;
+        case cons(x0, xs0): return fp(x0) ? some(idx) : index_of_fp(xs0, idx + 1, fp);
+    }
+}
+
+// ------------- integer_copies -------------
+
+fixpoint bool integer_copies(nat val, int nb_copies, list<int> xs) {
+    switch(val) {
+        case zero: return count(xs, (eq)(int_of_nat(val))) == nb_copies;
+        case succ(val_pred): return count(xs, (eq)(int_of_nat(val))) == nb_copies && integer_copies(val_pred, nb_copies, xs);
+    }
+}
+
+// ------------- flatten -------------
+
+fixpoint list<t> flatten<t>(list< list<t> > xs) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): return append(x0, flatten(xs0));
+    }
+}
+
+// ------------- chunk -------------
+
+fixpoint list<t> chunk<t>(list<t> xs, int begin, int end) {
+    return take(end - begin, drop(begin, xs));
+}
+
+// ------------- repeat -------------
+
+fixpoint list<t> repeat<t>(t elem, nat n) {
+    switch(n) {
+        case zero: return nil;
+        case succ(n_pred): return cons(elem, repeat(elem, n_pred));
+    }
+}
+
+// ------------- split_varlim -------------
+
+fixpoint list< list<t> > split_varlim<t>(list<t> xs, int n, list<int> limits) {
+    switch(limits) {
+        case nil: return nil;
+        case cons(l0, ls0): return cons(take(l0, xs), split_varlim(drop(n, xs), n, ls0));
+    }
+}
+
+// ------------- split -------------
+
+fixpoint list< list<t> > split<t>(list<t> xs, nat nb_split, int n) {
+    switch(nb_split) {
+        case zero: return nil;
+        case succ(nb_split_pred): return cons(take(n, xs), split(drop(n, xs), nb_split_pred, n));
+    }
+}
+
+// ------------- integers_list -------------
+
+fixpoint list<int> integers_list(nat cnt, int index) {
+    switch(cnt) {
+        case zero: return nil;
+        case succ(cnt_pred): return cons(index, integers_list(cnt_pred, index + 1));
+    }
+}
+
+// ------------- zip -------------
+
+fixpoint list< pair<t1, t2> > zip<t1, t2>(list<t1> xs, list<t2> ys) {
+    switch(xs) {
+        case nil: return nil;
+        case cons(x0, xs0): 
+            return switch(ys) {
+                case nil: return nil;
+                case cons(y0, ys0): return cons( pair(x0, y0) , zip(xs0, ys0) );
+            };
+    }
+}
+
+// ------------- zip_index -------------
+
+fixpoint list< pair<int, t> > zip_index<t>(list<t> xs, int idx) {
+    return zip(integers_list(nat_of_int(length(xs)), idx) , xs);
+}
+
+#endif //_LISTUTILS_GH_INCLUDED_

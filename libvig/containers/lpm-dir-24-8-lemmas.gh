@@ -1,0 +1,104 @@
+#ifndef __LPM_DIR_24_8_LEMMAS_GH_INCLUDED__
+#define __LPM_DIR_24_8_LEMMAS_GH_INCLUDED__
+
+#include "lpm-dir-24-8.gh"
+
+// 0x8000 is tbl24 flag mask
+// 0x7FFF is tbl24 value mask
+// 16777216 is tbl24 max entries
+// 0xFFFF is 0xFFFF
+
+fixpoint nat Z_length(Z z) {
+  switch(z) {
+    case Zsign(b): return zero;
+    case Zdigit(z0, b0): return succ(Z_length(z0));
+  }
+}
+
+lemma void Z_and_length(Z z1, Z z2);
+requires 0 <= int_of_Z(z1) &*& 0 <= int_of_Z(z2);
+ensures int_of_nat(Z_length(z1)) <= int_of_nat(Z_length(z2)) ?
+        Z_length(Z_and(z1, z2)) == Z_length(z1)             :
+        Z_length(Z_and(z1, z2)) == Z_length(z2);
+
+lemma void equal_int_equal_Z(Z yZ, nat n);
+  requires 0 <= int_of_Z(yZ) &*& int_of_Z(yZ) < pow_nat(2, n) &*&
+           Z_length(yZ) == n;
+  ensures Z_of_int(int_of_Z(yZ), n) == yZ;
+
+lemma void Z_of_uintN_light(int x, nat N);
+  requires 0 <= x &*& x < pow_nat(2, N);
+  ensures x == int_of_Z(Z_of_bits(Zsign(false), snd(bits_of_int(x, N))));
+
+lemma void flag_mask_MSB_one();
+  requires true;
+  ensures extract_flag(0x8000) == true;
+
+lemma void flag_mask_or_x_begins_with_one(int x);
+  requires 0 <= x &*& x <= 0xFFFF;
+  ensures extract_flag(x | 0x8000) == true;
+
+lemma void flag_mask_or_x_not_affect_15LSB(int x);
+  requires 0 <= x &*& x <= 0x7FFF;
+  ensures x == ((x | 0x8000) & 0x7FFF);
+
+lemma void extract_value_is_value(int entry);
+  requires 0 <= entry &*& entry <= 0x7FFF;
+  ensures entry == extract_value(entry);
+
+lemma void valid_next_hop24(int entry, option<pair<bool, Z> > mapped);
+  requires entry != 0xFFFF &*& 0 <= entry &*& entry <= 0x7FFF &*&
+           false == extract_flag(entry) &*&
+           entry_24_mapping(entry) == mapped &*& mapped == some(?p) &*&
+           p == pair(?b, ?v);
+  ensures b == false &*& entry == int_of_Z(v);
+
+lemma void valid_next_bucket_long(int entry,
+                                  option<pair<bool, Z> > mapped);
+  requires entry != 0xFFFF &*&
+           true == extract_flag(entry) &*&
+           true == valid_entry24(entry) &*&
+           entry_24_mapping(entry) == mapped &*& mapped == some(?p) &*&
+           p == pair(?b, ?v);
+  ensures b == true &*& extract_value(entry) == int_of_Z(v);
+
+lemma void valid_next_hop_long(int entry, option<Z> mapped);
+  requires entry != 0xFFFF &*& 0 <= entry &*& entry <= 0x7FFF &*&
+           entry_long_mapping(entry) == mapped &*& mapped == some(?v);
+  ensures entry == int_of_Z(v);
+
+lemma void long_index_extraction_equivalence(int entry,
+                                             option<pair<bool, Z> > mapped);
+  requires entry_24_mapping(entry) == mapped &*& entry != 0xFFFF &*&
+           mapped == some(?p) &*& p == pair(true, ?z) &*&
+           true == valid_entry24(entry) &*&
+           true == extract_flag(entry);
+  ensures (entry & 0xFF) == extract24_value(mapped);
+
+lemma void long_index_computing_equivalence_on_prefixlen32(int ipv4,
+                                                           int base_index);
+  requires 0 <= ipv4 &*& ipv4 <= 0xffffffff;
+  ensures compute_starting_index_long(init_rule(ipv4, 32, 0), base_index) ==
+          indexlong_from_ipv4(Z_of_int(ipv4, N32), base_index);
+
+lemma void value24_extraction_equivalence(int entry,
+                                          option<pair<bool, Z> > mapped);
+  requires 0 <= extract_value(entry) &*&
+           extract_value(entry) <= 0xFF &*&
+           extract_flag(entry) == true &*&
+           valid_entry24(entry) == true &*&
+           entry_24_mapping(entry) == mapped &*&
+           mapped == some(?p) &*&
+           p == pair(true, Z_of_int(extract_value(entry), N16));
+  ensures extract_value(entry) == extract24_value(mapped);
+
+lemma void first_index_depends_on_prefixlen(lpm_rule new_rule,
+                                            int base_index,
+                                            int prefixlen);
+  requires 0 <= base_index &*& base_index < 256 &*& 24 <= prefixlen &*&
+           prefixlen <= 32 &*& new_rule == rule(?ipv4, prefixlen, ?value) &*&
+           0 <= int_of_Z(ipv4) &*& int_of_Z(ipv4) <= 0xFFFFFFFF;
+  ensures compute_starting_index_long(new_rule, base_index) <=
+          (16777216) - compute_rule_size(prefixlen);
+
+#endif//__LPM_DIR_24_8_LEMMAS_GH_INCLUDED__

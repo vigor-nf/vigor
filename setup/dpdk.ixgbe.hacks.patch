@@ -1,0 +1,135 @@
+diff --git a/drivers/net/ixgbe/ixgbe_rxtx.c b/drivers/net/ixgbe/ixgbe_rxtx.c
+index 9bc8462..f9807d5 100644
+--- a/drivers/net/ixgbe/ixgbe_rxtx.c
++++ b/drivers/net/ixgbe/ixgbe_rxtx.c
+@@ -278,8 +278,10 @@ tx_xmit_pkts(void *tx_queue, struct rte_mbuf **tx_pkts,
+ 	if (unlikely(nb_pkts == 0))
+ 		return 0;
+ 
++#ifndef KLEE_VERIFICATION
+ 	/* Use exactly nb_pkts descriptors */
+ 	txq->nb_tx_free = (uint16_t)(txq->nb_tx_free - nb_pkts);
++#endif
+ 
+ 	/*
+ 	 * At this point, we know there are enough descriptors in the
+@@ -333,7 +335,9 @@ tx_xmit_pkts(void *tx_queue, struct rte_mbuf **tx_pkts,
+ 	 * Check for wrap-around. This would only happen if we used
+ 	 * up to the last descriptor in the ring, no more, no less.
+ 	 */
++#ifndef KLEE_VERIFICATION
+ 	if (txq->tx_tail >= txq->nb_tx_desc)
++#endif
+ 		txq->tx_tail = 0;
+ 
+ 	/* update tail pointer */
+@@ -1595,9 +1599,11 @@ ixgbe_rx_scan_hw_ring(struct ixgbe_rx_queue *rxq)
+ 	}
+ 
+ 	/* clear software ring entries so we can cleanup correctly */
++#ifndef KLEE_VERIFICATION
+ 	for (i = 0; i < nb_rx; ++i) {
+ 		rxq->sw_ring[rxq->rx_tail + i].mbuf = NULL;
+ 	}
++#endif
+ 
+ 
+ 	return nb_rx;
+@@ -1685,7 +1691,9 @@ rx_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+ 	/* update internal queue state */
+ 	rxq->rx_next_avail = 0;
+ 	rxq->rx_nb_avail = nb_rx;
++#ifndef KLEE_VERIFICATION
+ 	rxq->rx_tail = (uint16_t)(rxq->rx_tail + nb_rx);
++#endif
+ 
+ 	/* if required, allocate new buffers to replenish descriptors */
+ 	if (rxq->rx_tail > rxq->rx_free_trigger) {
+@@ -1719,8 +1727,10 @@ rx_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+ 					    cur_free_trigger);
+ 	}
+ 
++#ifndef KLEE_VERIFICATION
+ 	if (rxq->rx_tail >= rxq->nb_rx_desc)
+ 		rxq->rx_tail = 0;
++#endif
+ 
+ 	/* received any packets this loop? */
+ 	if (rxq->rx_nb_avail)
+@@ -1863,7 +1873,9 @@ ixgbe_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+ 		}
+ 
+ 		rxm = rxe->mbuf;
++#ifndef KLEE_VERIFICATION
+ 		rxe->mbuf = nmb;
++#endif
+ 		dma_addr =
+ 			rte_cpu_to_le_64(rte_mbuf_data_iova_default(nmb));
+ 		rxdp->read.hdr_addr = 0;
+@@ -1921,7 +1933,9 @@ ixgbe_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+ 		 */
+ 		rx_pkts[nb_rx++] = rxm;
+ 	}
++#ifndef KLEE_VERIFICATION
+ 	rxq->rx_tail = rx_id;
++#endif
+ 
+ 	/*
+ 	 * If the number of free RX descriptors is greater than the RX free
+@@ -2164,13 +2178,18 @@ ixgbe_recv_pkts_lro(void *rx_queue, struct rte_mbuf **rx_pkts, uint16_t nb_pkts,
+ 			 * Update RX descriptor with the physical address of the
+ 			 * new data buffer of the new allocated mbuf.
+ 			 */
++#ifndef KLEE_VERIFICATION
+ 			rxe->mbuf = nmb;
++#endif
+ 
+ 			rxm->data_off = RTE_PKTMBUF_HEADROOM;
+ 			rxdp->read.hdr_addr = 0;
+ 			rxdp->read.pkt_addr = dma;
+-		} else
++		} else {
++#ifndef KLEE_VERIFICATION
+ 			rxe->mbuf = NULL;
++#endif
++		}
+ 
+ 		/*
+ 		 * Set data length & data buffer address of mbuf.
+@@ -2266,10 +2285,12 @@ ixgbe_recv_pkts_lro(void *rx_queue, struct rte_mbuf **rx_pkts, uint16_t nb_pkts,
+ 		rx_pkts[nb_rx++] = first_seg;
+ 	}
+ 
++#ifndef KLEE_VERIFICATION
+ 	/*
+ 	 * Record index of the next RX descriptor to probe.
+ 	 */
+ 	rxq->rx_tail = rx_id;
++#endif
+ 
+ 	/*
+ 	 * If the number of free RX descriptors is greater than the RX free
+@@ -2666,7 +2687,9 @@ ixgbe_rx_queue_release_mbufs(struct ixgbe_rx_queue *rxq)
+ 		for (i = 0; i < rxq->nb_rx_desc; i++) {
+ 			if (rxq->sw_ring[i].mbuf != NULL) {
+ 				rte_pktmbuf_free_seg(rxq->sw_ring[i].mbuf);
++#ifndef KLEE_VERIFICATION
+ 				rxq->sw_ring[i].mbuf = NULL;
++#endif
+ 			}
+ 		}
+ 		if (rxq->rx_nb_avail) {
+diff --git a/lib/librte_mbuf/rte_mbuf.h b/lib/librte_mbuf/rte_mbuf.h
+index ce8a05d..3e6b0b7 100644
+--- a/lib/librte_mbuf/rte_mbuf.h
++++ b/lib/librte_mbuf/rte_mbuf.h
+@@ -905,7 +905,9 @@ rte_mbuf_raw_free(struct rte_mbuf *m)
+ 	RTE_ASSERT(m->next == NULL);
+ 	RTE_ASSERT(m->nb_segs == 1);
+ 	__rte_mbuf_sanity_check(m, 0);
++#ifndef KLEE_VERIFICATION
+ 	rte_mempool_put(m->pool, m);
++#endif
+ }
+ 
+ /* compat with older versions */

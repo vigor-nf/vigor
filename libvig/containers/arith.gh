@@ -1,0 +1,37 @@
+#ifndef ARITH_GH
+#define ARITH_GH
+
+lemma void mul_equal(int a, int b, int c);
+    requires    0 <= a &*& 0 < b &*& 0 <= c &*& a * b == c;
+    ensures     a <= c;
+
+//Taken from https://groups.google.com/forum/#!topic/verifast/eCf5QzLtGlo
+lemma void mul_nonnegative(int x, int y);
+    requires 0 <= x &*& 0 <= y;
+    ensures 0 <= x * y;
+
+lemma void mul_mono(int i, int n, int a);
+    requires i <= n &*& 0 <= a;
+    ensures i * a <= n * a;
+
+lemma void mul_nonzero(int a, int b);
+    requires 0 < a &*& 0 < b;
+    ensures 0 < a * b;
+
+lemma void mul_mono_strict(int i, int n, int a);
+    requires 0 <= i &*& i < n &*& 0 < a;
+    ensures 0 <= i * a &*& i * a < n * a;
+
+lemma void mul_bounds(int x, int xb, int y, int yb);
+    requires 0 <= x &*& x <= xb &*& 0 <= y &*& y <= yb;
+    ensures 0 <= x * y &*& x * y <= xb * yb;
+
+lemma void mul_subst(int x, int y, int a);
+requires x == y &*& 0 <= a;
+ensures a*x == a*y;
+
+lemma void less_than_neq(int a, int b);
+requires a < b;
+ensures a != b;
+
+#endif ARITH_GH
