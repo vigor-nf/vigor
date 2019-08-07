@@ -102,10 +102,13 @@ verifast:
 CLEAN_COMMAND := rm -rf build *.bc *.os {loop,state}.{c,h} $(SELF_DIR)/**/*.gen.{c,h}
 # Compilation
 COMPILE_COMMAND := clang
-# Linking with klee-uclibc, but without some methods we are stubbing (not sure why they're in klee-uclibc.bca)
+# Linking with klee-uclibc, but without some methods we are stubbing (not sure why they're in klee-uclibc.bca); also purge the pointless GNU linker warnings so KLEE doesn't warn about module asm
 LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-uclibc.bca && \
                 rm -f sleep.os vfprintf.os socket.os exit.os fflush_unlocked.os fflush.os && \
-                llvm-link -o nf_raw.bc  *.os *.bc
+                llvm-link -o nf_raw.bc  *.os *.bc && \
+                llvm-dis -o nf_raw.ll nf_raw.bc && \
+                sed -i -e 's/module asm ".section .gnu.warning.*"//g' -e 's/module asm "\\09.previous"//g' -e 's/module asm ""//g' nf_raw.ll && \
+                llvm-as -o nf_raw.bc nf_raw.ll
 # Optimization; analyze and remove as much provably dead code as possible (exceptions are stubs; also, mem* functions, not sure why it DCEs them since they are used...maybe related to LLVM having intrinsics for them?)
 # We tried adding '-constprop -ipconstprop -ipsccp -correlated-propagation -loop-deletion -dce -die -dse -adce -deadargelim -instsimplify'; this works but the traced prefixes seem messed up :(
 OPT_EXCEPTIONS := memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,stub_hardware_write,stub_prefetch,stub_rdtsc,stub_socket,stub_strerror,stub_delay
