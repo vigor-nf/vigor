@@ -96,5 +96,6 @@ We depend on, and are grateful for:
 - [KLEE](https://klee.github.io), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/klee)
 - [KLEE-uClibc](https://github.com/klee/klee-uclibc)
 - [OCaml](https://ocaml.org)
+- [Python](https://www.python.org)
 - [VeriFast](https://people.cs.kuleuven.be/~bart.jacobs/verifast), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/verifast)
 - [Z3](https://github.com/Z3Prover/z3/wiki)

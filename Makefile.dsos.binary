@@ -1,5 +1,4 @@
 ### Use this to build an executable DSOS image
-
 SHELL := /bin/bash -O extglob -c
 export RTE_TARGET = x86_64-native-linuxapp-gcc
 
@@ -22,12 +21,10 @@ STUBS_DIR = libvig/stubs
 KERNEL_DIR = libvig/kernel
 
 NF_DEFS := -D_GNU_SOURCE
-# Distinguish this build from verify-hardware run
 NF_DEFS += -DDSOS
 
 # NF
 NF_INCLUDES = -I $(NF_DIR)
-NF_INCLUDES += -I src
 NF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
 NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include
 NF_INCLUDES += -I /usr/local/include
@@ -59,7 +56,6 @@ NF_COMMON_SOURCES := $(NF_DIR)/nf_main.c \
 # DPDK
 DPDK_INCLUDES = -I $(RTE_SDK)/include/dpdk
 DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_eal/common
-DPDK_INCLUDES += -I $(RTE_SDK)/drivers/bus/vdev
 DPDK_INCLUDES += -I $(RTE_SDK)/drivers/bus/pci
 DPDK_INCLUDES += -I $(RTE_SDK)/drivers/net/ixgbe
 DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_kni
@@ -118,8 +114,7 @@ KERNEL_INCLUDES := -I $(KERNEL_DIR)
 # For DSOS debug output on the VGA buffer
 KERNEL_DEFS := -DDSOS_DEBUG
 
-# OTHER_INCLUDES := -I include --include include/misc_defs.h
-OTHER_INCLUDES := -I libvig/stubs -I lib --include $(NF_DIR)/libvig/misc_defs.h
+OTHER_INCLUDES := -I libvig/stubs -I libvig --include $(NF_DIR)/libvig/misc_defs.h
 
 C_SRCS = $(NF_SOURCES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
