@@ -30,21 +30,13 @@
 struct State* mac_tables;
 
 int bridge_expire_entries(vigor_time_t time) {
-  if (time < config->expiration_time) return 0;
-
-  // This is convoluted - we want to make sure the sanitization doesn't
-  // extend our vigor_time_t value in 128 bits, which would confuse the validator.
-  // So we "prove" by hand that it's OK...
-  // We know time >= 0 since time >= config->expiration_time
-  assert(sizeof(vigor_time_t) <= sizeof(int64_t));
-  uint64_t time_u = (uint64_t) time; // OK since assert above passed and time > 0
-  uint64_t min_time_u = time_u - config->expiration_time; // OK because time >= expiration_time >= 0
-  assert(sizeof(int64_t) <= sizeof(vigor_time_t));
-  vigor_time_t min_time = (vigor_time_t) min_time_u; // OK since the assert above passed
-
+  assert(time >= 0); // we don't support the past
+  assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
+  uint64_t time_u = (uint64_t) time; // OK because of the two asserts
+  vigor_time_t last_time = time_u - config->expiration_time;
   return expire_items_single_map(mac_tables->dyn_heap, mac_tables->dyn_keys,
                                  mac_tables->dyn_map,
-                                 min_time);
+                                 last_time);
 }
 
 int bridge_get_device(struct ether_addr* dst,
