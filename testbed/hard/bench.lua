@@ -175,12 +175,13 @@ function startMeasureThroughput(txQueue, rxQueue, rate, layer, packetSize, flowC
 end
 
 
--- Heats up with packets at the given layer, with the given size and number of flows. Errors if the loss is over 1%.
-function heatUp(txQueue, rxQueue, layer, packetSize, flowCount)
+-- Heats up with packets at the given layer, with the given size and number of flows.
+-- Errors if the loss is over 1%, and ignoreNoResponse is false.
+function heatUp(txQueue, rxQueue, layer, packetSize, flowCount, ignoreNoResponse)
 		io.write("Heating up for " .. HEATUP_DURATION .. " seconds at " .. HEATUP_RATE .. " Mbps with " .. flowCount .. " flows... ")
 		local tx, rx = startMeasureThroughput(txQueue, rxQueue, HEATUP_RATE, layer, packetSize, flowCount, HEATUP_DURATION):wait()
 		local loss = (tx - rx) / tx
-		if loss > 0.001 then
+		if loss > 0.001 and not ignoreNoResponse then
 			io.write("Over 0.1% loss!\n")
 			os.exit(1)
 		end
@@ -205,11 +206,11 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 	local rxLatencyQueue = rxDev:getRxQueue(1)
 
 	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
-		heatUp(txThroughputQueue, rxThroughputQueue, layer, packetSize, flowCount)
-		
 		if reverseFlowCount > 0 then
-			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount)
+			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount, true)
 		end
+		heatUp(txThroughputQueue, rxThroughputQueue, layer, packetSize, flowCount, false)
+		
 
 		io.write("Measuring latency for " .. flowCount .. " flows... ")
 		local throughputTask = startMeasureThroughput(txThroughputQueue, rxThroughputQueue, LATENCY_LOAD_RATE, layer, packetSize, flowCount, duration)
@@ -248,11 +249,12 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 	local rxReverseQueue = txDev:getRxQueue(0)
 
 	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
-		heatUp(txQueue, rxQueue, layer, packetSize, flowCount)
 		
 		if reverseFlowCount > 0 then
-			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount)
+			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount, true)
 		end
+
+		heatUp(txQueue, rxQueue, layer, packetSize, flowCount, false)
 
 		io.write("Running binary search with " .. flowCount .. " flows...\n")
 		local upperBound = RATE_MAX
