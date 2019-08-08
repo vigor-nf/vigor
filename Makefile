@@ -16,7 +16,6 @@ SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 # Default value for arguments
 NF_DEVICES ?= 2
-NF_ARGS := --no-shconf $(NF_DPDK_ARGS) -- $(NF_ARGS)
 NF_LAYER ?= 2
 NF_BENCH_NEEDS_REVERSE_TRAFFIC ?= false
 
