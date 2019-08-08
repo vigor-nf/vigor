@@ -37,7 +37,9 @@ NF_INCLUDES += -I /usr/include
 # of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for DSOS to put
 # into argv at compilation time.
 dquote := \"
-NF_DEFS += -DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))\"
+space := $(null) #
+comma := ,
+NF_DEFS += -DNF_ARGUMENTS='$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))'
 
 NF_COMMON_SOURCES := $(NF_DIR)/nf_main.c \
 	$(NF_DIR)/libvig/nf_util.c \
