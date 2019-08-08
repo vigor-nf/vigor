@@ -67,7 +67,7 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | `benchmark-throughput`     | Benchmark the NF's throughput              | ???               |
 | `benchmark-latency`        | Benchmark the NF's latency                 | ???               |
 
-To run with your own arguments, compile then run `./build/nf` which will display the command-line arguments you need to pass to the NF.
+To run with your own arguments, compile then run `sudo ./build/app/nf -- -?` which will display the command-line arguments you need to pass to the NF.
 
 To verify using a pay-as-you-go specification, add `VIGOR_SPEC=your_spec.py` before a verification command.
 
