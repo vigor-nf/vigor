@@ -23,6 +23,7 @@ local HEATUP_DURATION = 5 -- seconds
 local HEATUP_RATE = 20 -- Mbps
 
 local LATENCY_LOAD_RATE = 1000 -- Mbps
+local N_PROBE_FLOWS = 1000
 
 local RESULTS_FILE_NAME = 'results.tsv'
 
@@ -205,7 +206,7 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 	local txLatencyQueue = txDev:getTxQueue(1)
 	local rxLatencyQueue = rxDev:getRxQueue(1)
 
-	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+	for _, flowCount in ipairs({1,1000,10000,30000,40000,50000,60000,64000}) do
 		if reverseFlowCount > 0 then
 			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount, true)
 		end
@@ -214,7 +215,7 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 
 		io.write("Measuring latency for " .. flowCount .. " flows... ")
 		local throughputTask = startMeasureThroughput(txThroughputQueue, rxThroughputQueue, LATENCY_LOAD_RATE, layer, packetSize, flowCount, duration)
-		local latencyTask = startMeasureLatency(txLatencyQueue, rxLatencyQueue, layer, flowCount, duration)
+		local latencyTask = startMeasureLatency(txLatencyQueue, rxLatencyQueue, layer, N_PROBE_FLOWS, duration)
 
 		-- We may have been interrupted
 		if not mg.running() then
