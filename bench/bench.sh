@@ -10,12 +10,9 @@
 #     Known names: "netfilter", "ipvs".
 #     Otherwise, a folder name containing a DPDK NAT-like app, e.g. "/home/solal/vnds/vignat"
 # $2: The scenario, see run-benchmark.sh for details
-# $3: The type of NF, either NAT/Br/LB/Pol/FW/NOP
-#     For running programs such as netfilter please provide the NF it is being used as a baseline for:.
 
 MIDDLEBOX=$1
 SCENARIO=$2
-NF_TYPE=$3
 
 if [ -z $MIDDLEBOX ]; then
     echo "[bench] No app specified" 1>&2
@@ -27,14 +24,8 @@ if [ -z $SCENARIO ]; then
     exit 2
 fi
 
-if [ -z $NF_TYPE ]; then
-    echo "[bench] NF type not specified " 1>&2
-    exit 3
-fi
 
-CLEAN_APP_NAME=`echo "$MIDDLEBOX" | tr '/' '_'`
-RESULTS_FILE="bench-$CLEAN_APP_NAME-$SCENARIO.results"
-
+RESULTS_FILE="benchmark-$SCENARIO.results"
 if [ -f "$RESULTS_FILE" ]; then
     rm "$RESULTS_FILE"
 fi
@@ -43,6 +34,6 @@ fi
 ./init-machines.sh
 ./clean.sh
 ./init-network.sh $MIDDLEBOX
-./run-middlebox.sh $MIDDLEBOX $SCENARIO $NF_TYPE
-./run-benchmark.sh $SCENARIO $NF_TYPE $RESULTS_FILE
+./run-middlebox.sh $MIDDLEBOX $SCENARIO
+./run-benchmark.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE
 ./clean.sh

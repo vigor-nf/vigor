@@ -3,16 +3,17 @@
 # --------- #
 
 # These values must always be set
-MB_HOST=icnalsp3s2.epfl.ch
-MB_PCI_INTERNAL=0000:83:00.1
-MB_PCI_EXTERNAL=0000:83:00.0
+export MB_CPU=8 # the index of the CPU on which the middlebox will run
+export MB_HOST=icnalsp3s2.epfl.ch
+export MB_PCI_INTERNAL=0000:83:00.1
+export MB_PCI_EXTERNAL=0000:83:00.0
 
 # These values are only useful if you benchmark non-DPDK NFs
-MB_DEVICE_INTERNAL=p802p2
-MB_DEVICE_EXTERNAL=p802p1
-MB_IP_INTERNAL=192.168.6.2
-MB_IP_EXTERNAL=192.168.4.2
-MB_IPS_BACKENDS="192.168.4.3 192.168.4.4 192.168.4.5 192.168.4.6"
+export MB_DEVICE_INTERNAL=p802p2
+export MB_DEVICE_EXTERNAL=p802p1
+export MB_IP_INTERNAL=192.168.6.2
+export MB_IP_EXTERNAL=192.168.4.2
+export MB_IPS_BACKENDS="192.168.4.3 192.168.4.4 192.168.4.5 192.168.4.6"
 
 
 # ------ #
@@ -20,15 +21,15 @@ MB_IPS_BACKENDS="192.168.4.3 192.168.4.4 192.168.4.5 192.168.4.6"
 # ------ #
 
 # These values must always be set
-TESTER_HOST=icnalsp3s1.epfl.ch
-TESTER_PCI_INTERNAL=0000:83:00.1
-TESTER_PCI_EXTERNAL=0000:83:00.0
+export TESTER_HOST=icnalsp3s1.epfl.ch
+export TESTER_PCI_INTERNAL=0000:83:00.1
+export TESTER_PCI_EXTERNAL=0000:83:00.0
 
 # These values are only useful if you benchmark non-DPDK NFs
-TESTER_MAC_INTERNAL=90:e2:ba:55:12:25
-TESTER_MAC_EXTERNAL=90:e2:ba:55:12:24
-TESTER_IP_INTERNAL=192.168.6.5
-TESTER_IP_EXTERNAL=192.168.4.10
+export TESTER_MAC_INTERNAL=90:e2:ba:55:12:25
+export TESTER_MAC_EXTERNAL=90:e2:ba:55:12:24
+export TESTER_IP_INTERNAL=192.168.6.5
+export TESTER_IP_EXTERNAL=192.168.4.10
 
 
 # ----- #
@@ -36,8 +37,9 @@ TESTER_IP_EXTERNAL=192.168.4.10
 # ----- #
 
 # Do not change unless Linux or DPDK change!
-KERN_NIC_DRIVER=ixgbe
-DPDK_NIC_DRIVER=igb_uio
+export KERN_NIC_DRIVER=ixgbe
+export DPDK_NIC_DRIVER=igb_uio
 
+# Change only if you know what you're doing (e.g. you installed DPDK to a different path than home)
 export RTE_SDK=$HOME/dpdk
 export RTE_TARGET=x86_64-native-linuxapp-gcc

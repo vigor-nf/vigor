@@ -195,6 +195,12 @@ Table 7:
 - The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that)
 
 
+# FAQ
+
+- Q: DPDK says `No free hugepages reported in hugepages-1048576kB`, what did I do wrong?
+- A: Nothing wrong! This just means there are no 1GB hugepages; as long as it can find the 2MB ones, you're good.
+
+
 # Dependencies
 
 We depend on, and are grateful for:
