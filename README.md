@@ -62,11 +62,14 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | `symbex validate`          | Verify the NF with DPDK models             | <1min to symbex, hours to validate |
 | `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | <1h to symbex, hours to validate   |
 | `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | <1h to symbex, hours to validate   |
-| `count-loc`                | Count lines of code of the NF              | <1min                              |
-| `count-dpdk-loc`           | Count lines of code in DPDK                | <1min                              |
-| `count-dsos-loc`           | Count lines of code in the DSOS            | <1min                              |
-| `count-spec-loc`           | Count lines of code in the specification   | <1min                              |
-| `count-libvig-loc`         | Count lines of code of libVig              | <1min                              |
+| `count-loc`                | Count LoC in the NF                        | <1min                              |
+| `count-spec-loc`           | Count LoC in the specification             | <1min                              |
+| `count-dsos-loc`           | Count LoC in the DSOS                      | <1min                              |
+| `count-libvig-loc`         | Count LoC in libVig                        | <1min                              |
+| `count-libvig-ds-loc`      | Count LoC in libVig data structures        | <1min                              |
+| `count-dpdk-loc`           | Count LoC in DPDK (not drivers)            | <1min                              |
+| `count-ixgbe-loc`          | Count LoC in the ixgbe driver              | <1min                              |
+| `count-uclibc-loc`         | Count LoC in KLEE-uClibc                   | <1min                              |
 | `benchmark-throughput`     | Benchmark the NF's throughput              | <30min                             |
 | `benchmark-latency`        | Benchmark the NF's latency                 | <10min                             |
 
@@ -176,7 +179,7 @@ Table 1:
 - These are the NFs mentioned in `Vigor NFs`
 
 Table 2:
-- These numbers are obtained using their corresponding targets as mentioned in `Vigor NFs` (SOSPTODO fix the targets, make dsos dpdk and ixgbe completely separate, add target for uclibc)
+- These numbers are obtained using their corresponding targets as mentioned in `Vigor NFs`
 
 Table 3:
 - These numbers are obtained using the targets mentioned in `Vigor NFs`; note that we count traces (as reported at the end of a KLEE run), not prefixes, and that to get the per-trace time we divide the total user time by the number of traces.

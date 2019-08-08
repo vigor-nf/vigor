@@ -105,16 +105,7 @@ DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_bypass.c, $(DPDK_SR
 DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_neon.c, $(DPDK_SRCS))
 
 # Stubs
-STUBS_SRCS := $(wildcard $(STUBS_DIR)/*.c)
 STUBS_SRCS += $(wildcard $(STUBS_DIR)/externals/*.c)
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/packet-io_stub.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/core_stub.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/time_stub.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/hardware_stub.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/driver_stub.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/dpdk_low_level_stub.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/dpdk_mempool_singleton.c, $(STUBS_SRCS))
-STUBS_SRCS := $(filter-out $(STUBS_DIR)/ether_addr.h.gen.c, $(STUBS_SRCS))
 
 KERNEL_SRCS := $(wildcard $(KERNEL_DIR)/*.c)
 
@@ -231,3 +222,6 @@ $(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
 # TODO: extend the rule above on the autogen sources.
 # currently I have to run make dsos-iso twice
 
+
+count-dsos-loc:
+	@cloc -q $(KERNEL_SRCS) $(subst .c,.h,$(KERNEL_SRCS)) $(STUBS_SRCS) 2>/dev/null

@@ -141,7 +141,7 @@ if [ ! -e "$BUILDDIR/z3" ]; then git clone --depth 1 --branch z3-4.5.0 https://g
 pushd "$BUILDDIR/z3"
   python scripts/mk_make.py --ml -p "$BUILDDIR/z3/build"
   pushd build
-    make -k -j $(nproc) || true
+    make -k -j || true
     # -jN here may break the make (hidden deps or something)
     make
     make install
@@ -197,7 +197,7 @@ if [ ! -e "$BUILDDIR/llvm/tools/clang" ]; then svn co https://llvm.org/svn/llvm-
 if [ ! -e "$BUILDDIR/llvm/projects/libcxx" ]; then svn co https://llvm.org/svn/llvm-project/libcxx/tags/RELEASE_342/final "$BUILDDIR/llvm/projects/libcxx"; fi
 pushd "$BUILDDIR/llvm"
   CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" ./configure --enable-optimized --disable-assertions --enable-targets=host --with-python='/usr/bin/python2'
-  make -j $(nproc)
+  make -j
   echo 'PATH='"$BUILDDIR/llvm/Release/bin"':$PATH' >> "$PATHSFILE"
   . "$PATHSFILE"
 popd
@@ -212,7 +212,7 @@ pushd "$BUILDDIR/klee-uclibc"
   # Use our minimalistic config
   cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
-  make -j $(nproc)
+  make -j
 popd
 
 if [ ! -e "$BUILDDIR/klee" ]; then git clone --depth 1 https://github.com/vigor-nf/klee.git "$BUILDDIR/klee"; fi
@@ -235,7 +235,7 @@ pushd "$BUILDDIR/klee"
      -DKLEE_UCLIBC_PATH="$BUILDDIR/klee-uclibc" \
      -DENABLE_POSIX_RUNTIME=ON \
      ..
-    make -j $(nproc)
+    make -j
     echo 'PATH='"$BUILDDIR/klee/build/bin"':$PATH' >> "$PATHSFILE"
     echo "export KLEE_INCLUDE=$BUILDDIR/klee/include" >> "$PATHSFILE"
     echo "export KLEE_BUILD_PATH=$BUILDDIR/klee/build" >> "$PATHSFILE"
@@ -287,8 +287,8 @@ pushd "$BUILDDIR"
     mkdir binutils-build
     pushd binutils-build
       ../binutils/configure --target=$DSOS_TARGET --prefix="$BUILDDIR/binutils-build" --with-sysroot --disable-nls --disable-werror
-      make -j`nproc`
-      make -j`nproc` install
+      make -j
+      make -j install
       echo 'PATH='"$BUILDDIR/binutils-build/bin"':$PATH' >> "$PATHSFILE"
       echo "$BINUTILS_RELEASE" > .version
       . "$PATHSFILE"
@@ -314,10 +314,10 @@ pushd "$BUILDDIR"
     mkdir gcc-build
     pushd gcc-build
       ../gcc/configure --target=$DSOS_TARGET --prefix="$BUILDDIR/gcc-build" --disable-nls --enable-languages=c --without-headers
-      make -j`nproc` all-gcc
-      make -j`nproc` all-target-libgcc
-      make -j`nproc` install-gcc
-      make -j`nproc` install-target-libgcc
+      make -j all-gcc
+      make -j all-target-libgcc
+      make -j install-gcc
+      make -j install-target-libgcc
       echo 'PATH='"$BUILDDIR/gcc-build/bin"':$PATH' >> "$PATHSFILE"
       echo "$GCC_RELEASE" > .version
       . "$PATHSFILE"
@@ -336,6 +336,6 @@ pushd "$BUILDDIR/klee-uclibc-binary"
   cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
   make clean
-  make -j $(nproc)
+  make -j
   ln -vs "$BUILDDIR/klee-uclibc-binary/lib/libc.a" "$VNDSDIR"
 popd

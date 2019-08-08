@@ -175,21 +175,21 @@ VERIF_WITHDPDK_INCLUDES := -I $(RTE_SDK)/$(RTE_TARGET)/include \
 			   -I $(RTE_SDK)/drivers/net/ixgbe
 # And then some special DPDK includes: builtin_stubs for built-ins DPDK uses, rte_config.h because many files forget to include it
 VERIF_WITHDPDK_INCLUDES += --include=libvig/stubs/builtin_stub.h --include=rte_config.h
-# Low-level stubs for specific functions
-VERIF_WITHDPDK_FILES := $(SELF_DIR)/libvig/stubs/dpdk_low_level_stub.c
 # Platform-independent and Linux-specific EAL
-VERIF_WITHDPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
+DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
 # Default ring mempool driver
-VERIF_WITHDPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
+DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 # Other libraries, except acl and distributor which use CPU intrinsics (there is a generic version of distributor, but we don't need it),
 # and power has been broken for a while: http://dpdk.org/ml/archives/dev/2016-February/033152.html
-VERIF_WITHDPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power)/*.c
+DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power)/*.c
 # PCI driver support (for ixgbe driver)
-VERIF_WITHDPDK_FILES += $(RTE_SDK)/drivers/bus/pci/*.c $(RTE_SDK)/drivers/bus/pci/linux/*.c
+DPDK_FILES += $(RTE_SDK)/drivers/bus/pci/*.c $(RTE_SDK)/drivers/bus/pci/linux/*.c
 # ixgbe driver
-VERIF_WITHDPDK_FILES += $(RTE_SDK)/drivers/net/ixgbe/ixgbe_{fdir,flow,ethdev,ipsec,pf,rxtx,tm}.c $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_{api,common,phy,82599}.c
-# Hardware stubs
-VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/stubs/hardware_stub.c
+IXGBE_FILES := $(RTE_SDK)/drivers/net/ixgbe/ixgbe_{fdir,flow,ethdev,ipsec,pf,rxtx,tm}.c $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_{api,common,phy,82599}.c
+# DPDK, ixgbe, hardware stubs
+VERIF_WITHDPDK_FILES := $(DPDK_FILES) $(IXGBE_FILES) $(SELF_DIR)/libvig/stubs/hardware_stub.c
+# Low-level stubs for specific functions
+VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/stubs/dpdk_low_level_stub.c
 
 symbex-withdpdk: clean autogen
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) $(VERIF_INCLUDES) $(VERIF_WITHDPDK_INCLUDES) $(VERIF_FILES) $(VERIF_WITHDPDK_FILES) $(VERIF_FLAGS)
@@ -256,21 +256,33 @@ _print-needsreverse:
 
 # cloc instead of sloccount because the latter does not report comments, and all VeriFast annotations are comments
 
-count-loc: autogen
-	@cloc $(SRCS-y) $(AUTO_GEN_FILES)
-
-count-fullstack-loc: autogen
-	@cloc $(SRCS-y) $(AUTO_GEN_FILES) $(VERIF_WITHDPDK_FILES)
+count-loc:
+	@cloc -q $(NF_FILES) $(subst .c,.h,$(NF_FILES)) $(NF_AUTOGEN_SRCS) 2>/dev/null
 
 count-spec-loc:
-	@cloc spec.py
+	@cloc -q spec.py
 
-count-lib-loc:
+count-libvig-ds-loc:
 	@# Bit of a hack for this one, cloc can't be given a custom language but for some reason it knows about Pig Latin, which is never gonna happen in our codebase, so...
-	@cloc --quiet --force-lang 'Pig Latin',gh  $(subst .o,.c,$(LIBVIG_SRC)) $(SELF_DIR)/libvig/containers/*.gh | sed 's/Pig Latin/VeriFast /g'
+	@cloc --quiet --force-lang 'Pig Latin',gh $(subst .o,.c,$(LIBVIG_SRC)) $(SELF_DIR)/libvig/containers/*.gh | sed 's/Pig Latin/VeriFast /g'
 	@echo "NOTE: Annotations == VeriFast code + C comments - $$(grep '//[^@]' $(subst .o,.c,$(LIBVIG_SRC)) | wc -l) (that last number is the non-VeriFast C comments)"
 	@if grep -F '/*' $(subst .o,.c,$(LIBVIG_SRC)) | grep -vF '/*@'; then echo 'ERROR: There are multiline non-VeriFast comments in the C code, the total above is wrong!'; fi
 
+count-libvig-loc:
+	@cloc -q $(SELF_DIR)/libvig/*.{c,h} $(SELF_DIR)/libvig/containers/*
+
+count-dpdk-loc:
+	@cloc -q $(DPDK_FILES) $(subst .c,.h,$(DPDK_FILES)) 2>/dev/null
+
+count-ixgbe-loc:
+	@cloc -q $(IXGBE_FILES) $(subst .c,.h,$(IXGBE_FILES)) 2>/dev/null
+
+# This is a horrible hack - we get the files included in the build process by... running make -n
+count-uclibc-loc:
+	@cd $(KLEE_INCLUDE)/../../klee-uclibc; \
+	 make clean >> /dev/null 2>&1; \
+	 cloc $$(for f in $$(make -n | grep --null -oh '[_a-zA-Z0-9][_a-zA-Z0-9]*\.[ch]'); do find . -name $$f; done); \
+	 make -j >> /dev/null 2>&1
 
 
 # =============
