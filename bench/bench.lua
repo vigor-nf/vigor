@@ -192,7 +192,7 @@ end
 -- Measure latency under 1G load
 function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reverseFlowCount)
 	-- It's the same filter set every time so not setting it on subsequent attempts is OK
-	io.write("!!! IMPORTANT: You can safely ignore the warnings about setting an fdir filter !!!\n")
+	io.write("\n\n!!! IMPORTANT: You can safely ignore the warnings about setting an fdir filter !!!\n\n\n")
 
 	-- Do not change the name and format of this file unless you change the rest of the scripts that depend on it!
 	local outFile = io.open(RESULTS_FILE_NAME, "w")

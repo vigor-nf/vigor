@@ -106,9 +106,6 @@ bool dyn_val_condition(void* val, int index, void* state) {
 
 // File parsing, is not really the kind of code we want to verify.
 #ifdef KLEE_VERIFICATION
-
-//TODO: this function must appear in the traces.
-// let's see if we notice that it does not
 void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
 }
 

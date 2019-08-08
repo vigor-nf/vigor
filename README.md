@@ -1,3 +1,6 @@
+# NOTE: Dear SOSP AE reviewer, while all the code of the artifact is in this repo, there are a few things we haven't written up properly yet, and this repo hasn't been thoroughly tested; but the artifact is available, and we fully intend to have all descriptions/scripts working for the 'results replicated' deadline
+
+
 This repository contains the Vigor verification toolchain and network functions (NFs).
 
 # Machine prerequisites
@@ -47,27 +50,27 @@ There are currently five Vigor NFs:
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
-- ??? SOSPTODO baselines ???
+- SOSPTODO describe baselines (all folders beginning in unverified- and click- + MoonPol which is publicly available)
 
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
 
-| Target(s)                  | Description                                | Expected duration |
-| -------------------------- | ------------------------------------------ | ----------------- |
-| Default                    | Compile the NF                             | <1min             |
-| `run`                      | Run the NF using recommended arguments     | <1min to start    |
+| Target(s)                  | Description                                | Expected duration                  |
+| -------------------------- | ------------------------------------------ | ---------------------------------- |
+| Default                    | Compile the NF                             | <1min                              |
+| `run`                      | Run the NF using recommended arguments     | <1min to start                     |
 | `symbex validate`          | Verify the NF with DPDK models             | <1min to symbex, hours to validate |
-| `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | <1h to symbex, hours to validate |
-| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | <1h to symbex, hours to validate |
-| `count-loc`                | Count lines of code of the NF              | <1min             |
-| `count-dpdk-loc`           | Count lines of code in DPDK                | <1min             |
-| `count-dsos-loc`           | Count lines of code in the DSOS            | <1min             |
-| `count-spec-loc`           | Count lines of code in the specification   | <1min             |
-| `count-libvig-loc`         | Count lines of code of libVig              | <1min             |
-| `benchmark-throughput`     | Benchmark the NF's throughput              | ???               |
-| `benchmark-latency`        | Benchmark the NF's latency                 | ???               |
+| `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | <1h to symbex, hours to validate   |
+| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | <1h to symbex, hours to validate   |
+| `count-loc`                | Count lines of code of the NF              | <1min                              |
+| `count-dpdk-loc`           | Count lines of code in DPDK                | <1min                              |
+| `count-dsos-loc`           | Count lines of code in the DSOS            | <1min                              |
+| `count-spec-loc`           | Count lines of code in the specification   | <1min                              |
+| `count-libvig-loc`         | Count lines of code of libVig              | <1min                              |
+| `benchmark-throughput`     | Benchmark the NF's throughput              | <30min                             |
+| `benchmark-latency`        | Benchmark the NF's latency                 | <10min                             |
 
-To run with your own arguments, compile then run `./build/nf` which will display the command-line arguments you need to pass to the NF.
+To run with your own arguments, compile then run `sudo ./build/app/nf -- -?` which will display the command-line arguments you need to pass to the NF.
 
 To verify using a pay-as-you-go specification, add `VIGOR_SPEC=your_spec.py` before a verification command.
 
@@ -166,15 +169,14 @@ Figure 10:
 - This is a graphical version of the setup described by the `bench/config.sh` file in this repository
 
 Figure 11:
-- SOSPTODO how to do this one?
+- SOSPTODO show detailed data, for now you just have to believe us... sorry
 
 
 Table 1:
 - These are the NFs mentioned in `Vigor NFs`
 
 Table 2:
-- These numbers are obtained using their corresponding targets as mentioned in `Vigor NFs`
-SOSPTODO fix the targets, make dsos dpdk and ixgbe completely separate, add target for uclibc
+- These numbers are obtained using their corresponding targets as mentioned in `Vigor NFs` (SOSPTODO fix the targets, make dsos dpdk and ixgbe completely separate, add target for uclibc)
 
 Table 3:
 - These numbers are obtained using the targets mentioned in `Vigor NFs`; note that we count traces (as reported at the end of a KLEE run), not prefixes, and that to get the per-trace time we divide the total user time by the number of traces.
@@ -189,11 +191,19 @@ Table 5:
 Table 6:
 - The "LOC" column can be obtained using the spec line-counting target as mentioned in `Vigor NFs`
 - The time to translate RFCs was noted during development and is not meaningfully reproducible
-- The user-supplied bounds are... SOSPTODO what are they?
+- The user-supplied bounds are SOSPTODO the condition methods in each NF, let's explain this nicely and document it in the template
 
 Table 7:
-- The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that)
+- The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that, for now they're in `validator/properties`)
 
+
+# FAQ
+
+- Q: DPDK says `No free hugepages reported in hugepages-1048576kB`, what did I do wrong?
+- A: Nothing wrong! This just means there are no 1GB hugepages; as long as it can find the 2MB ones, you're good.
+
+- Q: DPDK says `PMD: ixgbe_dev_link_status_print():  Port 0: Link Down`, what's up?
+- A: This doesn't mean the link is down, just that it's down _at the moment DPDK checks_, it usually comes up right after that and the NF is fine.
 
 # Dependencies
 
