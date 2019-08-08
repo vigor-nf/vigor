@@ -94,7 +94,7 @@ void nf_config_print(void)
 {
   NF_INFO("\n--- Bridge Config ---\n");
 
-  NF_INFO("Expiration time: %" PRIu32 "ns", config->expiration_time);
+  NF_INFO("Expiration time: %" PRVIGT "ns", config->expiration_time);
   NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
   NF_INFO("Static configuration file: %s", config->static_config_fname);
 

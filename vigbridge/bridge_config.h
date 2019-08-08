@@ -7,7 +7,7 @@
 
 struct nf_config {
   // Expiration time of flows
-  uint32_t expiration_time;
+  vigor_time_t expiration_time;
 
   // Size of the dynamic filtering table
   uint32_t dyn_capacity;

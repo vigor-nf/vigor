@@ -20,7 +20,7 @@ struct nf_config {
   struct ether_addr* endpoint_macs;
 
   // Expiration time of flows
-  uint32_t expiration_time;
+  vigor_time_t expiration_time;
 
   // Size of the flow table
   uint32_t max_flows;
