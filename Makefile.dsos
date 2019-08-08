@@ -228,3 +228,6 @@ $(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $< -o $@
 
+# TODO: extend the rule above on the autogen sources.
+# currently I have to run make dsos-iso twice
+
