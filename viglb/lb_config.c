@@ -42,7 +42,7 @@ void nf_config_init(int argc, char** argv)
 	while ((opt = getopt_long(argc, argv, "b:x:f:", long_options, NULL)) != EOF) {
 		switch (opt) {
 			case 'x':
-				config->flow_expiration_time = nf_util_parse_int(optarg, "flow-expiration", 10, '\0');
+				config->flow_expiration_time = nf_util_parse_int(optarg, "flow-expiration", 16, '\0');
 				if (config->flow_expiration_time == 0) {
 					PARSE_ERROR("Flow expiration time must be strictly positive.\n");
 				}
