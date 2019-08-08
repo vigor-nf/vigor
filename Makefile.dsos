@@ -39,7 +39,7 @@ NF_INCLUDES += -I /usr/include
 dquote := \"
 space := $(null) #
 comma := ,
-NF_DEFS += -DNF_ARGUMENTS='$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))'
+NF_DEFS += -DNF_ARGUMENTS="\"$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))\""
 
 NF_COMMON_SOURCES := $(NF_DIR)/nf_main.c \
 	$(NF_DIR)/libvig/nf_util.c \
@@ -165,25 +165,25 @@ QEMUFLAGS += -device vfio-pci,host=06:00.1
 # QEMUFLAGS += -no-hpet -nodefaults -no-acpi -vga std
 # QEMUFLAGS += -object memory-backend-file,id=mem,prealloc=on,size=1G,mem-path=/mnt/huge1GB
 
-.PHONY: all clean run debug iso multiboot1 multiboot2
+.PHONY: dsos-all dsos-clean dsos-run dsos-debug dsos-iso dsos-multiboot1 dsos-multiboot2
 
-all: multiboot1 multiboot2
+dsos-all: dsos-multiboot1 dsos-multiboot2
 
-multiboot1: $(BINARY_MULTIBOOT1)
+dsos-multiboot1: $(BINARY_MULTIBOOT1)
 
-multiboot2: $(BINARY_MULTIBOOT2)
+dsos-multiboot2: $(BINARY_MULTIBOOT2)
 
 # We can't remove CRT{BEGIN,END}_OBJ because they're system-provided
-clean:
+dsos-clean:
 	@rm -f $(C_OBJS) $(MULTIBOOT1_OBJ) $(MULTIBOOT2_OBJ) $(BOOT_OBJS) \
 		$(CRTI_OBJ) $(CRTN_OBJ)
 
 # Launch QEMU
-run: $(ISO)
+dsos-run: $(ISO)
 	@sudo $(QEMU) $(QEMUFLAGS)
 
 # Launch QEMU and attach debugger
-debug: $(ISO)
+dsos-debug: $(ISO)
 	@sudo $(QEMU) -s -S $(QEMUFLAGS) > /dev/null 2>&1 &
 	@sudo gdb -ex "set arch i386:x86-64:intel" \
 		-ex "target remote localhost:1234" \
@@ -200,10 +200,10 @@ debug: $(ISO)
 
 	@sudo kill `pidof qemu-system-x86_64`
 
-iso: $(ISO)
+dsos-iso: $(ISO)
 
 # Make bootable iso image
-$(ISO): $(BINARY_MULTIBOOT2) $(GRUB_CFG)
+$(ISO): autogen $(BINARY_MULTIBOOT2) $(GRUB_CFG)
 	@mkdir -p build/isofiles/boot/grub
 	@cp $(BINARY_MULTIBOOT2) build/isofiles/boot/kernel.bin
 	@cp $(GRUB_CFG) build/isofiles/boot/grub
@@ -211,10 +211,10 @@ $(ISO): $(BINARY_MULTIBOOT2) $(GRUB_CFG)
 	@rm -r build/isofiles
 
 # Link final executable
-$(BINARY_MULTIBOOT2): $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC)
+$(BINARY_MULTIBOOT2): autogen $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC) $(LIBS)
 
-$(BINARY_MULTIBOOT1): $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
+$(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC) $(LIBS)
 	objcopy -O elf32-i386 $(BINARY_MULTIBOOT1)
 
@@ -225,3 +225,4 @@ $(BINARY_MULTIBOOT1): $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
 # C files
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $< -o $@
+

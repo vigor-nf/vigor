@@ -1,0 +1,27 @@
+# Skeleton Makefile for Vigor NFs
+# This file dispatches the build process:
+# - for dsos targets, first goal must be 'dsos'
+# - for other targets (linux executable, symbex, verification)
+#
+# Variables that should be defined by inheriting Makefiles:
+# - NF_AUTOGEN_SRCS := <NF files that are inputs to auto-generation>
+# See Makefile for the rest of the variables
+
+SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+NF_AUTOGEN_SRCS += $(SELF_DIR)/libvig/stubs/ether_addr.h
+
+# Auto-generate files; note that DPDK's weird makefiles call this twice, once in the proper dir and once in build/, we only care about the former
+autogen:
+	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
+	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
+	  if [ -e 'dataspec.ml' ]; then $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
+	fi
+ifeq (,$(findstring dsos-,$(MAKECMDGOALS)))
+# Include parent
+# Common case
+include $(SELF_DIR)/Makefile
+else
+# dsos-* goal
+include $(SELF_DIR)/Makefile.dsos
+endif

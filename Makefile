@@ -16,16 +16,13 @@ SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 # Default value for arguments
 NF_DEVICES ?= 2
-NF_AUTOGEN_SRCS += $(SELF_DIR)/libvig/stubs/ether_addr.h
 NF_FILES += $(subst .h,.h.gen.c,$(NF_AUTOGEN_SRCS))
 NF_ARGS := --no-shconf $(NF_DPDK_ARGS) -- $(NF_ARGS)
 NF_LAYER ?= 2
 NF_BENCH_NEEDS_REVERSE_TRAFFIC ?= false
 
 # Add state.c to the NF files, but only if it will be generated (so that we can compile stateless NFs)
-ifneq (,$(wildcard dataspec.ml))
-NF_FILES += state.c
-else ifneq (,$(wildcard ../dataspec.ml))
+ifneq (,$(wildcard $(NF_DIR)/dataspec.ml))
 NF_FILES += state.c
 endif
 
@@ -55,6 +52,12 @@ CFLAGS += -O3
 ifeq (,$(findstring benchmark-,$(MAKECMDGOALS)))
 include $(RTE_SDK)/mk/rte.extapp.mk
 endif
+
+# ========
+# Default: build the nf Linux executable
+# ========
+.DEFAULT_GOAL := executable
+executable: autogen build/app/nf
 
 
 # ========
@@ -129,13 +132,6 @@ VERIF_COMMAND := /usr/bin/time -v \
 clean-vigor:
 	@$(CLEAN_COMMAND)
 clean: clean-vigor
-
-# Auto-generate files; note that DPDK's weird makefiles call this twice, once in the proper dir and once in build/, we only care about the former
-autogen:
-	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
-	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
-	  if [ -e 'dataspec.ml' ]; then $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
-	fi
 
 # Built-in DPDK default target, make it aware of autogen, and make it clean every time because our dependency tracking is nonexistent...
 all: clean autogen

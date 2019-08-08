@@ -39,7 +39,7 @@ EXTRA=''
 pushd $MIDDLEBOX >> /dev/null
   # Without -s, make prings 'Entering directory..' messages, idk why
   LAYER="$(make -s _print-layer)"
-  if [ "$(make -s _print-needsreverse)" = "true" ]; then EXTRA='-x 20'; fi
+  if [ "$(make -s _print-needsreverse)" = "true" ]; then EXTRA='-x 32'; fi
 popd >> /dev/null
 
 echo "[bench] Benchmarking..."

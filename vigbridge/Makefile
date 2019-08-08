@@ -4,9 +4,5 @@ NF_AUTOGEN_SRCS := dyn_value.h stat_key.h
 
 NF_ARGS := --expire $(or $(EXPIRATION_TIME),10) --capacity 65536
 
-ifeq (dsos, $(MAKECMDGOALS))
-include ../Makefile.dsos
-else
-# Include parent (in a convoluted way cause of DPDK)
-include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
-endif
+NF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+include $(NF_DIR)/../Makefile.common
