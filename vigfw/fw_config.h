@@ -19,7 +19,7 @@ struct nf_config {
   // MAC addresses of the endpoints the devices are linked to
   struct ether_addr* endpoint_macs;
 
-  // Expiration time of flows
+  // Expiration time of flows, in microseconds
   uint32_t expiration_time;
 
   // Size of the flow table

@@ -1,6 +1,6 @@
 from state import flow_emap, flow_id_to_backend_id, backends, backend_ip_emap, cht
-EXP_TIME = 10
-BACKEND_EXP_TIME = 60
+EXP_TIME = 10 * 1000
+BACKEND_EXP_TIME = 3600000000 * 1000
 EXT_PORT = 0
 
 if a_packet_received:

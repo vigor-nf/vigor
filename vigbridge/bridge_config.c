@@ -17,7 +17,7 @@
 #include "libvig/nf_util.h"
 #include "libvig/nf_log.h"
 
-const vigor_time_t DEFAULT_EXP_TIME = 300000000000l;//nanoseconds
+const uint32_t DEFAULT_EXP_TIME = 300000000;//microseconds
 const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses
 
 #define PARSE_ERROR(format, ...) \
@@ -82,7 +82,7 @@ void nf_config_usage(void)
 {
   NF_INFO("Usage:\n"
          "[DPDK EAL options] --\n"
-         "\t--expire <time>: flow expiration time (ns), default: %" PRIu64 ".\n"
+         "\t--expire <time>: flow expiration time (us), default: %" PRIu32 ".\n"
          "\t--capacity <n>: dynamic mac learning table capacity,"
          " default: %" PRIu32 ".\n"
          "\t--config <fname>: static filtering table configuration file.\n",
@@ -94,7 +94,7 @@ void nf_config_print(void)
 {
   NF_INFO("\n--- Bridge Config ---\n");
 
-  NF_INFO("Expiration time: %" PRIu32 "ns", config->expiration_time);
+  NF_INFO("Expiration time: %" PRIu32 "us", config->expiration_time);
   NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
   NF_INFO("Static configuration file: %s", config->static_config_fname);
 

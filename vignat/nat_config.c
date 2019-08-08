@@ -126,7 +126,7 @@ void nf_config_usage(void)
 	NF_INFO("Usage:\n"
 		"[DPDK EAL options] --\n"
 		"\t--eth-dest <device>,<mac>: MAC address of the endpoint linked to a device.\n"
-		"\t--expire <time>: flow expiration time (ns).\n"
+		"\t--expire <time>: flow expiration time (us).\n"
 		"\t--extip <ip>: external IP address.\n"
 		"\t--lan-dev <device>: set device to be the main LAN device (for non-NAT).\n"
 		"\t--max-flows <n>: flow table capacity.\n"
@@ -158,7 +158,7 @@ void nf_config_print(void)
 	}
 
 	NF_INFO("Starting port: %" PRIu16, config->start_port);
-	NF_INFO("Expiration time: %" PRIu32 "ns", config->expiration_time);
+	NF_INFO("Expiration time: %" PRIu32 "us", config->expiration_time);
 	NF_INFO("Max flows: %" PRIu32, config->max_flows);
 
 	NF_INFO("\n--- --- ------ ---\n");

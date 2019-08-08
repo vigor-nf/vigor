@@ -155,7 +155,6 @@ symbex: clean autogen
 	@$(LINK_COMMAND)
 	@$(OPT_COMMAND)
 	@$(VERIF_COMMAND) $(NF_ARGS)
-	@$(CLEAN_COMMAND)
 
 
 
@@ -197,7 +196,6 @@ symbex-withdpdk: clean autogen
 	@$(LINK_COMMAND)
 	@$(OPT_COMMAND)
 	@$(VERIF_COMMAND) $(NF_ARGS)
-	@$(CLEAN_COMMAND)
 
 
 
@@ -216,7 +214,6 @@ symbex-withdsos: clean autogen
 	@$(LINK_COMMAND)
 	@$(OPT_COMMAND)
 	@$(VERIF_COMMAND) $(NF_ARGS)
-	@$(CLEAN_COMMAND)
 
 
 

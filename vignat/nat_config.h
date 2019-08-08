@@ -27,7 +27,7 @@ struct nf_config {
 	// i.e. ports will be allocated in [start_port, start_port + max_flows]
 	uint16_t start_port;
 
-	// Expiration time of flows in nanoseconds
+	// Expiration time of flows in microseconds
 	uint32_t expiration_time;
 
 	// Size of the flow table
