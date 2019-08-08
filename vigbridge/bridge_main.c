@@ -268,8 +268,9 @@ static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_
 #endif//KLEE_VERIFICATION
 
 void nf_init(void) {
-  unsigned stat_capacity = CAPACITY_UPPER_LIMIT - 1;
+  unsigned stat_capacity = 8192; // Has to be power of 2
   unsigned capacity = config->dyn_capacity;
+  assert(stat_capacity < CAPACITY_UPPER_LIMIT - 1);
 
   mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count());
   if (mac_tables == NULL) {
