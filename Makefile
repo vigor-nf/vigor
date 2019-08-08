@@ -16,15 +16,9 @@ SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 # Default value for arguments
 NF_DEVICES ?= 2
-NF_FILES += $(subst .h,.h.gen.c,$(NF_AUTOGEN_SRCS))
 NF_ARGS := --no-shconf $(NF_DPDK_ARGS) -- $(NF_ARGS)
 NF_LAYER ?= 2
 NF_BENCH_NEEDS_REVERSE_TRAFFIC ?= false
-
-# Add state.c to the NF files, but only if it will be generated (so that we can compile stateless NFs)
-ifneq (,$(wildcard $(NF_DIR)/dataspec.ml))
-NF_FILES += state.c
-endif
 
 # If KLEE paths are not defined (eg because the user installed deps themselves), try to compute it based on KLEE_INCLUDE.
 KLEE_BUILD_PATH ?= $(KLEE_INCLUDE)/../build
