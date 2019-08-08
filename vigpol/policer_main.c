@@ -26,11 +26,8 @@
 struct State* dynamic_ft;
 
 int policer_expire_entries(vigor_time_t time) {
+  assert(time >= 0); // we don't support the past
   vigor_time_t exp_time = VIGOR_TIME_SECONDS_MULTIPLIER * config->burst / config->rate;
-
-  if (time < exp_time)
-    return 0;
-
   uint64_t time_u = (uint64_t) time;
   // OK because time >= config->burst / config->rate >= 0
   vigor_time_t min_time = time_u - exp_time;

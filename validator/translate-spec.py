@@ -117,6 +117,9 @@ def renderExpr(expr):
         elif isinstance(expr.op, ast.Mult): sign = '*'
         elif isinstance(expr.op, ast.Div): sign = '/'
         elif isinstance(expr.op, ast.BitAnd): sign = '&'
+        elif isinstance(expr.op, ast.BitOr): sign = '|'
+        elif isinstance(expr.op, ast.LShift): sign = '<<'
+        elif isinstance(expr.op, ast.RShift): sign = '>>'
         else: sign = '???'
         return "({} {} {})".format(left, sign, right)
     elif isinstance(expr, ast.BoolOp):

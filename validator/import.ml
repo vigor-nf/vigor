@@ -470,7 +470,8 @@ let get_sint_in_bounds v =
   else
     let integer_val = Int.of_string v in
     if Int.(integer_val <> 10000000000) && (* We want this 10B - the policer exp time*)
-       Int.(integer_val > 2147483647) then
+       Int.(integer_val <>  3750000000) &&
+       Int.(integer_val  >  2147483647) then
       integer_val - 2*2147483648
     else
       integer_val
