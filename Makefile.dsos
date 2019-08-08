@@ -1,3 +1,5 @@
+# This file expects to be included from the common Makefile
+
 ### Use this to build an executable DSOS image
 SHELL := /bin/bash -O extglob -c
 

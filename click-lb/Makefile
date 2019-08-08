@@ -1,5 +1,3 @@
-all:
-	@echo "[make] Click NF"
+NF_LAYER := 3
 
-clean: 
-	@echo "[clean] Click NF"
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

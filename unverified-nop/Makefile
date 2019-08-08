@@ -7,6 +7,4 @@ NF_ARGS := --lan-dev 0 \
 
 NF_LAYER := 4
 
-# Include parent (in a convoluted way cause of DPDK)
-NF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-include $(NF_DIR)/../Makefile.common
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

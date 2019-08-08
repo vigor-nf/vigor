@@ -16,5 +16,4 @@ NF_LAYER := 3
 
 NF_BENCH_NEEDS_REVERSE_TRAFFIC := true
 
-NF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-include $(NF_DIR)/../Makefile.common
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

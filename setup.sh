@@ -31,6 +31,7 @@ fi
 
 if [ ! -f "$PATHSFILE" ]; then
   echo '# The configuration paths for VNDS dependencies' > "$PATHSFILE"
+  echo "export VIGOR_DIR=$BUILDDIR"
   # Source the paths file at login
   echo ". $PATHSFILE" >> "$HOME/.profile"
 fi
@@ -115,6 +116,20 @@ opam install goblint-cil -y
 # ======
 
 sudo apt-get install -y python3.6
+
+
+
+# =========
+# FastClick
+# =========
+
+if [ ! -e "$BUILDDIR/fastclick" ]; then git clone https://github.com/tbarbette/fastclick "$BUILDDIR/fastclick"; fi
+pushd "$BUILDDIR/fastclick"
+  git checkout e77376fef6d982fef59517ddd3f1533b9dffc000
+  cp elements/etherswitch/etherswitch.* elements/ethernet/. # more convenient
+  ./configure --enable-userlevel --disable-linuxmodule --enable-user-multithread --enable-dpdk
+  make
+popd
 
 
 
