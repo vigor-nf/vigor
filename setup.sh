@@ -261,7 +261,8 @@ opam install ocamlfind core sexplib menhir -y
 # ================
 
 sudo apt-get update
-sudo apt-get install -y qemu-system-x86 build-essential wget bison flex \
+# Make sure grub doesn't ask stupid questions
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq qemu-system-x86 build-essential wget bison flex \
   libgmp3-dev libmpc-dev libmpfr-dev texinfo libcloog-isl-dev libisl-0.18-dev gnupg \
   xorriso \
   nasm git grub-pc

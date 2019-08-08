@@ -21,7 +21,7 @@ WORKDIR /home/vigor
 # Copy everything from the repo
 COPY . /home/vigor/
 # (except for /usr and /lib mount points)
-RUN rm -rf /home/vigor/vigor/lib && rm -rf /home/vigor/vigor/usr
+RUN sudo rm -rf /home/vigor/lib && sudo rm -rf /home/vigor/usr
 # Give the right permissions
 RUN sudo chown -R vigor:vigor *
 # Execute the setup script
