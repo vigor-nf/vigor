@@ -51,9 +51,10 @@ CFLAGS += -DCAPACITY_POW2
 CFLAGS += -O3
 #CFLAGS += -O0 -g -rdynamic -DENABLE_LOG -Wfatal-errors
 
-# DPDK stuff
+# DPDK stuff, unless we're benchmarking (see remarks on the benchmark target)
+ifeq (,$(findstring benchmark-,$(MAKECMDGOALS)))
 include $(RTE_SDK)/mk/rte.extapp.mk
-
+endif
 
 
 # ========
@@ -249,7 +250,7 @@ validate: autogen
 # =======
 
 run: all
-	@sudo ./build/app/nf $(NF_ARGS)
+	@sudo ./build/app/nf $(NF_ARGS) || true
 
 
 
@@ -257,16 +258,11 @@ run: all
 # Benchmarking
 # ============
 
-# same DPDK build weirdness as autogen
+# It seems the DPDK makefiles really don't like being recursively invoked - and benchmarking invokes make run; so we just don't include the DPDK makefile if we're benchmarking
 benchmark-%:
-	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
-	 NFDIR="$$(pwd)"; \
-	 pushd $(SELF_DIR)/bench >> /dev/null; \
-	 ./bench.sh "$$NFDIR" $(subst benchmark-,,$@); \
-	 popd >> /dev/null; \
-	 mv ../bench/$@.results .; \
-	 printf '\n\nDone! Results are in $@.results, log file in $@.log\n\n'; \
-	fi
+	cd "$(SELF_DIR)/bench" && ./bench.sh "$(shell pwd)" $(subst benchmark-,,$@)
+	mv ../bench/$@.results .
+	printf '\n\nDone! Results are in $@.results, log file in $@.log\n\n'
 # bench scripts use these to autodetect the NF type
 _print-layer:
 	@echo $(NF_LAYER)
