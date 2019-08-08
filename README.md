@@ -50,7 +50,7 @@ There are currently five Vigor NFs:
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
-- ??? SOSPTODO describe baselines ???
+- SOSPTODO describe baselines (all folders beginning in unverified- and click- + MoonPol which is publicly available)
 
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
@@ -169,15 +169,14 @@ Figure 10:
 - This is a graphical version of the setup described by the `bench/config.sh` file in this repository
 
 Figure 11:
-- SOSPTODO how to do this one?
+- SOSPTODO show detailed data, for now you just have to believe us... sorry
 
 
 Table 1:
 - These are the NFs mentioned in `Vigor NFs`
 
 Table 2:
-- These numbers are obtained using their corresponding targets as mentioned in `Vigor NFs`
-SOSPTODO fix the targets, make dsos dpdk and ixgbe completely separate, add target for uclibc
+- These numbers are obtained using their corresponding targets as mentioned in `Vigor NFs` (SOSPTODO fix the targets, make dsos dpdk and ixgbe completely separate, add target for uclibc)
 
 Table 3:
 - These numbers are obtained using the targets mentioned in `Vigor NFs`; note that we count traces (as reported at the end of a KLEE run), not prefixes, and that to get the per-trace time we divide the total user time by the number of traces.
@@ -192,10 +191,10 @@ Table 5:
 Table 6:
 - The "LOC" column can be obtained using the spec line-counting target as mentioned in `Vigor NFs`
 - The time to translate RFCs was noted during development and is not meaningfully reproducible
-- The user-supplied bounds are... SOSPTODO what are they?
+- The user-supplied bounds are SOSPTODO the condition methods in each NF, let's explain this nicely and document it in the template
 
 Table 7:
-- The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that)
+- The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that, for now they're in `validator/properties`)
 
 
 # FAQ
