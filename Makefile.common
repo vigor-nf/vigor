@@ -22,12 +22,6 @@ NF_FILES += state.c
 endif
 
 
-# Auto-generate files; note that DPDK's weird makefiles call this twice, once in the proper dir and once in build/, we only care about the former
-autogen:
-	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
-	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
-	  if [ -e 'dataspec.ml' ]; then $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
-	fi
 ifeq (,$(findstring dsos-,$(MAKECMDGOALS)))
 # Include parent
 # Common case
@@ -36,3 +30,16 @@ else
 # dsos-* goal
 include $(SELF_DIR)/Makefile.dsos
 endif
+
+
+
+# =======
+# Autogen
+# =======
+
+# note that DPDK's weird makefiles call this twice, once in the proper dir and once in build/, we only care about the former
+autogen:
+	@if [ '$(notdir $(shell pwd))' != 'build' ]; then \
+	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
+	  if [ -e 'dataspec.ml' ]; then $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
+	fi

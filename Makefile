@@ -46,11 +46,6 @@ ifeq (,$(findstring benchmark-,$(MAKECMDGOALS)))
 include $(RTE_SDK)/mk/rte.extapp.mk
 endif
 
-# ========
-# Default: build the nf Linux executable
-# ========
-.DEFAULT_GOAL := executable
-executable: autogen build/app/nf
 
 
 # ========
