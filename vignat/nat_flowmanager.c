@@ -14,7 +14,7 @@
 
 struct FlowManager {
 	struct State* state;
-	uint32_t expiration_time; /*nanoseconds*/
+	vigor_time_t expiration_time; /*nanoseconds*/
 };
 
 bool
@@ -30,7 +30,7 @@ struct FlowManager*
 flow_manager_allocate(uint16_t starting_port,
                       uint32_t nat_ip,
                       uint16_t nat_device,
-                      uint32_t expiration_time,
+                      vigor_time_t expiration_time,
                       uint64_t max_flows) {
   struct FlowManager* manager = (struct FlowManager*) malloc(sizeof(struct FlowManager));
   if (manager == NULL) {

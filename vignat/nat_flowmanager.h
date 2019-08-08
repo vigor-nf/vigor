@@ -12,7 +12,7 @@ struct FlowManager;
 struct FlowManager* flow_manager_allocate(uint16_t starting_port,
                                           uint32_t nat_ip,
                                           uint16_t nat_device, /* NOTE: only required for verif to show that internal != external; can be removed once "our NAT" == router + "only NAT" */
-                                          uint32_t expiration_time,
+                                          vigor_time_t expiration_time,
                                           uint64_t max_flows);
 
 bool flow_manager_allocate_flow(struct FlowManager* manager, struct FlowId* id,
