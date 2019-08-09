@@ -1,11 +1,9 @@
-LAN_DEVICE = 0
-WAN_DEVICE = 1
-WORD_SIZE = 4
-ETHER_IP_HDRLEN = 34
+LAN_DEVICE = 1
+WAN_DEVICE = 0
 
 h2 = pop_header(ipv4, on_mismatch=([],[]))
-# malformed ipv4 header
-if h2.vihl & 0xf < 5 or (packet_size - ETHER_IP_HDRLEN < ((h2.vihl & 0xf) - 5)*WORD_SIZE):
+# Malformed IPv4
+if (h2.vihl & 15) < 5 or packet_size - 14 < (((h2.len & 255) << 8) | (h2.len >> 8)):
     return ([],[])
 h1 = pop_header(ether, on_mismatch=([],[]))
 

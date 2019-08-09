@@ -1,19 +1,17 @@
 from state import flow_emap, dyn_vals
-EXP_TIME = 10
-WAN_DEVICE = 1
-BURST = 125000
-RATE = 12500
-WORD_SIZE = 4
-ETHER_IP_HDRLEN = 34
+WAN_DEVICE = 0
+BURST = 3750000000
+RATE = 375000000
+EXP_TIME = 10 * 1000 * 1000 * 1000
 
 h2 = pop_header(ipv4, on_mismatch=([],[]))
-# malformed ipv4 header
-if h2.vihl & 0xf < 5 or (packet_size - ETHER_IP_HDRLEN < ((h2.vihl & 0xf) - 5)*WORD_SIZE):
+# Malformed IPv4
+if (h2.vihl & 15) < 5 or packet_size - 14 < (((h2.len & 255) << 8) | (h2.len >> 8)):
     return ([],[])
+
 h1 = pop_header(ether, on_mismatch=([],[]))
 
-if EXP_TIME <= now:
-    flow_emap.expire_all(now - EXP_TIME)
+flow_emap.expire_all(now - EXP_TIME)
 
 if received_on_port == WAN_DEVICE and flow_emap.has(ip_addrc(h2.daddr)):
     flow_idx = flow_emap.get(ip_addrc(h2.daddr))
