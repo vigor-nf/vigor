@@ -21,9 +21,9 @@ struct LoadBalancer* balancer;
 
 void nf_init(void)
 {
-	balancer = lb_allocate_balancer(config->flow_capacity, config->backend_capacity,
-                                  config->cht_height, config->backend_expiration_time,
-                                  config->flow_expiration_time);
+	balancer = lb_allocate_balancer(config.flow_capacity, config.backend_capacity,
+                                        config.cht_height, config.backend_expiration_time,
+                                        config.flow_expiration_time);
 	if (balancer == NULL) {
 		rte_exit(EXIT_FAILURE, "Could not allocate balancer");
 	}
@@ -70,7 +70,7 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
   if (backend.nic != 0) { // If not dropped
     ipv4_header->dst_addr = backend.ip;
-    ether_header->s_addr = config->device_macs[backend.nic];
+    ether_header->s_addr = config.device_macs[backend.nic];
     ether_header->d_addr = backend.mac;
 
     // Checksum

@@ -26,16 +26,16 @@ int nf_process(struct rte_mbuf* mbuf, time_t now)
 
 	uint16_t dst_device;
 	const int in_port = mbuf->port;
-	if (in_port == config->wan_device) {
-		dst_device = config->lan_main_device;
+	if (in_port == config.wan_device) {
+		dst_device = config.lan_main_device;
 	} else {
-		dst_device = config->wan_device;
+		dst_device = config.wan_device;
 	}
 
 	// L2 forwarding
 	struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
-	ether_header->s_addr = config->device_macs[dst_device];
-	ether_header->d_addr = config->endpoint_macs[dst_device];
+	ether_header->s_addr = config.device_macs[dst_device];
+	ether_header->d_addr = config.endpoint_macs[dst_device];
 
 	return dst_device;
 }

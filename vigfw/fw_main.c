@@ -20,9 +20,9 @@ struct FlowManager* flow_manager;
 
 void nf_init(void)
 {
-  flow_manager = flow_manager_allocate(config->wan_device,
-                                       config->expiration_time,
-                                       config->max_flows);
+  flow_manager = flow_manager_allocate(config.wan_device,
+                                       config.expiration_time,
+                                       config.max_flows);
 
   if (flow_manager == NULL) {
     rte_exit(EXIT_FAILURE, "Could not allocate flow manager");
@@ -54,7 +54,7 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
   NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
 
   uint16_t dst_device;
-  if (in_port == config->wan_device) {
+  if (in_port == config.wan_device) {
     // Inverse the src and dst for the "reply flow"
     struct FlowId id = {
       .src_port = tcpudp_header->dst_port,
@@ -80,13 +80,13 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
       .protocol = ipv4_header->next_proto_id,
     };
     flow_manager_allocate_or_refresh_flow(flow_manager, &id, in_port, now);
-    dst_device = config->wan_device;
+    dst_device = config.wan_device;
   }
 
   concretize_devices(&dst_device, rte_eth_dev_count());
 
-  ether_header->s_addr = config->device_macs[dst_device];
-  ether_header->d_addr = config->endpoint_macs[dst_device];
+  ether_header->s_addr = config.device_macs[dst_device];
+  ether_header->d_addr = config.endpoint_macs[dst_device];
 
   return dst_device;
 }

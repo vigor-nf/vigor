@@ -65,8 +65,6 @@
 #endif//KLEE_VERIFICATION
 
 
-struct nf_config* config;
-
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;

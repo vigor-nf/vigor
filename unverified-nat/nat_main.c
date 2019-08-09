@@ -75,7 +75,7 @@ nat_flows_by_time_refresh(void)
 void nf_init(void)
 {
 	int power = 1;
-	while(power < config->max_flows) {
+	while(power < config.max_flows) {
 		power *= 2;
 	}
 
@@ -84,8 +84,8 @@ void nf_init(void)
 	flows_from_outside = nat_map_create(power);
 
 	// uint32_t for the port as max_flows is 1-based and thus may be 2^16.
-	for (uint32_t port = 0; port < config->max_flows; port++) {
-		available_ports.push_back((uint16_t) port + config->start_port);
+	for (uint32_t port = 0; port < config.max_flows; port++) {
+		available_ports.push_back((uint16_t) port + config.start_port);
 	}
 
 	current_timestamp = 0;
@@ -103,11 +103,11 @@ int nf_process(struct rte_mbuf* mbuf, time_t now)
 		nat_flows_by_time_refresh();
 
 		nat_flow* expired_flow = flows_by_time.top();
-		while ((current_timestamp - expired_flow->last_packet_timestamp) > config->expiration_time) {
+		while ((current_timestamp - expired_flow->last_packet_timestamp) > config.expiration_time) {
 			struct nat_flow_id expired_from_outside;
 			expired_from_outside.src_addr = expired_flow->id.dst_addr;
 			expired_from_outside.src_port = expired_flow->id.dst_port;
-			expired_from_outside.dst_addr = config->external_addr;
+			expired_from_outside.dst_addr = config.external_addr;
 			expired_from_outside.dst_port = expired_flow->external_port;
 			expired_from_outside.protocol = expired_flow->id.protocol;
 
@@ -142,7 +142,7 @@ int nf_process(struct rte_mbuf* mbuf, time_t now)
 	}
 
 	// Redirect packets
-	if (in_port == config->wan_device) {
+	if (in_port == config.wan_device) {
 		NF_DEBUG("External packet");
 
 		struct nat_flow_id flow_id = nat_flow_id_from_headers(ipv4_header, tcpudp_header);
@@ -158,8 +158,8 @@ int nf_process(struct rte_mbuf* mbuf, time_t now)
 		flow->last_packet_timestamp = current_timestamp;
 
 		// L2 forwarding
-		ether_header->s_addr = config->device_macs[flow->internal_device];
-		ether_header->d_addr = config->endpoint_macs[flow->internal_device];
+		ether_header->s_addr = config.device_macs[flow->internal_device];
+		ether_header->d_addr = config.endpoint_macs[flow->internal_device];
 
 		// L3 forwarding
 		ipv4_header->dst_addr = flow->id.src_addr;
@@ -198,7 +198,7 @@ int nf_process(struct rte_mbuf* mbuf, time_t now)
 			struct nat_flow_id flow_from_outside;
 			flow_from_outside.src_addr = ipv4_header->dst_addr;
 			flow_from_outside.src_port = tcpudp_header->dst_port;
-			flow_from_outside.dst_addr = config->external_addr;
+			flow_from_outside.dst_addr = config.external_addr;
 			flow_from_outside.dst_port = flow_port;
 			flow_from_outside.protocol = ipv4_header->next_proto_id;
 
@@ -213,16 +213,16 @@ int nf_process(struct rte_mbuf* mbuf, time_t now)
 		flow->last_packet_timestamp = current_timestamp;
 
 		// L2 forwarding
-		ether_header->s_addr = config->device_macs[config->wan_device];
-		ether_header->d_addr = config->endpoint_macs[config->wan_device];
+		ether_header->s_addr = config.device_macs[config.wan_device];
+		ether_header->d_addr = config.endpoint_macs[config.wan_device];
 
 		// L3 forwarding
-		ipv4_header->src_addr = config->external_addr;
+		ipv4_header->src_addr = config.external_addr;
 		tcpudp_header->src_port = flow->external_port;
 
 		// Checksum
 		nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
 
-		return config->wan_device;
+		return config.wan_device;
 	}
 }
