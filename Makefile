@@ -13,6 +13,11 @@
 SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 NF_DIR := $(shell if [ '$(notdir $(shell pwd))' = 'build' ]; then echo '..'; else echo '.'; fi)
 
+# Check that the NF doesn't use clock_gettime directly, which would violate Vigor's expectations
+ifeq (true,$(shell if grep -q clock_gettime $(addprefix $(NF_DIR)/,$(NF_FILES)); then echo 'true'; fi))
+$(error Please use the Vigor nf_time header instead of clock_gettime)
+endif
+
 # Default values for arguments
 NF_AUTOGEN_SRCS += $(SELF_DIR)/libvig/stubs/ether_addr.h
 NF_LAYER ?= 2
