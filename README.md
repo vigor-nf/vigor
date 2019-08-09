@@ -30,10 +30,10 @@ To **verify** NFs using **hardware models**, you need:
 
 To **benchmark** Vigor NFs, you need:
 
-- One 'device under test' machine with the setup described for compiling and running NFs.
-- One 'tester' machine, with at least two ports on a DPDK-compatible NIC, each connected to the 'device under test' ports.
-- Key-based SSH access to the tester from the device under test. (_This is not strictly required, but will save you from entering your password many times_)
-- To change to the `bench/config.sh` file to match the two machines' configuration.
+- One 'device under test' machine with the setup described for compiling and running NFs, and a kernel setup for performance (see the `Linux setup for performance` section below)
+- One 'tester' machine, with at least two ports on a DPDK-compatible NIC, each connected to the 'device under test' ports
+- Key-based SSH access to the tester from the device under test (_This is not strictly required, but will save you from entering your password many times_)
+- To change the `bench/config.sh` file to match the two machines' configuration
 
 
 # Vigor NFs
@@ -104,6 +104,54 @@ TODO describe how to make a dsos image with an NF and run it on a commodity serv
 # Making your own NF
 
 - Run `make new-nf` at the root of the repository, and answer the prompt.
+
+
+# Linux setup for performance
+
+To maximize and stabilize performance, we recommend the following Linux kernel switches in `/etc/default/grub`'s `GRUB_CMDLINE_LINUX_DEFAULT`:
+
+These settings were obtained from experience and various online guides, such as Red Hat's low-latency tuning guides. They are designed for Intel-based machines, you may have to tweak some of them if you use AMD CPUs.
+
+Please do not leave these settings enabled if you aren't benchmarking, as they will effectively cause your machine to always consume a lot of power.
+
+This table does not include the hugepages settings.
+
+| Setting                                          | Effect                                                                                                                                    |
+| ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `isolcpus=8,9`                                   | Isolate the specified CPU cores so Linux won't schedule anything on them; replace with at least one core you will then use to run the NFs |
+| `acpi=noirq`                                     | Disable ACPI interrupts                                                                                                                   |
+| `nosoftlockup`                                   | Don't print backtraces when a process appears to be locked up (such as an NF that runs for a while)                                       |
+| `intel_idle.max_cstate=0 processor.max_cstate=0` | Do not allow the CPU to enter low-power states                                                                                            |
+| `idle=poll`                                      | Do not allow the kernel t use a wait mechanism in the idle routine                                                                        |
+| `mce=ignore_ce`                                  | Ignore corrected errors that cause periodic latency spikes                                                                                |
+| `intel_pstate=disable`                           | Prevents the Intel driver from managing power state and frequency                                                                         |
+| `cpuidle.off=1`                                  | Disable CPU idle time management                                                                                                          |
+| `pcie_aspm=off`                                  | Disable PCIe Active State Power Management, forcing PCIe devices to always run at full power                                              |
+| `processor.ignore_ppc=1`                         | Ignore BIOS warnings about CPU frequency                                                                                                  |
+| `intel_iommu=on iommu=pt`                        | Set the IOMMU to passthrough, required on some CPUs for DPDK's huge pages to run at full performance                                      |
+
+
+# FAQ
+
+- Q: DPDK says `No free hugepages reported in hugepages-1048576kB`, what did I do wrong?
+- A: Nothing wrong! This just means there are no 1GB hugepages; as long as it can find the 2MB ones, you're good.
+
+- Q: DPDK says `PMD: ixgbe_dev_link_status_print():  Port 0: Link Down`, what's up?
+- A: This doesn't mean the link is down, just that it's down _at the moment DPDK checks_, it usually comes up right after that and the NF is fine.
+
+# Dependencies
+
+We depend on, and are grateful for:
+
+- [DPDK](https://www.dpdk.org)
+- [FastClick](https://github.com/tbarbette/fastclick)
+- [KLEE](https://klee.github.io), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/klee)
+- [KLEE-uClibc](https://github.com/klee/klee-uclibc)
+- [Libmoon](https://github.com/libmoon/libmoon) and its associated [MoonGen](https://github.com/emmericp/MoonGen)
+- [OCaml](https://ocaml.org)
+- [Python](https://www.python.org)
+- [VeriFast](https://people.cs.kuleuven.be/~bart.jacobs/verifast), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/verifast)
+- [Z3](https://github.com/Z3Prover/z3/wiki)
 
 
 # SOSP paper details
@@ -210,26 +258,3 @@ Table 6:
 
 Table 7:
 - The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that, for now they're in `validator/properties`)
-
-
-# FAQ
-
-- Q: DPDK says `No free hugepages reported in hugepages-1048576kB`, what did I do wrong?
-- A: Nothing wrong! This just means there are no 1GB hugepages; as long as it can find the 2MB ones, you're good.
-
-- Q: DPDK says `PMD: ixgbe_dev_link_status_print():  Port 0: Link Down`, what's up?
-- A: This doesn't mean the link is down, just that it's down _at the moment DPDK checks_, it usually comes up right after that and the NF is fine.
-
-# Dependencies
-
-We depend on, and are grateful for:
-
-- [DPDK](https://www.dpdk.org)
-- [FastClick](https://github.com/tbarbette/fastclick)
-- [KLEE](https://klee.github.io), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/klee)
-- [KLEE-uClibc](https://github.com/klee/klee-uclibc)
-- [Libmoon](https://github.com/libmoon/libmoon) and its associated [MoonGen](https://github.com/emmericp/MoonGen)
-- [OCaml](https://ocaml.org)
-- [Python](https://www.python.org)
-- [VeriFast](https://people.cs.kuleuven.be/~bart.jacobs/verifast), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/verifast)
-- [Z3](https://github.com/Z3Prover/z3/wiki)
