@@ -257,4 +257,4 @@ Table 6:
 - The user-supplied bounds are SOSPTODO the condition methods in each NF, let's explain this nicely and document it in the template
 
 Table 7:
-- The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository (SOSPTODO actually do that, for now they're in `validator/properties`)
+- The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository
