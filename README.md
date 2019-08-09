@@ -87,7 +87,7 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 
 To run with your own arguments, compile then run `sudo ./build/app/nf -- -?` which will display the command-line arguments you need to pass to the NF.
 
-To verify using a pay-as-you-go specification, add `VIGOR_SPEC=your_spec.py` before a verification command.
+To verify using a pay-as-you-go specification, add `VIGOR_SPEC=paygo-your_spec.py` before a verification command; the spec name must begin with `paygo-` and end with `.py`.
 
 For instance:
 - To verify the "broadcast" pay-as-you-go property of the  Vigor bridge using DPDK models, run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
