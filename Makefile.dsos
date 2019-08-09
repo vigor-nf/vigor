@@ -17,7 +17,7 @@ SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
 LINKER_SCRIPT = $(SELF_DIR)/linker.ld
 GRUB_CFG = $(SELF_DIR)/grub.cfg
-LIBC = $(SELF_DIR)/libc.a
+LIBC = $(VIGOR_DIR)/klee-uclibc-binary/lib/libc.a
 
 CONTAINERS_DIR = $(SELF_DIR)/libvig/containers
 STUBS_DIR = $(SELF_DIR)/libvig/stubs
@@ -206,12 +206,17 @@ $(ISO): autogen $(BINARY_MULTIBOOT2) $(GRUB_CFG)
 	@rm -r build/isofiles
 
 # Link final executable
-$(BINARY_MULTIBOOT2): autogen $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC)
+$(BINARY_MULTIBOOT2): autogen $(MULTIBOOT2_OBJ) $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC) $(LIBS)
 
-$(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
+$(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS)
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC) $(LIBS)
 	objcopy -O elf32-i386 $(BINARY_MULTIBOOT1)
+
+%.gen.o: autogen
+	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $(subst .o,.c,$@) -o $@
+state.o: autogen
+	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $(subst .o,.c,$@) -o $@
 
 # Assembly files
 %.o: %.asm
@@ -220,10 +225,6 @@ $(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC)
 # C files
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $< -o $@
-
-# TODO: extend the rule above on the autogen sources.
-# currently I have to run make dsos-iso twice
-
 
 count-dsos-loc:
 	@cloc -q $(KERNEL_SRCS) $(subst .c,.h,$(KERNEL_SRCS)) $(STUBS_SRCS) 2>/dev/null

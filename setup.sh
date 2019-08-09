@@ -229,7 +229,6 @@ if [ ! -e "$BUILDDIR/klee-uclibc-binary" ]; then
 
     make clean
     make -j
-    ln -vfs "$BUILDDIR/klee-uclibc-binary/lib/libc.a" "$VNDSDIR"
   popd
 fi
 
