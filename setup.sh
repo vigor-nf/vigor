@@ -383,4 +383,3 @@ opam install ocamlfind core sexplib menhir -y
 fi
 
 printf '\n\n!!!\nIf you ran this script rather than sourcing it, you must source your profile now (e.g. `. ~/.profile`) to get Vigor tools to work.\n!!!\n\n'
-exit 0
