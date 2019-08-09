@@ -92,7 +92,7 @@ function _latencyTask(txQueue, rxQueue, layer, flowCount, duration)
 	local timestamper = ts:newUdpTimestamper(txQueue, rxQueue)
 	local hist = hist:new()
 	local sendTimer = timer:new(duration - 1) -- we just slept for a second earlier, so deduce that	
-	local rateLimiter = timer:new(1 / flowCount) -- ASSUMPTION: The NF is running with 1 second expiry time
+	local rateLimiter = timer:new(1 / flowCount) -- ASSUMPTION: The NF is running with 1 second expiry time, we want new flows' latency
 	local counter = 0
 
 	while sendTimer:running() and mg.running() do

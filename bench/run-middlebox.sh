@@ -13,7 +13,7 @@ if [ -z $MIDDLEBOX ]; then
 fi
 
 case $SCENARIO in
-    "latency") EXPIRATION_TIME=1;;
+    "latency") EXPIRATION_TIME=1;; # we want to measure new flows' latency; see bench.lua for details
     "throughput") EXPIRATION_TIME=60;;
     *) echo "Unknown scenario $SCENARIO" 1>&2; exit 3;;
 esac
@@ -28,7 +28,8 @@ fi
 if [ "$MIDDLEBOX" = "netfilter" -o "$MIDDLEBOX" = "ipvs" ]; then
     ./util/netfilter-short-timeout.sh $EXPIRATION_TIME
 else
-    export EXPIRATION_TIME="$(echo "$EXPIRATION_TIME * 10 * 1000 * 1000" | bc)"
+    # convert s to us
+    export EXPIRATION_TIME="$(echo "$EXPIRATION_TIME * 1000 * 1000" | bc)"
 
     pushd $MIDDLEBOX >> /dev/null
         echo "[bench] Running $MIDDLEBOX..."
