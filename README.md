@@ -133,6 +133,11 @@ This table does not include the hugepages settings.
 | `intel_iommu=on iommu=pt`                        | Set the IOMMU to passthrough, required on some CPUs for DPDK's huge pages to run at full performance                                      |
 
 
+# Running an NF on the DSOS
+
+SOSPTODO Arseniy since you figured it out, can you explain how to run the dsos here? both in qemu (there seems to be a make target for that?) and on bare metal
+
+
 # FAQ
 
 - Q: DPDK says `No free hugepages reported in hugepages-1048576kB`, what did I do wrong?
@@ -140,6 +145,7 @@ This table does not include the hugepages settings.
 
 - Q: DPDK says `PMD: ixgbe_dev_link_status_print():  Port 0: Link Down`, what's up?
 - A: This doesn't mean the link is down, just that it's down _at the moment DPDK checks_, it usually comes up right after that and the NF is fine.
+
 
 # Dependencies
 
