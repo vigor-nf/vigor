@@ -127,8 +127,23 @@ if [ ! -e "$BUILDDIR/fastclick" ]; then git clone https://github.com/tbarbette/f
 pushd "$BUILDDIR/fastclick"
   git checkout e77376fef6d982fef59517ddd3f1533b9dffc000
   cp elements/etherswitch/etherswitch.* elements/ethernet/. # more convenient
-  ./configure --enable-userlevel --disable-linuxmodule --enable-user-multithread --enable-dpdk
-  make
+  # No configure/make here, see the click baselines' Makefile
+popd
+
+
+
+# =======
+# Libmoon
+# =======
+
+# the libmoon readme doesn't mention libtbb2, but libmoon fails without it
+sudo apt-get install -y libtbb2 lshw
+
+if [ ! -e "$BUILDDIR/libmoon" ]; then git clone https://github.com/libmoon/libmoon "$BUILDDIR/libmoon"; fi
+pushd "$BUILDDIR/libmoon"
+  # Don't try to bind interfaces
+  sed -i '/bind.interfaces/d' build.sh
+  ./build.sh
 popd
 
 

@@ -213,8 +213,10 @@ Table 7:
 We depend on, and are grateful for:
 
 - [DPDK](https://www.dpdk.org)
+- [FastClick](https://github.com/tbarbette/fastclick)
 - [KLEE](https://klee.github.io), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/klee)
 - [KLEE-uClibc](https://github.com/klee/klee-uclibc)
+- [Libmoon](https://github.com/libmoon/libmoon) and its associated [MoonGen](https://github.com/emmericp/MoonGen)
 - [OCaml](https://ocaml.org)
 - [Python](https://www.python.org)
 - [VeriFast](https://people.cs.kuleuven.be/~bart.jacobs/verifast), with our modifications available as [a repository in the same GitHub organization](https://github.com/vignat/verifast)
