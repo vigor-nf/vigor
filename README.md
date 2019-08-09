@@ -50,7 +50,19 @@ There are currently five Vigor NFs:
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
-- SOSPTODO describe baselines (all folders beginning in unverified- and click- + MoonPol which is publicly available)
+| NF                  | Folder              | Description                            |
+| ------------------- | ------------------- | -------------------------------------- |
+| Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
+| Click firewall      | `click-fw`          | Click-based firewall                   |
+| Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
+| Click NAT           | `click-nat`         | Click-based NAT                        |
+| Click no-op         | `click-nop`         | Click-based no-op (rewrites headers)   |
+| Moonpol             | `moonpol`           | Libmoon-based traffic policer          |
+| Unverified NAT      | `unverified-nat`    | DPDK-based NAT                         |
+| Unverified no-op    | `unverified-nop`    | DPDK-based no-op (rewrites headers)    |
+| Unverified router   | `unverified-router` | DPDK-based router                      |
+
+The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true`.
 
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
