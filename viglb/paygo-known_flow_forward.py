@@ -1,11 +1,10 @@
 from state import flow_emap, flow_id_to_backend_id, backends, backend_ip_emap
-EXP_TIME = 10
-BACKEND_EXP_TIME = 60
+EXP_TIME = 10 * 1000
+BACKEND_EXP_TIME = 3600000000 * 1000
 EXT_PORT = 0
 
-if a_packet_received and EXP_TIME <= now:
+if a_packet_received:
     flow_emap.expire_all(now - EXP_TIME)
-if a_packet_received and BACKEND_EXP_TIME <= now:
     backend_ip_emap.expire_all(now - BACKEND_EXP_TIME)
 
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
