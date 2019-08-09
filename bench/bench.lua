@@ -199,6 +199,9 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 	local outFile = io.open(RESULTS_FILE_NAME, "w")
 	outFile:write("#flows\trate (Mbps)\tmedianLat (ns)\tstdevLat (ns)\n")
 
+	-- Latency task waits 1sec for throughput task to have started, so we compensate
+	duration = duration + 1
+
 	local txThroughputQueue = txDev:getTxQueue(0)
 	local rxThroughputQueue = rxDev:getRxQueue(0)
 	local txReverseQueue = rxDev:getTxQueue(0) -- yes, the rx/tx inversion is voluntary here
