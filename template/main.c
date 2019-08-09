@@ -61,8 +61,8 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	// Special method required during symbolic execution to avoid path explosion
 	concretize_devices(&dst_device, rte_eth_dev_count());
 
-	ether_header->s_addr = config->device_macs[dst_device];
-	ether_header->d_addr = config->endpoint_macs[dst_device];
+	ether_header->s_addr = config.device_macs[dst_device];
+	ether_header->d_addr = config.endpoint_macs[dst_device];
 
 	return 1 - mbuf->port;
 }
