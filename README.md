@@ -256,7 +256,8 @@ Table 5:
 Table 6:
 - The "LOC" column can be obtained using the spec line-counting target as mentioned in `Vigor NFs`
 - The time to translate RFCs was noted during development and is not meaningfully reproducible
-- The user-supplied bounds are SOSPTODO the condition methods in each NF, let's explain this nicely and document it in the template
+- The user-supplied bounds are the conjunctions of the methods passed as the last argument of a data structure declaration in the `fspec.ml` file of each NF;
+  except that to be consistent with the paper, `a < X & X < b` counts as 1.
 
 Table 7:
 - The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository
