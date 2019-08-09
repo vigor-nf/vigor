@@ -2,8 +2,7 @@ NF_FILES := nat_main.c nat_config.c nat_flowmanager.c
 
 NF_AUTOGEN_SRCS := flow.h
 
-NF_ARGS := --lan-dev 0 \
-           --wan 1 \
+NF_ARGS := --wan 1 \
            --expire $(or $(EXPIRATION_TIME),10) \
            --starting-port 0 \
            --max-flows 65536 \

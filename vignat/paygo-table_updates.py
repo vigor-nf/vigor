@@ -1,7 +1,7 @@
 from state import flow_emap
-EXP_TIME = 10
+EXP_TIME = 10 * 1000
 EXT_PORT = 1
-if a_packet_received and EXP_TIME <= now:
+if a_packet_received:
     flow_emap.expire_all(now - EXP_TIME)
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
 h2 = pop_header(ipv4, on_mismatch=([],[]))

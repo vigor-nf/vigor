@@ -139,7 +139,7 @@ void nf_config_print(void)
 {
 	NF_INFO("\n--- NAT Config ---\n");
 
-	NF_INFO("Main LAN device: %" PRIu16, config->lan_main_device);
+	NF_INFO("Main LAN device (only relevant for NOP): %" PRIu16, config->lan_main_device);
 	NF_INFO("WAN device: %" PRIu16, config->wan_device);
 
 	char* ext_ip_str = nf_ipv4_to_str(config->external_addr);
