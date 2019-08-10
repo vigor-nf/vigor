@@ -15,7 +15,7 @@ find llvm -name test | xargs rm -r
 find llvm -name unittests | xargs rm -r
 find . -name '*.tmp' -delete
 find llvm/lib/Target -name '*.inc' -delete
-find llvm/tools/clang -name
+find llvm/tools/clang -name '*.inc' -delete
 find klee -name '*.a' -delete
 find klee -name '*.o' -delete
 

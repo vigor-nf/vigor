@@ -10,7 +10,7 @@ Older Ubuntus, or other Debian-based distros, may work but have not been tested.
 
 As an alternative to installing the dependencies on your own machine, we provide a Docker image: `dslabepfl/vigor`.
 However, you must still use Ubuntu 18.04 as a host, since the guest uses the host's kernel and DPDK needs kernel headers to compile.
-This image can be generated with the `./Docker-create.sh` script.
+This image can be generated with the `./Docker-build.sh` script.
 
 _Please note that running the setup.sh script can take an hour, since it downloads and compiles many dependencies._
 
