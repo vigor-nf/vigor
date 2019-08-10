@@ -15,9 +15,11 @@ ISO = dsos-$(ARCH).iso
 # get current dir, see https://stackoverflow.com/a/8080530
 SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
+# VIGOR_DIR is an environment variable set in paths.sh
+# where it is defined by the initial insitallation in setup.sh
 LINKER_SCRIPT = $(SELF_DIR)/linker.ld
 GRUB_CFG = $(SELF_DIR)/grub.cfg
-LIBC = $(VIGOR_DIR)/klee-uclibc-binary/lib/libc.a
+LIBC = $(VIGOR_DIR)/klee-uclibc-binary/lib/libc.a # VIGOR_DIR comes from paths.sh
 
 CONTAINERS_DIR = $(SELF_DIR)/libvig/containers
 STUBS_DIR = $(SELF_DIR)/libvig/stubs
