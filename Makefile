@@ -17,7 +17,7 @@ NF_DIR := $(shell if [ '$(notdir $(shell pwd))' = 'build' ]; then echo '..'; els
 # note: 'nf_main.c' is there for invocations of `make verifast`
 # outside of any nf directory, which is perfectly valid.
 # otherwise grep with empty argument list will wait on stdin
-ifeq (true,$(shell if grep -q clock_gettime nf_main.c $(addprefix $(NF_DIR)/,$(NF_FILES)); then echo 'true'; fi))
+ifeq (true,$(shell if grep -q clock_gettime $(SELF_DIR)/nf_main.c $(addprefix $(NF_DIR)/,$(NF_FILES)); then echo 'true'; fi))
 $(error Please use the Vigor nf_time header instead of clock_gettime)
 endif
 
