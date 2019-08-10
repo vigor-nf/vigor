@@ -20,18 +20,22 @@ if [ -z "$(sudo docker images -q $IMAGE_NAME)" ]; then
   #       so we create symlinks instead...
   #       ...except Docker doesn't like that either,
   #       so we use mount points...
-  mkdir usr
-  sudo mount --bind /usr usr
-  mkdir lib
-  sudo mount --bind /lib lib
+  if [ ! -e "usr-src" ]; then
+    mkdir usr-src
+    sudo mount --bind /usr/src usr-src
+  fi
+  if [ ! -e "lib-modules" ]; then
+    mkdir lib-modules
+    sudo mount --bind /lib/modules lib-modules
+  fi
 
   sudo docker image build "$VNDSDIR" --build-arg "kernel_ver=$KERNEL_VER" -t "$IMAGE_NAME"
 
   #       ... and then delete them
-  sudo umount usr
-  rmdir usr
-  sudo umount lib
-  rmdir lib
+  sudo umount usr-src lib-modules
+  rmdir usr-src
+  sudo umount lib-modules
+  rmdir lib-modules
 fi
 
 # Run the container
