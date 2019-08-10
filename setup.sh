@@ -126,14 +126,31 @@ sudo apt-get install -y python3.6
 # FastClick
 # =========
 
+# We make two folders, one configured with batching and the other without, because it's a configure-time thing and rebuilding it takes a long time
 if [ ! -e "$BUILDDIR/fastclick" ]; then
   git clone https://github.com/tbarbette/fastclick "$BUILDDIR/fastclick"
   pushd "$BUILDDIR/fastclick"
     git checkout e77376fef6d982fef59517ddd3f1533b9dffc000
     cp elements/etherswitch/etherswitch.* elements/ethernet/. # more convenient
-    # No configure/make here, see the click baselines' Makefile
   popd
+  cp -r "$BUILDDIR/fastclick" "$BUILDDIR/fastclick-batch"
+  for dir in "$BUILDDIR/fastclick" "$BUILDDIR/fastclick-batch"; do
+    pushd "$dir"
+      if [ "$dir" = "$BUILDDIR/fastclick" ]; then
+        CLICK_BATCH_PARAM=--disable-batch
+      else
+        CLICK_BATCH_PARAM=--enable-auto-batch
+      fi
+      # most likely some of those flags are redundant with the defaults, oh well
+      CFLAGS="-O3" CXXFLAGS="-std=gnu++11 -O3" ./configure --quiet --enable-multithread --disable-linuxmodule --enable-intel-cpu \
+                                                           --enable-user-multithread --disable-dynamic-linking --enable-poll \
+                                                           --enable-bound-port-transfer --enable-dpdk --with-netmap=no --enable-zerocopy \
+                                                           --disable-dpdk-pool --disable-dpdk-packet $CLICK_BATCH_PARAM
+      make
+    popd
+  done
 fi
+
 
 
 # =======
