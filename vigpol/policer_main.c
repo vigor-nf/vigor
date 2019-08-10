@@ -23,6 +23,8 @@
 #include "libvig/containers/vector.h"
 #include "libvig/expirator.h"
 
+struct nf_config config;
+
 struct State* dynamic_ft;
 
 int policer_expire_entries(vigor_time_t time) {

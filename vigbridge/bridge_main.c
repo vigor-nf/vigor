@@ -27,6 +27,8 @@
 #include "nf.h"
 #include "state.h"
 
+struct nf_config config;
+
 struct State* mac_tables;
 
 int bridge_expire_entries(vigor_time_t time) {

@@ -22,6 +22,7 @@
 #include "nat_flow.h"
 #include "nat_map.h"
 
+struct nat_config config;
 
 // ICMP support is not implemented, as this NAT only exists for benchmarking purposes;
 // since the protocol type has to be checked anyway, an ICMP check would not significantly

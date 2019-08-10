@@ -20,8 +20,6 @@
 		nf_config_usage(); \
 		rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
-struct nf_config config;
-
 void nf_config_init(int argc, char** argv)
 {
 	// Init

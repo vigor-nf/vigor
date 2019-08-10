@@ -13,6 +13,11 @@
 #include "state.h"
 #include "flow.h.gen.h"
 
+// It is important to define `config` here, this gives the compiler
+// more opportunity to optimize accesses to the config that
+// are on the critical path (i.e. in nf_process)
+struct nf_config config;
+
 
 void nf_init(void)
 {

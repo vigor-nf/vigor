@@ -25,8 +25,6 @@
 		nf_config_usage(); \
 		rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
-struct nf_config config;
-
 void nf_config_init(int argc, char** argv)
 {
 	uint16_t nb_devices = rte_eth_dev_count();

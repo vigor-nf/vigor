@@ -11,6 +11,8 @@
 #include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
 
+struct nf_config config;
+
 void nf_init(void)
 {
 }

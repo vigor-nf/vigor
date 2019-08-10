@@ -24,8 +24,6 @@ const uint32_t DEFAULT_CAPACITY = 128;//MAC addresses
     nf_config_usage(); \
     rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
-struct nf_config config;
-
 void nf_config_init(int argc, char** argv)
 {
   // Set the default values

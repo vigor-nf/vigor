@@ -16,6 +16,8 @@
 #include "libvig/nf_log.h"
 #include "libvig/nf_util.h"
 
+struct nf_config config;
+
 struct FlowManager* flow_manager;
 
 void nf_init(void)
