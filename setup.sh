@@ -31,7 +31,7 @@ fi
 
 if [ ! -f "$PATHSFILE" ]; then
   echo '# The configuration paths for VNDS dependencies' > "$PATHSFILE"
-  echo "export VIGOR_DIR=$BUILDDIR"
+  echo "export VIGOR_DIR=$BUILDDIR" >> "$PATHSFILE"
   # Source the paths file at login
   echo ". $PATHSFILE" >> "$HOME/.profile"
 fi
