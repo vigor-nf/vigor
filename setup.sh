@@ -77,7 +77,7 @@ pushd "$BUILDDIR"
         patch -p1 < "$p"
       done
 
-      make install -j T=x86_64-native-linuxapp-gcc DESTDIR=.
+      make install -j$(nproc) T=x86_64-native-linuxapp-gcc DESTDIR=.
 
       echo "$DPDK_RELEASE" > .version
     popd
@@ -182,8 +182,8 @@ pushd "$BUILDDIR"
     mkdir binutils-build
     pushd binutils-build
       ../binutils/configure --target=$DSOS_TARGET --prefix="$BUILDDIR/binutils-build" --with-sysroot --disable-nls --disable-werror
-      make -j
-      make -j install
+      make -j$(nproc)
+      make -j$(nproc) install
       echo 'PATH='"$BUILDDIR/binutils-build/bin"':$PATH' >> "$PATHSFILE"
       . "$PATHSFILE"
     popd
@@ -206,10 +206,10 @@ pushd "$BUILDDIR"
     mkdir gcc-build
     pushd gcc-build
       ../gcc/configure --target=$DSOS_TARGET --prefix="$BUILDDIR/gcc-build" --disable-nls --enable-languages=c --without-headers
-      make -j all-gcc
-      make -j all-target-libgcc
-      make -j install-gcc
-      make -j install-target-libgcc
+      make -j$(nproc) all-gcc
+      make -j$(nproc) all-target-libgcc
+      make -j$(nproc) install-gcc
+      make -j$(nproc) install-target-libgcc
       echo 'PATH='"$BUILDDIR/gcc-build/bin"':$PATH' >> "$PATHSFILE"
       . "$PATHSFILE"
     popd
@@ -228,7 +228,7 @@ if [ ! -e "$BUILDDIR/klee-uclibc-binary" ]; then
     cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
     make clean
-    make -j
+    make -j$(nproc)
   popd
 fi
 
@@ -255,7 +255,7 @@ if [ ! -e "$BUILDDIR/z3" ]; then
   pushd "$BUILDDIR/z3"
     python scripts/mk_make.py --ml -p "$BUILDDIR/z3/build"
     pushd build
-      make -k -j || true
+      make -k -j$(nproc) || true
       # -jN here may break the make (hidden deps or something)
       make
       make install
@@ -315,7 +315,7 @@ if [ ! -e "$BUILDDIR/llvm" ]; then
   svn co https://llvm.org/svn/llvm-project/libcxx/tags/RELEASE_342/final "$BUILDDIR/llvm/projects/libcxx"
   pushd "$BUILDDIR/llvm"
     CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" ./configure --enable-optimized --disable-assertions --enable-targets=host --with-python='/usr/bin/python2'
-    make -j
+    make -j$(nproc)
     echo 'PATH='"$BUILDDIR/llvm/Release/bin"':$PATH' >> "$PATHSFILE"
     . "$PATHSFILE"
   popd
@@ -332,7 +332,7 @@ if [ ! -e "$BUILDDIR/klee-uclibc" ]; then
     # Use our minimalistic config
     cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
-    make -j
+    make -j$(nproc)
   popd
 fi
 
@@ -357,7 +357,7 @@ if [ ! -e "$BUILDDIR/klee" ]; then
        -DKLEE_UCLIBC_PATH="$BUILDDIR/klee-uclibc" \
        -DENABLE_POSIX_RUNTIME=ON \
        ..
-      make -j
+      make -j$(nproc)
       echo 'PATH='"$BUILDDIR/klee/build/bin"':$PATH' >> "$PATHSFILE"
       echo "export KLEE_INCLUDE=$BUILDDIR/klee/include" >> "$PATHSFILE"
       echo "export KLEE_BUILD_PATH=$BUILDDIR/klee/build" >> "$PATHSFILE"
