@@ -141,7 +141,7 @@ fi
 # =======
 
 # the libmoon readme doesn't mention libtbb2, but libmoon fails without it
-sudo apt-get install -y libtbb2 lshw
+sudo apt-get install -y libtbb2 lshw cmake
 
 if [ ! -e "$BUILDDIR/libmoon" ]; then
   git clone https://github.com/libmoon/libmoon "$BUILDDIR/libmoon"
@@ -210,14 +210,33 @@ pushd "$BUILDDIR"
       make -j$(nproc) all-target-libgcc
       make -j$(nproc) install-gcc
       make -j$(nproc) install-target-libgcc
+      make clean
       echo 'PATH='"$BUILDDIR/gcc-build/bin"':$PATH' >> "$PATHSFILE"
       . "$PATHSFILE"
     popd
   fi
 popd
 
+# LLVM required to build klee-uclibc
+# (including the libc necessary to build DSOS)
+sudo apt-get install -y bison flex zlib1g-dev libncurses5-dev libcap-dev subversion python2.7
+
+if [ ! -e "$BUILDDIR/llvm" ]; then
+  svn co https://llvm.org/svn/llvm-project/llvm/tags/RELEASE_342/final "$BUILDDIR/llvm"
+  svn co https://llvm.org/svn/llvm-project/cfe/tags/RELEASE_342/final "$BUILDDIR/llvm/tools/clang"
+  svn co https://llvm.org/svn/llvm-project/libcxx/tags/RELEASE_342/final "$BUILDDIR/llvm/projects/libcxx"
+  pushd "$BUILDDIR/llvm"
+    CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" ./configure --enable-optimized --disable-assertions --enable-targets=host --with-python='/usr/bin/python2'
+    make -j$(nproc)
+    echo 'PATH='"$BUILDDIR/llvm/Release/bin"':$PATH' >> "$PATHSFILE"
+    . "$PATHSFILE"
+  popd
+fi
+
+# micro libC for producing the DSOS standalone OS images
+
 if [ ! -e "$BUILDDIR/klee-uclibc-binary" ]; then
-  cp -r "$BUILDDIR/klee-uclibc" "$BUILDDIR/klee-uclibc-binary"
+  git clone --depth 1 --branch klee_uclibc_v1.2 https://github.com/klee/klee-uclibc.git "$BUILDDIR/klee-uclibc-binary"
   pushd "$BUILDDIR/klee-uclibc-binary"
     ./configure \
        --make-native \
@@ -306,20 +325,6 @@ fi
 # ====
 # KLEE
 # ====
-
-sudo apt-get install -y bison flex zlib1g-dev libncurses5-dev libcap-dev cmake subversion python2.7
-
-if [ ! -e "$BUILDDIR/llvm" ]; then
-  svn co https://llvm.org/svn/llvm-project/llvm/tags/RELEASE_342/final "$BUILDDIR/llvm"
-  svn co https://llvm.org/svn/llvm-project/cfe/tags/RELEASE_342/final "$BUILDDIR/llvm/tools/clang"
-  svn co https://llvm.org/svn/llvm-project/libcxx/tags/RELEASE_342/final "$BUILDDIR/llvm/projects/libcxx"
-  pushd "$BUILDDIR/llvm"
-    CXXFLAGS="-D_GLIBCXX_USE_CXX11_ABI=0" ./configure --enable-optimized --disable-assertions --enable-targets=host --with-python='/usr/bin/python2'
-    make -j$(nproc)
-    echo 'PATH='"$BUILDDIR/llvm/Release/bin"':$PATH' >> "$PATHSFILE"
-    . "$PATHSFILE"
-  popd
-fi
 
 if [ ! -e "$BUILDDIR/klee-uclibc" ]; then
   git clone --depth 1 --branch klee_uclibc_v1.2 https://github.com/klee/klee-uclibc.git "$BUILDDIR/klee-uclibc"
