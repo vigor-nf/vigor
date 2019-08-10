@@ -32,7 +32,7 @@ if [ -z "$(sudo docker images -q $IMAGE_NAME)" ]; then
   sudo docker image build "$VNDSDIR" --build-arg "kernel_ver=$KERNEL_VER" -t "$IMAGE_NAME"
 
   #       ... and then delete them
-  sudo umount usr-src lib-modules
+  sudo umount usr-src
   rmdir usr-src
   sudo umount lib-modules
   rmdir lib-modules
