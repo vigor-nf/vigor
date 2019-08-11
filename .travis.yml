@@ -13,4 +13,4 @@ install:
   - docker exec vigor sudo chown -R vigor:vigor /home/vigor/vigor/
 
 script:
-  - docker exec vigor /bin/bash cd vigor && .travis-test.sh
+  - docker exec vigor cd vigor && /bin/bash .travis-test.sh
