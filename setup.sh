@@ -126,6 +126,8 @@ sudo apt-get install -y python3.6
 # FastClick
 # =========
 
+sudo apt-get install -y libz-dev
+
 # We make two folders, one configured with batching and the other without, because it's a configure-time thing and rebuilding it takes a long time
 if [ ! -e "$BUILDDIR/fastclick" ]; then
   git clone https://github.com/tbarbette/fastclick "$BUILDDIR/fastclick"
@@ -146,7 +148,7 @@ if [ ! -e "$BUILDDIR/fastclick" ]; then
                                                            --enable-user-multithread --disable-dynamic-linking --enable-poll \
                                                            --enable-bound-port-transfer --enable-dpdk --with-netmap=no --enable-zerocopy \
                                                            --disable-dpdk-pool --disable-dpdk-packet $CLICK_BATCH_PARAM
-      make
+      make -j$(nproc)
     popd
   done
 fi

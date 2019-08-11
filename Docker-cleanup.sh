@@ -9,15 +9,21 @@ set -euxo pipefail
 rm -rf binutils gcc
 
 # We don't need tests and tmp files
-# And definitely no SVN
+# And definitely no SVN or GIT
+# Most of the object files are redundant as well (but not all)
 find . -name .svn | xargs rm -rf
+find . -name .git | xargs rm -rf
 find llvm -name test | xargs rm -r
 find llvm -name unittests | xargs rm -r
 find . -name '*.tmp' -delete
-find llvm/lib/Target -name '*.inc' -delete
-find llvm/tools/clang -name '*.inc' -delete
+find llvm/lib/Target llvm/tools/clang -name '*.inc' -delete
 find klee -name '*.a' -delete
 find klee -name '*.o' -delete
+find klee-uclibc klee-uclibc-binary -name '*.o' -delete
+find fastclick fastclick-batch -name '*.o' -delete
+find z3 -name '*.o' -delete
+find dpdk libmoon/deps/dpdk -name app | xargs rm -rf
+
 
 # Remove temporary build files
 #find . -name '*.o' -delete

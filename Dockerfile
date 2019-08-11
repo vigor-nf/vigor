@@ -21,7 +21,7 @@ WORKDIR /home/vigor
 # Copy everything from the repo
 COPY --chown=vigor:vigor . /home/vigor/vigor
 # (except for /usr and /lib mount points)
-RUN sudo rm -rf /home/vigor/vigor/lib-modules && sudo rm -rf /home/vigor/vigor/usr-src
+RUN rm -rf /home/vigor/vigor/.git && sudo rm -rf /home/vigor/vigor/lib-modules && sudo rm -rf /home/vigor/vigor/usr-src
 # Execute the setup script
 RUN /home/vigor/vigor/setup.sh && /home/vigor/vigor/Docker-cleanup.sh 
 # Pass -l to bash so it reads ~/.profile
