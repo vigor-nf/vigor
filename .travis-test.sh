@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. paths.sh
+. ../paths.sh
 
 set -euxo pipefail
 
