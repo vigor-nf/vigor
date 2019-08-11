@@ -20,66 +20,38 @@ struct Map {
   map_key_hash* khash;
 };
 
+/*@
+  predicate mapp<t>(struct Map* ptr,
+                    predicate (void*;t) kp,
+                    fixpoint (t,unsigned) hsh,
+                    fixpoint (t,int,bool) recp,
+                    mapi<t> map) =
+    malloc_block_Map(ptr) &*&
+    ptr->busybits |-> ?busybits &*&
+    ptr->keyps |-> ?keyps &*&
+    ptr->khs |-> ?khs &*&
+    ptr->chns |-> ?chns &*&
+    ptr->vals |-> ?vals &*&
+    ptr->capacity |-> ?capacity &*&
+    ptr->size |-> ?size &*&
+    ptr->keys_eq |-> ?keys_eq &*&
+    ptr->khash |-> ?khash &*&
+    malloc_block_ints(busybits, capacity) &*&
+    malloc_block_pointers(keyps, capacity) &*&
+    malloc_block_uints(khs, capacity) &*&
+    malloc_block_ints(chns, capacity) &*&
+    malloc_block_ints(vals, capacity) &*&
+    [_]is_map_keys_equality<t>(keys_eq, kp) &*&
+    [_]is_map_key_hash<t>(khash, kp, hsh) &*&
+    mapping(?m, ?addrs, kp, recp, hsh, capacity,
+            busybits, keyps, khs, chns, vals) &*&
+    size == length(m) &*&
+    map == mapc(capacity, m, addrs)
 #ifdef CAPACITY_POW2
-/*@
-  predicate mapp<t>(struct Map* ptr,
-                    predicate (void*;t) kp,
-                    fixpoint (t,unsigned) hsh,
-                    fixpoint (t,int,bool) recp,
-                    mapi<t> map) =
-    malloc_block_Map(ptr) &*&
-    ptr->busybits |-> ?busybits &*&
-    ptr->keyps |-> ?keyps &*&
-    ptr->khs |-> ?khs &*&
-    ptr->chns |-> ?chns &*&
-    ptr->vals |-> ?vals &*&
-    ptr->capacity |-> ?capacity &*&
-    ptr->size |-> ?size &*&
-    ptr->keys_eq |-> ?keys_eq &*&
-    ptr->khash |-> ?khash &*&
-    malloc_block_ints(busybits, capacity) &*&
-    malloc_block_pointers(keyps, capacity) &*&
-    malloc_block_uints(khs, capacity) &*&
-    malloc_block_ints(chns, capacity) &*&
-    malloc_block_ints(vals, capacity) &*&
-    [_]is_map_keys_equality<t>(keys_eq, kp) &*&
-    [_]is_map_key_hash<t>(khash, kp, hsh) &*&
-    mapping(?m, ?addrs, kp, recp, hsh, capacity,
-            busybits, keyps, khs, chns, vals) &*&
-    size == length(m) &*&
-    map == mapc(capacity, m, addrs) &*&
-    is_pow2(capacity, N31) != none;
+    &*& is_pow2(capacity, N31) != none
+#endif//CAPACITY_POW2
+    ;
 @*/
-#else
-/*@
-  predicate mapp<t>(struct Map* ptr,
-                    predicate (void*;t) kp,
-                    fixpoint (t,unsigned) hsh,
-                    fixpoint (t,int,bool) recp,
-                    mapi<t> map) =
-    malloc_block_Map(ptr) &*&
-    ptr->busybits |-> ?busybits &*&
-    ptr->keyps |-> ?keyps &*&
-    ptr->khs |-> ?khs &*&
-    ptr->chns |-> ?chns &*&
-    ptr->vals |-> ?vals &*&
-    ptr->capacity |-> ?capacity &*&
-    ptr->size |-> ?size &*&
-    ptr->keys_eq |-> ?keys_eq &*&
-    ptr->khash |-> ?khash &*&
-    malloc_block_ints(busybits, capacity) &*&
-    malloc_block_pointers(keyps, capacity) &*&
-    malloc_block_uints(khs, capacity) &*&
-    malloc_block_ints(chns, capacity) &*&
-    malloc_block_ints(vals, capacity) &*&
-    [_]is_map_keys_equality<t>(keys_eq, kp) &*&
-    [_]is_map_key_hash<t>(khash, kp, hsh) &*&
-    mapping(?m, ?addrs, kp, recp, hsh, capacity,
-            busybits, keyps, khs, chns, vals) &*&
-    size == length(m) &*&
-    map == mapc(capacity, m, addrs);
-@*/
-#endif
 
 int map_allocate/*@ <t> @*/(map_keys_equality* keq, map_key_hash* khash,
                             unsigned capacity,

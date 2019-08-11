@@ -1,5 +1,11 @@
 #include "double-map.h"
 
+#ifdef CAPACITY_POW2
+#  include "map-impl-pow2.h"
+#else//CAPACITY_POW2
+#  include "map-impl.h"
+#endif//CAPACITY_POW2
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -155,7 +161,12 @@
     true == no_extra_ptrs(addrsa, ma) &*&
     true == no_extra_ptrs(addrsb, mb) &*&
     true == all_keys_differ(val_arr, vk1, vk2) &*&
-    m == dmap(ma, mb, val_arr);
+    m == dmap(ma, mb, val_arr)
+#ifdef CAPACITY_POW2
+    &*& is_pow2(keys_capacity, N31) != none
+#endif//CAPACITY_POW2
+    ;
+
   @*/
 
 /*@
@@ -276,6 +287,16 @@ int dmap_allocate/*@ <K1,K2,V> @*/
   //@ open dmap_key_val_types(?def_k1, ?def_k2, ?def_val);
   //@ open dmap_record_property1(_);
   //@ open dmap_record_property2(_);
+
+  #ifdef CAPACITY_POW2
+  // Check that capacity is a power of 2
+  if (keys_capacity == 0 || (keys_capacity & (keys_capacity - 1)) != 0) {
+      return 0;
+  }
+  //@ check_pow2_valid(keys_capacity);
+  #else//CAPACITY_POW2
+  #endif//CAPACITY_POW2
+
   struct DoubleMap* old_map_val = *map_out;
   struct DoubleMap* map_alloc = (struct DoubleMap*) malloc(sizeof(struct DoubleMap));
   if (map_alloc == NULL) return 0;
