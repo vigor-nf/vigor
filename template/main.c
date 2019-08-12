@@ -13,6 +13,11 @@
 #include "state.h"
 #include "flow.h.gen.h"
 
+// It is important to define `config` here, this gives the compiler
+// more opportunity to optimize accesses to the config that
+// are on the critical path (i.e. in nf_process)
+struct nf_config config;
+
 
 void nf_init(void)
 {
@@ -61,8 +66,8 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	// Special method required during symbolic execution to avoid path explosion
 	concretize_devices(&dst_device, rte_eth_dev_count());
 
-	ether_header->s_addr = config->device_macs[dst_device];
-	ether_header->d_addr = config->endpoint_macs[dst_device];
+	ether_header->s_addr = config.device_macs[dst_device];
+	ether_header->d_addr = config.endpoint_macs[dst_device];
 
 	return 1 - mbuf->port;
 }

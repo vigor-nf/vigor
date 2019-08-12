@@ -20,14 +20,8 @@
 		nf_config_usage(); \
 		rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
 
-
 void nf_config_init(int argc, char** argv)
 {
-	config = malloc(sizeof(struct nf_config));
-	if (config == NULL) {
-		rte_exit(EXIT_FAILURE, "Not enough mem for config");
-	}
-
 	// Init
 	struct option long_options[] = {
 		{"flow-expiration",	required_argument,	NULL, 'x'},
@@ -42,37 +36,37 @@ void nf_config_init(int argc, char** argv)
 	while ((opt = getopt_long(argc, argv, "b:x:f:", long_options, NULL)) != EOF) {
 		switch (opt) {
 			case 'x':
-				config->flow_expiration_time = nf_util_parse_int(optarg, "flow-expiration", 10, '\0');
-				if (config->flow_expiration_time == 0) {
+				config.flow_expiration_time = nf_util_parse_int(optarg, "flow-expiration", 10, '\0');
+				if (config.flow_expiration_time == 0) {
 					PARSE_ERROR("Flow expiration time must be strictly positive.\n");
 				}
 				break;
 
 			case 'f':
-				config->flow_capacity = nf_util_parse_int(optarg, "flow-capacity", 10, '\0');
-				if (config->flow_capacity <= 0) {
+				config.flow_capacity = nf_util_parse_int(optarg, "flow-capacity", 10, '\0');
+				if (config.flow_capacity <= 0) {
 					PARSE_ERROR("Flow capacity must be strictly positive.\n");
 				}
 				break;
 
       case 's':
-        config->backend_capacity =
+        config.backend_capacity =
           nf_util_parse_int(optarg, "backend-capacity", 10, '\0');
-        if (config->backend_capacity <= 0) {
+        if (config.backend_capacity <= 0) {
           PARSE_ERROR("Backend capacity must be strictly positive.\n");
         }
         break;
 
       case 'h':
-        config->cht_height = nf_util_parse_int(optarg, "cht-height", 10, '\0');
-        if (config->cht_height <= 0) {
+        config.cht_height = nf_util_parse_int(optarg, "cht-height", 10, '\0');
+        if (config.cht_height <= 0) {
           PARSE_ERROR("CHT height must be strictly positive.\n");
         }
         break;
 
       case 't':
-        config->backend_expiration_time = nf_util_parse_int(optarg, "backend-expiration", 10, '\0');
-        if (config->backend_expiration_time == 0) {
+        config.backend_expiration_time = nf_util_parse_int(optarg, "backend-expiration", 10, '\0');
+        if (config.backend_expiration_time == 0) {
           PARSE_ERROR("Backend expiration time must be strictly positive.\n");
         }
         break;
@@ -88,9 +82,9 @@ void nf_config_init(int argc, char** argv)
 	optind = 1;
 
 	// Fill in the mac addresses
-	config->device_macs = malloc(sizeof(struct ether_addr) * rte_eth_dev_count());
+	config.device_macs = malloc(sizeof(struct ether_addr) * rte_eth_dev_count());
 	for (int i = 0; i < rte_eth_dev_count(); ++i) {
-		rte_eth_macaddr_get(i, &config->device_macs[i]);
+		rte_eth_macaddr_get(i, &config.device_macs[i]);
 	}
 }
 
@@ -112,18 +106,18 @@ void nf_config_print(void)
 #ifndef KLEE_VERIFICATION
 	NF_INFO("\n--- LoadBalancer Config ---\n");
 
-	for (uint16_t b = 0; b < config->backend_count; b++) {
-		char* dev_mac_str = nf_mac_to_str(&(config->device_macs[b]));
+	for (uint16_t b = 0; b < config.backend_count; b++) {
+		char* dev_mac_str = nf_mac_to_str(&(config.device_macs[b]));
 
 		NF_INFO("Backend device %" PRIu16 " own-mac: %s", b, dev_mac_str);
 
 		free(dev_mac_str);
 	}
 
-	NF_INFO("Flow expiration time: %" PRIu32 "us", config->flow_expiration_time);
-	NF_INFO("Flow capacity: %" PRIu32, config->flow_capacity);
-	NF_INFO("Backend expiration time: %" PRIu32 "us", config->backend_expiration_time);
-	NF_INFO("Backend capacity: %" PRIu32, config->backend_capacity);
+	NF_INFO("Flow expiration time: %" PRIu32 "us", config.flow_expiration_time);
+	NF_INFO("Flow capacity: %" PRIu32, config.flow_capacity);
+	NF_INFO("Backend expiration time: %" PRIu32 "us", config.backend_expiration_time);
+	NF_INFO("Backend capacity: %" PRIu32, config.backend_capacity);
 
 	NF_INFO("\n--- --- ------ ---\n");
 #endif

@@ -16,16 +16,18 @@
 #include "libvig/nf_log.h"
 #include "libvig/nf_util.h"
 
+struct nf_config config;
+
 struct FlowManager* flow_manager;
 
 void nf_init(void)
 {
 	flow_manager = flow_manager_allocate(
-		config->start_port,
-                config->external_addr,
-                config->wan_device,
-                config->expiration_time,
-                config->max_flows
+		config.start_port,
+                config.external_addr,
+                config.wan_device,
+                config.expiration_time,
+                config.max_flows
 	);
 
 	if (flow_manager == NULL) {
@@ -57,7 +59,7 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 	NF_DEBUG("Forwarding an IPv4 packet on device %" PRIu16, in_port);
 
 	uint16_t dst_device;
-	if (in_port == config->wan_device) {
+	if (in_port == config.wan_device) {
 		NF_DEBUG("Device %" PRIu16 " is external", in_port);
 
 		struct FlowId internal_flow;
@@ -92,7 +94,7 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 		NF_DEBUG("For id:");
 		log_FlowId(&id);
 
-		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config->wan_device);
+		NF_DEBUG("Device %" PRIu16 " is internal (not %" PRIu16 ")", in_port, config.wan_device);
 
 		uint16_t external_port;
 		if (!flow_manager_get_internal(flow_manager, &id, now, &external_port)) {
@@ -106,17 +108,17 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
 
 		NF_DEBUG("Forwarding from ext port:%d", external_port);
 
-		ipv4_header->src_addr = config->external_addr;
+		ipv4_header->src_addr = config.external_addr;
 		tcpudp_header->src_port = external_port;
-		dst_device = config->wan_device;
+		dst_device = config.wan_device;
 	}
 
  	nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
 
 	concretize_devices(&dst_device, rte_eth_dev_count());
 
-	ether_header->s_addr = config->device_macs[dst_device];
-	ether_header->d_addr = config->endpoint_macs[dst_device];
+	ether_header->s_addr = config.device_macs[dst_device];
+	ether_header->d_addr = config.endpoint_macs[dst_device];
 
 	return dst_device;
 }

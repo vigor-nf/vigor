@@ -27,13 +27,15 @@
 #include "nf.h"
 #include "state.h"
 
+struct nf_config config;
+
 struct State* mac_tables;
 
 int bridge_expire_entries(vigor_time_t time) {
   assert(time >= 0); // we don't support the past
   assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
   uint64_t time_u = (uint64_t) time; // OK because of the two asserts
-  vigor_time_t last_time = time_u - config->expiration_time * 1000; // us to ns
+  vigor_time_t last_time = time_u - config.expiration_time * 1000; // us to ns
   return expire_items_single_map(mac_tables->dyn_heap, mac_tables->dyn_keys,
                                  mac_tables->dyn_map,
                                  last_time);
@@ -116,15 +118,15 @@ static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_
 
 #ifndef DSOS
 static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
-  if (config->static_config_fname[0] == '\0') {
+  if (config.static_config_fname[0] == '\0') {
     // No static config
     return;
   }
 
-  FILE* cfg_file = fopen(config->static_config_fname, "r");
+  FILE* cfg_file = fopen(config.static_config_fname, "r");
   if (cfg_file == NULL) {
     rte_exit(EXIT_FAILURE, "Error opening the static config file: %s",
-             config->static_config_fname);
+             config.static_config_fname);
   }
 
   unsigned number_of_lines = 0;
@@ -269,7 +271,7 @@ static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_
 
 void nf_init(void) {
   unsigned stat_capacity = 8192; // Has to be power of 2
-  unsigned capacity = config->dyn_capacity;
+  unsigned capacity = config.dyn_capacity;
   assert(stat_capacity < CAPACITY_UPPER_LIMIT - 1);
 
   mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count());
