@@ -178,8 +178,8 @@ function master(args)
 	readconfig()
 	round = args.rounds
 	-- CHANGE: Use two devices instead of one
-	local rxdev = device.config{port = 0}
-	local txdev = device.config{port = 1}
+	local rxdev = device.config{port = 1}
+	local txdev = device.config{port = 0}
 	-- END CHANGE
 	device.waitForLinks()
 	-- CHANGE: Do not use statistics

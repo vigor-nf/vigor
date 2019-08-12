@@ -33,7 +33,7 @@ else
 
     pushd $MIDDLEBOX >> /dev/null
         echo "[bench] Running $MIDDLEBOX..."
-        NF_DPDK_ARGS="-l $MB_CPU -n 2" make run >> "$LOG_FILE" 2>&1 &
+        NF_DPDK_ARGS="-l $MB_CPU -n 2" make run > "$LOG_FILE" 2>&1 &
     popd >> /dev/null
 
     # Wait for it to have started

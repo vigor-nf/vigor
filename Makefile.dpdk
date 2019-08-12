@@ -10,6 +10,9 @@
 # get current dir, see https://stackoverflow.com/a/8080530
 SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 
+# needs to be defined, see shared Makefile
+NF_PROCESS_NAME := nf
+
 # Default value for arguments
 NF_DEVICES ?= 2
 

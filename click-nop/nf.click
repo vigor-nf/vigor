@@ -12,8 +12,7 @@
 define(
  $iface0    0,
  $iface1    1,
- $queueSize 1024,
- $burst     32
+ $queueSize 1024
 );
 
 AddressInfo(
