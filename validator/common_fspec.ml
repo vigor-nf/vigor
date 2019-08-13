@@ -939,16 +939,12 @@ let expire_items_single_map_spec typs =
         (tmp_gen "cur_ch") ^ ", " ^
         (List.nth_exn args 3) ^
         "));\n\
-         if (length(dchain_get_expired_indexes_fp(" ^
-        (tmp_gen "cur_ch") ^ ", " ^
-        (List.nth_exn args 3) ^
-        ")) > 0 ) {\n\
-         expire_old_dchain_nonfull\
+         expire_old_dchain_nonfull_maybe\
          (" ^ (List.nth_exn args 0) ^ ", " ^
         (tmp_gen "cur_ch") ^ ", " ^
         (List.nth_exn args 3) ^
         ");\n\
-         }} @*/");
+         } @*/");
    ];
    lemmas_after = [
      (fun {tmp_gen;_} ->
