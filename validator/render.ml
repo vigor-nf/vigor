@@ -286,17 +286,29 @@ let apply_assignments assignments terms =
   List.fold assignments ~init:terms ~f:(fun terms {lhs;rhs} ->
       List.map terms ~f:(replace_tterm lhs rhs))
 
-let render_assumptions assumptions  =
-  String.concat ~sep:"\n" (List.map assumptions ~f:(fun t ->
-      "//@ assume(" ^
-      (match t.v with
-       | Id x -> "0 != " ^ x
-       | Bop (Bit_and,_,_) -> "0 != " ^ (render_tterm t)
-       | _ -> (render_tterm t)) ^
-      ");")) ^ "\n"
-
-let render_input_assumptions terms =
-  render_assumptions terms
+let render_assumptions assumptions =
+  let rec flatten_assumption (ass: tterm) = match ass.v with
+  (* yeah that bool vs int 0 stuff is annoying, but writing a method to handle it would be more annoying... for now *)
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+  | Bop (And, x, y) -> (flatten_assumption x) @ (flatten_assumption y)
+  | _ -> [ass]
+  in
+  let flattened_assumptions = List.concat (List.map assumptions ~f:flatten_assumption) in
+  let rendered_assumptions = List.map flattened_assumptions ~f:(fun t ->
+      match t.v with
+      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, x2, b);t=_}) when x1 == x2 && a.t == b.t -> "//@ assume(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Id x -> "//@ assume(x != 0);"
+      | Bop (Bit_and, _, _) -> "//@ assume(0 != " ^ (render_tterm t) ^ ");"
+      | _ -> "//@ assume(" ^ (render_tterm t) ^ ");") in
+  let unique_assumptions =
+    String.Set.to_list (String.Set.of_list rendered_assumptions)
+  in
+  (String.concat ~sep:"\n" unique_assumptions) ^ "\n"
 
 let ids_from_term term =
   String.Set.of_list
@@ -454,7 +466,7 @@ let output_check_and_assignments
   let output_check =
     "// Output check\n" ^
     "// Input assumptions\n" ^
-    (render_input_assumptions input_constraints) ^ "\n" ^
+    (render_assumptions input_constraints) ^ "\n" ^
     "// Concrete equalities: \n" ^
     (render_concrete_assignments_as_assertions concrete_assignments) ^ "\n" ^
     "// Model constraints: \n" ^
@@ -597,9 +609,6 @@ let render_cmplexes cmplxes =
       | Array at -> (ttype_to_str at) ^ " " ^ var.name ^ "[]; //" ^ (render_tterm var.value)
       | _ -> (ttype_to_str var.value.t) ^ " " ^ var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
 
-let render_context_assumptions assumptions  =
-  render_assumptions assumptions
-
 let render_allocated_args args =
   String.concat ~sep:"\n"
     (List.map args
@@ -638,17 +647,6 @@ let get_all_symbols calls =
                   | Some name -> (String.Set.add symbols name)
                   | None -> symbols)))))
 
-(* let get_some_input_assumptions {context=_;results} hist_symbs = *)
-(*   match results with *)
-(*   | result::[] -> *)
-(*     let (input_constraints,_) = *)
-(*       split_constraints result.post_statements hist_symbs *)
-(*     in *)
-(*     input_constraints *)
-(*   | res1::res2::[] -> *)
-(*     [] *)
-(*   | _ -> failwith "Unsupported number of results (> 2)." *)
-
 let discard_redundant_preconditions ir =
   let filter_redundant_preconditions prev_postconds preconds =
     List.filter preconds ~f:(fun precond ->
@@ -681,9 +679,6 @@ let discard_redundant_preconditions ir =
 let render_ir ir fout ~render_assertions =
   let ir = discard_redundant_preconditions ir in
   let hist_symbols = get_all_symbols ir.hist_calls in
-  (* let tip_input_assumptions = *)
-  (*   get_some_input_assumptions ir.tip_call hist_symbols *)
-  (* in *)
   Out_channel.with_file fout ~f:(fun cout ->
       Out_channel.output_string cout ir.preamble;
       Out_channel.output_string cout (render_cmplexes ir.cmplxs);
@@ -691,10 +686,8 @@ let render_ir ir fout ~render_assertions =
                                         (String.Map.data ir.free_vars));
       Out_channel.output_string cout (render_allocated_args ir.arguments);
       Out_channel.output_string cout (render_args_hack ir.arguments);
-      Out_channel.output_string cout (render_context_assumptions
+      Out_channel.output_string cout (render_assumptions
                                         ir.context_assumptions);
-      (* Out_channel.output_string cout (render_context_assumptions *)
-      (*                                   tip_input_assumptions); *)
       Out_channel.output_string cout (render_assignments ir.arguments);
       (* Yes, this is stupid; but right before a deadline I will not spend hours refactoring import.ml to fix it. *)
       let stupid_fix = Str.global_replace (Str.regexp_string "(next_time_0 - vector_data_reset_1_8)") "(uint64_t)(next_time_0 - vector_data_reset_1_8)" in
