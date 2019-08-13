@@ -220,7 +220,7 @@ stub_device_start(struct stub_device* dev)
 	// 48-63: VLAN Tag (0, no VLAN)
 	uint64_t wb1 = 0b0000000000000000000000000000000000000000000000000000000000000011;
 
-	// get packet length
+	// packet length
 	wb1 |= (uint64_t) packet_len << 32;
 
 	SET_BIT(wb1, 7, (is_ipv4 & (
