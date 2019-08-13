@@ -69,23 +69,29 @@ The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environme
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
 
-| Target(s)                  | Description                                | Expected duration                  |
-| -------------------------- | ------------------------------------------ | ---------------------------------- |
-| Default                    | Compile the NF                             | <1min                              |
-| `run`                      | Run the NF using recommended arguments     | <1min to start                     |
-| `symbex validate`          | Verify the NF with DPDK models             | <1min to symbex, hours to validate |
-| `symbex-withdpdk validate` | Verify the NF with hardware and OS models  | <1h to symbex, hours to validate   |
-| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS | <1h to symbex, hours to validate   |
-| `count-loc`                | Count LoC in the NF                        | <1min                              |
-| `count-spec-loc`           | Count LoC in the specification             | <1min                              |
-| `count-dsos-loc`           | Count LoC in the DSOS                      | <1min                              |
-| `count-libvig-loc`         | Count LoC in libVig                        | <1min                              |
-| `count-libvig-ds-loc`      | Count LoC in libVig data structures        | <1min                              |
-| `count-dpdk-loc`           | Count LoC in DPDK (not drivers)            | <1min                              |
-| `count-ixgbe-loc`          | Count LoC in the ixgbe driver              | <1min                              |
-| `count-uclibc-loc`         | Count LoC in KLEE-uClibc                   | <1min                              |
-| `benchmark-throughput`     | Benchmark the NF's throughput              | <30min                             |
-| `benchmark-latency`        | Benchmark the NF's latency                 | <10min                             |
+| Target(s)                  | Description                                 | Expected duration                  |
+| -------------------------- | ------------------------------------------  | ---------------------------------- |
+| Default                    | Compile the NF                              | <1min                              |
+| `run`                      | Run the NF using recommended arguments      | <1min to start                     |
+| `symbex validate`          | Verify the NF with DPDK models              | <1min to symbex, hours to validate |
+| `symbex-withdpdk validate` | Verify the NF with hardware and OS models   | <1h to symbex, hours to validate   |
+| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS  | <1h to symbex, hours to validate   |
+| `count-loc`                | Count LoC in the NF                         | <1min                              |
+| `count-spec-loc`           | Count LoC in the specification              | <1min                              |
+| `count-dsos-loc`           | Count LoC in the DSOS                       | <1min                              |
+| `count-libvig-loc`         | Count LoC in libVig                         | <1min                              |
+| `count-libvig-ds-loc`      | Count LoC in libVig data structures         | <1min                              |
+| `count-dpdk-loc`           | Count LoC in DPDK (not drivers)             | <1min                              |
+| `count-ixgbe-loc`          | Count LoC in the ixgbe driver               | <1min                              |
+| `count-uclibc-loc`         | Count LoC in KLEE-uClibc                    | <1min                              |
+| `benchmark-throughput`     | Benchmark the NF's throughput               | <30min                             |
+| `benchmark-latency`        | Benchmark the NF's latency                  | <10min                             |
+| `dsos-clean`               | Remove DSOS-related temporary files         | <1s                                |
+| `dsos-iso`                 | Build a DSOS ISO image runnable in a VM     | <1min                              |
+| `dsos-multiboot1`          | Build a DSOS ISO image suitable for netboot | <1min                              |
+| `dsos-run`                 | Build and run DSOS in a qemu VM             | <1min to start                     |
+
+
 
 To run with your own arguments, compile then run `sudo ./build/app/nf -- -?` which will display the command-line arguments you need to pass to the NF.
 
@@ -100,8 +106,62 @@ For instance:
 
 Vigor includes a Domain-Specific Operating System (DSOS) that is simple enough to be symbolically executed, besides trusted boot code.
 
-TODO describe how to make a dsos image with an NF and run it on a commodity server here...
+You can run DSOS either in a virtual machine, using qemu, or on bare metal, using PXE boot.
 
+Note, that as DSOS can not read cmdline arguments, all the NF arguments are compiled into the image during the build.
+You can set the NF arguments in the respective NF Makefile.
+
+## Running the DSOS in a VM
+
+In order to run the DSOS inside a virtual machine, you need your kernel allow direct device access through VFIO.
+For that you need to pass `intel_iommu=on iommu=pt` to your linux kernel in the command line arguments in your bootloader.
+
+Further, you need to load the vfio-pci module to forward your NICs to the VM with ;
+
+    $ modprobe vfio-pci
+
+Then, bind the NICs you intend for the NF to use to `vfio-pci` (`RTE_SDK` is the path to your DPDK folder):
+
+    $ $RTE_SDK/usertools/dpdk-devbind.py -b vfio-pci <nic1> <nic2>
+    
+Here `<nic1>` and `<nic2>` are PCI addresses of the nicks you want to bind (e.g. `0000:06:00.0`).
+You can find the PCI addresses of your NICs using `dpdk-devbind.py -s`.
+
+| Warning: the next step will render your terminal irresponsible. |
+| Make sure you have a spare terminal open on this machine.       |
+|-----------------------------------------------------------------|
+
+Finally, to run the NF with DSOS in a VM, get in to the NF directory, e.g. `vigor/vignat`, and run:
+
+    $ make dsos-run
+    
+This will build the NF with DPDK, device driver and DSOS, produce the bootable ISO image and start
+a qemu machine executing that image.
+Note that DSOS ignores any input, so your terminal will show the DSOS output and will stop responding.
+You will need to kill the qemu process from a different terminal.
+
+## Running the DSOS on bare metal over the network
+
+In order to run the DSOS on bare metal you will need an extra ethernet connection of the machine intended to run the DSOS (we call it DUT from now on) and a PXE server machine.
+
+You will need `dsos-x86_64-multiboot1.bin` image on the machine that will serve PXE requests.
+You can build it either directly on the machine, or build it on DUT and copy it over.
+To build the image, run:
+
+    $ make dsos-multiboot1
+    
+To serve the image, run on the machine intended as a PXE server:
+
+    $ ./pxe-boot.sh dsos-x86_64-multiboot1.bin
+    
+This will start a DHCP server and a PXE server and wait for network boot requests.
+As our image is larger than 64KB, we use a two step boot process, booting first an ipxe/undionly.kpxe image that
+then fetches the DSOS image and boots it.
+
+In BIOS, configure DUT to boot from network, using the interface connected to the PXE server.
+When you reboot it, you should see some activity in the PXE server output and see DSOS output on DUT (printing the NF configuration).
+At this point you can stop the PXE boot server.
+The DSOS is running!
 
 # Making your own NF
 
@@ -131,11 +191,6 @@ This table does not include the hugepages settings.
 | `pcie_aspm=off`                                  | Disable PCIe Active State Power Management, forcing PCIe devices to always run at full power                                              |
 | `processor.ignore_ppc=1`                         | Ignore BIOS warnings about CPU frequency                                                                                                  |
 | `intel_iommu=on iommu=pt`                        | Set the IOMMU to passthrough, required on some CPUs for DPDK's huge pages to run at full performance                                      |
-
-
-# Running an NF on the DSOS
-
-SOSPTODO Arseniy since you figured it out, can you explain how to run the dsos here? both in qemu (there seems to be a make target for that?) and on bare metal
 
 
 # FAQ
