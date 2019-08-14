@@ -67,7 +67,7 @@ autogen:
 # ============
 
 benchmark-%:
-	@cd "$(SELF_DIR)/bench"; ./bench.sh "$(shell pwd)" $(subst benchmark-,,$@) || true
+	@export VIGOR_USE_BATCH=$(VIGOR_USE_BATCH); cd "$(SELF_DIR)/bench"; ./bench.sh "$(shell pwd)" $(subst benchmark-,,$@) || true
 	@mv ../bench/$@.results . || true
 	@printf '\n\nDone! Results are in $@.results, log file in $@.log\n\n'
 # bench scripts use these to autodetect the NF type

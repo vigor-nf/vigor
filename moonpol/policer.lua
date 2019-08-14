@@ -62,7 +62,9 @@ function getsubnetid(ip)
                 return tbl24[index1] / 10
         else
 		local index2 = ((tbl24[index1] - 1) / 10) * 256 + d
-                return tbllong[index2] / 10
+		-- CHANGE: Don't divide by 10, related to changes in readconfig()
+                return tbllong[index2]
+                -- ENDCHANGE
         end
 end
 
@@ -154,13 +156,23 @@ function readconfig()
 				tbl24[index + i] = tmp1 * 10
 			end
 		else
-			tbl24[c + bit.lshift(b, 8) + bit.lshift(a, 16)] = tmp2 * 10 + 1
-			local index = tmp2 * 256 + d
+			-- CHANGE: Fix bugs with prefixes >= 25
+			local tbl24index = c + bit.lshift(b, 8) + bit.lshift(a, 16)
+			if tbl24[tbl24index] == 0 then
+				tbl24[tbl24index] = tmp2 * 10 + 1
+				tmp2 = tmp2 + 1
+			end
+			local index = ((tbl24[tbl24index] - 1) / 10) * 256 + d
+			-- ENDCHANGE
 			local space = 2 ^ (32 - p)
 			for i = 0, space - 1 do
-				tbllong[index + i] = tmp1 * 10
+				-- CHANGE: Don't multiply by 10 so we don't have to divide by 10 when processing packets
+				tbllong[index + i] = tmp1
+				-- ENDCHANGE
 			end
-			tmp2 = tmp2 + 1
+			-- CHANGE: Part of the bugfix above is to move this line
+			-- tmp2 = tmp2 + 1
+			-- ENDCHANGE
 		end
 		subnets[tmp1].bucket_size = BUCKET * l
 		subnets[tmp1].tokens = BUCKET * l
@@ -171,15 +183,22 @@ end
 
 function configure(parser)
 	parser:option("-r --rounds", "Number of rounds."):args(1):convert(tonumber):default(1000000)
+	-- CHANGE: Added batching switch
+	parser:option("-b --batch", "Batch size."):convert(tonumber):default(1)
+	-- ENDCHANGE
 	return parser:parse()
 end
 
 function master(args)
 	readconfig()
+	-- CHANGE: Set the variables DST_MAC/SRC_MAC
+	local DST_MAC = parseMacAddress("FF:FF:FF:FF:FF:FF", true)
+	local SRC_MAC = parseMacAddress("00:00:00:00:00:00", true)
+	-- END CHANGE
 	round = args.rounds
 	-- CHANGE: Use two devices instead of one
-	local rxdev = device.config{port = 1}
-	local txdev = device.config{port = 0}
+	local rxdev = device.config{port = 0}
+	local txdev = device.config{port = 1}
 	-- END CHANGE
 	device.waitForLinks()
 	-- CHANGE: Do not use statistics
@@ -194,14 +213,10 @@ function master(args)
 	local tokenlast = lm.getTime()
 	local tokeninterval
 	local roundctr = 0
-	-- CHANGE: Added VIGOR_USE_BATCH environment variable as switch for batching
-	if os.getenv("VIGOR_USE_BATCH") == "true" then
-		local batchSize = rxBufs.size
-	else
-		local batchSize = 1
-	end
+	local batchSize = 1
 	while lm.running() do
-		local rx = rxQ:recv(rxBufs, batchSize)
+		-- CHANGE: Use args.batch instead of leaving the default second argument
+		local rx = rxQ:recv(rxBufs, args.batch)
 		-- END CHANGE
 		local j = 0
 		for i = 1, rx do
@@ -213,6 +228,9 @@ function master(args)
                         	pkt.eth:setDst(DST_MAC)
                         	pkt.eth:setSrc(SRC_MAC)
 			else
+				-- CHANGE: Exit if we reach here, we don't want to actually police since this is a benchmark baseline!
+				os.exit(1)
+				-- ENDCHANGE
 				rxBufs[i]:free()
 			end
 		end

@@ -1,22 +1,15 @@
-// Compile without any special flags, redirect output to a file, and you have your config
+// Compile without any special flags, redirect output to a file, and you have your config (which we provide pre-generated)
 
-#include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <arpa/inet.h>
 
 int main(int argc, char *argv[]) {
-  struct in_addr base;
-  assert(inet_aton("192.168.6.5", &base));
-  for (int offset = 0; offset < 64000; offset++) {
+  for (uint32_t n = 0; n <= 65535; n++) {
     struct in_addr ip;
-    ip.s_addr = htonl(ntohl(base.s_addr) + offset);
+    ip.s_addr = htonl(n);
     printf("%s/32\t15000000\n", inet_ntoa(ip));
   }
 
-  assert(inet_aton("10.0.0.1", &base));
-  for (int offset = 0; offset < 1000; offset++) {
-    struct in_addr ip;
-    ip.s_addr = htonl(ntohl(base.s_addr) + offset);
-    printf("%s/32\t15000000\n", inet_ntoa(ip));
-  }
+  return 0;
 }

@@ -40,27 +40,11 @@ function configure(parser)
 	parser:option("-x --reverse", "Number of flows for reverse traffic, if required."):default(0):convert(tonumber)
 end
 
--- Per-layer functions to configure a packet given a counter for the throughput task
-local packetThroughputConfigs = {
+-- Per-layer functions to configure a packet given a counter; this assumes the total number of flows is <= 65536
+local packetConfigs = {
 	[2] = function(pkt, counter)
-		-- Override both addresses to make sure the bridge can't use the CPU cache when looking up addresses
 		pkt.eth.src:set(counter)
 		pkt.eth.dst:set(0xFF0000000000 + counter)
-	end,
-	[3] = function(pkt, counter)
-		pkt.ip4.dst:set(counter)
-	end,
-	[4] = function(pkt, counter)
-		pkt.udp.dst = counter
-	end
-}
--- Per-layer functions to configure a packet given a counter for the latency task
--- This must result in a non-overlapping packet space with the throughput task, as much as possible!
-local packetLatencyConfigs = {
-	[2] = function(pkt, counter)
-		-- Override both addresses to make sure the bridge can't use the CPU cache when looking up addresses
-		pkt.eth.src:set(0xAA0000000000 + counter)
-		pkt.eth.dst:set(0xBB0000000000 + counter)
 	end,
 	[3] = function(pkt, counter)
 		pkt.ip4.src:set(counter)
@@ -85,7 +69,7 @@ function packetInit(buf, packetSize)
 end
 
 -- Helper function, has to be global because it's started as a task
-function _latencyTask(txQueue, rxQueue, layer, flowCount, duration)
+function _latencyTask(txQueue, rxQueue, layer, flowCount, duration, counterStart)
 	-- Ensure that the throughput task is running
 	mg.sleepMillis(1000)
 
@@ -100,8 +84,7 @@ function _latencyTask(txQueue, rxQueue, layer, flowCount, duration)
 		local packetSize = 84
 		hist:update(timestamper:measureLatency(packetSize, function(buf)
 			packetInit(buf, packetSize)
-			packetLatencyConfigs[layer](buf:getUdpPacket(), counter)
-			-- see throughput for remark about the incAndWrap function
+			packetConfigs[layer](buf:getUdpPacket(), counterStart + counter)
 			counter = (counter + 1) % flowCount
 		end))
 		rateLimiter:wait()
@@ -112,8 +95,8 @@ function _latencyTask(txQueue, rxQueue, layer, flowCount, duration)
 end
 
 -- Starts a latency-measuring task, which returns (median, stdev)
-function startMeasureLatency(txQueue, rxQueue, layer, flowCount, duration)
-	return mg.startTask("_latencyTask", txQueue, rxQueue, layer, flowCount, duration)
+function startMeasureLatency(txQueue, rxQueue, layer, flowCount, duration, counterStart)
+	return mg.startTask("_latencyTask", txQueue, rxQueue, layer, flowCount, duration, counterStart)
 end
 
 -- Helper function, has to be global because it's started as a task
@@ -123,15 +106,14 @@ function _throughputTask(txQueue, rxQueue, layer, packetSize, flowCount, duratio
 	local txCounter = stats:newDevTxCounter(txQueue, "nil")
 	local rxCounter = stats:newDevRxCounter(rxQueue, "nil")
 	local bufs = mempool:bufArray(BATCH_SIZE)
-	local packetConfig = packetThroughputConfigs[layer]
+	local packetConfig = packetConfigs[layer]
 	local sendTimer = timer:new(duration)
 	local counter = 0
 
 	while sendTimer:running() and mg.running() do
 		bufs:alloc(packetSize)
 		for _, buf in ipairs(bufs) do
-			local pkt = buf:getUdpPacket()
-			packetConfig(pkt, counter)
+			packetConfig(buf:getUdpPacket(), counter)
 			-- incAndWrap does this in a supposedly fast way; in practice it's actually slower!
 			-- with incAndWrap this code cannot do 10G line rate
 			counter = (counter + 1) % flowCount
@@ -218,7 +200,7 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 
 		io.write("Measuring latency for " .. flowCount .. " flows... ")
 		local throughputTask = startMeasureThroughput(txThroughputQueue, rxThroughputQueue, LATENCY_LOAD_RATE, layer, packetSize, flowCount, duration)
-		local latencyTask = startMeasureLatency(txLatencyQueue, rxLatencyQueue, layer, N_PROBE_FLOWS, duration)
+		local latencyTask = startMeasureLatency(txLatencyQueue, rxLatencyQueue, layer, N_PROBE_FLOWS, duration, flowCount)
 
 		-- We may have been interrupted
 		if not mg.running() then
@@ -253,7 +235,6 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 	local rxReverseQueue = txDev:getRxQueue(0)
 
 	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
-		
 		if reverseFlowCount > 0 then
 			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount, true)
 		end

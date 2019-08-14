@@ -168,6 +168,8 @@ if [ ! -e "$BUILDDIR/libmoon" ]; then
     git checkout 0cb0843957a1aa8a3580096eee0f5d7246449c85
     # Don't try to bind interfaces
     sed -i '/bind.interfaces/d' build.sh
+    # Don't set --lcores, we set it ourselves
+    sed -i '/--lcores=/d' lua/dpdk.lua
     ./build.sh
   popd
 fi

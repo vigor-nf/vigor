@@ -202,6 +202,8 @@ symbex-withdpdk: clean autogen
 # of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for DSOS to put
 # into argv at compilation time.
 dquote := \"
+space := $(null) #
+comma := ,
 NF_ARGUMENTS_MACRO := -DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),nf.bc $(NF_ARGS))\"
 symbex-withdsos: clean autogen
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) $(NF_ARGUMENTS_MACRO) -DDSOS $(VERIF_INCLUDES) $(VERIF_WITHDPDK_INCLUDES) $(VERIF_FILES) $(VERIF_WITHDPDK_FILES) $(SELF_DIR)/libvig/kernel/*.c $(VERIF_FLAGS) -mssse3 -msse2 -msse4.1
