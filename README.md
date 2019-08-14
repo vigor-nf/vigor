@@ -127,7 +127,7 @@ Then, bind the NICs you intend for the NF to use to `vfio-pci` (`RTE_SDK` is the
 Here `<nic1>` and `<nic2>` are PCI addresses of the nicks you want to bind (e.g. `0000:06:00.0`).
 You can find the PCI addresses of your NICs using `dpdk-devbind.py -s`.
 
-> :warning: **Warning**: the next step will render your terminal irresponsible.
+> :warning: **Warning**: after the next step your terminal will stop responding.
 > Make sure you have a spare terminal open on this machine.
 
 Finally, to run the NF with DSOS in a VM, get in to the NF directory, e.g. `vigor/vignat`, and run:
