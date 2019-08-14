@@ -10,8 +10,8 @@
  */
 
 define(
- $iface0    1,
- $iface1    0,
+ $iface0    0,
+ $iface1    1,
  $queueSize 1024
 );
 
@@ -31,7 +31,7 @@ ee_left :: EnsureEther(0x0800, 1:1:1:1:1:0,90:e2:ba:55:14:10);
 ee_right :: EnsureEther(0x0800, 1:1:1:1:1:1,90:e2:ba:55:14:11); 
 
 rwpattern :: IPRewriterPatterns(FW - - - -);
-ip_rw :: IPRewriter(pattern FW 1 0, drop, MAPPING_CAPACITY 65536);
+ip_rw :: IPRewriter(pattern FW $iface0 $iface1, drop, MAPPING_CAPACITY 65536);
 
 nicIn0 -> Strip(14) -> CheckIPHeader -> [0]ip_rw;
 ip_rw[0] -> ee_left[0] -> nicOut1;
