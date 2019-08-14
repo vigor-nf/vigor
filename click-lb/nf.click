@@ -73,7 +73,7 @@ rwpattern :: RoundRobinIPMapper(- - backend_1 - 1 0,
 ee_left :: EnsureEther(0x0800, 1:1:1:1:1:0,90:e2:ba:55:14:10);
 ee_right :: EnsureEther(0x0800, 1:1:1:1:1:1,90:e2:ba:55:14:11); 
 
-ip_rw :: IPRewriter(rwpattern, drop 0, MAPPING_CAPACITY 65536);
+ip_rw :: IPRewriter(rwpattern, drop, MAPPING_CAPACITY 65536);
 
 nicIn0 -> Strip(14) -> CheckIPHeader -> [0]ip_rw;
 ip_rw[0] -> ee_left[0] -> nicOut1;
