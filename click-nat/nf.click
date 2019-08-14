@@ -10,8 +10,8 @@
  */
 
 define(
- $iface0    1,
- $iface1    0,
+ $iface0    0,
+ $iface1    1,
  $queueSize 1024
 );
 
@@ -30,8 +30,8 @@ nicOut1 :: ToDPDKDevice  ($iface1, IQUEUE $queueSize, BURST $burst);
 ee_left :: EnsureEther(0x0800, 1:1:1:1:1:0,90:e2:ba:55:14:10);
 ee_right :: EnsureEther(0x0800, 1:1:1:1:1:1,90:e2:ba:55:14:11); 
 
-rwpattern :: IPRewriterPatterns(NAT wan_interface 1-65535 - -);
-ip_rw :: IPRewriter(pattern NAT 1 0, drop, MAPPING_CAPACITY 65535);
+rwpattern :: IPRewriterPatterns(NAT wan_interface 0-65535 - -);
+ip_rw :: IPRewriter(pattern NAT $iface0 $iface1, drop, MAPPING_CAPACITY 65536);
 
 nicIn0 -> Strip(14) -> CheckIPHeader -> [0]ip_rw;
 ip_rw[0] -> ee_left[0] -> nicOut1;
