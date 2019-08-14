@@ -48,32 +48,32 @@ nicIn1  :: FromDPDKDevice($iface1, BURST $burst);
 nicOut1 :: ToDPDKDevice  ($iface1, IQUEUE $queueSize, BURST $burst);
 
 
-rwpattern :: RoundRobinIPMapper(- - backend_1 - 0 1, 
-				- - backend_2 - 0 1, 
-				- - backend_3 - 0 1, 
-				- - backend_4 - 0 1, 
-				- - backend_5 - 0 1, 
-				- - backend_6 - 0 1, 
-				- - backend_7 - 0 1, 
-				- - backend_8 - 0 1, 
-				- - backend_9 - 0 1, 
-				- - backend_10 - 0 1, 
-				- - backend_11 - 0 1, 
-				- - backend_12 - 0 1, 
-				- - backend_13 - 0 1, 
-				- - backend_14 - 0 1, 
-				- - backend_15 - 0 1, 
-				- - backend_16 - 0 1, 
-				- - backend_17 - 0 1, 
-				- - backend_18 - 0 1, 
-				- - backend_19 - 0 1, 
-				- - backend_20 - 0 1, 
+rwpattern :: RoundRobinIPMapper(- - backend_1 - 1 0, 
+				- - backend_2 - 1 0, 
+				- - backend_3 - 1 0, 
+				- - backend_4 - 1 0, 
+				- - backend_5 - 1 0, 
+				- - backend_6 - 1 0, 
+				- - backend_7 - 1 0, 
+				- - backend_8 - 1 0, 
+				- - backend_9 - 1 0, 
+				- - backend_10 - 1 0, 
+				- - backend_11 - 1 0, 
+				- - backend_12 - 1 0, 
+				- - backend_13 - 1 0, 
+				- - backend_14 - 1 0, 
+				- - backend_15 - 1 0, 
+				- - backend_16 - 1 0, 
+				- - backend_17 - 1 0, 
+				- - backend_18 - 1 0, 
+				- - backend_19 - 1 0, 
+				- - backend_20 - 1 0, 
 				);
 
 ee_left :: EnsureEther(0x0800, 1:1:1:1:1:0,90:e2:ba:55:14:10);
 ee_right :: EnsureEther(0x0800, 1:1:1:1:1:1,90:e2:ba:55:14:11); 
 
-ip_rw :: IPRewriter(rwpattern, pass 1, MAPPING_CAPACITY 65536);
+ip_rw :: IPRewriter(rwpattern, drop 0, MAPPING_CAPACITY 65536);
 
 nicIn0 -> Strip(14) -> CheckIPHeader -> [0]ip_rw;
 ip_rw[0] -> ee_left[0] -> nicOut1;
