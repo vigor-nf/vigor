@@ -31,7 +31,6 @@ validator/out
 validator/test-results
 klee-*/
 klee-last
-*.csv
 */*.gen.*
 */loop.*
 */state.*

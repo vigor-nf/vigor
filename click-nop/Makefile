@@ -1,5 +1,1 @@
-all:
-	@echo "[make] Click NF"
-
-clean: 
-	@echo "[clean] Click NF"
+include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

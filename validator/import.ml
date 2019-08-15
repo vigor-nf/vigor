@@ -65,6 +65,10 @@ let parse_int str =
   (* As a hack: handle -10 in 64bits.
      TODO: handle more generally*)
   if (String.equal str "18446744073709551606") then Some (-10)
+  (* -10000 *)
+  else if (String.equal str "18446744073709541616") then Some (-10000)
+  (* -3600000000000 *)
+  else if (String.equal str "18446740473709551616") then Some (-3600000000000)
   (* As another hack: handle -300 in 64bits. *)
   else if (String.equal str "18446744073709551316") then Some (-300)
   else if (String.equal str "18446744073709551556") then Some (-60)
@@ -450,6 +454,10 @@ let get_sint_in_bounds v =
   (*Special case for 64bit -10, for now,
     FIXME: make a more general case.*)
   if (String.equal v "18446744073709551606") then -10
+  (* -10000 *)
+  else if (String.equal v "18446744073709541616") then -10000
+  (* -3600000000000 *)
+  else if (String.equal v "18446740473709551616") then -3600000000000
   (* also -300 *)
   else if (String.equal v "18446744073709551316") then -300
   (* and -60 *)
@@ -462,7 +470,8 @@ let get_sint_in_bounds v =
   else
     let integer_val = Int.of_string v in
     if Int.(integer_val <> 10000000000) && (* We want this 10B - the policer exp time*)
-       Int.(integer_val > 2147483647) then
+       Int.(integer_val <>  3750000000) &&
+       Int.(integer_val  >  2147483647) then
       integer_val - 2*2147483648
     else
       integer_val

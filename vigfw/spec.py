@@ -1,5 +1,5 @@
 from state import flow_emap, int_devices
-EXP_TIME = 10
+EXP_TIME = 10 * 1000
 EXT_DEVICE = 1
 
 if a_packet_received:

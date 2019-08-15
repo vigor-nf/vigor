@@ -6,7 +6,7 @@
 #define CONFIG_FNAME_LEN 512
 
 struct nf_config {
-  // Expiration time of flows
+  // Expiration time of flows, in microseconds
   uint32_t expiration_time;
 
   // Size of the dynamic filtering table

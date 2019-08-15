@@ -32,8 +32,8 @@ fi
 
 
 ./init-machines.sh
-./clean.sh
+./clean.sh $MIDDLEBOX
 ./init-network.sh $MIDDLEBOX
 ./run-middlebox.sh $MIDDLEBOX $SCENARIO
 ./run-benchmark.sh $MIDDLEBOX $SCENARIO $RESULTS_FILE
-./clean.sh
+./clean.sh $MIDDLEBOX

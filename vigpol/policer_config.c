@@ -27,17 +27,12 @@ const uint32_t DEFAULT_CAPACITY = 128; // IPs
 
 void nf_config_init(int argc, char** argv)
 {
-  config = malloc(sizeof(struct nf_config));
-  if (config == NULL) {
-    rte_exit(EXIT_FAILURE, "Not enough memory for config");
-  }
-
   // Set the default values
-  config->lan_device = DEFAULT_LAN;
-  config->wan_device = DEFAULT_WAN;
-  config->rate = DEFAULT_RATE; // B/s
-  config->burst = DEFAULT_BURST; // B
-  config->dyn_capacity = DEFAULT_CAPACITY; // MAC addresses
+  config.lan_device = DEFAULT_LAN;
+  config.wan_device = DEFAULT_WAN;
+  config.rate = DEFAULT_RATE; // B/s
+  config.burst = DEFAULT_BURST; // B
+  config.dyn_capacity = DEFAULT_CAPACITY; // MAC addresses
 
   unsigned nb_devices = rte_eth_dev_count();
 
@@ -54,36 +49,36 @@ void nf_config_init(int argc, char** argv)
   while ((opt = getopt_long(argc, argv, "l:w:r:b:c:", long_options, NULL)) != EOF) {
     switch (opt) {
     case 'l':
-      config->lan_device = nf_util_parse_int(optarg, "lan", 10, '\0');
-      if (config->lan_device < 0 || config->lan_device >= nb_devices) {
+      config.lan_device = nf_util_parse_int(optarg, "lan", 10, '\0');
+      if (config.lan_device < 0 || config.lan_device >= nb_devices) {
         PARSE_ERROR("Invalid LAN device.\n");
       }
       break;
 
     case 'w':
-      config->wan_device = nf_util_parse_int(optarg, "wan", 10, '\0');
-      if (config->wan_device < 0 || config->wan_device >= nb_devices) {
+      config.wan_device = nf_util_parse_int(optarg, "wan", 10, '\0');
+      if (config.wan_device < 0 || config.wan_device >= nb_devices) {
         PARSE_ERROR("Invalid WAN device.\n");
       }
       break;
 
     case 'r':
-      config->rate = nf_util_parse_int(optarg, "rate", 10, '\0');
-      if (config->rate == 0) {
+      config.rate = nf_util_parse_int(optarg, "rate", 10, '\0');
+      if (config.rate == 0) {
         PARSE_ERROR("Policer rate must be strictly positive.\n");
       }
       break;
 
     case 'b':
-      config->burst = nf_util_parse_int(optarg, "burst", 10, '\0');
-      if (config->burst == 0) {
+      config.burst = nf_util_parse_int(optarg, "burst", 10, '\0');
+      if (config.burst == 0) {
         PARSE_ERROR("Policer burst size must be strictly positive.\n");
       }
       break;
 
     case 'c':
-      config->dyn_capacity = nf_util_parse_int(optarg, "capacity", 10, '\0');
-      if (config->dyn_capacity <= 0) {
+      config.dyn_capacity = nf_util_parse_int(optarg, "capacity", 10, '\0');
+      if (config.dyn_capacity <= 0) {
         PARSE_ERROR("Flow table size must be strictly positive.\n");
       }
       break;
@@ -122,11 +117,11 @@ void nf_config_print(void)
 {
   NF_INFO("\n--- Policer Config ---\n");
 
-  NF_INFO("LAN Device: %" PRIu32, config->lan_device);
-  NF_INFO("WAN Device: %" PRIu32, config->wan_device);
-  NF_INFO("Rate: %" PRIu32, config->rate);
-  NF_INFO("Burst: %" PRIu32, config->burst);
-  NF_INFO("Capacity: %" PRIu16, config->dyn_capacity);
+  NF_INFO("LAN Device: %" PRIu32, config.lan_device);
+  NF_INFO("WAN Device: %" PRIu32, config.wan_device);
+  NF_INFO("Rate: %" PRIu32, config.rate);
+  NF_INFO("Burst: %" PRIu32, config.burst);
+  NF_INFO("Capacity: %" PRIu16, config.dyn_capacity);
 
   NF_INFO("\n--- ------ ------ ---\n");
 }

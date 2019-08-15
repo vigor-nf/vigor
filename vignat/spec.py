@@ -1,5 +1,5 @@
 from state import flow_emap
-EXP_TIME = 10
+EXP_TIME = 10 * 1000
 EXT_IP_ADDR = ext_ip
 EXT_PORT = 1
 

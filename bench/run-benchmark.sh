@@ -19,11 +19,6 @@ if [ -z $MIDDLEBOX ]; then
     exit 1
 fi
 
-if [ -z $SCENARIO ]; then
-    echo "[run] No scenario specified" 1>&2
-    exit 2
-fi
-
 if [ -z $RESULTS_FILE ]; then
     echo "[bench] No results file specified" 1>&2
     exit 3
@@ -37,11 +32,17 @@ fi
 
 EXTRA=''
 pushd $MIDDLEBOX >> /dev/null
-  # Without -s, make prings 'Entering directory..' messages, idk why
+  # Without -s, make prints 'Entering directory..' messages, idk why
   LAYER="$(make -s _print-layer)"
-  if [ "$(make -s _print-needsreverse)" = "true" ]; then EXTRA='-x 20'; fi
+  if [ "$(make -s _print-needsreverse)" = "true" ]; then EXTRA='-x 32'; fi
 popd >> /dev/null
 
+case $SCENARIO in
+    "latency") DURATION=100;; # few probe flows per second so we need longer benchmarks
+    "throughput") DURATION=10;;
+    *) echo "Unknown scenario $SCENARIO" 1>&2; exit 5;;
+esac
+
 echo "[bench] Benchmarking..."
-ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/bench.lua -p 60 -d 10 $EXTRA $SCENARIO $LAYER 0 1"
+ssh $TESTER_HOST "sudo ~/moon-gen/build/MoonGen ~/scripts/bench.lua -p 60 -d $DURATION $EXTRA $SCENARIO $LAYER 0 1"
 scp $TESTER_HOST:results.tsv "./$RESULTS_FILE"

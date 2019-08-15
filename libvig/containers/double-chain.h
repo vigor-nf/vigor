@@ -182,6 +182,15 @@ struct DoubleChain;
           dchain_out_of_space_fp(dchain_expire_old_indexes_fp(ch, time)) ==
           false;
 
+  lemma void expire_old_dchain_nonfull_maybe(struct DoubleChain* chain, dchain ch,
+                                             vigor_time_t time);
+  requires double_chainp(ch, chain);
+  ensures double_chainp(ch, chain) &*&
+          (dchain_out_of_space_fp(dchain_expire_old_indexes_fp(ch, time)) ==
+           false &&
+           length(dchain_get_expired_indexes_fp(ch, time)) != 0) ==
+          (length(dchain_get_expired_indexes_fp(ch, time)) != 0);
+
   lemma void index_range_of_empty(int ir, vigor_time_t l);
   requires 0 < ir;
   ensures dchain_index_range_fp(empty_dchain_fp(ir, l)) == ir;

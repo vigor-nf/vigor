@@ -59,4 +59,12 @@ static inline void vigor_note(int cond) {
 #endif//KLEE_VERIFICATION
 
 
+#define NF_STATE(name, type, capacity, key_type,                        \
+                 val_type, lower_bound, upper_bound)                    \
+  "error: NF_STATE is not implemented yet, use dataspec.ml/py instead"
+
+#define NF_EXPORT_STATE(cname, pyname)                                  \
+  "error: NF_EXPORT_STATE is not implemented yet, \
+   assume state names in the spec are identical to the names used in the C implementation"
+
 #endif//_BOILERPLATE_UTIL_H_INCLUDED_

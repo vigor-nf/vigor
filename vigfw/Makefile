@@ -10,9 +10,4 @@ NF_ARGS := --wan 1 \
 
 NF_LAYER := 4
 
-ifeq (dsos, $(MAKECMDGOALS))
-include ../Makefile.dsos
-else
-# Include parent (in a convoluted way cause of DPDK)
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
-endif

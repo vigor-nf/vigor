@@ -8,7 +8,7 @@
 
 
 struct nf_config {
-	// "Main" LAN (i.e. internal) device, used for dumb forwarding
+	// "Main" LAN (i.e. internal) device, used for no-op not for NAT
 	uint16_t lan_main_device;
 
 	// WAN device, i.e. external
@@ -27,7 +27,7 @@ struct nf_config {
 	// i.e. ports will be allocated in [start_port, start_port + max_flows]
 	uint16_t start_port;
 
-	// Expiration time of flows in nanoseconds
+	// Expiration time of flows in microseconds
 	uint32_t expiration_time;
 
 	// Size of the flow table

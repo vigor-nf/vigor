@@ -18,9 +18,5 @@ NF_LAYER := 2
 # `true` if the NF needs some reverse traffic for a benchmark to be meaningful (e.g. Maglev needs backend heartbeats)
 NF_BENCH_NEEDS_REVERSE_TRAFFIC := false
 
-# DO NOT CHANGE - Include parent (in a convoluted way cause of DPDK)
-ifeq (dsos, $(MAKECMDGOALS))
-include ../Makefile.dsos
-else
+# DO NOT CHANGE - Include parent
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile
-endif

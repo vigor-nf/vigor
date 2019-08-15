@@ -114,10 +114,6 @@ stub_device_start(struct stub_device* dev)
 	set_packet_receive_success(received);
 	//need it forward, to make sure packet_receive args are the same in both calls
 	uint32_t packet_len = sizeof(struct stub_mbuf_content); //TODO: make length symbolic
-	//uint32_t data_len = klee_int("data_len");
-	//klee_assume(packet_len <= 90); //Make sure it fits 1 mbuf
-	//klee_assume(data_len <= packet_len);
-	//klee_assume(sizeof(struct ether_hdr) <= data_len);
 	uint32_t data_len = packet_len;
 	if (!received) {
 		// no packet
@@ -147,7 +143,7 @@ stub_device_start(struct stub_device* dev)
 
 	struct stub_mbuf_content* mbuf_content = malloc(sizeof(struct stub_mbuf_content));
 	if (mbuf_content == NULL) {
-		klee_abort(); // TODO ahem...
+		klee_abort();
 	}
 	// NOTE: validator depends on this specific name, "user_buf"
 	klee_make_symbolic(mbuf_content, sizeof(struct stub_mbuf_content), "user_buf");
@@ -224,7 +220,7 @@ stub_device_start(struct stub_device* dev)
 	// 48-63: VLAN Tag (0, no VLAN)
 	uint64_t wb1 = 0b0000000000000000000000000000000000000000000000000000000000000011;
 
-	// get packet length
+	// packet length
 	wb1 |= (uint64_t) packet_len << 32;
 
 	SET_BIT(wb1, 7, (is_ipv4 & (
@@ -237,12 +233,6 @@ stub_device_start(struct stub_device* dev)
 			// Or just a broadcast, which can be pretty much anything
 			| is_ip_broadcast)));
 
-	if(is_ipv4) {
-		// TODO can we make version_ihl symbolic?
-		mbuf_content->ipv4.version_ihl = (4 << 4) | 5; // IPv4, 5x4 bytes - concrete to avoid symbolic indexing
-		mbuf_content->ipv4.total_length = rte_cpu_to_be_16(sizeof(struct ipv4_hdr) + sizeof(struct tcp_hdr));
-	}
-
 	// Write the packet into the proper place
 	memcpy((void*) mbuf_addr, mbuf_content, packet_len);
 
@@ -253,15 +243,13 @@ stub_device_start(struct stub_device* dev)
 	// Get the DPDK packet type
 	uint32_t traced_ptype = 0;
 	traced_ptype |= 0x00000001; // ether; always - see TODO in definition of the ptype above
-	if (is_ipv4) traced_ptype |= 0x00000010;
-	if (is_ipv6) traced_ptype |= 0x00000040;
-	if (has_ip_ext) {
-		if (is_ipv4) traced_ptype |= 0x00000030;
-		if (is_ipv6) traced_ptype |= 0x000000c0;
-	}
-	if (is_udp) traced_ptype |= 0x00000200;
-	if (is_tcp) traced_ptype |= 0x00000100;
-	if (is_sctp) traced_ptype |= 0x00000400;
+	traced_ptype |= is_ipv4 * 0x00000010;
+	traced_ptype |= is_ipv4 * 0x00000040;
+	traced_ptype |= is_ipv4 * has_ip_ext * 0x00000030;
+	traced_ptype |= is_ipv6 * has_ip_ext * 0x000000c0;
+	traced_ptype |= is_udp * 0x00000200;
+	traced_ptype |= is_tcp * 0x00000100;
+	traced_ptype |= is_sctp * 0x00000400;
 
 	bool received_a_packet = packet_receive(device_index, (void**)&mbuf_addr, &data_len);
 	klee_assert(received_a_packet);
