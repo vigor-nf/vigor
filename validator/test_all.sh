@@ -4,7 +4,8 @@ KLEE_OUT_DIR=$1
 WORK_DIR=$2
 SPEC_DIR=$3
 FSPEC_PLUGIN=$4
-SINGLE_TEST=$5
+NF_NAME=$5
+SINGLE_TEST=$6
 REPORT_FNAME="${WORK_DIR}/report.txt"
 BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -74,8 +75,8 @@ validate_file() {
     VALID_RESULT="${UNIQUE_PREFIX}.validator_result"
     VERIF_RESULT="${UNIQUE_PREFIX}.vf_result"
     cp $FNAME $UNIQUE_PREFIX.src
-    CMD1="$BASE_DIR/validator.byte $FSPEC_PLUGIN $FNAME $UNIQUE_PREFIX $VERIFAST $SPEC_DIR"
-    echo "(cd $BASE_DIR && make all) && $CMD1" > "${UNIQUE_PREFIX}.cmd"
+    CMD1="$BASE_DIR/validator.byte $FSPEC_PLUGIN $FNAME $UNIQUE_PREFIX $VERIFAST $SPEC_DIR $NF_NAME"
+    echo "cd $BASE_DIR && $CMD1" > "${UNIQUE_PREFIX}.cmd"
     $CMD1 &> $VALID_RESULT
     VERIF_RESULT="${UNIQUE_PREFIX}.verify.stdout"
     analyze_result $VALID_RESULT $VERIF_RESULT $FNAME
@@ -103,7 +104,7 @@ fi
 command -v $VERIFAST >/dev/null 2>&1 ||
     { echo >&2 "I require custom VeriFast in the PATH.  Aborting."; exit 1; }
 
-(cd $BASE_DIR && make all)
+cd $BASE_DIR
 if [ $? != 0 ]; then exit 1; fi
 mkdir -p $WORK_DIR
 rm -f $REPORT_FNAME
@@ -119,6 +120,7 @@ export REPORT_FNAME
 export VERIFAST
 export TOT_FILES
 export SPEC_DIR
+export NF_NAME
 export FSPEC_PLUGIN
 export BASE_DIR
 

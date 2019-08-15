@@ -3,15 +3,6 @@ open Str
 open Fspec_api
 open Ir
 
-(* FIXME: borrowed from ../codegen/data_spec.ml *)
-type container = Map of string * string * string
-               | Vector of string * string * string
-               | CHT of string * string
-               | DChain of string
-               | Int
-               | UInt
-               | UInt32
-               | EMap of string * string * string * string
 
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
@@ -948,16 +939,12 @@ let expire_items_single_map_spec typs =
         (tmp_gen "cur_ch") ^ ", " ^
         (List.nth_exn args 3) ^
         "));\n\
-         if (length(dchain_get_expired_indexes_fp(" ^
-        (tmp_gen "cur_ch") ^ ", " ^
-        (List.nth_exn args 3) ^
-        ")) > 0 ) {\n\
-         expire_old_dchain_nonfull\
+         expire_old_dchain_nonfull_maybe\
          (" ^ (List.nth_exn args 0) ^ ", " ^
         (tmp_gen "cur_ch") ^ ", " ^
         (List.nth_exn args 3) ^
         ");\n\
-         }} @*/");
+         } @*/");
    ];
    lemmas_after = [
      (fun {tmp_gen;_} ->
@@ -1180,14 +1167,14 @@ let gen_dchain_params containers =
 let gen_preamble nf_loop containers =
   let lma_literals = gen_lma_literals containers in
   "\
-#include \"lib/expirator.h\"\n\
-#include \"lib/stubs/time_stub_control.h\"\n\
-#include \"lib/containers/map.h\"\n\
-#include \"lib/containers/double-chain.h\"\n\
+#include \"libvig/expirator.h\"\n\
+#include \"libvig/stubs/time_stub_control.h\"\n\
+#include \"libvig/containers/map.h\"\n\
+#include \"libvig/containers/double-chain.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
-  "enum LMA_enum {" ^ (String.concat ~sep:", " lma_literals) ^
-  ", LMA_INVALID};\n" ^
+  "enum LMA_enum {" ^ (match lma_literals with | _ :: _ -> (String.concat ~sep:", " lma_literals) ^ ", " | _ -> "") ^
+  "LMA_INVALID};\n" ^
   "void to_verify()\n\
    /*@ requires true; @*/ \n\
    /*@ ensures true; @*/\n{\n\
@@ -1229,7 +1216,7 @@ let gen_preamble nf_loop containers =
    int map_allocation_order = 0;\n\
    int dchain_allocation_order = 0;\n\
    int expire_items_single_map_order = 0;\n\
-   enum LMA_enum last_map_accessed = " ^ (List.hd_exn lma_literals) ^ ";\n" ^
+   enum LMA_enum last_map_accessed = " ^ (match lma_literals with | hd :: _ -> hd | _ -> "0") ^ ";\n" ^
   (String.concat ~sep:"" (List.map containers ~f:(fun (_,ctyp) ->
        match ctyp with
        | EMap (typ, _, _, _) -> "//@ " ^ (ityp_name typ) ^ " " ^ (lsim_variable_name typ) ^ ";\n"

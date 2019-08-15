@@ -1,25 +1,16 @@
-sudo: required
 dist: bionic
-language: cpp
-compiler:
-  - gcc
+language: minimal
 
 services:
   - docker
 
 before_install:
-  - docker pull azaostro/vignat-deps
+  - docker pull dslabepfl/vigor
 
 install:
-  - docker run -dt --name=vignat-deps azaostro/vignat-deps
-  - docker cp nf vignat-deps:/home/vigor/
-  - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/nf
-  - docker cp validator vignat-deps:/home/vigor/
-  - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/validator
-  - docker cp codegen vignat-deps:/home/vigor/
-  - docker exec vignat-deps sudo chown -R vigor:vigor /home/vigor/codegen
-  - docker cp test-vigor.sh vignat-deps:/home/vigor/
-  - docker exec vignat-deps sudo chown vigor:vigor /home/vigor/test-vigor.sh
+  - docker run -dt --name=vigor dslabepfl/vigor
+  - docker cp . vigor:/home/vigor/vigor/
+  - docker exec vigor sudo chown -R vigor:vigor /home/vigor/vigor/
 
 script:
-  - docker exec vignat-deps /bin/bash test-vigor.sh
+  - docker exec vigor /bin/bash -c 'cd vigor && . .travis-test.sh'

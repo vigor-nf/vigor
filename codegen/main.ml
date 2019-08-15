@@ -95,8 +95,8 @@ let gen_eq_function compinfo =
   "(void* a, void* b)\n" ^
   (eq_fun_contract compinfo) ^ "\n" ^
   "{\n  struct " ^ compinfo.cname ^
-  "* id1 = a;\n  struct " ^ compinfo.cname ^
-  "* id2 = b;\n" ^
+  "* id1 = (struct " ^ compinfo.cname ^ "*) a;\n  struct " ^ compinfo.cname ^
+  "* id2 = (struct " ^ compinfo.cname ^ "*) b;\n" ^
   "  //@ open [f1]" ^ (predicate_name compinfo) ^ "(a, aid);\n" ^
   "  //@ open [f2]" ^ (predicate_name compinfo) ^ "(b, bid);\n" ^
   let field_eq_name fname = fname ^ "_eq" in
@@ -276,7 +276,7 @@ let gen_hash compinfo =
   "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj)\n" ^
   (hash_contract compinfo) ^ "\n" ^
   "{\n" ^
-  "  struct " ^ compinfo.cname ^ "* id = obj;\n" ^
+  "  struct " ^ compinfo.cname ^ "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
   "\n" ^
   "  //@ open [f]" ^ (predicate_name compinfo) ^ "(obj, v);\n" ^
   (String.concat "" (List.map (fun {fname;ftype;_} ->
@@ -450,7 +450,7 @@ let gen_log_fun compinfo =
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            if 0L < i then
-             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", " ^
+             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
              fname ^ "[" ^ current ^ "]" ^ ");\n" ^
              (arr_fields (Int64.sub i 1L))
            else ""
@@ -483,7 +483,7 @@ let fill_impl_file compinfo impl_fname header_fname =
   ignore (P.fprintf cout "%s\n\n" (gen_hash compinfo));
   ignore (P.fprintf cout "#endif//KLEE_VERIFICATION\n\n");
   ignore (P.fprintf cout "#ifdef ENABLE_LOG\n");
-  ignore (P.fprintf cout "#include \"lib/nf_log.h\"\n");
+  ignore (P.fprintf cout "#include \"libvig/nf_log.h\"\n");
   ignore (P.fprintf cout "%s\n\n" (gen_log_fun compinfo));
   ignore (P.fprintf cout "#  else//ENABLE_LOG\n");
   ignore (P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo));
@@ -505,7 +505,7 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ignore (P.fprintf cout "#ifndef _%s_GEN_H_INCLUDED_\n" compinfo.cname);
   ignore (P.fprintf cout "#define _%s_GEN_H_INCLUDED_\n\n" compinfo.cname);
   ignore (P.fprintf cout "#include <stdbool.h>\n");
-  ignore (P.fprintf cout "#include \"lib/boilerplate_util.h\"\n\n");
+  ignore (P.fprintf cout "#include \"libvig/boilerplate_util.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_include_deps compinfo def_headers));
   ignore (P.fprintf cout "#include \"%s\"\n\n" orig_fname);
   ignore (P.fprintf cout "%s\n\n" (gen_inductive_type compinfo));
@@ -517,7 +517,7 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ignore (P.fprintf cout "%s\n\n" (gen_log_fun_decl compinfo));
   ignore (P.fprintf cout "#ifdef KLEE_VERIFICATION\n");
   ignore (P.fprintf cout "#  include <klee/klee.h>\n");
-  ignore (P.fprintf cout "#  include \"lib/stubs/containers/str-descr.h\"\n\n");
+  ignore (P.fprintf cout "#  include \"libvig/stubs/containers/str-descr.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_str_field_descrs_decl compinfo));
   ignore (P.fprintf cout "#endif//KLEE_VERIFICATION\n\n");
   ignore (P.fprintf cout "#endif//_%s_GEN_H_INCLUDED_\n" compinfo.cname);
@@ -525,8 +525,8 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ()
 
 let relativise_header_path fpath =
-  let upper_dirs = Str.regexp ".*/lib/" in
-  Str.replace_first upper_dirs "lib/" fpath
+  let upper_dirs = Str.regexp ".*/libvig/" in
+  Str.replace_first upper_dirs "libvig/" fpath
 
 let traverse_globals (f : file) : unit =
   let def_headers = ref [] in

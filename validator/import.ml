@@ -65,6 +65,10 @@ let parse_int str =
   (* As a hack: handle -10 in 64bits.
      TODO: handle more generally*)
   if (String.equal str "18446744073709551606") then Some (-10)
+  (* -10000 *)
+  else if (String.equal str "18446744073709541616") then Some (-10000)
+  (* -3600000000000 *)
+  else if (String.equal str "18446740473709551616") then Some (-3600000000000)
   (* As another hack: handle -300 in 64bits. *)
   else if (String.equal str "18446744073709551316") then Some (-300)
   else if (String.equal str "18446744073709551556") then Some (-60)
@@ -450,6 +454,10 @@ let get_sint_in_bounds v =
   (*Special case for 64bit -10, for now,
     FIXME: make a more general case.*)
   if (String.equal v "18446744073709551606") then -10
+  (* -10000 *)
+  else if (String.equal v "18446744073709541616") then -10000
+  (* -3600000000000 *)
+  else if (String.equal v "18446740473709551616") then -3600000000000
   (* also -300 *)
   else if (String.equal v "18446744073709551316") then -300
   (* and -60 *)
@@ -462,7 +470,8 @@ let get_sint_in_bounds v =
   else
     let integer_val = Int.of_string v in
     if Int.(integer_val <> 10000000000) && (* We want this 10B - the policer exp time*)
-       Int.(integer_val > 2147483647) then
+       Int.(integer_val <>  3750000000) &&
+       Int.(integer_val  >  2147483647) then
       integer_val - 2*2147483648
     else
       integer_val
@@ -495,10 +504,10 @@ let eliminate_false_eq_0 exp t =
 let rec is_bool_expr exp =
   match exp with
   | Sexp.List [Sexp.Atom f; _; _] when is_bool_fun f -> true
-  | Sexp.List [Sexp.Atom a; _; lhs; rhs] when String.equal a "And" ->
+  | Sexp.List [Sexp.Atom "And"; _; lhs; rhs] ->
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (is_bool_expr lhs) || (is_bool_expr rhs)
-  | Sexp.List [Sexp.Atom ext; _; e] when String.equal ext "ZExt" ->
+  | Sexp.List [Sexp.Atom "ZExt"; _; e] ->
     is_bool_expr e
   | _ -> false
 
@@ -638,6 +647,10 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
                          ];
               ] ->
     {v=Bop(Or, get_sexp_value_raw left Boolean ~at, get_sexp_value_raw right Boolean ~at);t=Boolean}
+  | Sexp.List [Sexp.Atom "Shl"; Sexp.Atom "w32"; target; shift;] ->
+    {v=Bop(Shl, (get_sexp_value_raw target Uint32 ~at), (get_sexp_value_raw shift Uint32 ~at));t}
+  | Sexp.List [Sexp.Atom "AShr"; Sexp.Atom "w32"; target; shift;] ->
+    {v=Bop(AShr, (get_sexp_value_raw target Uint32 ~at), (get_sexp_value_raw shift Uint32 ~at));t}
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w8"; Sexp.Atom "0"; src;] ->
     get_sexp_value_raw src t ~at
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
@@ -688,11 +701,9 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     when t = Sint64 ->
     let srct = (guess_type src Sunknown) in
     make_cast_if_needed (get_sexp_value_raw src srct ~at) srct t
-  | Sexp.List [Sexp.Atom f; Sexp.Atom offset; src;]
-    when (String.equal f "Extract") && (String.equal offset "0") ->
+  | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "0"; src;] ->
     get_sexp_value_raw src Boolean ~at
-  | Sexp.List [Sexp.Atom f; Sexp.Atom w; arg]
-    when (String.equal f "SExt") && (String.equal w "w64") ->
+  | Sexp.List [Sexp.Atom "SExt"; Sexp.Atom "w64"; arg] ->
     {v=Cast(Uint64,get_sexp_value_raw arg Uint32 ~at);t=Uint64}
   | Sexp.List [Sexp.Atom "Mul"; Sexp.Atom width; lhs; rhs] ->
     let mt = guess_type_l [lhs;rhs] Unknown in
@@ -750,14 +761,14 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
     {v=Bop (And,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
-  | Sexp.List [Sexp.Atom f; lhs; rhs]
-    when (String.equal f "Or") &&
-         ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
-    (*FIXME: and here, but really that is a bool expression, I know it*)
+  | Sexp.List [Sexp.Atom "Or"; Sexp.Atom _; lhs; rhs]
+    when ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
+    (*FIXME: or here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
     {v=Bop (Or,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
-  | Sexp.List [Sexp.Atom f; Sexp.Atom _; lhs; rhs]
-    when (String.equal f "And") ->
+  | Sexp.List [Sexp.Atom "Or"; Sexp.Atom "w32"; lhs; rhs] ->
+    {v=Bop (Bit_or, (get_sexp_value_raw lhs Uint32 ~at), (get_sexp_value_raw rhs Uint32 ~at));t}
+  | Sexp.List [Sexp.Atom "And"; Sexp.Atom _; lhs; rhs] ->
     begin 
       match rhs with
       | Sexp.List [Sexp.Atom "w32"; Sexp.Atom n] when is_int n ->
