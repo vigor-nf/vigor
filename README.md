@@ -1,6 +1,3 @@
-# NOTE: Dear SOSP AE reviewer, while all the code of the artifact is in this repo, there are a few things we haven't written up properly yet, and this repo hasn't been thoroughly tested; but the artifact is available, and we fully intend to have all descriptions/scripts working for the 'results replicated' deadline
-
-
 This repository contains the Vigor verification toolchain and network functions (NFs).
 
 # Machine prerequisites
@@ -60,11 +57,8 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 | Click NAT           | `click-nat`         | Click-based NAT                        |
 | Click no-op         | `click-nop`         | Click-based no-op (rewrites headers)   |
 | Moonpol             | `moonpol`           | Libmoon-based traffic policer          |
-| Unverified NAT      | `unverified-nat`    | DPDK-based NAT                         |
-| Unverified no-op    | `unverified-nop`    | DPDK-based no-op (rewrites headers)    |
-| Unverified router   | `unverified-router` | DPDK-based router                      |
 
-The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true`.
+The baseline NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true` when running the benchmark targets (see table below).
 
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
@@ -72,8 +66,8 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | Target(s)                  | Description                                 | Expected duration                  |
 | -------------------------- | ------------------------------------------  | ---------------------------------- |
 | Default                    | Compile the NF                              | <1min                              |
-| `run`                      | Run the NF using recommended arguments      | <1min to start                     |
-| `symbex validate`          | Verify the NF with DPDK models              | <1min to symbex, hours to validate |
+| `run`                      | Run the NF using recommended arguments      | <1min to start (stop with Ctrl+C)  |
+| `symbex validate`          | Verify the NF with DPDK models              | <1min to symbex, <1h to validate   |
 | `symbex-withdpdk validate` | Verify the NF with hardware and OS models   | <1h to symbex, hours to validate   |
 | `symbex-withdsos validate` | Verify the NF with hardware models on DSOS  | <1h to symbex, hours to validate   |
 | `count-loc`                | Count LoC in the NF                         | <1min                              |
@@ -86,7 +80,6 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | `count-uclibc-loc`         | Count LoC in KLEE-uClibc                    | <1min                              |
 | `benchmark-throughput`     | Benchmark the NF's throughput               | <30min                             |
 | `benchmark-latency`        | Benchmark the NF's latency                  | <10min                             |
-| `dsos-clean`               | Remove DSOS-related temporary files         | <1s                                |
 | `dsos-iso`                 | Build a DSOS ISO image runnable in a VM     | <1min                              |
 | `dsos-multiboot1`          | Build a DSOS ISO image suitable for netboot | <1min                              |
 | `dsos-run`                 | Build and run DSOS in a qemu VM             | <1min to start                     |
@@ -162,6 +155,7 @@ When you reboot it, you should see some activity in the PXE server output and se
 At this point you can stop the PXE boot server.
 The DSOS is running!
 
+
 # Making your own NF
 
 - Run `make new-nf` at the root of the repository, and answer the prompt.
@@ -218,37 +212,7 @@ We depend on, and are grateful for:
 
 # SOSP paper details
 
-This section details the justification for each claim, figure, table in the SOSP paper; "references" are to sections of this file, `paths` refers to this repository unless otherwise indicated.
-
-Section 1, three improvements from VigNAT:
-- We generalize to arbitrary NFs -> we present five verified NFs, and it is easy to create a new one (see "Making your own NF")
-- We verify the entire stack -> you can build and verify an OS with a single NF using Vigor (see DSOS-related points of "Vigor NFs")
-- We introduce pay-as-you-go verification -> you can verify an NF with any spec you want, even partial (see the pay-as-you-go part of "Vigor NFs")
-
-Section 1, we present five NFs and show that each performs on par with a standard baseline:
-- See the list of Vigor NFs and baselines, as well as benchmarking instructions, in "Vigor NFs"
-
-Section 2, Vigor verification has two components:
-- 1, libVig verification -> this can be checked as indicated in "Vigor NFs"
-- 2, NF stack verification -> this can be checked as indicated in "Vigor NFs"
-
-Section 2, libVig provides data structures to write NFs:
-- These are in `libvig/containers`
-
-Section 3, NF_EXPORT_STATE macro:
-- This is a simplification of our messy prototype; see the `dataspec.ml`, `fspec.ml`, `dataspec.py` files in each NF's folder
-
-Section 4, percents of code that ends up running:
-- See the artifact from the KBNets work: https://github.com/vignat/vignat/tree/kbnets18 (specifically in the `replication/kbnets` folder)
-
-Section 4, early OS startup code:
-- Assembly instructions during boot: `libvig/kernel/asm`
-- C code to scan the PCI bus: `libvig/kernel/dsos_pci.c`
-- Trivial memory allocator: `libvig/stubs/externals/malloc.c`
-
-Section 5, our tool provides failed symbolic traces:
-- During validation (see `Vigor NFs` above), any trace printed with something other than "Invalid" can be inspected (they are in `validator/out`)
-
+This section details the justification for each figure and table in the SOSP paper; "references" are to sections of this file, `paths` refers to this repository unless otherwise indicated.
 
 Figure 1:
 - "NF logic" is the code in each NF's folder
