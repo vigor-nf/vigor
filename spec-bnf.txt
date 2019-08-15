@@ -1,0 +1,53 @@
+<spec>                  ::= <imports> <constant-decls> <block>
+<imports                ::= <import> <imports> | ""
+<import>                ::= "import" <python-symbol> "\n"
+                          | "from" <python-symbol> "import" <symbols> "\n"
+<symbols>               ::= <python-symbol> | <python-symbol> "," <symbols>
+<constant-decls>        ::= <constant-decl> | <constant-decl> <constant-decl>
+<constant-decl>         ::= <python-symbol> "=" <expression> "\n"
+<block>                 ::= <statements>
+<statements>            ::= <tatement> | <tatement> <statements>
+<statement>             ::= <if-statement> | <if-else-statement>
+                          | <assignment-statement> | <pop-header-statement>
+                          | <assert-statement> | <return-statement>
+                          | <pass-statement>
+<if-statement>          ::= "if" <expression> ":" "\n" "  " <block>
+<if-else-statement>     ::= "if" <expression> ":" "\n" "  " <block> "\n"
+                            "else: "\n" "  " <block>
+<assignment-statement>  ::= <python-symbol> "=" <expression> "\n"
+<pop-header-statement>  ::= <python-symbol> "=" "pop_header(" <python-symbol>
+                                "," "on_mismatch=" <expression> ")" "\n"
+<assert-statement>      ::= "assert" <expression> "\n"
+<return-statement>      ::= "return (" <list-expression> ","
+                                       <list-expression> ")" "\n"
+<pass-statement>        ::= "pass" "\n"
+<expressions>           ::= <expression> | <expression> <expressions>
+<expression>            ::= "(" <expression> ")"
+                          | <aexpression> | <bexpression> | <term> | "..."
+                          | <list-expression>
+<list-expression>       ::= "[" <expressions> "]"
+<aexpression>           ::= <aexpression> "/" <aexpression>
+                          > <aexpression> "*" <aexpression>
+                          > <aexpression> "-" <aexpression>
+                          > <aexpression> "+" <aexpression>
+<bexpression>           ::= <aexpression> "<" <aexpression>
+                          | <aexpression> "<=" <aexpression>
+                          | <aexpression> ">" <aexpression>
+                          | <aexpression> ">=" <aexpression>
+                          | <aexpression> "==" <aexpression>
+                          | <aexpression> "!=" <aexpression>
+                          | <aexpression> "<>" <aexpression>
+                          > <bexpression> "and" <bexpression>
+                          | <bexpression> "or" <bexpression>
+                          > <bexpression> "not" <bexpression>
+<term>                  ::= <python-symbol> | <literal>
+                          | <call> | <attribute> | <constructor>
+<literal>               ::= NUMBER | True | False
+<call>                  ::= <python-symbol> "(" <expressions> ")"
+                          | <attribute> "(" <expressions> ")"
+<attribute>             ::= <python-symbol> "." <python-symbol>
+<constructor>           ::= <python-symbol> "(" <initializers> ")"
+                          | <python-symbol> "(" <python-symbol> ","
+                                                <initializers> ")"
+<initializers>          ::= <initializer> <initializers> | ""
+<initializer>           ::= <python-symbol> "=" <expression>
