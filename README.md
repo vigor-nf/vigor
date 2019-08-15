@@ -51,6 +51,7 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 
 | NF                  | Folder              | Description                            |
 | ------------------- | ------------------- | -------------------------------------- |
+| Vigor NOP           | `unverified-nop`    | Vigor-based unverified no-op forwarder |
 | Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
 | Click firewall      | `click-fw`          | Click-based firewall                   |
 | Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
@@ -58,7 +59,7 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 | Click no-op         | `click-nop`         | Click-based no-op (rewrites headers)   |
 | Moonpol             | `moonpol`           | Libmoon-based traffic policer          |
 
-The baseline NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true` when running the benchmark targets (see table below).
+The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true` when running the benchmark targets (see table below).
 
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
