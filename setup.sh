@@ -37,7 +37,7 @@ if [ ! -f "$PATHSFILE" ]; then
 fi
 
 sudo apt-get update
-sudo apt-get install -y ca-certificates software-properties-common patch wget build-essential git
+sudo apt-get install -y ca-certificates software-properties-common patch wget build-essential git cloc
 
 
 # ====
