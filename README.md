@@ -95,6 +95,25 @@ For instance:
 - To benchmark the Vigor policer's throughput, run `cd vigpol` then `make benchmark-throughput`
 
 
+# Repository structure
+
+Besides the NF folders mentioned above, the repository contains:
+- `.git*`: Git-related files
+- `.travis*`: Travis-related files for continuous integration
+- `Docker*` Docker-related files to build an image
+- `Makefile*`: Makefiles for the NFs
+- `README.md`: This file
+- `bench`: Benchmarking scripts, used by the benchmarking make targets
+- `codegen`: Code generators, used as part of the Vigor NF build process
+- `doc`: Documentation files
+- `grub.cfg`, `linker.ld`, `pxe-boot.sh`: DSOS-related files
+- `libvig`: The libVig folder
+- `nf.h`, `nf_main.c`: Main header/source file for Vigor NFs
+- `setup*`: Setup script and related files
+- `template`: Template for new Vigor NFs (see "Create your own Vigor NF" below)
+- `validator`: The Vigor Validator
+
+
 # Using the DSOS
 
 Vigor includes a Domain-Specific Operating System (DSOS) that is simple enough to be symbolically executed, besides trusted boot code.
@@ -156,7 +175,7 @@ At this point you can stop the PXE boot server.
 The DSOS is running!
 
 
-# Making your own NF
+# Create your own Vigor NF
 
 - Run `make new-nf` at the root of the repository, and answer the prompt.
 
