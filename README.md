@@ -277,7 +277,7 @@ Figure 10:
 - This is a graphical version of the setup described by `bench/config.sh`
 
 Figure 11:
-- The data is in `data/VigorClickComponentsComparison.csv` file
+- The data is in `doc/VigorClickComponentsComparison.csv` file
 
 
 Table 1:

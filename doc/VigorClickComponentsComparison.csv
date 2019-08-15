@@ -1,0 +1,36 @@
+Click NAT, IPRewriter, UDPRewriter, TCPRewriter
+Vigor NAT, hash-map, vector, number-allocator
+Click Stateful Firewall, IPRewriter, UDPRewriter, TCPRewriter
+Vigor Stateful Firewall, hash-map, vector, number-allocator
+Click Multicast, IPMulticastEtherEncap, IGMP
+Vigor Multicast, hash-map, vector, number-allocator
+Click BRAS, PPPControlProtocol, GREEncap
+Vigor BRAS, hash-map, vector, number-allocator
+Click Monitoring, IPRateMonitor, TCPCollector
+Vigor Monitoring, hash-table, vector, number-allocator
+Click DPI, Classifier, IPClassifier
+Vigor DPI, pattern-matcher, vector
+Click IDS, Classifier, IPClassifier
+Vigor IDS, pattern-matcher, vector
+Click IPS, IPClassifier, IPFilter
+Vigor IPS, pattern-matcher, vector
+Click Congestion Control, RED, SetECN
+Vigor Congestion Control, queue, random generator
+Click Traffic Shaper, BandwitdthShaper, DelayShaper
+Vigor Traffic Shaper, queue
+Click Tunnel, IPEncap, IPsecESPEncap
+Vigor Tunnel, crypto
+Click Stateless Load Balancer, RatedSplitter, HashSwitch
+Vigor Stateless Load Balancer, --
+Click Consistent Load Balancer, ConsistentHashSwitch
+Vigor Consistent Load Balancer, cht, hash-map, vector, number-allocator
+Click Bridge, Bridge
+Vigor Bridge, hash-map, vector, number-allocator
+Click Traffic Policer, Policer
+Vigor Traffic Policer, hash-map, vector, number-allocator
+Click Stateless Firewall, IPFilter(acl)
+Vigor Stateless Firewall, hash-map, vector
+Click DDoS Prevention, IPFilter(acl)
+Vigor DDoS Prevention, hash-map, vector
+Click IPv6/IPv4 Proxy, ProtocolTranslator46
+Vigor IPv6/IPv4 Proxy, ---
