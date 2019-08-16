@@ -137,7 +137,7 @@ Then, bind the NICs you intend for the NF to use to `vfio-pci` (`RTE_SDK` is the
 
     $ $RTE_SDK/usertools/dpdk-devbind.py -b vfio-pci <nic1> <nic2>
     
-Here `<nic1>` and `<nic2>` are PCI addresses of the nicks you want to bind (e.g. `0000:06:00.0`).
+Here `<nic1>` and `<nic2>` are PCI addresses of the NICs you want to bind (e.g. `0000:06:00.0`).
 You can find the PCI addresses of your NICs using `dpdk-devbind.py -s`.
 
 > :warning: **Warning**: after the next step your terminal will stop responding.
@@ -263,7 +263,7 @@ Figure 4:
 - Step 4 "Theorem proving" is performed by VeriFast, as invoked in `validator/verifier.ml`
 
 Figure 5:
-- This is a simplified version of the `vigbridge` folder's code (besides `spec.py`), and of `nf_main.c`
+- This is a simplified version of the `vigbridge` folder's code (besides `spec.py` and `paygo-*.py`), and of `nf_main.c`
 
 Figure 6:
 - This is a simplified version of a common pattern we use in NFs, see e.g. `vignat/nat_flowmanager.{c,h}`
@@ -278,33 +278,42 @@ Figure 9:
 - This is a simplified version of `vigbridge/paygo-broadcast.py`
 
 Figure 10:
-- This is a graphical version of the setup described by `bench/config.sh`
+- This is a simplified version of `vigbridge/paygo-no_loop.py`
 
 Figure 11:
+- This is a graphical version of the setup described by `bench/config.sh`
+
+Figure 12:
 - The data is in `doc/VigorClickComponentsComparison.csv` file
 
 
 Table 1:
-- These are the NFs mentioned in "Vigor NFs"
+- These are the NFs mentioned in [Vigor NFs]
 
 Table 2:
-- These numbers are obtained using their corresponding targets as mentioned in "Vigor NFs"
+- These numbers are obtained using their corresponding targets as mentioned in [Vigor NFs]
 
 Table 3:
-- These numbers are obtained using the targets mentioned in "Vigor NFs"; note that we count paths (as reported at the end of a KLEE run), not prefixes, and that to get the per-trace time we multiply wall-clock time by the number of CPUs used by `parallel` then divide by the number of paths.
+- This is an outdated version of Table 8.
+The numbers can not be obtained on the current version.
+To reproduce these numbers you'll need to roll back about 500 commits.
 
 Table 4:
 - The NF bugs were discovered during development
 - The DPDK and ixgbe bugs can be reproduced by un-patching DPDK and running verification.
 
 Table 5:
-- These numbers can be reproduced (assuming identical hardware) by running the benchmarks as described in "Vigor NFs"
+- These numbers can be reproduced (assuming identical hardware) by running the benchmarks as described in [Vigor NFs]
 
 Table 6:
-- The "LOC" column can be obtained using the spec line-counting target as mentioned in "Vigor NFs"
+- The "LOC" column can be obtained using the spec line-counting target as mentioned in [Vigor NFs]
 - The time to translate RFCs was noted during development and is not meaningfully reproducible
 - The user-supplied bounds are the conjunctions of the methods passed as the last argument of a data structure declaration in the `fspec.ml` file of each NF;
   except that to be consistent with the paper, `a < X & X < b` counts as 1.
 
 Table 7:
 - The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository
+
+Table 8:
+- These numbers are obtained using the targets mentioned in [Vigor NFs];
+  note that we count paths (as reported at the end of a KLEE run), not prefixes, and that to get the per-trace time we multiply wall-clock time by the number of CPUs used by `parallel` then divide by the number of paths.
