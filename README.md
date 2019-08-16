@@ -214,6 +214,9 @@ This table does not include the hugepages settings.
 - Q: DPDK says `PMD: ixgbe_dev_link_status_print():  Port 0: Link Down`, what's up?
 - A: This doesn't mean the link is down, just that it's down _at the moment DPDK checks_, it usually comes up right after that and the NF is fine.
 
+- Q: DPDK cannot reserve all of the hugepages it needs, though it can reserve some of them.
+- A: Reboot the machine. This is the only workaround that always works.
+
 
 # Dependencies
 
