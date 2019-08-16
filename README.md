@@ -79,8 +79,8 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | `count-dpdk-loc`           | Count LoC in DPDK (not drivers)             | <1min                              |
 | `count-ixgbe-loc`          | Count LoC in the ixgbe driver               | <1min                              |
 | `count-uclibc-loc`         | Count LoC in KLEE-uClibc                    | <1min                              |
-| `benchmark-throughput`     | Benchmark the NF's throughput               | <30min                             |
-| `benchmark-latency`        | Benchmark the NF's latency                  | <10min                             |
+| `benchmark-throughput`     | Benchmark the NF's throughput               | <15min                             |
+| `benchmark-latency`        | Benchmark the NF's latency                  | <5min                              |
 | `dsos-iso`                 | Build a DSOS ISO image runnable in a VM     | <1min                              |
 | `dsos-multiboot1`          | Build a DSOS ISO image suitable for netboot | <1min                              |
 | `dsos-run`                 | Build and run DSOS in a qemu VM             | <1min to start                     |
@@ -213,6 +213,9 @@ This table does not include the hugepages settings.
 
 - Q: DPDK says `PMD: ixgbe_dev_link_status_print():  Port 0: Link Down`, what's up?
 - A: This doesn't mean the link is down, just that it's down _at the moment DPDK checks_, it usually comes up right after that and the NF is fine.
+
+- Q: DPDK cannot reserve all of the hugepages it needs, though it can reserve some of them.
+- A: Reboot the machine. This is the only workaround that always works.
 
 
 # Dependencies

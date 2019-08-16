@@ -38,8 +38,8 @@ pushd $MIDDLEBOX >> /dev/null
 popd >> /dev/null
 
 case $SCENARIO in
-    "latency") DURATION=100;; # few probe flows per second so we need longer benchmarks
-    "throughput") DURATION=10;;
+    "latency") DURATION=60;; # few probe flows per second so we need longer benchmarks
+    "throughput") DURATION=60;;
     *) echo "Unknown scenario $SCENARIO" 1>&2; exit 5;;
 esac
 

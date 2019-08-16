@@ -191,7 +191,7 @@ function measureLatencyUnderLoad(txDev, rxDev, layer, packetSize, duration, reve
 	local txLatencyQueue = txDev:getTxQueue(1)
 	local rxLatencyQueue = rxDev:getRxQueue(1)
 
-	for _, flowCount in ipairs({1,1000,10000,30000,40000,50000,60000,64000}) do
+	for _, flowCount in ipairs({60000}) do
 		if reverseFlowCount > 0 then
 			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount, true)
 		end
@@ -234,7 +234,7 @@ function measureMaxThroughputWithLowLoss(txDev, rxDev, layer, packetSize, durati
 	local txReverseQueue = rxDev:getTxQueue(0) -- yes, the rx/tx inversion is voluntary here
 	local rxReverseQueue = txDev:getRxQueue(0)
 
-	for _, flowCount in ipairs({1,10,100,1000,10000,20000,30000,40000,50000,60000,64000,65000,65535}) do
+	for _, flowCount in ipairs({60000}) do
 		if reverseFlowCount > 0 then
 			heatUp(txReverseQueue, rxReverseQueue, layer, packetSize, reverseFlowCount, true)
 		end
