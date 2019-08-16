@@ -257,7 +257,7 @@ Figure 4:
 - "Stateless logic" and "libVig" have the same meaning as Figure 1's "NF logic" and "libVig"
 - "libVig API" are the header files in the `libvig` folder
 - "NF specification" has the same meaning as Figure 2's "RFC-derived specification"/"One-off properties"
-- Step 1 "Symbolic execution" is performed by KLEE, using one of the `symbex` Make targets as indicated in `Vigor NFs`
+- Step 1 "Symbolic execution" is performed by KLEE, using one of the `symbex` Make targets as indicated in [Vigor NFs](#vigor-nfs)
 - Step 2 "Conversion" is performed by `validator/import.ml`
 - Step 3 "Lemma insertion" is performed by `validator/common_fspec.ml`
 - Step 4 "Theorem proving" is performed by VeriFast, as invoked in `validator/verifier.ml`
@@ -288,10 +288,10 @@ Figure 12:
 
 
 Table 1:
-- These are the NFs mentioned in [Vigor NFs]
+- These are the NFs mentioned in [Vigor NFs](#vigor-nfs)
 
 Table 2:
-- These numbers are obtained using their corresponding targets as mentioned in [Vigor NFs]
+- These numbers are obtained using their corresponding targets as mentioned in [Vigor NFs](#vigor-nfs)
 
 Table 3:
 - This is an outdated version of Table 8.
@@ -303,10 +303,10 @@ Table 4:
 - The DPDK and ixgbe bugs can be reproduced by un-patching DPDK and running verification.
 
 Table 5:
-- These numbers can be reproduced (assuming identical hardware) by running the benchmarks as described in [Vigor NFs]
+- These numbers can be reproduced (assuming identical hardware) by running the benchmarks as described in [Vigor NFs](#vigor-nfs)
 
 Table 6:
-- The "LOC" column can be obtained using the spec line-counting target as mentioned in [Vigor NFs]
+- The "LOC" column can be obtained using the spec line-counting target as mentioned in [Vigor NFs](#vigor-nfs)
 - The time to translate RFCs was noted during development and is not meaningfully reproducible
 - The user-supplied bounds are the conjunctions of the methods passed as the last argument of a data structure declaration in the `fspec.ml` file of each NF;
   except that to be consistent with the paper, `a < X & X < b` counts as 1.
@@ -315,5 +315,5 @@ Table 7:
 - The modular properties for each NF can be found as `paygo-*.py` files in each NF's repository
 
 Table 8:
-- These numbers are obtained using the targets mentioned in [Vigor NFs];
+- These numbers are obtained using the targets mentioned in [Vigor NFs](#vigor-nfs);
   note that we count paths (as reported at the end of a KLEE run), not prefixes, and that to get the per-trace time we multiply wall-clock time by the number of CPUs used by `parallel` then divide by the number of paths.
