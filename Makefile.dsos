@@ -118,9 +118,11 @@ KERNEL_INCLUDES := -I $(KERNEL_DIR)
 # For DSOS debug output on the VGA buffer
 KERNEL_DEFS := -DDSOS_DEBUG
 
-OTHER_INCLUDES := -I $(STUBS_DIR) -I $(SELF_DIR)/libvig --include $(SELF_DIR)/libvig/misc_defs.h
+OTHER_INCLUDES := -I $(STUBS_DIR) -I $(SELF_DIR)/libvig \
+                  --include $(SELF_DIR)/libvig/misc_defs.h
 
-C_SRCS = $(NF_FILES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) $(STUBS_SRCS) $(KERNEL_SRCS)
+C_SRCS = $(NF_FILES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) \
+         $(STUBS_SRCS) $(KERNEL_SRCS)
 C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
 
 BOOT_SRCS = $(KERNEL_DIR)/asm/boot.asm
@@ -143,7 +145,8 @@ CRTN_OBJ := $(patsubst %.asm, %.o, $(CRTN_SRC))
 
 
 # The order is important
-OBJS = $(BOOT_OBJS) $(CRTI_OBJ) $(CRTBEGIN_OBJ) $(C_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
+OBJS = $(BOOT_OBJS) $(CRTI_OBJ) $(CRTBEGIN_OBJ) \
+       $(C_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
 
 DEFS = $(NF_DEFS) $(DPDK_DEFS) $(KERNEL_DEFS)
 INCLUDES = $(NF_INCLUDES) $(DPDK_INCLUDES) $(OTHER_INCLUDES) $(KERNEL_INCLUDES)
