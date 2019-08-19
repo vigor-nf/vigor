@@ -24,11 +24,6 @@ find fastclick fastclick-batch -name '*.o' -delete
 find z3 -name '*.o' -delete
 find dpdk libmoon/deps/dpdk -name app | xargs rm -rf
 
-
-# Remove temporary build files
-#find . -name '*.o' -delete
-#find . -name '*.d' -delete
-
 # Clean the apt cache
 sudo apt-get clean autoclean
 sudo apt-get autoremove --yes
