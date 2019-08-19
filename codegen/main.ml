@@ -24,7 +24,8 @@ let gen_inductive_type compinfo =
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec csl_fields (c : int64) =
            if 1L < c then
-             (P.sprint ~width:100 (d_type () field_t)) ^ ", " ^ (csl_fields (Int64.sub c 1L))
+             (P.sprint ~width:100 (d_type () field_t)) ^ ", " ^
+             (csl_fields (Int64.sub c 1L))
            else if c = 1L then
              (P.sprint ~width:100 (d_type () field_t))
            else failwith "A 0-element array"
@@ -49,12 +50,15 @@ let gen_predicate compinfo =
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec csl_fields (i : int64) =
            if 1L < i then
-             "cons(?" ^ fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^ (csl_fields (Int64.sub i 1L)) ^ ")"
+             "cons(?" ^ fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^
+             (csl_fields (Int64.sub i 1L)) ^ ")"
            else if i = 1L then
-             "cons(?" ^ fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", ?_nil)"
+             "cons(?" ^ fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^
+             ", ?_nil)"
            else failwith "A 0-element array"
          in
-         "  uchars(ptr->" ^ fname ^ ", " ^ (Int64.to_string c) ^ ", ?" ^ fname ^ "_f) " ^
+         "  uchars(ptr->" ^ fname ^ ", " ^ (Int64.to_string c) ^
+         ", ?" ^ fname ^ "_f) " ^
          "&*&\n  length(" ^ fname ^ "_f) == 6 " ^
          "&*&\n  " ^ fname ^ "_f == " ^ (csl_fields c) ^ " &*&\n" ^
          "  switch(_nil) { case nil: return true; case cons(nh, nt): return false; }"
@@ -69,7 +73,8 @@ let gen_predicate compinfo =
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec csl_fields (i : int64) =
            if 1L < i then
-             fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^ (csl_fields (Int64.sub i 1L))
+             fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^
+             (csl_fields (Int64.sub i 1L))
            else if i = 1L then
              fname ^ "_" ^ (Int64.to_string (Int64.sub c i))
            else failwith "A 0-element array"
@@ -195,7 +200,8 @@ let gen_logical_hash compinfo =
   let field_hash_0 field =
     match field with
     | {ftype=TComp (field_str,_);fname;_} ->
-         "crc32_hash(0, " ^ (lhash_name field_str) ^ "(" ^ (field_name fname) ^ "))"
+      "crc32_hash(0, " ^ (lhash_name field_str) ^
+      "(" ^ (field_name fname) ^ "))"
     | {ftype=TArray (field_t, Some (Const (CInt64 (c, _, _))), _);fname;_} ->
       let rec arr_fields (i : int64) =
         if 1L < i then
@@ -210,12 +216,14 @@ let gen_logical_hash compinfo =
     | {ftype=TArray (field_t, _, _);_} ->
       failwith "An of unsupported array count " ^
       (P.sprint ~width:100 (d_type () field.ftype))
-    | {fname;ftype;_} -> "crc32_hash(0, " ^ (basic_hash (field_name fname) ftype) ^ ")" ^
+    | {fname;ftype;_} -> "crc32_hash(0, " ^
+                         (basic_hash (field_name fname) ftype) ^ ")" ^
                          (cutoff ftype)
   in
   let rec gen_exp_r fields acc =
     match fields with
-    | hd::tl -> gen_exp_r tl ("crc32_hash(" ^ acc ^ ", " ^ (field_hash hd) ^ ")" ^
+    | hd::tl -> gen_exp_r tl ("crc32_hash(" ^ acc ^ ", " ^
+                              (field_hash hd) ^ ")" ^
                               (cutoff hd.ftype))
     | [] -> acc
   in
@@ -232,7 +240,8 @@ let gen_logical_hash compinfo =
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec csl_fields (i : int64) =
            if 1L < i then
-             fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^ ", " ^ (csl_fields (Int64.sub i 1L))
+             fname ^ "_" ^ (Int64.to_string (Int64.sub c i)) ^
+             ", " ^ (csl_fields (Int64.sub i 1L))
            else if i = 1L then
              fname ^ "_" ^ (Int64.to_string (Int64.sub c i))
            else failwith "A 0-element array"
@@ -260,7 +269,8 @@ let gen_hash compinfo =
     | TInt (IULongLong, _) ->
       (* Take only the least signigicant 44 bits,
          to make sure it fits in uint64_t*)
-      "(unsigned int)(__builtin_ia32_crc32di(hash, (unsigned long long)(" ^ fname ^ "&0xfffffffffff))&0xffffffff)"
+      "(unsigned int)(__builtin_ia32_crc32di(hash, (unsigned long long)(" ^
+      fname ^ "&0xfffffffffff))&0xffffffff)"
     | TInt (IChar, _)
     | TInt (IBool, _)
     | TInt (IUChar, _)
@@ -276,7 +286,8 @@ let gen_hash compinfo =
   "unsigned " ^ (hash_fun_name compinfo) ^ "(void* obj)\n" ^
   (hash_contract compinfo) ^ "\n" ^
   "{\n" ^
-  "  struct " ^ compinfo.cname ^ "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
+  "  struct " ^ compinfo.cname ^ "* id = (struct " ^ compinfo.cname ^
+  "*) obj;\n" ^
   "\n" ^
   "  //@ open [f]" ^ (predicate_name compinfo) ^ "(obj, v);\n" ^
   (String.concat "" (List.map (fun {fname;ftype;_} ->
@@ -286,7 +297,8 @@ let gen_hash compinfo =
            let current = (Int64.to_string (Int64.sub c i)) in
            let curr_field = fname ^ "_" ^ current in
            if 0L < i then
-             "  " ^ (P.sprint ~width:100 (d_type () field_t)) ^ curr_field ^ " = " ^
+             "  " ^ (P.sprint ~width:100 (d_type () field_t)) ^
+             curr_field ^ " = " ^
              "id->" ^ fname ^ "[" ^ current ^ "];\n" ^
              "  //@ produce_limits(" ^ curr_field ^ ");\n" ^
              (arr_fields (Int64.sub i 1L))
@@ -330,7 +342,8 @@ let gen_hash_dummy compinfo =
   "{\n" ^
   "  klee_trace_ret();\n" ^
   "  klee_trace_param_tagged_ptr(obj, sizeof(struct " ^ compinfo.cname ^ "),\n" ^
-  "                             \"obj\", \"" ^ compinfo.cname ^ "\", TD_BOTH);\n" ^
+  "                             \"obj\", \"" ^ compinfo.cname ^
+  "\", TD_BOTH);\n" ^
   "  for (int i = 0; i < sizeof(" ^ strdescrs ^ ")/" ^
   "sizeof(" ^ strdescrs ^ "[0]); ++i) {\n" ^
   "    klee_trace_param_ptr_field_arr_directed(obj,\n" ^
@@ -533,13 +546,16 @@ let traverse_globals (f : file) : unit =
   List.iter (fun g ->
     match g with
     (* if we expand this, bad stuff happens *)
-    | GCompTag (_, loc) when loc.file = "/usr/include/x86_64-linux-gnu/bits/types.h" ->
+    | GCompTag (_, loc) when loc.file =
+                             "/usr/include/x86_64-linux-gnu/bits/types.h" ->
       ()
     | GCompTag (ifo, loc) ->
       let header_fname = loc.file ^ ".gen.h" in
       let impl_fname = loc.file ^ ".gen.c" in
-      def_headers := (ifo.cname,(relativise_header_path header_fname))::!def_headers;
-      fill_header_file ifo header_fname (relativise_header_path loc.file) !def_headers;
+      def_headers := (ifo.cname, (relativise_header_path header_fname))::
+                     !def_headers;
+      fill_header_file ifo header_fname
+        (relativise_header_path loc.file) !def_headers;
       fill_impl_file ifo impl_fname (relativise_header_path header_fname);
       ()
     | _ -> ())
