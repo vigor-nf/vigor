@@ -7,4 +7,4 @@ struct DynamicValue {
   uint16_t device;
 };
 
-#endif//_DYN_VALUE_H_INCLUDED_
+#endif //_DYN_VALUE_H_INCLUDED_
