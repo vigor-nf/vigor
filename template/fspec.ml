@@ -6,8 +6,10 @@ open Common_fspec
 
 (* ===
   This file describes the state of the NF.
-  Due to the prototype nature of Vigor, YOU MUST MIRROR CHANGES TO STRUCTURE HEADERS HERE (see example file 'flow.h')
-  AND ALSO MIRROR CHANGES HERE TO THE DATASPEC FILES (see example files 'dataspec.ml'/'dataspec.py')
+  Due to the prototype nature of Vigor,
+  YOU MUST MIRROR CHANGES TO STRUCTURE HEADERS HERE (see example file 'flow.h')
+  AND ALSO MIRROR CHANGES HERE TO THE DATASPEC FILES
+  (see example files 'dataspec.ml'/'dataspec.py')
 
   Two need to define two lists in the Iface module: containers and records.
   You are free to use auxiliary definitions, like flow_id_struct below.
@@ -45,9 +47,10 @@ struct
   (* ===
      `records` list declares all the record types used in the NF.
      It consists of pairs separated by semicolon.
-     Each pair consists of a string - name of the record type used in the `containers` list,
+     Each pair consists of a string -
+     name of the record type used in the `containers` list,
      followed by a comma and by an OCaml definition of that record.
-     The OCaml definition may be 
+     The OCaml definition may be
      - A simple type (e.g. Uint32)
      - Ir.Str (....) - a C struct (e.g. flow_id_struct)
      === *)
