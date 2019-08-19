@@ -1,4 +1,5 @@
-// Compile without any special flags, redirect output to a file, and you have your config (which we provide pre-generated)
+// Compile without any special flags, run, redirect output to a file,
+// and you have your config (which we provide pre-generated)
 
 #include <stdio.h>
 #include <stdint.h>
