@@ -30,7 +30,8 @@ function test_policer {
         >/dev/null 2>/dev/null &
   NF_PID=$!
 
-  while [ ! -f /sys/class/net/test_lan/tun_flags -o ! -f /sys/class/net/test_lan/tun_flags ]; do
+  while [ ! -f /sys/class/net/test_lan/tun_flags -o
+          ! -f /sys/class/net/test_lan/tun_flags ]; do
     echo "Waiting for NF to launch...";
     sleep 1;
   done

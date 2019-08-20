@@ -25,25 +25,26 @@
 
 struct nf_config config;
 
-struct State* dynamic_ft;
+struct State *dynamic_ft;
 
 int policer_expire_entries(vigor_time_t time) {
   assert(time >= 0); // we don't support the past
-  vigor_time_t exp_time = VIGOR_TIME_SECONDS_MULTIPLIER * config.burst / config.rate;
-  uint64_t time_u = (uint64_t) time;
+  vigor_time_t exp_time =
+      VIGOR_TIME_SECONDS_MULTIPLIER * config.burst / config.rate;
+  uint64_t time_u = (uint64_t)time;
   // OK because time >= config.burst / config.rate >= 0
   vigor_time_t min_time = time_u - exp_time;
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
-                                 dynamic_ft->dyn_map,
-                                 min_time);
+                                 dynamic_ft->dyn_map, min_time);
 }
 
-bool
-dyn_val_condition(void* key, int index, void* state) {
-  return 0 <= ((struct DynamicValue*) key)->bucket_time AND
-    ((struct DynamicValue*) key)->bucket_time <= recent_time() AND
-    ((struct DynamicValue*) key)->bucket_size <= config.burst;
+bool dyn_val_condition(void *key, int index, void *state) {
+  return 0 <= ((struct DynamicValue *)key)
+                  ->bucket_time AND((struct DynamicValue *)key)
+                  ->bucket_time <=
+         recent_time() AND((struct DynamicValue *)key)->bucket_size <=
+         config.burst;
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
@@ -52,17 +53,19 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
   if (present) {
     dchain_rejuvenate_index(dynamic_ft->dyn_heap, index, time);
 
-    struct DynamicValue* value = 0;
-    vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
+    struct DynamicValue *value = 0;
+    vector_borrow(dynamic_ft->dyn_vals, index, (void **)&value);
 
     assert(0 <= time);
-    uint64_t time_u = (uint64_t) time;
+    uint64_t time_u = (uint64_t)time;
     assert(sizeof(vigor_time_t) == sizeof(int64_t));
     assert(value->bucket_time >= 0);
     assert(value->bucket_time <= time_u);
     uint64_t time_diff = time_u - value->bucket_time;
-    if (time_diff < config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate) {
-      uint64_t added_tokens = time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
+    if (time_diff <
+        config.burst * VIGOR_TIME_SECONDS_MULTIPLIER / config.rate) {
+      uint64_t added_tokens =
+          time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wtautological-compare"
       vigor_note(0 <= time_diff * config.rate / VIGOR_TIME_SECONDS_MULTIPLIER);
@@ -92,22 +95,21 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
       return false;
     }
 
-    int allocated = dchain_allocate_new_index(dynamic_ft->dyn_heap,
-                                              &index,
-                                              time);
+    int allocated =
+        dchain_allocate_new_index(dynamic_ft->dyn_heap, &index, time);
     if (!allocated) {
       NF_DEBUG("No more space in the policer table");
       return false;
     }
     uint32_t *key;
-    struct DynamicValue* value = 0;
-    vector_borrow(dynamic_ft->dyn_keys, index, (void**)&key);
-    vector_borrow(dynamic_ft->dyn_vals, index, (void**)&value);
+    struct DynamicValue *value = 0;
+    vector_borrow(dynamic_ft->dyn_keys, index, (void **)&key);
+    vector_borrow(dynamic_ft->dyn_vals, index, (void **)&value);
     *key = dst;
     value->bucket_size = config.burst - size;
     value->bucket_time = time;
     map_put(dynamic_ft->dyn_map, key, index);
-    //the other half of the key is in the map
+    // the other half of the key is in the map
     vector_return(dynamic_ft->dyn_keys, index, key);
     vector_return(dynamic_ft->dyn_vals, index, value);
 
@@ -124,15 +126,16 @@ void nf_init(void) {
   }
 }
 
-int nf_process(struct rte_mbuf* mbuf, vigor_time_t now) {
+int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
   NF_DEBUG("Received packet");
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+  struct ether_hdr *ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
-  uint8_t* ip_options;
-	struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+  uint8_t *ip_options;
+  struct ipv4_hdr *ipv4_header =
+      nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
   if (ipv4_header == NULL) {
-		NF_DEBUG("Not IPv4, dropping");
+    NF_DEBUG("Not IPv4, dropping");
     return in_port;
   }
 
