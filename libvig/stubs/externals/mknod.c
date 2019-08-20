@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void mknod()
-{
-	assert(0);
-}
+void mknod() { assert(0); }

@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void openat()
-{
-	assert(0);
-}
+void openat() { assert(0); }

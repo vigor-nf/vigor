@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void outl_p()
-{
-	assert(0);
-}
+void outl_p() { assert(0); }

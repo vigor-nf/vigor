@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void epoll_ctl()
-{
-	assert(0);
-}
+void epoll_ctl() { assert(0); }

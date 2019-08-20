@@ -48,5 +48,6 @@ IndentPPDirectives: AfterHash
 MacroBlockBegin: VIGOR_LOOP_BEGIN
 MacroBlockEnd: VIGOR_LOOP_END
 SortIncludes: false
+AlignAfterOpenBracket: Align
 ...
 

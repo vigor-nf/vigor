@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void getdtablesize()
-{
-	assert(0);
-}
+void getdtablesize() { assert(0); }

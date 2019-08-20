@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void mlock()
-{
-	assert(0);
-}
+void mlock() { assert(0); }

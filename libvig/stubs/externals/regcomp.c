@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void regcomp()
-{
-	assert(0);
-}
+void regcomp() { assert(0); }

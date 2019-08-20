@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void eventfd()
-{
-	assert(0);
-}
+void eventfd() { assert(0); }

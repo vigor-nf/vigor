@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void unlink()
-{
-	assert(0);
-}
+void unlink() { assert(0); }

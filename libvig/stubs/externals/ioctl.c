@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void ioctl()
-{
-	assert(0);
-}
+void ioctl() { assert(0); }

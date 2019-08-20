@@ -3,8 +3,8 @@
 
 #ifndef KLEE_VERIFICATION
 
-#define PATH_MAX 4096
-#define SSIZE_MAX INT_MAX
+#  define PATH_MAX 4096
+#  define SSIZE_MAX INT_MAX
 
 #endif /* KLEE_VERIFICATION */
 

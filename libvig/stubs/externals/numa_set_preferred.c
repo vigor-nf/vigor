@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void numa_set_preferred()
-{
-	assert(0);
-}
+void numa_set_preferred() { assert(0); }
