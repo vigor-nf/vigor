@@ -41,7 +41,7 @@ There are currently five Vigor NFs:
 
 | NF            | Folder      | Description                                                                                                                         |
 | ------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://standards.ieee.org/standard/802_1Q-2014.html) sections 8.7 and 8.8 |
+| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://ieeexplore.ieee.org/document/6991462) sections 8.7 and 8.8 |
 | Firewall      | `vigfw`     | Firewall whose specification we invented                                                                                            |
 | Load balancer | `viglb`     | Load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)                                               |
 | NAT           | `vignat`    | NAT according to [RFC 3022](https://www.ietf.org/rfc/rfc3022.txt)                                                                   |
