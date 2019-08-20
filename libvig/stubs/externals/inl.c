@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void inl()
-{
-	assert(0);
-}
+void inl() { assert(0); }

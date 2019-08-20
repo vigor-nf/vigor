@@ -13,7 +13,7 @@ struct nf_config {
   // WAN device, i.e. external
   uint16_t wan_device;
 
-// Policer rate in B/s
+  // Policer rate in B/s
   uint32_t rate;
 
   // Policer burst size in B

@@ -4,42 +4,37 @@
 #include <assert.h>
 
 #ifdef DSOS
-#include <dsos_tsc.h>
+#  include <dsos_tsc.h>
 #endif
 
 vigor_time_t last_time = 0;
 
 #ifdef DSOS
-time_t time(time_t *timer)
-{
-    assert(0);
-}
+time_t time(time_t *timer) { assert(0); }
 
-int clock_gettime(clockid_t clk_id, struct timespec *tp)
-{
-    // Others not implemented
-    if(clk_id != CLOCK_MONOTONIC && clk_id != CLOCK_MONOTONIC_RAW) {
-      return -1;
-    }
+int clock_gettime(clockid_t clk_id, struct timespec *tp) {
+  // Others not implemented
+  if (clk_id != CLOCK_MONOTONIC && clk_id != CLOCK_MONOTONIC_RAW) {
+    return -1;
+  }
 
-    __uint128_t tsc = dsos_rdtsc();
-    __uint128_t freq = dsos_tsc_get_freq();
-    uint64_t time_ns = (uint64_t) (tsc * 1000000000ul / freq);
+  __uint128_t tsc = dsos_rdtsc();
+  __uint128_t freq = dsos_tsc_get_freq();
+  uint64_t time_ns = (uint64_t)(tsc * 1000000000ul / freq);
 
+#  ifdef KLEE_VERIFICATION
+  // HACK: Verifast doesn't like the division
+  // even though there is no reason why it shouldn't
+  // be correct since it's just scaling the TSC by a constant.
+  // Maybe some more lemmas are needed.
+  tp->tv_sec = tsc / freq;
+  tp->tv_nsec = tsc; // FIXME: modulo 1000000000, etc, use a proper formula;
+#  else              // KLEE_VERIFICATION
+  tp->tv_nsec = time_ns % 1000000000ul;
+  tp->tv_sec = time_ns / 1000000000ul;
+#  endif             // KLEE_VERIFICATION
 
-#ifdef KLEE_VERIFICATION
-    // HACK: Verifast doesn't like the division
-    // even though there is no reason why it shouldn't
-    // be correct since it's just scaling the TSC by a constant.
-    // Maybe some more lemmas are needed.
-    tp->tv_sec = tsc / freq;
-    tp->tv_nsec = tsc; //FIXME: modulo 1000000000, etc, use a proper formula;
-#else//KLEE_VERIFICATION
-    tp->tv_nsec = time_ns % 1000000000ul;
-    tp->tv_sec = time_ns / 1000000000ul;
-#endif//KLEE_VERIFICATION
-
-    return 0;
+  return 0;
 }
 #endif
 
@@ -53,7 +48,4 @@ vigor_time_t current_time(void)
   return last_time;
 }
 
-vigor_time_t recent_time(void)
-{
-  return last_time;
-}
+vigor_time_t recent_time(void) { return last_time; }

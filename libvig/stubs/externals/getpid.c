@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void getpid()
-{
-	assert(0);
-}
+void getpid() { assert(0); }

@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void set_mempolicy()
-{
-	assert(0);
-}
+void set_mempolicy() { assert(0); }

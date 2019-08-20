@@ -9,4 +9,4 @@ struct DynamicValue {
   vigor_time_t bucket_time;
 };
 
-#endif//_DYNAMIC_VALUE_H_INCLUDED_
+#endif //_DYNAMIC_VALUE_H_INCLUDED_

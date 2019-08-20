@@ -9,4 +9,4 @@ struct StaticKey {
   uint16_t device;
 };
 
-#endif//_STAT_KEY_H_INCLUDED_
+#endif //_STAT_KEY_H_INCLUDED_

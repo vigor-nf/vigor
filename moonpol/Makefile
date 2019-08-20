@@ -17,9 +17,14 @@ compile:
 
 run:
 	@rm -f /tmp/dpdk-conf.lua
-	@if [ '$(NF_DPDK_ARGS)' != '' ]; then echo 'DPDKConfig { cli = { "$(subst $(space),$(dquote)$(comma)$(dquote),$(NF_DPDK_ARGS))" } }' > /tmp/dpdk-conf.lua; fi
+	@if [ '$(NF_DPDK_ARGS)' != '' ]; \
+	  then echo 'DPDKConfig { cli = { "$(subst $(space),$(dquote)$(comma)$(dquote),$(NF_DPDK_ARGS))" } }' \
+	            > /tmp/dpdk-conf.lua; \
+	 fi
 	@# OK if the file doesn't exist, libmoon just ignores it
-	@sudo $(VIGOR_DIR)/libmoon/build/libmoon policer.lua --dpdk-config=/tmp/dpdk-conf.lua $(MOONPOL_ARGS)
+	@sudo $(VIGOR_DIR)/libmoon/build/libmoon policer.lua \
+	                                         --dpdk-config=/tmp/dpdk-conf.lua \
+	                                         $(MOONPOL_ARGS)
 
 
 include $(abspath $(dir $(lastword $(MAKEFILE_LIST))))/../Makefile

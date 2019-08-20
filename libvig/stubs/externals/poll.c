@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void poll()
-{
-	assert(0);
-}
+void poll() { assert(0); }

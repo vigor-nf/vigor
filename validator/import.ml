@@ -108,11 +108,16 @@ let guess_type exp t =
     end
   | Unknown ->  begin match exp with
       | Sexp.Atom f when f = "false" || f = "true" -> Boolean
-      | Sexp.List [Sexp.Atom w; Sexp.Atom f] when w = "w32" && f = "0" -> lprintf "GUESS TYPE BOOL\n"; Boolean
-      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w8" -> if (is_int v) then Sint8 else Uint8
-      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w16" -> if (is_int v) then Sint16 else Uint16
-      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w32" -> if (is_int v) then Sint32 else Uint32
-      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w64" -> if (is_int v) then Sint64 else Uint64
+      | Sexp.List [Sexp.Atom w; Sexp.Atom f] when w = "w32" && f = "0" ->
+        lprintf "GUESS TYPE BOOL\n"; Boolean
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w8" ->
+        if (is_int v) then Sint8 else Uint8
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w16" ->
+        if (is_int v) then Sint16 else Uint16
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w32" ->
+        if (is_int v) then Sint32 else Uint32
+      | Sexp.List [Sexp.Atom w; Sexp.Atom v] when w = "w64" ->
+        if (is_int v) then Sint64 else Uint64
       | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w8" :: _) -> Uint8
       | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w16" :: _) -> Uint16
       | Sexp.List (Sexp.Atom _ :: Sexp.Atom "w32" :: _) -> Uint32
@@ -125,7 +130,8 @@ let int64_of_sexp value =
   let str = Sexp.to_string value in
   let prefix = String.sub str ~pos:0 ~len:5 in
   assert(prefix = "(w64 ");
-  Int64.of_string (String.sub str ~pos:5 ~len:((String.length str) - 6)) (* -5 for begining -1 for end paren *)
+ (* -5 for begining -1 for end paren *)
+  Int64.of_string (String.sub str ~pos:5 ~len:((String.length str) - 6))
 
 (* TODO: this should spit out a type to help the validator *)
 let int_str_of_sexp value =
@@ -133,7 +139,8 @@ let int_str_of_sexp value =
   let prefix = String.sub str ~pos:0 ~len:3 in
   if prefix = "(w8" then
     String.sub str ~pos:4 ~len:((String.length str - 5))
-  else if prefix = "(w1" || prefix = "(w3" || prefix = "(w6" then (* 16, 32, 64 *)
+  else if prefix = "(w1" || prefix = "(w3" || prefix = "(w6" then
+    (* 16, 32, 64 *)
     String.sub str ~pos:5 ~len:((String.length str - 6))
   else str
 
@@ -172,7 +179,8 @@ let expand_shorted_sexp sexp =
       match lst with
       | Sexp.Atom v :: def :: tl when String.is_suffix v ~suffix:":" ->
         merge_defs (get_defs def) (String.Map.add_exn (do_list tl)
-                                     ~key:(String.prefix v ((String.length v) - 1))
+                                     ~key:(String.prefix v
+                                             ((String.length v) - 1))
                                      ~data:(remove_defs def))
       | hd :: tl -> merge_defs (get_defs hd) (do_list tl)
       | [] -> String.Map.empty
@@ -196,7 +204,10 @@ let expand_shorted_sexp sexp =
       | None -> (exp,false)
   in
   let expand_map map defs =
-    let new_map_expanded = List.map (Map.to_alist map) ~f:(fun (name,el) -> (name, expand_exp el defs)) in
+    let new_map_expanded =
+      List.map (Map.to_alist map) ~f:(fun (name,el) ->
+          (name, expand_exp el defs))
+    in
     let changed =
       List.exists (List.map new_map_expanded ~f:(Fn.compose snd snd)) ~f:Fn.id
     in
@@ -247,12 +258,16 @@ let get_num_args ((ftype_of:string->fun_spec), _) call =
 
 let to_symbol str =
   let no_spaces = String.substr_replace_all str ~pattern:" " ~with_:"_" in
-  let no_octotorps = String.substr_replace_all no_spaces ~pattern:"#" ~with_:"num" in
+  let no_octotorps =
+    String.substr_replace_all no_spaces ~pattern:"#" ~with_:"num"
+  in
   no_octotorps
 
 let get_var_name_of_sexp exp =
   match exp with
-  | Sexp.List [Sexp.Atom rd; Sexp.Atom _; Sexp.List [Sexp.Atom _; Sexp.Atom pos]; Sexp.Atom name]
+  | Sexp.List [Sexp.Atom rd; Sexp.Atom _; Sexp.List [Sexp.Atom _;
+                                                     Sexp.Atom pos];
+               Sexp.Atom name]
     when ( String.equal rd "ReadLSB" ||
            String.equal rd "Read") -> Some (to_symbol name ^ "_" ^ pos)
   | _ -> None
@@ -277,11 +292,13 @@ let rec canonicalize_sexp sexp =
     lprintf "canonicalized: %s\n" (Sexp.to_string arg);
     (* TODO: make sure no sign-magic breaks here *)
     canonicalize_sexp arg
-  | Sexp.List (Sexp.Atom f :: args) -> Sexp.List (Sexp.Atom f :: List.map args ~f:canonicalize_sexp)
+  | Sexp.List (Sexp.Atom f :: args) ->
+    Sexp.List (Sexp.Atom f :: List.map args ~f:canonicalize_sexp)
   | _ -> sexp
 
 let map_set_n_update_alist mp lst =
-  List.fold lst ~init:mp ~f:(fun acc (key,data) -> String.Map.set acc ~key ~data)
+  List.fold lst ~init:mp ~f:(fun acc (key,data) ->
+      String.Map.set acc ~key ~data)
 
 let guess_sign exp known_vars =
   match get_var_name_of_sexp exp with
@@ -305,7 +322,9 @@ let rec guess_sign_l exps known_vars =
 let update_tterm (known:tterm) (given:tterm) =
   let t_final = match known.t with
     | Unknown -> given.t
-    | Sunknown | Uunknown -> failwith "s/uunknown..." (*if given.t = Unknown then known.t else given.t*)
+    | Sunknown | Uunknown ->
+      failwith "s/uunknown..."
+      (*if given.t = Unknown then known.t else given.t*)
     | _ -> known.t in
   let v_final = match known.v with
     | Undef -> given.v
@@ -350,25 +369,35 @@ let is_bool_fun fname =
   else if String.equal fname "Ult" then true
   else false
 
-(* TODO this is crazy, we parse a bunch of sexps and give the proper types in another method and here we redo the whole work *)
-let rec get_var_decls_of_sexp exp guess (known_vars:typed_var String.Map.t) : typed_var list =
+(* TODO this is crazy, we parse a bunch of sexps and give the proper types in
+   another method and here we redo the whole work *)
+let rec get_var_decls_of_sexp exp guess (known_vars:typed_var String.Map.t)
+  : typed_var list =
   match get_var_name_of_sexp exp, get_read_width_of_sexp exp with
   | Some name, Some w ->
-    let precise = ttype_of_guess {guess with w = convert_str_to_width_confidence w} in
+    let precise =
+      ttype_of_guess {guess with w = convert_str_to_width_confidence w}
+    in
     begin match String.Map.find known_vars name with
-      | Some spec -> [update_var_spec spec {precise;s=guess.s;w=convert_str_to_width_confidence w}]
-      | None -> [{vname = name; t={precise;s=guess.s;w=convert_str_to_width_confidence w}}]
+      | Some spec -> [update_var_spec spec
+                        {precise;s=guess.s;
+                         w=convert_str_to_width_confidence w}]
+      | None -> [{vname = name; t={precise;s=guess.s;
+                                   w=convert_str_to_width_confidence w}}]
     end
   | Some _, None | None, Some _ | None, None ->
     begin
     match exp with
     | Sexp.List [Sexp.Atom f; lhs; rhs]
       when is_bool_fun f->
-      let s = choose_guess (infer_type_sign f) (guess_sign_l [lhs;rhs] known_vars) in
+      let s =
+        choose_guess (infer_type_sign f) (guess_sign_l [lhs;rhs] known_vars)
+      in
       (get_var_decls_of_sexp lhs {s;w=Noidea;precise=Unknown;} known_vars) @
       (get_var_decls_of_sexp rhs {s;w=Noidea;precise=Unknown;} known_vars)
     | Sexp.List (Sexp.Atom f :: Sexp.Atom w :: tl)
-      when (String.equal w "w64") || (String.equal w "w32") || (String.equal w "w16") || (String.equal w "w8") ->
+      when (String.equal w "w64") || (String.equal w "w32") ||
+           (String.equal w "w16") || (String.equal w "w8") ->
       let wi = convert_str_to_width_confidence w in
       if String.equal f "ZExt" then
         match tl with
@@ -380,12 +409,17 @@ let rec get_var_decls_of_sexp exp guess (known_vars:typed_var String.Map.t) : ty
       else
         let si = choose_guess (infer_type_sign f) guess.s in
         (List.join (List.map tl ~f:(fun e ->
-             get_var_decls_of_sexp e {s=si;w=wi;precise=guess.precise} known_vars)))
-    | Sexp.List (Sexp.Atom f :: tl) when f <> "w8" && f <> "w16" && f <> "w32" && f <> "w64" ->
+             get_var_decls_of_sexp e {s=si;w=wi;precise=guess.precise}
+               known_vars)))
+    | Sexp.List (Sexp.Atom f :: tl) when f <> "w8" && f <> "w16" &&
+                                         f <> "w32" && f <> "w64" ->
       let si = choose_guess (infer_type_sign f)
           (choose_guess (guess_sign_l tl known_vars) guess.s)
       in
-      List.join (List.map tl ~f:(fun e -> get_var_decls_of_sexp e {s=si;w=Noidea;precise=guess.precise} known_vars))
+      List.join
+        (List.map tl ~f:(fun e ->
+             get_var_decls_of_sexp e {s=si;w=Noidea;precise=guess.precise}
+               known_vars))
     | _ -> []
     end
 
@@ -394,7 +428,9 @@ let make_name_alist_from_var_decls (lst: typed_var list) =
 
 let get_vars_from_plain_val v type_guess known_vars =
   (*TODO: proper type induction here, e.g. Sadd w16 -> Sint16, ....*)
-  let decls = get_var_decls_of_sexp (canonicalize_sexp v) type_guess known_vars in
+  let decls =
+    get_var_decls_of_sexp (canonicalize_sexp v) type_guess known_vars
+  in
   map_set_n_update_alist known_vars (make_name_alist_from_var_decls decls)
 
 let type_guess_of_ttype t = match t with
@@ -411,7 +447,8 @@ let type_guess_of_ttype t = match t with
 let get_vars_from_array_val v ptee_type known_vars =
   List.fold v.break_down ~init:known_vars ~f:(fun known_vars cell ->
       match cell.value.full with
-      | Some v -> get_vars_from_plain_val v (type_guess_of_ttype ptee_type) known_vars
+      | Some v -> get_vars_from_plain_val v (type_guess_of_ttype ptee_type)
+                    known_vars
       | _ -> known_vars (* A cell with no traced value.
                            Can happen when you trace unidirectionally.*))
 
@@ -482,22 +519,25 @@ let make_cmplx_val exp t =
   | Some spec -> {v=Id spec.name;t=spec.value.t}
   | None ->
     let name = complex_val_name_gen#generate in
-    lprintf "CMPLX NAME: %s SEXP: %s TYPE: %s\n" name (Sexp.to_string exp) (ttype_to_str t);
+    lprintf "CMPLX NAME: %s SEXP: %s TYPE: %s\n"
+      name (Sexp.to_string exp) (ttype_to_str t);
     let value = {v=Id key;t} in
     allocated_complex_vals :=
       String.Map.add_exn !allocated_complex_vals ~key
         ~data:{name;value};
     {v=Id name;t}
 
-(*TODO: rewrite this in terms of my IR instead of raw Sexps*)
+(* TODO: rewrite this in terms of my IR instead of raw Sexps *)
 let eliminate_false_eq_0 exp t =
   exp
   (* match (exp,t) with
    * | Sexp.List [Sexp.Atom eq1; Sexp.Atom fls;
-   *              Sexp.List [Sexp.Atom eq2; Sexp.List [Sexp.Atom width; Sexp.Atom zero]; e]],
+   *              Sexp.List [Sexp.Atom eq2;
+   *                         Sexp.List [Sexp.Atom width; Sexp.Atom zero]; e]],
    *   Boolean
    *   when (String.equal eq1 "Eq") && (String.equal fls "false") &&
-   *        (String.equal eq2 "Eq") && (String.equal width "w32") && (String.equal zero "0") ->
+   *        (String.equal eq2 "Eq") && (String.equal width "w32") &&
+   *        (String.equal zero "0") ->
    *   e
    * | _ -> exp *)
 
@@ -535,7 +575,8 @@ let find_first_known_address_comply addr tt at property =
                          but left here for the sake of void** output pointers,
                          that are not concretized yet. *)
           failwith ("Searching for a void instantiation of addr" ^
-                  (Int64.to_string addr) ^ " x.tt:" ^ (ttype_to_str x.tt) ^ " tt:" ^ (ttype_to_str tt))
+                    (Int64.to_string addr) ^ " x.tt:" ^ (ttype_to_str x.tt) ^
+                    " tt:" ^ (ttype_to_str tt))
          | Ptr ptee1, Array ptee2 ->
            if (ptee1 <> ptee2) then
              lprintf "discarding: %s * != %s []\n"
@@ -571,7 +612,8 @@ let moment_to_str = function
   | After x -> ("> " ^ (string_of_int x))
 
 let find_first_known_address addr tt at =
-  lprintf "looking for first %Ld : %s at %s\n" addr (ttype_to_str tt) (moment_to_str at);
+  lprintf "looking for first %Ld : %s at %s\n"
+    addr (ttype_to_str tt) (moment_to_str at);
   find_first_known_address_comply addr tt at (fun _ -> true)
 
 let rec printable_tterm cand =
@@ -597,7 +639,9 @@ let find_first_known_address_or_dummy addr t at =
 
 let make_cast_if_needed tt srct dstt =
   if srct = dstt then tt
-  else if srct = Uint32 && dstt = Uint16 then {v=Cast(dstt, {v=Bop(Bit_and, tt, {v=Int 0xFFFF;t=Uint32});t=Uint32});t=dstt}
+  else if srct = Uint32 && dstt = Uint16 then
+    {v=Cast(dstt, {v=Bop(Bit_and, tt, {v=Int 0xFFFF;t=Uint32});t=Uint32});
+     t=dstt}
   else {v=Cast(dstt, tt);t=dstt}
 
 let rec get_sexp_value_raw exp ?(at=Beginning) t =
@@ -609,7 +653,8 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     |_ -> t
   in
   let exp = match exp with
-    | Sexp.List [Sexp.Atom w; Sexp.Atom f] when w = "w8" || w = "w16" || w = "w32" || w = "w64" -> Sexp.Atom f
+    | Sexp.List [Sexp.Atom w; Sexp.Atom f]
+      when w = "w8" || w = "w16" || w = "w32" || w = "w64" -> Sexp.Atom f
     | _ -> exp
   in
   match exp with
@@ -641,16 +686,24 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
                Sexp.List [Sexp.Atom "Eq"; 
                           Sexp.List [Sexp.Atom "w32"; Sexp.Atom "0"];
                           Sexp.List [Sexp.Atom "Or"; Sexp.Atom "w32";
-                                     Sexp.List [Sexp.Atom "ZExt"; Sexp.Atom "w32"; left];
-                                     Sexp.List [Sexp.Atom "ZExt"; Sexp.Atom "w32"; right];
+                                     Sexp.List [Sexp.Atom "ZExt";
+                                                Sexp.Atom "w32"; left];
+                                     Sexp.List [Sexp.Atom "ZExt";
+                                                Sexp.Atom "w32"; right];
                                     ];
                          ];
               ] ->
-    {v=Bop(Or, get_sexp_value_raw left Boolean ~at, get_sexp_value_raw right Boolean ~at);t=Boolean}
+    {v=Bop(Or,
+           get_sexp_value_raw left Boolean ~at,
+           get_sexp_value_raw right Boolean ~at);t=Boolean}
   | Sexp.List [Sexp.Atom "Shl"; Sexp.Atom "w32"; target; shift;] ->
-    {v=Bop(Shl, (get_sexp_value_raw target Uint32 ~at), (get_sexp_value_raw shift Uint32 ~at));t}
+    {v=Bop(Shl,
+           (get_sexp_value_raw target Uint32 ~at),
+           (get_sexp_value_raw shift Uint32 ~at));t}
   | Sexp.List [Sexp.Atom "AShr"; Sexp.Atom "w32"; target; shift;] ->
-    {v=Bop(AShr, (get_sexp_value_raw target Uint32 ~at), (get_sexp_value_raw shift Uint32 ~at));t}
+    {v=Bop(AShr,
+           (get_sexp_value_raw target Uint32 ~at),
+           (get_sexp_value_raw shift Uint32 ~at));t}
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w8"; Sexp.Atom "0"; src;] ->
     get_sexp_value_raw src t ~at
   | Sexp.List [Sexp.Atom "Extract"; Sexp.Atom "w16"; Sexp.Atom "0"; src;]
@@ -707,10 +760,14 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     {v=Cast(Uint64,get_sexp_value_raw arg Uint32 ~at);t=Uint64}
   | Sexp.List [Sexp.Atom "Mul"; Sexp.Atom width; lhs; rhs] ->
     let mt = guess_type_l [lhs;rhs] Unknown in
-    {v=Bop(Mul, get_sexp_value_raw lhs mt ~at, get_sexp_value_raw rhs mt ~at);t=mt}
+    {v=Bop(Mul,
+           get_sexp_value_raw lhs mt ~at,
+           get_sexp_value_raw rhs mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "Sub"; Sexp.Atom width; lhs; rhs] ->
     let mt = guess_type_l [lhs;rhs] Unknown in
-    {v=Bop(Sub, get_sexp_value_raw lhs mt ~at, get_sexp_value_raw rhs mt ~at);t=mt}
+    {v=Bop(Sub,
+           get_sexp_value_raw lhs mt ~at,
+           get_sexp_value_raw rhs mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "Add"; Sexp.Atom _; lhs; rhs] ->
     let res_type = guess_type_l [lhs;rhs] Unknown in
     let res_type = if is_unknown res_type then t else res_type in
@@ -720,9 +777,16 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
         match lhs with
         | Sexp.Atom str ->
           begin match parse_int str with
-            | Some n -> {v=Bop (Sub,(get_sexp_value_raw rhs res_type ~at),{v=(Int n);t=res_type});t=res_type}
-            | _ -> {v=Bop (Add,(get_sexp_value_raw lhs res_type ~at),(get_sexp_value_raw rhs res_type ~at));t=res_type} end
-        | _ -> {v=Bop (Add,(get_sexp_value_raw lhs res_type ~at),(get_sexp_value_raw rhs res_type ~at));t=res_type}
+            | Some n -> {v=Bop (Sub,
+                                (get_sexp_value_raw rhs res_type ~at),
+                                {v=(Int n);t=res_type});t=res_type}
+            | _ -> {v=Bop (Add,
+                           (get_sexp_value_raw lhs res_type ~at),
+                           (get_sexp_value_raw rhs res_type ~at));t=res_type}
+          end
+        | _ -> {v=Bop (Add,
+                       (get_sexp_value_raw lhs res_type ~at),
+                       (get_sexp_value_raw rhs res_type ~at));t=res_type}
       end
     in
     make_cast_if_needed expression expression.t t
@@ -730,27 +794,45 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
     when (String.equal f "Slt") ->
     (*FIXME: get the actual type*)
     let ty = guess_type_l [lhs;rhs] Sunknown in
-    {v=Bop (Lt,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t}
+    {v=Bop (Lt,
+            (get_sexp_value_raw lhs ty ~at),
+            (get_sexp_value_raw rhs ty ~at));t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Sle") ->
     (*FIXME: get the actual type*)
-    {v=Bop (Le,(get_sexp_value_raw lhs Sunknown ~at),(get_sexp_value_raw rhs Sunknown ~at));t}
+    {v=Bop (Le,
+            (get_sexp_value_raw lhs Sunknown ~at),
+            (get_sexp_value_raw rhs Sunknown ~at));t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Ule") ->
     (*FIXME: get the actual type*)
-    {v=Bop (Le,(get_sexp_value_raw lhs Uunknown ~at),(get_sexp_value_raw rhs Uunknown ~at));t}
-  | Sexp.List [Sexp.Atom "Ult"; lhs; Sexp.List [Sexp.Atom "w64"; Sexp.Atom "10"]] ->
+    {v=Bop (Le,
+            (get_sexp_value_raw lhs Uunknown ~at),
+            (get_sexp_value_raw rhs Uunknown ~at));t}
+  | Sexp.List [Sexp.Atom "Ult";
+               lhs;
+               Sexp.List [Sexp.Atom "w64"; Sexp.Atom "10"]] ->
     (* HACK: this is the time being compared to 10LL, so put LL there *)
     {v=Bop (Lt,(get_sexp_value_raw lhs Sunknown ~at), {v=Int 10;t=Sint64});t}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Ult") ->
-    {v=Bop (Lt,(get_sexp_value_raw lhs Uunknown ~at),(get_sexp_value_raw rhs Uunknown ~at));t}
-  | Sexp.List [Sexp.Atom "Eq"; Sexp.List [Sexp.Atom "w32"; Sexp.Atom "0"]; Sexp.List ((Sexp.Atom "ReadLSB" :: tl))] ->
-    {v=Bop (Eq, {v=Int 0;t=Uint32}, (get_sexp_value_raw (Sexp.List (Sexp.Atom "ReadLSB" :: tl)) Uint32 ~at));t=Boolean}
+    {v=Bop (Lt,
+            (get_sexp_value_raw lhs Uunknown ~at),
+            (get_sexp_value_raw rhs Uunknown ~at));t}
+  | Sexp.List [Sexp.Atom "Eq";
+               Sexp.List [Sexp.Atom "w32"; Sexp.Atom "0"];
+               Sexp.List ((Sexp.Atom "ReadLSB" :: tl))] ->
+    {v=Bop (Eq,
+            {v=Int 0;t=Uint32},
+            (get_sexp_value_raw
+               (Sexp.List (Sexp.Atom "ReadLSB" :: tl)) Uint32 ~at));
+     t=Boolean}
   | Sexp.List [Sexp.Atom f; lhs; rhs]
     when (String.equal f "Eq") ->
     let ty = guess_type_l [lhs;rhs] Unknown in
-    {v=Bop (Eq,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t}
+    {v=Bop (Eq,
+            (get_sexp_value_raw lhs ty ~at),
+            (get_sexp_value_raw rhs ty ~at));t}
   | Sexp.List [Sexp.Atom f; _; e]
     when String.equal f "ZExt" ->
     (*TODO: something smarter here.*)
@@ -760,49 +842,81 @@ let rec get_sexp_value_raw exp ?(at=Beginning) t =
          ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
     (*FIXME: and here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
-    {v=Bop (And,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
+    {v=Bop (And,
+            (get_sexp_value_raw lhs Boolean ~at),
+            (get_sexp_value_raw rhs Boolean ~at));t}
   | Sexp.List [Sexp.Atom "Or"; Sexp.Atom _; lhs; rhs]
     when ((is_bool_expr lhs) || (is_bool_expr rhs)) ->
     (*FIXME: or here, but really that is a bool expression, I know it*)
     (*TODO: check t is really Boolean here*)
-    {v=Bop (Or,(get_sexp_value_raw lhs Boolean ~at),(get_sexp_value_raw rhs Boolean ~at));t}
+    {v=Bop (Or,
+            (get_sexp_value_raw lhs Boolean ~at),
+            (get_sexp_value_raw rhs Boolean ~at));t}
   | Sexp.List [Sexp.Atom "Or"; Sexp.Atom "w32"; lhs; rhs] ->
-    {v=Bop (Bit_or, (get_sexp_value_raw lhs Uint32 ~at), (get_sexp_value_raw rhs Uint32 ~at));t}
+    {v=Bop (Bit_or,
+            (get_sexp_value_raw lhs Uint32 ~at),
+            (get_sexp_value_raw rhs Uint32 ~at));t}
   | Sexp.List [Sexp.Atom "And"; Sexp.Atom _; lhs; rhs] ->
     begin 
       match rhs with
       | Sexp.List [Sexp.Atom "w32"; Sexp.Atom n] when is_int n ->
         if t = Boolean then
-          {v=Bop (Eq, (get_sexp_value_raw rhs Uint32 ~at), {v=Bop (Bit_and,(get_sexp_value_raw lhs Uint32 ~at),(get_sexp_value_raw rhs Uint32 ~at));t=Uint32});t=Boolean}
+          {v=Bop (Eq,
+                  (get_sexp_value_raw rhs Uint32 ~at),
+                  {v=Bop (Bit_and,
+                          (get_sexp_value_raw lhs Uint32 ~at),
+                          (get_sexp_value_raw rhs Uint32 ~at));t=Uint32});
+           t=Boolean}
         else
-          {v=Bop (Bit_and,(get_sexp_value_raw lhs Uint32 ~at),(get_sexp_value_raw rhs Uint32 ~at));t=Uint32}
+          {v=Bop (Bit_and,
+                  (get_sexp_value_raw lhs Uint32 ~at),
+                  (get_sexp_value_raw rhs Uint32 ~at));t=Uint32}
       | _ ->
         let ty = guess_type_l [lhs;rhs] t in
         lprintf "interesting And case{%s}: %s "
           (ttype_to_str ty) (Sexp.to_string exp);
         if ty = Boolean then
-          {v=Bop (And,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t=ty}
+          {v=Bop (And,
+                  (get_sexp_value_raw lhs ty ~at),
+                  (get_sexp_value_raw rhs ty ~at));t=ty}
         else
-          {v=Bop (Bit_and,(get_sexp_value_raw lhs ty ~at),(get_sexp_value_raw rhs ty ~at));t=ty}
+          {v=Bop (Bit_and,
+                  (get_sexp_value_raw lhs ty ~at),
+                  (get_sexp_value_raw rhs ty ~at));t=ty}
     end
   | Sexp.List [Sexp.Atom f; Sexp.Atom _; Sexp.Atom lhs; rhs;]
     when (String.equal f "Concat") && (String.equal lhs "0") ->
     get_sexp_value_raw rhs t ~at
-  | Sexp.List [Sexp.Atom "Select"; Sexp.Atom _; nested; Sexp.List [Sexp.Atom _; Sexp.Atom "1"]; Sexp.List [Sexp.Atom _; Sexp.Atom "0"]] ->
+  | Sexp.List [Sexp.Atom "Select";
+               Sexp.Atom _; nested;
+               Sexp.List [Sexp.Atom _; Sexp.Atom "1"];
+               Sexp.List [Sexp.Atom _; Sexp.Atom "0"]] ->
     (* This is equivalent to x ? 1 : 0 ==> we just pretend x is a boolean *)
     get_sexp_value_raw nested Boolean ~at
   | Sexp.List [Sexp.Atom "SRem"; Sexp.Atom width; value; divisor] ->
-    let guess = {precise=Unknown;s=Sure Sgn;w=convert_str_to_width_confidence width} in
+    let guess = {precise=Unknown;
+                 s=Sure Sgn;
+                 w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
-    {v=Bop(Modulo, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
+    {v=Bop(Modulo,
+           get_sexp_value_raw value mt ~at,
+           get_sexp_value_raw divisor mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "UDiv"; Sexp.Atom width; value; divisor] ->
-    let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
+    let guess = {precise=Unknown;
+                 s=Sure Unsgn;
+                 w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
-    {v=Bop(Div, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
+    {v=Bop(Div,
+           get_sexp_value_raw value mt ~at,
+           get_sexp_value_raw divisor mt ~at);t=mt}
   | Sexp.List [Sexp.Atom "URem"; Sexp.Atom width; value; divisor] ->
-    let guess = {precise=Unknown;s=Sure Unsgn;w=convert_str_to_width_confidence width} in
+    let guess = {precise=Unknown;
+                 s=Sure Unsgn;
+                 w=convert_str_to_width_confidence width} in
     let mt = ttype_of_guess guess in
-    {v=Bop(Modulo, get_sexp_value_raw value mt ~at, get_sexp_value_raw divisor mt ~at);t=mt}
+    {v=Bop(Modulo,
+           get_sexp_value_raw value mt ~at,
+           get_sexp_value_raw divisor mt ~at);t=mt}
   | _ ->
     begin match get_var_name_of_sexp exp with
       | Some name -> {v=Id name;t}
@@ -838,14 +952,18 @@ let rec get_struct_val_value valu t =
       in
       {v=Struct (strname, fields);t}
     end
-  (*| Ptr ptee, None -> failwith ("GSVV given a pointer! " ^ (ttype_to_str ptee))*)
-  | Array _, None -> failwith ("Uninitialized array of type " ^ (ttype_to_str t))
+  (*| Ptr ptee, None -> failwith ("GSVV given a pointer! " ^
+                                  (ttype_to_str ptee))*)
+  | Array _, None -> failwith ("Uninitialized array of type " ^
+                               (ttype_to_str t))
   | Array ptee_t, Some _ -> lprintf "Reading array of type %s" (ttype_to_str t);
     let cells = List.map valu.break_down ~f:(fun {fname;value;_} ->
         (get_struct_val_value value ptee_t))
     in
     {v=Array cells; t=Array ptee_t}
-  | _, Some v -> lprintf "GSVV using sexp for type %s\n" (ttype_to_str t); get_sexp_value v t
+  | _, Some v ->
+    lprintf "GSVV using sexp for type %s\n" (ttype_to_str t);
+    get_sexp_value v t
   | _, None -> lprintf "GSVV undef for type %s\n" (ttype_to_str t); {t;v=Undef}
 
 let update_ptee_variants nval older =
@@ -860,7 +978,6 @@ let update_ptee_variants nval older =
 let rec add_to_known_addresses
     (base_value: tterm) breakdown addr
     callid depth =
-  (*lprintf "ATK %s : %s at %s\n" (render_tterm base_value) (ttype_to_str base_value.t) (moment_to_str callid);*)
   begin match base_value.t with
   | Ptr (Str (_,fields) as ptee_type) ->
     let fields = List.fold fields ~init:String.Map.empty
@@ -923,9 +1040,11 @@ let rec add_known_symbol_at_address (value: tterm) addr callid depth =
   let find_field_addr strname fieldname fieldtype =
     List.find_map prev ~f:(fun aspec ->
         lprintf "find_field_addr %s %s(%s) -> %Ld considering aspec: %s : %s\n"
-          strname fieldname (ttype_to_str fieldtype) addr (render_tterm aspec.value) (ttype_to_str aspec.tt);
+          strname fieldname (ttype_to_str fieldtype) addr
+          (render_tterm aspec.value) (ttype_to_str aspec.tt);
         match aspec.tt with
-        | Ptr (Str (aspecname, _)) when aspecname = strname -> lprintf "YES %d\n" (String.Map.length aspec.breakdown);
+        | Ptr (Str (aspecname, _)) when aspecname = strname ->
+          lprintf "YES %d\n" (String.Map.length aspec.breakdown);
           String.Map.find aspec.breakdown fieldname
         | _ -> None)
   in
@@ -935,11 +1054,13 @@ let rec add_known_symbol_at_address (value: tterm) addr callid depth =
         lprintf "for %s.%s : %s\n" strname fname (ttype_to_str ftype);
         begin match find_field_addr strname fname ftype with
         | Some fa -> add_known_symbol_at_address
-                     {v=Addr {v=Str_idx ({v=Deref value; t=Str (strname,fields)}, fname);
-                              t=ftype};
-                      t=Ptr ftype}
-                     fa callid (depth + 1)
-        | None -> failwith ("failed to find field " ^ fname ^ " at the address " ^ (Int64.to_string addr))
+                       {v=Addr {v=Str_idx ({v=Deref value;
+                                            t=Str (strname,fields)}, fname);
+                                t=ftype};
+                        t=Ptr ftype}
+                       fa callid (depth + 1)
+        | None -> failwith ("failed to find field " ^ fname ^
+                            " at the address " ^ (Int64.to_string addr))
         end)
   | Str (strname,fields) ->
     List.iter fields ~f:(fun (fname,ftype) ->
@@ -996,7 +1117,8 @@ let get_basic_vars ftype_of tpref =
         begin match t with
           | Ptr t -> if is_ret then get_ret_pointee_vars ptee t acc
             else get_arg_pointee_vars ptee t acc
-          | Array _ -> get_arg_pointee_vars ptee t acc (* XXX: looks like C&P oversight*)
+          (* VVV XXX: looks like C&P oversight*)
+          | Array _ -> get_arg_pointee_vars ptee t acc
           | _ -> failwith ((ttype_to_str t) ^
                            " is not a pointer type, \
                             while the trace dumps a pointer here")
@@ -1015,7 +1137,8 @@ let get_basic_vars ftype_of tpref =
         ~f:(fun acc {pname;value=_;ptee} ->
             match get_fun_extra_ptr_type ftype_of call pname with
             | Ptr ptee_type -> get_extra_ptr_pointee_vars ptee ptee_type acc
-            | Array _ as eptr_type -> get_extra_ptr_pointee_vars ptee eptr_type acc
+            | Array _ as eptr_type ->
+              get_extra_ptr_pointee_vars ptee eptr_type acc
             | t -> failwith ((ttype_to_str t) ^
                              " is not supported as an extra ptr type."))
     in
@@ -1056,7 +1179,8 @@ let allocate_rets ftype_of tpref =
           if (addr = 0L) then
             {name;value={t=ret_type;v=Zeroptr}}
           else begin
-            add_to_known_addresses {t=ret_type;v=Id name} [] addr (After call.id) 0;
+            add_to_known_addresses
+              {t=ret_type;v=Id name} [] addr (After call.id) 0;
             {name;value={t=ret_type;v=Addr {t=get_pointee ret_type;v=Undef}}}
           end
         | Curioptr ptee ->
@@ -1127,7 +1251,8 @@ let allocate_args ftype_of tpref arg_name_gen =
           Int64.Map.set !known_addresses
             ~key:addr ~data:(List.map spec ~f:(fun spec ->
                 {spec with value=update_tterm spec.value tterm}));
-        lprintf "ACA found some, adding: %s\n" aname; (* TODO why are we adding directly and not through the method? *)
+        (* TODO why are we adding directly and not through the method? *)
+        lprintf "ACA found some, adding: %s\n" aname;
         None
       | None -> let p_name = arg_name_gen#generate in
         lprintf "ACA found none, inserting: %s\n" aname;
@@ -1153,9 +1278,11 @@ let allocate_args ftype_of tpref arg_name_gen =
                 (moment_before call.id)
         with
         | Some a when printable_tterm a -> 
-          lprintf "not allocating symbol for %Ld, because it is apparently already allocated (%s %s)\n"
-                      ptee_addr (render_tterm a) (moment_to_str (moment_before call.id));
-          failwith "nested ptr value dynamics too complex :/" (* TODO is this message still relevant? *)
+          lprintf "not allocating symbol for %Ld, because it\
+                   is apparently already allocated (%s %s)\n"
+            ptee_addr (render_tterm a) (moment_to_str (moment_before call.id));
+          (* TODO is this message still relevant? *)
+          failwith "nested ptr value dynamics too complex :/"
         | _ -> let p_name = arg_name_gen#generate in
           let moment = moment_before call.id in
           lprintf "allocating nested %Ld -> %s = &%Ld:%s\n"
@@ -1177,11 +1304,13 @@ let allocate_args ftype_of tpref arg_name_gen =
           let addr = int64_of_sexp value in
           let t = get_fun_arg_type ftype_of call i in
           let ptee_type = get_pointee t in
-          alloc_arg addr {full=None;sname=None;break_down=[]} {v=Undef;t=ptee_type;} aname
+          alloc_arg addr {full=None;sname=None;break_down=[]}
+            {v=Undef;t=ptee_type;} aname
         | Curioptr ptee ->
           let addr = int64_of_sexp value in
           let t = get_fun_arg_type ftype_of call i in
-          lprintf "%s fun argument %d type is %s\n" call.fun_name i (ttype_to_str t);
+          lprintf "%s fun argument %d type is %s\n"
+            call.fun_name i (ttype_to_str t);
           match t with
           | Ptr ptee_type -> begin
               let ptee_ptr_val = Option.map ptee.before.full
@@ -1203,7 +1332,8 @@ let allocate_args ftype_of tpref arg_name_gen =
                   when x <> 0L ->
                   alloc_dummy_nested_ptr addr x ptee_ptee_t
                 | _ -> alloc_arg addr ptee.before (get_struct_val_value
-                                                     ptee.before ptee_type) aname
+                                                     ptee.before ptee_type)
+                         aname
             end
           | Array _ -> None
           | _ -> failwith ((ttype_to_str t) ^ "is not a pointer type")
@@ -1212,7 +1342,12 @@ let allocate_args ftype_of tpref arg_name_gen =
   List.join (List.map (tpref.history@tpref.tip_calls) ~f:alloc_call_args)
 
 let make_lemma_args_hack (args: tterm list) =
-  let replaced_args = List.map args ~f:(fun arg -> if is_pointer arg then append_id_in_tterm_id_starting_with "arg" "bis" arg else arg) in
+  let replaced_args =
+    List.map args ~f:(fun arg ->
+        if is_pointer arg then
+          append_id_in_tterm_id_starting_with "arg" "bis" arg
+        else arg)
+  in
   List.map replaced_args ~f:render_tterm
 
 let get_lemmas_before (ftype_of,_) fun_name =
@@ -1267,9 +1402,10 @@ let extract_fun_args ftype_of (call:Trace_prefix.call_node) =
                   get_allocated_arg arg a_type
                 else begin
                   let key = Int64.of_int x in
-                  (* First look for the address (the value the argument point to),
-                     found in the pointee. *)
-                  match find_first_known_address key t (moment_before call.id) with
+                  (* First look for the address (the value the argument point
+                     to), found in the pointee. *)
+                  match find_first_known_address key t (moment_before call.id)
+                  with
                   | Some n -> {v=Addr n; t=Ptr t}
                   | None ->
                     (* Next try to find the address of the argument itself.
@@ -1282,7 +1418,8 @@ let extract_fun_args ftype_of (call:Trace_prefix.call_node) =
                     | Some n -> n
                     | None -> failwith ("nested pointer to unknown: " ^
                                         (Int.to_string x) ^ " -> " ^
-                                        (Int64.to_string (int64_of_sexp arg.value)))
+                                        (Int64.to_string
+                                           (int64_of_sexp arg.value)))
                 end
               | _ -> get_allocated_arg arg a_type
             end
@@ -1309,7 +1446,8 @@ let deref_tterm {v;t} =
                   t = get_pointee t}
 
 let rec is_empty_struct_val {sname=_;full;break_down} =
-  full = None && (List.for_all break_down ~f:(fun {fname=_;value;addr=_} -> is_empty_struct_val value))
+  full = None && (List.for_all break_down ~f:(fun {fname=_;value;addr=_} ->
+      is_empty_struct_val value))
 
 let compose_args_post_conditions (call:Trace_prefix.call_node) ftype_of fun_args =
   List.filter_mapi call.args ~f:(fun i arg ->
@@ -1328,22 +1466,26 @@ let compose_args_post_conditions (call:Trace_prefix.call_node) ftype_of fun_args
         | _ ->
             let key = int64_of_sexp arg.value in
             let arg_type = (get_fun_arg_type ftype_of call i) in
-            lprintf "trying to process key:%Ld argtype: %s\n" key (ttype_to_str arg_type);
+            lprintf "trying to process key:%Ld argtype: %s\n"
+              key (ttype_to_str arg_type);
             match find_first_symbol_by_address
                     key arg_type (moment_before call.id)
             with
             | Some out_arg ->
               lprintf "processing %s argptr: %s| strval: %s in %s\n" 
                       arg.aname (ttype_to_str out_arg.t)
-                      (render_tterm (get_struct_val_value ptee.after out_arg.t)) call.fun_name;
-              begin match get_struct_val_value ptee.after (get_pointee out_arg.t) with
+                      (render_tterm (get_struct_val_value ptee.after out_arg.t))
+                      call.fun_name;
+              begin match get_struct_val_value
+                            ptee.after (get_pointee out_arg.t)
+                with
               | {v=Utility (Ptr_placeholder addr);t=Ptr ptee} ->
                 begin
                   match find_first_known_address addr ptee (After call.id) with
                   | Some value ->
-                    lprintf "found an interesting pointer value: %s\n" (render_tterm value);
-                    Some {lhs=deref_tterm out_arg;
-                          rhs=value}
+                    lprintf "found an interesting pointer value: %s\n"
+                      (render_tterm value);
+                    Some {lhs=deref_tterm out_arg; rhs=value}
                   | None -> None
                 end
               | {v=Int _;t=_} ->
@@ -1352,37 +1494,52 @@ let compose_args_post_conditions (call:Trace_prefix.call_node) ftype_of fun_args
                  to generate a complex post condition*)
               (* Skip the two layer pointer.
                  TODO: maybe be allow special case of Zeroptr here.*)
-              | value -> lprintf "CAPC %s ?= %s\n" (render_tterm (deref_tterm out_arg)) (render_tterm value);
+              | value -> lprintf "CAPC %s ?= %s\n"
+                           (render_tterm (deref_tterm out_arg))
+                           (render_tterm value);
                 Some {lhs=deref_tterm out_arg;
                       rhs=value}
               end
-            | None -> lprintf "not processing a post cond because 2-layer in %s\n" arg.aname; None (* The variable is not allocated,
-                              because it is a 2-layer pointer.*))
+            | None -> lprintf "not processing a post cond because 2-layer in %s\n"
+                        arg.aname; None (* The variable is not allocated,
+                                           because it is a 2-layer pointer.*))
 
 let compose_extra_ptrs_post_conditions (call:Trace_prefix.call_node)
   ftype_of =
   let gen_post_condition_of_struct_val (val_before : Ir.tterm) val_now exptr_t =
-    lprintf "postconditions for %s: %s\n" call.fun_name (ttype_to_str val_before.t);
+    lprintf "postconditions for %s: %s\n"
+      call.fun_name (ttype_to_str val_before.t);
     match exptr_t with
     | Ptr ptee_t ->
       begin match (get_struct_val_value val_now ptee_t) with
-        | {v=Int _;t=_} -> lprintf "CEPPC ignoring int for some reason, val_before=%s\n" (render_tterm val_before); None
+        | {v=Int _;t=_} ->
+          lprintf "CEPPC ignoring int for some reason, val_before=%s\n"
+            (render_tterm val_before); None
         (* Skip the two layer pointer.
            TODO: maybe be allow special case of Zeroptr here.*)
-        | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n" (render_tterm (deref_tterm val_before)) (ttype_to_str (deref_tterm val_before).t) (render_tterm value) (ttype_to_str value.t);
+        | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n"
+                     (render_tterm (deref_tterm val_before))
+                     (ttype_to_str (deref_tterm val_before).t)
+                     (render_tterm value) (ttype_to_str value.t);
           Some {lhs=deref_tterm val_before;
                 rhs=value}
         end
     | Array ptee_t ->
       begin match (get_struct_val_value val_now exptr_t) with
-        | {v=Int _;t=_} -> lprintf "CEPPC ignoring int for some reason, val_before=%s\n" (render_tterm val_before); None
+        | {v=Int _;t=_} ->
+          lprintf "CEPPC ignoring int for some reason, val_before=%s\n"
+            (render_tterm val_before); None
         (* Skip the two layer pointer.
            TODO: maybe be allow special case of Zeroptr here.*)
-        | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n" (render_tterm (deref_tterm val_before)) (ttype_to_str (deref_tterm val_before).t) (render_tterm value) (ttype_to_str value.t);
-          (* Retype the val_before as a pointer to pan out the equality in render:
-             if we keep both sides as arrays, render will draw them as array equality with the
-             verifast predicates staff etc.; if the lhs is a pointer, it will render an equality
-             for each cell on a new line.*)
+        | value -> lprintf "CEPPC skipping 2-pointer: %s: %s  ?=?  %s: %s\n"
+                     (render_tterm (deref_tterm val_before))
+                     (ttype_to_str (deref_tterm val_before).t)
+                     (render_tterm value) (ttype_to_str value.t);
+          (* Retype the val_before as a pointer to pan out the equality in
+             render: if we keep both sides as arrays, render will draw them as
+             array equality with the verifast predicates staff etc.; if the lhs
+             is a pointer, it will render an equality for each cell on a new
+             line.*)
           Some {lhs={v=val_before.v;t=Ptr ptee_t};
                 rhs=value}
       end
@@ -1396,7 +1553,8 @@ let compose_extra_ptrs_post_conditions (call:Trace_prefix.call_node)
         begin match ptee with
           | Opening x -> gen_post_condition_of_struct_val extra_ptee x exptr_t
           | Closing _ -> None
-          | Changing (_,x) -> gen_post_condition_of_struct_val extra_ptee x exptr_t
+          | Changing (_,x) ->
+            gen_post_condition_of_struct_val extra_ptee x exptr_t
         end
       | None -> None (* The variable is not allocated,
                         because it is a 2-layer pointer.*))
@@ -1420,10 +1578,12 @@ let take_extra_ptrs_into_pre_cond ptrs call ftype_of =
               (get_fun_extra_ptr_type ftype_of call pname)
               moment_before
       with
-      | None -> lprintf "not found extra: %s %s. ignoring\n" call.fun_name pname;
+      | None ->
+        lprintf "not found extra: %s %s. ignoring\n" call.fun_name pname;
         None
       | Some x ->
-        lprintf "settled on extra %s %s => %s : %s\n" call.fun_name pname (render_tterm x) (ttype_to_str x.t);
+        lprintf "settled on extra %s %s => %s : %s\n"
+          call.fun_name pname (render_tterm x) (ttype_to_str x.t);
         match ptee with
         | Opening _ -> lprintf "scratch that..."; None
         | Closing o -> gen_eq_by_struct_val x o
@@ -1457,29 +1617,38 @@ let take_arg_ptrs_into_pre_cond (args : Trace_prefix.arg list) call ftype_of =
                   arg_t
                   moment_before
           with
-          | None -> lprintf "TAPIPC not found: %s %s. ignoring\n" call.fun_name arg.aname;
+          | None ->
+            lprintf "TAPIPC not found: %s %s. ignoring\n" call.fun_name arg.aname;
             None
           | Some x ->
-            lprintf "TAPIPC arg. settled on %s %s => %s : %s\n" call.fun_name arg.aname (render_tterm x) (ttype_to_str x.t);
+            lprintf "TAPIPC arg. settled on %s %s => %s : %s\n"
+              call.fun_name arg.aname (render_tterm x) (ttype_to_str x.t);
             match arg_t with
             | Ptr ptee_t -> begin
                 match get_struct_val_value ptee.before (get_pointee x.t) with
                 | {v=Undef;t=_} -> lprintf "TAPIPC scratch that...\n"; None
                 | y -> Some {lhs={v=Deref x;t=y.t};rhs=y}
               end
-            | Array ptee_t -> begin match get_struct_val_value ptee.before arg_t with
-                | {v=Array _;t=Array _} as y -> lprintf "Will put array as precond\n";
+            | Array ptee_t -> begin
+                match get_struct_val_value ptee.before arg_t with
+                | {v=Array _;t=Array _} as y ->
+                  lprintf "Will put array as precond\n";
                   Some {lhs=x;rhs=y}
-                | _ -> failwith "A non array returned for an array request from get_struct_val_value"
+                | _ ->
+                  failwith "A non array returned for an array \
+                            request from get_struct_val_value"
               end
-            | _ -> failwith ((ttype_to_str x.t) ^ " is not a pointer type, while a pointer is expected")
+            | _ -> failwith ((ttype_to_str x.t) ^
+                             " is not a pointer type, \
+                              while a pointer is expected")
         end)
 
 let fixup_placeholder_ptrs_in_tterm moment tterm ~need_symbol =
   let replace_placeholder = function
     | {v=Utility (Ptr_placeholder addr); t=Ptr ptee_t}
     | {v=Utility (Ptr_placeholder addr); t=Array ptee_t} ->
-      lprintf "fixing placeholder for %Ld (%s)\n" addr (if need_symbol then "symbol" else "addr");
+      lprintf "fixing placeholder for %Ld (%s)\n"
+        addr (if need_symbol then "symbol" else "addr");
       let search_function =
         if need_symbol then
           find_first_symbol_by_address else
@@ -1497,12 +1666,14 @@ let fixup_placeholder_ptrs_in_tterm moment tterm ~need_symbol =
                 (render_tterm tterm) ^ " : " ^ (ttype_to_str t))
     | x -> lprintf "fxphdr called on %s\n" (render_tterm x); None
   in
-  lprintf "fixup_placeholder_ptrs_in_tterm called upon %s\n" (render_tterm tterm);
+  lprintf "fixup_placeholder_ptrs_in_tterm called upon %s\n"
+    (render_tterm tterm);
   call_recursively_on_tterm replace_placeholder tterm
 
 let fixup_placeholder_ptrs moment vars =
   List.map vars ~f:(fun {name;value} ->
-    {name;value=fixup_placeholder_ptrs_in_tterm moment value ~need_symbol:false})
+      {name;
+       value=fixup_placeholder_ptrs_in_tterm moment value ~need_symbol:false})
 
 let fixup_placeholder_ptrs_in_eq_cond moment {lhs;rhs} =
   lprintf "fixing pph in %s == %s\n" (render_tterm lhs) (render_tterm rhs);
@@ -1531,7 +1702,8 @@ let extract_common_call_context
                      t=Unknown}).v
   in
   let extra_pre_conditions =
-    (take_extra_ptrs_into_pre_cond call.extra_ptrs call ftype_of) @ (take_arg_ptrs_into_pre_cond call.args call ftype_of) in
+    (take_extra_ptrs_into_pre_cond call.extra_ptrs call ftype_of) @
+    (take_arg_ptrs_into_pre_cond call.args call ftype_of) in
   lprintf "EPC length: %d\n" (List.length extra_pre_conditions);
   let post_lemmas = ["Render lemmas at the last moment"] in
   let ret_name = match ret_spec with
@@ -1563,12 +1735,14 @@ let extract_hist_call ftype_of call rets =
     (compose_extra_ptrs_post_conditions call ftype_of)@args_post_conditions
   in
   let args_post_conditions =
-    List.map args_post_conditions ~f:(fixup_placeholder_ptrs_in_eq_cond (After call.id))
+    List.map args_post_conditions
+      ~f:(fixup_placeholder_ptrs_in_eq_cond (After call.id))
   in
   let post_statements = convert_ctxt_list call.ret_context in
-  let post_statements = List.map post_statements ~f:(fixup_placeholder_ptrs_in_tterm
-                                                     (After call.id)
-                                                     ~need_symbol:false) in  
+  let post_statements = List.map post_statements
+      ~f:(fixup_placeholder_ptrs_in_tterm
+            (After call.id)
+            ~need_symbol:false) in  
   match Int.Map.find rets call.id with
   | Some ret ->
     {context=extract_common_call_context
@@ -1577,7 +1751,9 @@ let extract_hist_call ftype_of call rets =
   | None ->
     {context=extract_common_call_context
          ftype_of call None args;
-     result={args_post_conditions;ret_val={t=Unknown;v=Undef;};post_statements}}
+     result={args_post_conditions;
+             ret_val={t=Unknown;v=Undef;};
+             post_statements}}
 
 let extract_tip_calls ftype_of calls rets =
   lprintf "extract tip call: %s\n" (List.hd_exn calls).fun_name;
@@ -1596,17 +1772,26 @@ let extract_tip_calls ftype_of calls rets =
     | [] -> failwith "There must be at least one tip call."
     | _ ->
       List.map calls ~f:(fun tip ->
-          let args_post_conditions = compose_args_post_conditions tip ftype_of args in
+          let args_post_conditions =
+            compose_args_post_conditions tip ftype_of args
+          in
           let ret_val = get_ret_val tip in
           let post_statements = convert_ctxt_list tip.ret_context in
-          let args_post_conditions = List.map args_post_conditions
-                                              ~f:(fixup_placeholder_ptrs_in_eq_cond
-                                                  (After context.call_id)) in
-          let ret_val = fixup_placeholder_ptrs_in_tterm (After context.call_id) ret_val ~need_symbol:false in
-          let post_statements = List.map post_statements
-                                         ~f:(fixup_placeholder_ptrs_in_tterm
-                                             (After context.call_id)
-                                             ~need_symbol:false) in
+          let args_post_conditions =
+            List.map args_post_conditions
+              ~f:(fixup_placeholder_ptrs_in_eq_cond
+                    (After context.call_id))
+          in
+          let ret_val =
+            fixup_placeholder_ptrs_in_tterm
+              (After context.call_id) ret_val ~need_symbol:false
+          in
+          let post_statements =
+            List.map post_statements
+              ~f:(fixup_placeholder_ptrs_in_tterm
+                    (After context.call_id)
+                    ~need_symbol:false)
+          in
           {args_post_conditions;ret_val;post_statements})
   in
   lprintf "got %d results for tip-call\n" (List.length results);
@@ -1740,7 +1925,8 @@ let guess_dynamic_types (basic_ftype_of : string -> fun_spec) pref =
         in
         let ex_ptr_type_guesses =
           let ex_ptr_decl_types =
-            String.Map.of_alist_exn (basic_ftype_of call.fun_name).extra_ptr_types
+            String.Map.of_alist_exn
+              (basic_ftype_of call.fun_name).extra_ptr_types
           in
           let all_ptrs = function Static t -> Static (Ptr t)
                                 | Dynamic ts ->
@@ -1863,7 +2049,8 @@ let build_ir fun_types fin preamble boundary_fun finishing_fun
       (Trace_prefix.trace_prefix_of_sexp (Sexp.load_sexp fin))
       boundary_fun eventproc_iteration_begin
   in
-  lprintf "inside_iteration: %s\n" (if inside_iteration then "true" else "false");
+  lprintf "inside_iteration: %s\n"
+    (if inside_iteration then "true" else "false");
   let pref = distribute_ids pref in
   let guessed_dyn_types = guess_dynamic_types ftype_of pref in
   let ftype_of = (ftype_of,guessed_dyn_types) in
@@ -1883,10 +2070,11 @@ let build_ir fun_types fin preamble boundary_fun finishing_fun
   let free_vars = get_basic_vars ftype_of pref in
   let free_vars = typed_vars_to_varspec free_vars in
   (* let double_ptr_args = get_double_ptr_args ftype_of pref in *)
-  let arguments = (allocate_extra_ptrs ftype_of pref) in (* ORDER IS IMPORTANT HERE, EXTRA PTRS FIRST otherwise args that contain them fail... *)
+  (* ORDER IS IMPORTANT HERE, EXTRA PTRS FIRST otherwise args that contain them
+     fail... *)
+  let arguments = (allocate_extra_ptrs ftype_of pref) in
   let arguments = (allocate_args ftype_of pref (name_gen "arg"))@arguments in
   let rets = allocate_rets ftype_of pref in
-  (* let (rets, tip_dummies) = allocate_tip_ret_dummies ftype_of pref.tip_calls rets in *)
   let (hist_calls,tip_call) = extract_calls_info ftype_of pref rets in
   let arguments = fixup_placeholder_ptrs Beginning arguments in
   let hist_calls = render_hist_lemmas ftype_of hist_calls in
@@ -1895,22 +2083,43 @@ let build_ir fun_types fin preamble boundary_fun finishing_fun
   let cmplxs = !allocated_complex_vals in
 
   (* And now for some type-assignments... *)
-  let known_vars = (arguments@(String.Map.data free_vars)@(String.Map.data cmplxs)) in
+  let known_vars = (arguments@
+                    (String.Map.data free_vars)@
+                    (String.Map.data cmplxs)) in
   let fix_condition cond = {lhs=fix_tterm known_vars cond.lhs ~cast:false;
                             rhs=fix_tterm known_vars cond.rhs ~cast:false} in
-  let context_assumptions = List.map context_assumptions ~f:(fix_tterm known_vars ~cast:false) in
-  let hist_calls = List.map hist_calls ~f:(fun c -> {context={c.context with
-                                                              extra_pre_conditions=(List.map c.context.extra_pre_conditions ~f:fix_condition);
-                                                              application=(fix_tterm known_vars {v=c.context.application;t=Unknown} ~cast:true).v};
-                                                     result={c.result with
-                                                             args_post_conditions=(List.map c.result.args_post_conditions ~f:fix_condition)}}) in
+  let context_assumptions =
+    List.map context_assumptions ~f:(fix_tterm known_vars ~cast:false)
+  in
+  let hist_calls =
+    List.map hist_calls ~f:(fun c ->
+        {context={c.context with
+                  extra_pre_conditions=
+                    (List.map c.context.extra_pre_conditions ~f:fix_condition);
+                  application=
+                    (fix_tterm known_vars {v=c.context.application;t=Unknown}
+                       ~cast:true).v};
+         result={c.result with
+                 args_post_conditions=
+                   (List.map c.result.args_post_conditions
+                      ~f:fix_condition)}}) in
   let tip_call = {context={tip_call.context with
-                           extra_pre_conditions=(List.map tip_call.context.extra_pre_conditions ~f:fix_condition);
-                           application=(fix_tterm known_vars {v=tip_call.context.application;t=Unknown} ~cast:true).v};
-                  results=List.map tip_call.results ~f:(fun r -> {r with
-                                                                  args_post_conditions=(List.map r.args_post_conditions ~f:fix_condition);
-                                                                  post_statements=List.map r.post_statements ~f:(fix_tterm known_vars ~cast:false)})} in
-
+                           extra_pre_conditions=
+                             (List.map tip_call.context.extra_pre_conditions
+                                ~f:fix_condition);
+                           application=
+                             (fix_tterm known_vars
+                                {v=tip_call.context.application;t=Unknown}
+                                ~cast:true).v};
+                  results=List.map tip_call.results
+                      ~f:(fun r -> {r with
+                                    args_post_conditions=
+                                      (List.map r.args_post_conditions
+                                         ~f:fix_condition);
+                                    post_statements=
+                                      List.map r.post_statements
+                                        ~f:(fix_tterm known_vars ~cast:false)})}
+  in
   (* Do not render the allocated_dummies *)
   {preamble;free_vars;arguments;
    cmplxs;context_assumptions;hist_calls;tip_call;

@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void dlerror()
-{
-	assert(0);
-}
+void dlerror() { assert(0); }

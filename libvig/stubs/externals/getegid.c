@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void getegid()
-{
-	assert(0);
-}
+void getegid() { assert(0); }

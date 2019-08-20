@@ -1,6 +1,6 @@
 #ifdef KLEE_VERIFICATION
-#include "libvig/stubs/containers/map_stub-control.h" //for map_reset
-#endif//KLEE_VERIFICATION
+#  include "libvig/stubs/containers/map_stub-control.h" //for map_reset
+#endif                                                  // KLEE_VERIFICATION
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -29,38 +29,35 @@
 
 struct nf_config config;
 
-struct State* mac_tables;
+struct State *mac_tables;
 
 int bridge_expire_entries(vigor_time_t time) {
   assert(time >= 0); // we don't support the past
   assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
-  uint64_t time_u = (uint64_t) time; // OK because of the two asserts
+  uint64_t time_u = (uint64_t)time; // OK because of the two asserts
   vigor_time_t last_time = time_u - config.expiration_time * 1000; // us to ns
   return expire_items_single_map(mac_tables->dyn_heap, mac_tables->dyn_keys,
-                                 mac_tables->dyn_map,
-                                 last_time);
+                                 mac_tables->dyn_map, last_time);
 }
 
-int bridge_get_device(struct ether_addr* dst,
-                      uint16_t src_device) {
+int bridge_get_device(struct ether_addr *dst, uint16_t src_device) {
   int device = -1;
   struct StaticKey k;
   memcpy(&k.addr, dst, sizeof(struct ether_addr));
   k.device = src_device;
-  int present = map_get(mac_tables->st_map,
-                        &k, &device);
+  int present = map_get(mac_tables->st_map, &k, &device);
   if (present) {
     return device;
   }
 #ifdef KLEE_VERIFICATION
-  map_reset(mac_tables->dyn_map);//simplify the traces for easy validation
-#endif//KLEE_VERIFICATION
+  map_reset(mac_tables->dyn_map); // simplify the traces for easy validation
+#endif                            // KLEE_VERIFICATION
 
   int index = -1;
   present = map_get(mac_tables->dyn_map, dst, &index);
   if (present) {
-    struct DynamicValue* value = 0;
-    vector_borrow(mac_tables->dyn_vals, index, (void**)&value);
+    struct DynamicValue *value = 0;
+    vector_borrow(mac_tables->dyn_vals, index, (void **)&value);
     device = value->device;
     vector_return(mac_tables->dyn_vals, index, value);
     return device;
@@ -68,8 +65,7 @@ int bridge_get_device(struct ether_addr* dst,
   return -1;
 }
 
-void bridge_put_update_entry(struct ether_addr* src,
-                             uint16_t src_device,
+void bridge_put_update_entry(struct ether_addr *src, uint16_t src_device,
                              vigor_time_t time) {
   int index = -1;
   int hash = ether_addr_hash(src);
@@ -77,53 +73,55 @@ void bridge_put_update_entry(struct ether_addr* src,
   if (present) {
     dchain_rejuvenate_index(mac_tables->dyn_heap, index, time);
   } else {
-    int allocated = dchain_allocate_new_index(mac_tables->dyn_heap,
-                                              &index,
-                                              time);
+    int allocated =
+        dchain_allocate_new_index(mac_tables->dyn_heap, &index, time);
     if (!allocated) {
       NF_INFO("No more space in the dynamic table");
       return;
     }
-    struct ether_addr* key = 0;
-    struct DynamicValue* value = 0;
-    vector_borrow(mac_tables->dyn_keys, index, (void**)&key);
-    vector_borrow(mac_tables->dyn_vals, index, (void**)&value);
+    struct ether_addr *key = 0;
+    struct DynamicValue *value = 0;
+    vector_borrow(mac_tables->dyn_keys, index, (void **)&key);
+    vector_borrow(mac_tables->dyn_vals, index, (void **)&value);
     memcpy(key, src, sizeof(struct ether_addr));
     value->device = src_device;
     map_put(mac_tables->dyn_map, key, index);
-    //the other half of the key is in the map
+    // the other half of the key is in the map
     vector_return(mac_tables->dyn_keys, index, key);
     vector_return(mac_tables->dyn_vals, index, value);
   }
 }
 
-bool stat_map_condition(void* key, int index) {
+bool stat_map_condition(void *key, int index) {
   return 0 <= index & index < rte_eth_dev_count();
 }
 
-bool dyn_val_condition(void* val, int index, void* state) {
-  struct DynamicValue* v = val;
+bool dyn_val_condition(void *val, int index, void *state) {
+  struct DynamicValue *v = val;
   return 0 <= v->device & v->device < rte_eth_dev_count();
 }
 
 // File parsing, is not really the kind of code we want to verify.
 #ifdef KLEE_VERIFICATION
-void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
-}
+void read_static_ft_from_file(struct Map *stat_map, struct Vector *stat_keys,
+                              uint32_t stat_capacity) {}
 
-static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
-}
+static void read_static_ft_from_array(struct Map *stat_map,
+                                      struct Vector *stat_keys,
+                                      uint32_t stat_capacity) {}
 
-#else//KLEE_VERIFICATION
+#else // KLEE_VERIFICATION
 
-#ifndef DSOS
-static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
+#  ifndef DSOS
+static void read_static_ft_from_file(struct Map *stat_map,
+                                     struct Vector *stat_keys,
+                                     uint32_t stat_capacity) {
   if (config.static_config_fname[0] == '\0') {
     // No static config
     return;
   }
 
-  FILE* cfg_file = fopen(config.static_config_fname, "r");
+  FILE *cfg_file = fopen(config.static_config_fname, "r");
   if (cfg_file == NULL) {
     rte_exit(EXIT_FAILURE, "Error opening the static config file: %s",
              config.static_config_fname);
@@ -133,7 +131,7 @@ static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_k
   char ch;
   do {
     ch = fgetc(cfg_file);
-    if(ch == '\n')
+    if (ch == '\n')
       number_of_lines++;
   } while (ch != EOF);
 
@@ -142,7 +140,7 @@ static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_k
   rewind(cfg_file);
   if (stat_capacity <= capacity) {
     rte_exit(EXIT_FAILURE, "Too many static rules (%d), max: %d",
-             number_of_lines, stat_capacity/2);
+             number_of_lines, stat_capacity / 2);
   }
   int count = 0;
 
@@ -152,10 +150,10 @@ static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_k
     char target_str[10];
     int result = fscanf(cfg_file, "%18s", mac_addr_str);
     if (result != 1) {
-      if (result == EOF) break;
+      if (result == EOF)
+        break;
       else {
-        NF_INFO("Cannot read MAC address from file: %s",
-                strerror(errno));
+        NF_INFO("Cannot read MAC address from file: %s", strerror(errno));
         goto finally;
       }
     }
@@ -166,8 +164,8 @@ static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_k
         NF_INFO("Incomplete config string: %s, skip", mac_addr_str);
         break;
       } else {
-        NF_INFO("Cannot read the filtering target for MAC %s: %s",
-                mac_addr_str, strerror(errno));
+        NF_INFO("Cannot read the filtering target for MAC %s: %s", mac_addr_str,
+                strerror(errno));
         goto finally;
       }
     }
@@ -178,25 +176,23 @@ static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_k
         NF_INFO("Incomplete config string: %s, skip", mac_addr_str);
         break;
       } else {
-        NF_INFO("Cannot read the filtering target for MAC %s: %s",
-                mac_addr_str, strerror(errno));
+        NF_INFO("Cannot read the filtering target for MAC %s: %s", mac_addr_str,
+                strerror(errno));
         goto finally;
       }
     }
 
     int device_from;
     int device_to;
-    char* temp;
-    struct StaticKey* key = 0;
-    vector_borrow(stat_keys, count, (void**)&key);
+    char *temp;
+    struct StaticKey *key = 0;
+    vector_borrow(stat_keys, count, (void **)&key);
 
     // Ouff... the strings are extracted, now let's parse them.
-    result = cmdline_parse_etheraddr(NULL, mac_addr_str,
-                                     &key->addr,
+    result = cmdline_parse_etheraddr(NULL, mac_addr_str, &key->addr,
                                      sizeof(struct ether_addr));
     if (result < 0) {
-      NF_INFO("Invalid MAC address: %s, skip",
-              mac_addr_str);
+      NF_INFO("Invalid MAC address: %s, skip", mac_addr_str);
       continue;
     }
 
@@ -221,10 +217,10 @@ static void read_static_ft_from_file(struct Map* stat_map, struct Vector* stat_k
     ++count;
     assert(count < capacity);
   }
- finally:
+finally:
   fclose(cfg_file);
 }
-#endif
+#  endif // DSOS
 
 struct {
   const char mac_addr[18];
@@ -234,27 +230,27 @@ struct {
   { "00:00:00:00:00:00", 0, 0 },
 };
 
-static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_keys, uint32_t stat_capacity) {
+static void read_static_ft_from_array(struct Map *stat_map,
+                                      struct Vector *stat_keys,
+                                      uint32_t stat_capacity) {
   unsigned number_of_entries = sizeof(static_rules) / sizeof(static_rules[0]);
 
   // Make sure the hash table is occupied only by 50%
   unsigned capacity = number_of_entries * 2;
   if (stat_capacity <= capacity) {
     rte_exit(EXIT_FAILURE, "Too many static rules (%d), max: %d",
-             number_of_entries, CAPACITY_UPPER_LIMIT/2);
+             number_of_entries, CAPACITY_UPPER_LIMIT / 2);
   }
   int count = 0;
 
   for (int idx = 0; idx < number_of_entries; idx++) {
-    struct StaticKey* key = 0;
-    vector_borrow(stat_keys, count, (void**)&key);
+    struct StaticKey *key = 0;
+    vector_borrow(stat_keys, count, (void **)&key);
 
     int result = cmdline_parse_etheraddr(NULL, static_rules[idx].mac_addr,
-                                     &key->addr,
-                                     sizeof(struct ether_addr));
+                                         &key->addr, sizeof(struct ether_addr));
     if (result < 0) {
-      NF_INFO("Invalid MAC address: %s, skip",
-              static_rules[idx].mac_addr);
+      NF_INFO("Invalid MAC address: %s, skip", static_rules[idx].mac_addr);
       continue;
     }
 
@@ -267,7 +263,7 @@ static void read_static_ft_from_array(struct Map* stat_map, struct Vector* stat_
   }
 }
 
-#endif//KLEE_VERIFICATION
+#endif // KLEE_VERIFICATION
 
 void nf_init(void) {
   unsigned stat_capacity = 8192; // Has to be power of 2
@@ -276,19 +272,21 @@ void nf_init(void) {
 
   mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count());
   if (mac_tables == NULL) {
-		rte_exit(EXIT_FAILURE, "Could not allocate mac tables");
+    rte_exit(EXIT_FAILURE, "Could not allocate mac tables");
   } else {
 #ifdef DSOS
-    read_static_ft_from_array(mac_tables->st_map, mac_tables->st_vec, stat_capacity);
+    read_static_ft_from_array(mac_tables->st_map, mac_tables->st_vec,
+                              stat_capacity);
 #else
-    read_static_ft_from_file(mac_tables->st_map, mac_tables->st_vec, stat_capacity);
+    read_static_ft_from_file(mac_tables->st_map, mac_tables->st_vec,
+                             stat_capacity);
 #endif
   }
 }
 
-int nf_process(struct rte_mbuf* mbuf, vigor_time_t now) {
+int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
   const uint16_t in_port = mbuf->port;
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+  struct ether_hdr *ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
 
   bridge_expire_entries(now);
   bridge_put_update_entry(&ether_header->s_addr, in_port, now);

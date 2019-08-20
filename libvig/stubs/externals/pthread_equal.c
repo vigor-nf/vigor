@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void pthread_equal()
-{
-	assert(0);
-}
+void pthread_equal() { assert(0); }

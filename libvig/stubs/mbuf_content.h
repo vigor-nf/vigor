@@ -7,24 +7,26 @@
 #include <rte_tcp.h>
 #include "libvig/tcpudp.h"
 
-//TODO: should autogenerate this file as well.
+// TODO: should autogenerate this file as well.
 #include "ether_addr.h.gen.h"
 
 // TODO more complete stub content?
 // do change the total_len in rx if this is changed!
 struct stub_mbuf_content {
-	struct ether_hdr ether;
-	struct ipv4_hdr ipv4;
-	struct tcp_hdr tcp;
+  struct ether_hdr ether;
+  struct ipv4_hdr ipv4;
+  struct tcp_hdr tcp;
 }
-// We need to pack the structure so offsets are correct, but only if we're not within VeriFast, cause VeriFast doesn't know about it
+// We need to pack the structure so offsets are correct, but only if we're not
+// within VeriFast, cause VeriFast doesn't know about it
 #ifdef KLEE_VERIFICATION
- __attribute__((packed))
+__attribute__((packed))
 #endif
 ;
 
 // VeriFast definitions used in the tracing contracts
-// The switch statement for ether_addrp is there to make VeriFast understand that the list has *exactly* 6 elements
+// The switch statement for ether_addrp is there to make VeriFast understand
+// that the list has *exactly* 6 elements
 /*@
 
     inductive ether_hdri = ether_hdrc(ether_addri, ether_addri, int);

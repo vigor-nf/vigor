@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void pwrite()
-{
-	assert(0);
-}
+void pwrite() { assert(0); }

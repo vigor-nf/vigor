@@ -24,17 +24,20 @@ let validate_prefix fin intermediate_pref verifast_bin proj_root nf_name =
                        intermediate_fout ^ " " ^
                        export_fout));
   let ir =
-    Import.build_ir (fun_types Spec.containers Spec.records) fin (gen_preamble (nf_name ^ "/loop.h") Spec.containers)
+    Import.build_ir (fun_types Spec.containers Spec.records)
+      fin (gen_preamble (nf_name ^ "/loop.h") Spec.containers)
      "loop_invariant_produce" "loop_invariant_consume"
      "loop_invariant_produce" "loop_invariant_consume"
   in
   let ir = {ir with semantic_checks = if (ir.complete_event_loop_iteration) then
-                        ((abstract_state_capture Spec.containers) ^ (In_channel.read_all "forwarding_property.tmpl"))
+                        ((abstract_state_capture Spec.containers) ^
+                         (In_channel.read_all "forwarding_property.tmpl"))
                       else ""}
   in
   Out_channel.write_all ir_fname ~data:(Sexp.to_string (sexp_of_ir ir));
   match Verifier.verify_ir
-          ir verifast_bin intermediate_fout verify_out_fname proj_root lino_fname
+          ir verifast_bin intermediate_fout
+          verify_out_fname proj_root lino_fname
   with
   | Verifier.Valid -> printf "Valid.\n"
   | Verifier.Inconsistent -> printf "Inconsistent.\n"

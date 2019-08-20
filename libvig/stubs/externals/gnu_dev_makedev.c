@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void gnu_dev_makedev()
-{
-	assert(0);
-}
+void gnu_dev_makedev() { assert(0); }

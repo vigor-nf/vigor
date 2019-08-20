@@ -27,12 +27,12 @@
 
 // I assume that the rules will be in ascending order of prefixlen
 // Each new rule will simply overwrite any existing rule where it should exist
-//	The entries in lpm_24 are as follows:
-// 		bit15: 0->next hop, 1->lpm_long lookup
-// 		bit14-0: value of next hop or index in lpm_long
+// The entries in lpm_24 are as follows:
+//   bit15: 0->next hop, 1->lpm_long lookup
+//   bit14-0: value of next hop or index in lpm_long
 //
-//	The entries in lpm_long are as follows:
-// 	bit15-0: value of next hop
+// The entries in lpm_long are as follows:
+//   bit15-0: value of next hop
 //
 //max next hop value is 2^15 - 1.
 
@@ -54,9 +54,9 @@ struct rule {
 
 struct lpm *lpm_allocate();
 //@ requires true;
-/*@ ensures result == 0 ? 
-              true 
-            : 
+/*@ ensures result == 0 ?
+              true
+            :
               table(result, dir_init()); @*/
 
 void lpm_free(struct lpm *_lpm);

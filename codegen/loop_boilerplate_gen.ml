@@ -58,9 +58,15 @@ let gen_loop_invariant containers =
   (concat_flatten_map " &*&\n              "
      (fun (name, cnt) ->
         match cnt with
-        | Map (typ, cap, _) -> ["mapp<" ^ (inductive_name typ) ^ ">(" ^ name ^ ", " ^ (predicate_name typ) ^ ", " ^ (lhash_name typ) ^ ", " ^ "nop_true, " ^ "mapc(" ^ cap ^ ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs))"]
+        | Map (typ, cap, _) -> ["mapp<" ^ (inductive_name typ) ^ ">(" ^
+                                name ^ ", " ^ (predicate_name typ) ^
+                                ", " ^ (lhash_name typ) ^ ", " ^ "nop_true, " ^
+                                "mapc(" ^ cap ^ ", ?_" ^ name ^ ", ?_" ^ name ^
+                                "_addrs))"]
         | Vector (typ, cap, _) ->
-          let vectorp = "vectorp<" ^ (inductive_name typ) ^ ">(" ^ name ^ ", " ^ (predicate_name typ) ^ ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"
+          let vectorp = "vectorp<" ^ (inductive_name typ) ^
+                        ">(" ^ name ^ ", " ^ (predicate_name typ) ^
+                        ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"
           in
           let len = "length(_" ^ name ^ ") == " ^ cap in
           let is_one = "true == forall(_" ^ name ^ ", is_one)" in
@@ -69,9 +75,11 @@ let gen_loop_invariant containers =
           (if (String.equal cap "") || (String.equal cap "_") then [] else [len])
         | CHT (depth,height) ->
           let vectorp =
-            "vectorp<uint32_t>(" ^ name ^ ", u_integer, ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"
+            "vectorp<uint32_t>(" ^ name ^ ", u_integer, ?_" ^ name ^
+            ", ?_" ^ name ^ "_addrs)"
           in
-          let valid_cht = "true == valid_cht(_" ^ name ^ ", " ^ depth ^ ", " ^ height ^ ")"
+          let valid_cht = "true == valid_cht(_" ^ name ^ ", " ^ depth ^
+                          ", " ^ height ^ ")"
           in
           [vectorp;valid_cht]
         | DChain cap -> ["double_chainp(?_" ^ name ^ ", " ^ name ^ ")";
@@ -80,8 +88,10 @@ let gen_loop_invariant containers =
         | UInt
         | UInt32
         | Int -> [name ^ " < INT_MAX"]
-        | EMap (typ, m, v, ch) -> ["map_vec_chain_coherent<" ^ (inductive_name typ) ^ ">(_" ^ m ^ ", _" ^ v ^ ", _" ^ ch ^ ")";
-                                   "true == forall2(_" ^ v ^ ", _" ^ v ^ "_addrs, (kkeeper)(_" ^ m ^ "_addrs))"]
+        | EMap (typ, m, v, ch) -> ["map_vec_chain_coherent<" ^ (inductive_name typ) ^
+                                   ">(_" ^ m ^ ", _" ^ v ^ ", _" ^ ch ^ ")";
+                                   "true == forall2(_" ^ v ^ ", _" ^ v ^
+                                   "_addrs, (kkeeper)(_" ^ m ^ "_addrs))"]
      )
      containers
      ["lcore_id == 0";
@@ -270,13 +280,27 @@ let gen_loop_invariant_consume_stub containers =
     (concat_flatten_map ""
        (fun (name, cnt) ->
           match cnt with
-          | Map (_, _, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Map*), \"" ^ name ^ "\");\n"]
-          | Vector (_, _, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
-          | CHT (_, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
-          | DChain _ -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct DoubleChain*), \"" ^ name ^ "\");\n"]
-          | Int -> ["  klee_trace_param_i32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
-          | UInt -> ["  klee_trace_param_u32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
-          | UInt32 -> ["  klee_trace_param_u32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
+          | Map (_, _, _) -> ["  klee_trace_param_ptr(" ^
+                              name ^ ", sizeof(struct Map*), \"" ^
+                              name ^ "\");\n"]
+          | Vector (_, _, _) -> ["  klee_trace_param_ptr(" ^
+                                 name ^ ", sizeof(struct Vector*), \"" ^
+                                 name ^ "\");\n"]
+          | CHT (_, _) -> ["  klee_trace_param_ptr(" ^
+                           name ^ ", sizeof(struct Vector*), \"" ^
+                           name ^ "\");\n"]
+          | DChain _ -> ["  klee_trace_param_ptr(" ^
+                         name ^ ", sizeof(struct DoubleChain*), \"" ^
+                         name ^ "\");\n"]
+          | Int -> ["  klee_trace_param_i32(" ^
+                    name ^ ", \"" ^
+                    name ^ "\");\n"]
+          | UInt -> ["  klee_trace_param_u32(" ^
+                     name ^ ", \"" ^
+                     name ^ "\");\n"]
+          | UInt32 -> ["  klee_trace_param_u32(" ^
+                       name ^ ", \"" ^
+                       name ^ "\");\n"]
           | EMap (_, _, _, _) -> []
        )
        containers
@@ -305,13 +329,27 @@ let gen_loop_invariant_produce_stub containers =
     (concat_flatten_map ""
        (fun (name, cnt) ->
           match cnt with
-          | Map (_, _, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Map*), \"" ^ name ^ "\");\n"]
-          | Vector (_, _, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
-          | CHT (_, _) -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct Vector*), \"" ^ name ^ "\");\n"]
-          | DChain _ -> ["  klee_trace_param_ptr(" ^ name ^ ", sizeof(struct DoubleChain*), \"" ^ name ^ "\");\n"]
-          | Int -> ["  klee_trace_param_i32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
-          | UInt -> ["  klee_trace_param_u32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
-          | UInt32 -> ["  klee_trace_param_u32(" ^ name ^ ", \"" ^ name ^ "\");\n"]
+          | Map (_, _, _) -> ["  klee_trace_param_ptr(" ^
+                              name ^ ", sizeof(struct Map*), \"" ^
+                              name ^ "\");\n"]
+          | Vector (_, _, _) -> ["  klee_trace_param_ptr(" ^
+                                 name ^ ", sizeof(struct Vector*), \"" ^
+                                 name ^ "\");\n"]
+          | CHT (_, _) -> ["  klee_trace_param_ptr(" ^
+                           name ^ ", sizeof(struct Vector*), \"" ^
+                           name ^ "\");\n"]
+          | DChain _ -> ["  klee_trace_param_ptr(" ^
+                         name ^ ", sizeof(struct DoubleChain*), \"" ^
+                         name ^ "\");\n"]
+          | Int -> ["  klee_trace_param_i32(" ^
+                    name ^ ", \"" ^
+                    name ^ "\");\n"]
+          | UInt -> ["  klee_trace_param_u32(" ^
+                     name ^ ", \"" ^
+                     name ^ "\");\n"]
+          | UInt32 -> ["  klee_trace_param_u32(" ^
+                       name ^ ", \"" ^
+                       name ^ "\");\n"]
           | EMap (_, _, _, _) -> []
        )
        containers
@@ -389,10 +427,11 @@ let gen_allocation containers =
   (concat_flatten_map ""
      (fun (name, cnt) ->
         match cnt with
-        | Map (typ, cap, _) -> ["  ret->" ^ name ^ " = NULL;\n";
-                                abort_on_null ("map_allocate(" ^ eq_fun_name typ ^
-                                            ", " ^ hash_fun_name typ ^ ", " ^ cap ^
-                                            ", &(ret->" ^ name ^ "))")]
+        | Map (typ, cap, _) ->
+          ["  ret->" ^ name ^ " = NULL;\n";
+           abort_on_null ("map_allocate(" ^ eq_fun_name typ ^
+                          ", " ^ hash_fun_name typ ^ ", " ^ cap ^
+                          ", &(ret->" ^ name ^ "))")]
         | Vector (typ, cap, _) ->
           let typ_size =
             if String.equal typ "uint32_t" then
@@ -402,12 +441,17 @@ let gen_allocation containers =
           ["  ret->" ^ name ^ " = NULL;\n";
            abort_on_null ("vector_allocate(" ^ typ_size ^ ", " ^ cap ^
                           ", " ^ alloc_fun_name typ ^ ", &(ret->" ^ name ^ "))")]
-        | CHT (depth, height) -> ["  ret->" ^ name ^ " = NULL;\n";
-                                  abort_on_null ("vector_allocate(sizeof(uint32_t), " ^
-                                                 depth ^ "*" ^ height ^ ", null_init, &(ret->" ^ name ^ "))");
-                                  "  " ^ abort_on_null ("cht_fill_cht(ret->" ^ name ^ ", " ^ height ^ ", " ^ depth ^ ")")]
+        | CHT (depth, height) ->
+          ["  ret->" ^ name ^ " = NULL;\n";
+           abort_on_null ("vector_allocate(sizeof(uint32_t), " ^
+                          depth ^ "*" ^ height ^ ", null_init, &(ret->" ^
+                          name ^ "))");
+           "  " ^ abort_on_null ("cht_fill_cht(ret->" ^
+                                 name ^ ", " ^ height ^
+                                 ", " ^ depth ^ ")")]
         | DChain cap -> ["  ret->" ^ name ^ " = NULL;\n";
-                         abort_on_null ("dchain_allocate(" ^ cap ^ ", &(ret->" ^ name ^ "))")]
+                         abort_on_null ("dchain_allocate(" ^
+                                        cap ^ ", &(ret->" ^ name ^ "))")]
         | Int
         | UInt
         | UInt32 -> ["  ret->" ^ name ^ " = " ^ name ^ ";\n"]
@@ -418,23 +462,28 @@ let gen_allocation containers =
      (fun (name, cnt) ->
         match cnt with
         | Map (typ, cap, cond) ->
-          ("  map_set_layout(ret->" ^ name ^ ", " ^ strdescrs_name typ ^ ", sizeof(" ^ strdescrs_name typ ^
+          ("  map_set_layout(ret->" ^ name ^ ", " ^ strdescrs_name typ ^
+           ", sizeof(" ^ strdescrs_name typ ^
            ")/sizeof(" ^ strdescrs_name typ ^ "[0]), " ^ nest_descrs_name typ ^
            ", sizeof(" ^ nest_descrs_name typ ^
-           ")/sizeof(" ^ nest_descrs_name typ ^ "[0]), " ^ "\"" ^ typ ^ "\");\n")::
+           ")/sizeof(" ^ nest_descrs_name typ ^ "[0]), "
+           ^ "\"" ^ typ ^ "\");\n")::
           (if String.equal cond "" then [] else
              ["  map_set_entry_condition(ret->" ^ name ^ ", " ^ cond ^ ");\n"])
         | Vector (typ, cap, cond) ->
           (if String.equal typ "uint32_t" then
-             "  vector_set_layout(ret->" ^ name ^ ", NULL, 0, NULL, 0, \"uint32_t\");\n"
+             "  vector_set_layout(ret->" ^ name ^
+             ", NULL, 0, NULL, 0, \"uint32_t\");\n"
            else
-             "  vector_set_layout(ret->" ^ name ^ ", " ^ strdescrs_name typ ^ ", sizeof(" ^ strdescrs_name typ ^
+             "  vector_set_layout(ret->" ^ name ^ ", " ^
+             strdescrs_name typ ^ ", sizeof(" ^ strdescrs_name typ ^
              ")/sizeof(" ^ strdescrs_name typ ^ "[0]), " ^ nest_descrs_name typ ^
              ", sizeof(" ^ nest_descrs_name typ ^
              ")/sizeof(" ^ nest_descrs_name typ ^ "[0]), " ^ "\"" ^ typ ^ "\");\n")::
           (if String.equal cond "" then [] else
              ["  vector_set_entry_condition(ret->" ^ name ^ ", " ^ cond ^ ", ret);\n"])
-        | CHT (depth, height) -> ["  vector_set_layout(ret->" ^ name ^ ", NULL, 0, NULL, 0, \"uint32_t\");\n"]
+        | CHT (depth, height) ->
+          ["  vector_set_layout(ret->" ^ name ^ ", NULL, 0, NULL, 0, \"uint32_t\");\n"]
         | DChain cap -> []
         | Int -> []
         | UInt -> []

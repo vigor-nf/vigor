@@ -5,9 +5,9 @@
 #include "libvig/stubs/ether_addr.h"
 
 struct LoadBalancedBackend {
-	uint16_t nic;
+  uint16_t nic;
   struct ether_addr mac;
   uint32_t ip;
 };
 
-#endif//_LB_BACKEND_H_INCLUDED_
+#endif //_LB_BACKEND_H_INCLUDED_

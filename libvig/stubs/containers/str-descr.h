@@ -5,7 +5,7 @@ struct str_field_descr {
   int offset;
   int width;
   int count;
-  char* name;
+  char *name;
 };
 
 struct nested_field_descr {
@@ -24,4 +24,4 @@ struct nested_nested_field_descr {
   char *name;
 };
 
-#endif//_STR_DESCR_H_INCLUDED_
+#endif //_STR_DESCR_H_INCLUDED_

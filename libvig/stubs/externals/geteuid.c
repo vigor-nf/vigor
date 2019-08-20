@@ -1,6 +1,3 @@
 #include <assert.h>
 
-void geteuid()
-{
-	assert(0);
-}
+void geteuid() { assert(0); }

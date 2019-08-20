@@ -1,0 +1,47 @@
+diff --git b/nat_flowmanager.c a/nat_flowmanager.c
+index a394bf66..abf4b47d 100644
+--- b/nat_flowmanager.c
++++ a/nat_flowmanager.c
+@@ -63,21 +63,13 @@ bool flow_manager_allocate_flow(struct FlowManager *manager, struct FlowId *id,
+ }
+ 
+ void flow_manager_expire(struct FlowManager *manager, vigor_time_t time) {
+-  if (time < manager->expiration_time)
+-    return; // nothing can expire yet
+-  // This is convoluted - we want to make sure the sanitization doesn't
+-  // extend our vigor_time_t value in 128 bits, which would confuse the
+-  // validator. So we "prove" by hand that it's OK...
+-  if (time < 0)
+-    return; // we don't support the past
+-  assert(sizeof(vigor_time_t) <= sizeof(int64_t));
+-  uint64_t time_u = (uint64_t)time; // OK since assert above passed and time > 0
+-  uint64_t last_time_u =
+-      time_u - manager->expiration_time *
+-                   1000; // OK because time >= expiration_time >= 0
+-  assert(sizeof(int64_t) <= sizeof(vigor_time_t));
++  assert(time >= 0); // we don't support the past
++  assert(sizeof(vigor_time_t) <= sizeof(uint64_t));
++  uint64_t time_u = (uint64_t)time; // OK because of the two asserts
+   vigor_time_t last_time =
+-      (vigor_time_t)last_time_u; // OK since the assert above passed
++      time_u - manager->expiration_time * 1000; // convert us to ns
++  expire_items_single_map(manager->state->heap, manager->state->fv,
++                          manager->state->fm, last_time);
+ }
+ 
+ bool flow_manager_get_internal(struct FlowManager *manager, struct FlowId *id,
+diff --git b/nat_main.c a/nat_main.c
+index 731b2315..b9880a8a 100644
+--- b/nat_main.c
++++ a/nat_main.c
+@@ -64,8 +64,8 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
+       NF_DEBUG("Found internal flow.");
+       log_FlowId(&internal_flow);
+ 
+-      if (internal_flow.dst_ip != ipv4_header->src_addr ||
+-          internal_flow.dst_port != tcpudp_header->src_port ||
++      if (internal_flow.dst_ip != ipv4_header->src_addr |
++          internal_flow.dst_port != tcpudp_header->src_port |
+           internal_flow.protocol != ipv4_header->next_proto_id) {
+         NF_DEBUG("Spoofing attempt, dropping.");
+         return in_port;
