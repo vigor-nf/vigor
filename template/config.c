@@ -42,19 +42,20 @@ void nf_config_init(int argc, char **argv) {
   while ((opt = getopt_long(argc, argv, "m:", long_options, NULL)) != EOF) {
     unsigned device;
     switch (opt) {
-    case 'm':
-      device = nf_util_parse_int(optarg, "eth-dest device", 10, ',');
-      if (device >= nb_devices) {
-        PARSE_ERROR("eth-dest: device %d >= nb_devices (%d)\n", device,
-                    nb_devices);
-      }
+      case 'm':
+        device = nf_util_parse_int(optarg, "eth-dest device", 10, ',');
+        if (device >= nb_devices) {
+          PARSE_ERROR("eth-dest: device %d >= nb_devices (%d)\n", device,
+                      nb_devices);
+        }
 
-      optarg += 2;
-      if (cmdline_parse_etheraddr(NULL, optarg, &(config.endpoint_macs[device]),
-                                  sizeof(int64_t)) < 0) {
-        PARSE_ERROR("Invalid MAC address: %s\n", optarg);
-      }
-      break;
+        optarg += 2;
+        if (cmdline_parse_etheraddr(NULL, optarg,
+                                    &(config.endpoint_macs[device]),
+                                    sizeof(int64_t)) < 0) {
+          PARSE_ERROR("Invalid MAC address: %s\n", optarg);
+        }
+        break;
     }
   }
 

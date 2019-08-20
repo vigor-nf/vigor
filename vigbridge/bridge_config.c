@@ -41,27 +41,28 @@ void nf_config_init(int argc, char **argv) {
   while ((opt = getopt_long(argc, argv, "t:c:f:", long_options, NULL)) != EOF) {
     unsigned device;
     switch (opt) {
-    case 't':
-      config.expiration_time = nf_util_parse_int(optarg, "exp-time", 10, '\0');
-      if (config.expiration_time <= 0) {
-        PARSE_ERROR("Expiration time must be strictly positive.\n");
-      }
-      break;
+      case 't':
+        config.expiration_time =
+            nf_util_parse_int(optarg, "exp-time", 10, '\0');
+        if (config.expiration_time <= 0) {
+          PARSE_ERROR("Expiration time must be strictly positive.\n");
+        }
+        break;
 
-    case 'c':
-      config.dyn_capacity = nf_util_parse_int(optarg, "capacity", 10, '\0');
-      if (config.dyn_capacity <= 0) {
-        PARSE_ERROR("Flow table size must be strictly positive.\n");
-      }
-      break;
+      case 'c':
+        config.dyn_capacity = nf_util_parse_int(optarg, "capacity", 10, '\0');
+        if (config.dyn_capacity <= 0) {
+          PARSE_ERROR("Flow table size must be strictly positive.\n");
+        }
+        break;
 
-    case 'f':
-      strncpy(config.static_config_fname, optarg, CONFIG_FNAME_LEN - 1);
-      config.static_config_fname[CONFIG_FNAME_LEN - 1] = '\0';
-      break;
+      case 'f':
+        strncpy(config.static_config_fname, optarg, CONFIG_FNAME_LEN - 1);
+        config.static_config_fname[CONFIG_FNAME_LEN - 1] = '\0';
+        break;
 
-    default:
-      PARSE_ERROR("Unknown option %c", opt);
+      default:
+        PARSE_ERROR("Unknown option %c", opt);
     }
   }
 

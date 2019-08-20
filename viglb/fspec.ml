@@ -19,20 +19,26 @@ let ip_addr_struct = Ir.Str("ip_addr", ["addr", Uint32])
 module Iface : Fspec_api.Spec =
 struct
 (* FIXME: borrowed from ../nf/vigbalancer/lb_data_spec.ml*)
-let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity", "lb_flow_id_condition");
+let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity",
+                                            "lb_flow_id_condition");
                   "flow_heap", Vector ("LoadBalancedFlow", "flow_capacity", "");
                   "flow_chain", DChain "flow_capacity";
-                  "flow_id_to_backend_id", Vector ("uint32_t", "flow_capacity", "lb_flow_id2backend_id_cond");
-                  "ip_to_backend_id", Map ("ip_addr", "backend_capacity", "lb_backend_id_condition");
+                  "flow_id_to_backend_id", Vector ("uint32_t", "flow_capacity",
+                                                   "lb_flow_id2backend_id_cond");
+                  "ip_to_backend_id", Map ("ip_addr", "backend_capacity",
+                                           "lb_backend_id_condition");
                   "backend_ips", Vector ("ip_addr", "backend_capacity", "");
-                  "backends", Vector ("LoadBalancedBackend", "backend_capacity", "lb_backend_condition");
+                  "backends", Vector ("LoadBalancedBackend", "backend_capacity",
+                                      "lb_backend_condition");
                   "active_backends", DChain "backend_capacity";
                   "cht", CHT ("backend_capacity", "cht_height");
                   "backend_capacity", UInt32;
                   "flow_capacity", UInt32;
                   "cht_height", UInt32;
-                  "flow_emap", EMap ("LoadBalancedFlow", "flow_to_flow_id", "flow_heap", "flow_chain");
-                  "backend_ip_emap", EMap ("ip_addr", "ip_to_backend_id", "backend_ips", "active_backends");
+                  "flow_emap", EMap ("LoadBalancedFlow", "flow_to_flow_id",
+                                     "flow_heap", "flow_chain");
+                  "backend_ip_emap", EMap ("ip_addr", "ip_to_backend_id",
+                                           "backend_ips", "active_backends");
                  ]
 
 let records = String.Map.of_alist_exn

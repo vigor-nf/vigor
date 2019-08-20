@@ -43,44 +43,46 @@ void nf_config_init(int argc, char **argv) {
          EOF) {
     unsigned device;
     switch (opt) {
-    case 'm':
-      device = nf_util_parse_int(optarg, "eth-dest device", 10, ',');
-      if (device >= nb_devices) {
-        PARSE_ERROR("eth-dest: device %d >= nb_devices (%d)\n", device,
-                    nb_devices);
-      }
+      case 'm':
+        device = nf_util_parse_int(optarg, "eth-dest device", 10, ',');
+        if (device >= nb_devices) {
+          PARSE_ERROR("eth-dest: device %d >= nb_devices (%d)\n", device,
+                      nb_devices);
+        }
 
-      optarg += 2;
-      if (cmdline_parse_etheraddr(NULL, optarg, &(config.endpoint_macs[device]),
-                                  sizeof(int64_t)) < 0) {
-        PARSE_ERROR("Invalid MAC address: %s\n", optarg);
-      }
-      break;
+        optarg += 2;
+        if (cmdline_parse_etheraddr(NULL, optarg,
+                                    &(config.endpoint_macs[device]),
+                                    sizeof(int64_t)) < 0) {
+          PARSE_ERROR("Invalid MAC address: %s\n", optarg);
+        }
+        break;
 
-    case 't':
-      config.expiration_time = nf_util_parse_int(optarg, "exp-time", 10, '\0');
-      if (config.expiration_time == 0) {
-        PARSE_ERROR("Expiration time must be strictly positive.\n");
-      }
-      break;
+      case 't':
+        config.expiration_time =
+            nf_util_parse_int(optarg, "exp-time", 10, '\0');
+        if (config.expiration_time == 0) {
+          PARSE_ERROR("Expiration time must be strictly positive.\n");
+        }
+        break;
 
-    case 'f':
-      config.max_flows = nf_util_parse_int(optarg, "max-flows", 10, '\0');
-      if (config.max_flows <= 0) {
-        PARSE_ERROR("Flow table size must be strictly positive.\n");
-      }
-      break;
+      case 'f':
+        config.max_flows = nf_util_parse_int(optarg, "max-flows", 10, '\0');
+        if (config.max_flows <= 0) {
+          PARSE_ERROR("Flow table size must be strictly positive.\n");
+        }
+        break;
 
-    case 'w':
-      config.wan_device = nf_util_parse_int(optarg, "wan-dev", 10, '\0');
-      if (config.wan_device >= nb_devices) {
-        PARSE_ERROR("WAN device does not exist.\n");
-      }
-      break;
+      case 'w':
+        config.wan_device = nf_util_parse_int(optarg, "wan-dev", 10, '\0');
+        if (config.wan_device >= nb_devices) {
+          PARSE_ERROR("WAN device does not exist.\n");
+        }
+        break;
 
-    default:
-      PARSE_ERROR("Unknown option.\n");
-      break;
+      default:
+        PARSE_ERROR("Unknown option.\n");
+        break;
     }
   }
 
