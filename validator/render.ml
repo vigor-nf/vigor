@@ -34,7 +34,7 @@ let render_conditions assumptions ~is_assert =
       | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, b, x2);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
       (* so we might as well apply it for normal Ors as well! less forking *)
       | Bop (Or, a, b) -> fn ^"(mem(true, cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
-      | Id x -> fn ^ "(x != 0);"
+      | Id x -> fn ^ "(" ^ x ^ " != 0);"
       | Bop (Bit_and, _, _) -> fn ^ "(0 != " ^ (render_tterm t) ^ ");"
       | _ -> fn ^ "(" ^ (render_tterm t) ^ ");") in
   let unique_assumptions =
