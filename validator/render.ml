@@ -10,30 +10,72 @@ let gen_tmp_name () =
 
 let render_conditions assumptions ~is_assert =
   let rec flatten_assumption (ass: tterm) = match ass.v with
-  (* yeah that bool vs int 0 stuff is annoying, but writing a method to handle it would be more annoying... for now *)
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (And, x, y);t=_}) -> flatten_assumption {v=Bop (Or, {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}, {v=Bop (Eq, {v=Bool false;t=Boolean},y);t=Boolean});t=Boolean}
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (And, x, y);t=_}) -> flatten_assumption {v=Bop (Or, {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}, {v=Bop (Eq, {v=Bool false;t=Boolean},y);t=Boolean});t=Boolean}
-  | Bop (And, x, y) -> (flatten_assumption x) @ (flatten_assumption y)
-  | _ -> [ass]
+    (* yeah that bool vs int 0 stuff is annoying, but writing a method to handle
+       it would be more annoying... for now *)
+    | Bop (Eq,
+           {v=Int 0;t=Boolean},
+           {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
+    | Bop (Eq,
+           {v=Int 0;t=Boolean},
+           {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
+    | Bop (Eq,
+           {v=Bool false;t=_},
+           {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
+    | Bop (Eq,
+           {v=Bool false;t=_},
+           {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
+    | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) ->
+      List.map (List.concat (List.map [x; y] ~f:flatten_assumption))
+        ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+    | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) ->
+      List.map (List.concat (List.map [x; y] ~f:flatten_assumption))
+        ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+    | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (And, x, y);t=_}) ->
+      flatten_assumption {v=Bop (Or,
+                                 {v=Bop (Eq, {v=Bool false;t=Boolean}, x);
+                                  t=Boolean},
+                                 {v=Bop (Eq, {v=Bool false;t=Boolean},y);
+                                  t=Boolean});
+                          t=Boolean}
+    | Bop (Eq, {v=Bool false;t=_}, {v=Bop (And, x, y);t=_}) ->
+      flatten_assumption {v=Bop (Or,
+                                 {v=Bop (Eq, {v=Bool false;t=Boolean}, x);
+                                  t=Boolean},
+                                 {v=Bop (Eq, {v=Bool false;t=Boolean},y);
+                                  t=Boolean});
+                          t=Boolean}
+    | Bop (And, x, y) -> (flatten_assumption x) @ (flatten_assumption y)
+    | _ -> [ass]
   in
-  let flattened_assumptions = List.concat (List.map assumptions ~f:flatten_assumption) in
+  let flattened_assumptions =
+    List.concat (List.map assumptions ~f:flatten_assumption)
+  in
   let fn = if is_assert then "//@ assert" else "//@ assume" in
   let rendered_assumptions = List.map flattened_assumptions ~f:(fun t ->
       match t.v with
-      (* order-independent would be better you say? sure! but that's too bit a refactoring... #ResearchCode *)
-      (* also, yes, this will result in the rather comical but efficient 'false is in {A,B}'  for (false == A || false == B) *)
-      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, x2, b);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
-      | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, x2, b);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
-      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, b, x2);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
-      | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, b, x2);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      (* order-independent would be better you say? sure! but that's too bit a
+         refactoring... #ResearchCode *)
+      (* also, yes, this will result in the rather comical but efficient 'false
+         is in {A,B}' for (false == A || false == B) *)
+      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, x2, b);t=_})
+        when x1 = x2 && a.t = b.t ->
+        fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^
+        ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, x2, b);t=_})
+        when x1 = x2 && a.t = b.t ->
+        fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^
+        ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, b, x2);t=_})
+        when x1 = x2 && a.t = b.t ->
+        fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^
+        ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, b, x2);t=_})
+        when x1 = x2 && a.t = b.t ->
+        fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^
+        ", cons(" ^ (render_tterm b) ^ ", nil))));"
       (* so we might as well apply it for normal Ors as well! less forking *)
-      | Bop (Or, a, b) -> fn ^"(mem(true, cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, a, b) -> fn ^"(mem(true, cons(" ^ (render_tterm a) ^
+                          ", cons(" ^ (render_tterm b) ^ ", nil))));"
       | Id x -> fn ^ "(" ^ x ^ " != 0);"
       | Bop (Bit_and, _, _) -> fn ^ "(0 != " ^ (render_tterm t) ^ ");"
       | _ -> fn ^ "(" ^ (render_tterm t) ^ ");") in
@@ -45,40 +87,60 @@ let render_conditions assumptions ~is_assert =
 
 let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   let head = (if is_assert then "assert" else "assume") in
-  (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
   match out_val.v, out_val.t with
-  (* HACKY HACK - can't do an assume over the arrays themselves because they're pointers and VeriFast will assume that the pointers, not the contents, are equal *)
-  | Array cells, Array Uint8 when head = "assume" -> begin match out_arg.t with
-                          | Array Uint8 ->
-                            let tmp_gen = gen_tmp_name() in
-                            let (bindings, expr) = Fspec_api.generate_2step_dereference out_arg tmp_gen in
-                            (String.concat ~sep:"\n" bindings) ^ "\n" ^
-                            (String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
-                                "//@ " ^ head ^ "(" ^ (render_tterm expr) ^ "[" ^ (string_of_int idx) ^ "] == " ^ (render_tterm cell) ^ ");"
-                              ))) ^ "\n"
-                          | _ -> failwith "Arrays must be of type Uint8 (sorry!)" end
-  (* A struct and its first member have the same address... oh and this is a hack so let's support doubly-nested structs *)
+  (* HACKY HACK - can't do an assume over the arrays themselves because they're
+     pointers and VeriFast will assume that the pointers, not the contents, are
+     equal *)
+  | Array cells, Array Uint8 when head = "assume" ->
+    begin match out_arg.t with
+      | Array Uint8 ->
+        let tmp_gen = gen_tmp_name() in
+        let (bindings, expr) =
+          Fspec_api.generate_2step_dereference out_arg tmp_gen
+        in
+        (String.concat ~sep:"\n" bindings) ^ "\n" ^
+        (String.concat ~sep:"\n"
+           (List.mapi cells ~f:(fun idx cell ->
+                "//@ " ^ head ^ "(" ^ (render_tterm expr) ^
+                "[" ^ (string_of_int idx) ^ "] == " ^ (render_tterm cell) ^ ");"
+              ))) ^ "\n"
+      | _ -> failwith "Arrays must be of type Uint8 (sorry!)" end
+  (* A struct and its first member have the same address... oh and this is a
+     hack so let's support doubly-nested structs *)
   | Id ovid, Uint16 ->
     begin match out_arg.v, out_arg.t with
-      | Id oaid, Str (_, (outerfname,Str(_,(fname,_)::_))::_) -> "//@ " ^ head ^ "(" ^ oaid ^ "." ^ outerfname ^ "." ^ fname ^ " == " ^ ovid ^ ");\n"
-      | Id oaid, Str (_, (fname,_)::_) -> "//@ " ^ head ^ "(" ^ oaid ^ "." ^ fname ^ " == " ^ ovid ^ ");\n"
-      | _, _ -> "//@ " ^ head ^ "(" ^ (render_tterm out_arg) ^ " == " ^ (render_tterm out_val) ^ ");\n"
+      | Id oaid, Str (_, (outerfname,Str(_,(fname,_)::_))::_) ->
+        "//@ " ^ head ^ "(" ^ oaid ^ "." ^ outerfname ^ "." ^
+        fname ^ " == " ^ ovid ^ ");\n"
+      | Id oaid, Str (_, (fname,_)::_) ->
+        "//@ " ^ head ^ "(" ^ oaid ^ "." ^ fname ^ " == " ^ ovid ^ ");\n"
+      | _, _ -> "//@ " ^ head ^ "(" ^ (render_tterm out_arg) ^ " == " ^
+                (render_tterm out_val) ^ ");\n"
     end
-  | Id _, Ptr _ -> (* HUGE HACK assume the type is wrongly guessed and it's actually an integer *)
+  | Id _, Ptr _ -> (* HUGE HACK assume the type is wrongly guessed and it's
+                      actually an integer *)
       render_eq_sttmt ~is_assert:is_assert out_arg {v=out_val.v;t=Uint16}
-  (* Don't use == over structs, VeriFast doesn't understand it and returns a confusing message about dereferencing pointers *)
+  (* Don't use == over structs, VeriFast doesn't understand it and returns a
+     confusing message about dereferencing pointers *)
   | Id ovid, Str (_, ovfields) ->
     begin match out_arg.v, out_arg.t with
-    | Id _, Ptr _ -> (* HUGE HACK assume the type is wrongly guessed and it's actually an integer *)
-      render_eq_sttmt ~is_assert:is_assert out_val {v=out_arg.v;t=Uint16}
-    | Id _, Uint16 ->
-      render_eq_sttmt ~is_assert:is_assert out_val out_arg
-    | Id oaid, _ ->
-      if out_val.t <> out_arg.t then failwith ("not the right type! " ^ ovid ^ ":" ^ (ttype_to_str out_val.t) ^ " <> " ^ oaid ^ ":" ^ (ttype_to_str out_arg.t));
-      String.concat (List.map ovfields ~f:(fun (name,_) ->
-                       "//@ " ^ head ^ "(" ^ ovid ^ "." ^ name ^ " == " ^ oaid ^ "." ^ name ^ ");\n"))
+      | Id _, Ptr _ -> (* HUGE HACK assume the type is wrongly guessed and it's
+                          actually an integer *)
+        render_eq_sttmt ~is_assert:is_assert out_val {v=out_arg.v;t=Uint16}
+      | Id _, Uint16 ->
+        render_eq_sttmt ~is_assert:is_assert out_val out_arg
+      | Id oaid, _ ->
+        if out_val.t <> out_arg.t then
+          failwith ("not the right type! " ^ ovid ^ ":" ^
+                    (ttype_to_str out_val.t) ^ " <> " ^ oaid ^ ":" ^
+                    (ttype_to_str out_arg.t));
+        String.concat (List.map ovfields ~f:(fun (name,_) ->
+            "//@ " ^ head ^ "(" ^ ovid ^ "." ^ name ^ " == " ^
+            oaid ^ "." ^ name ^ ");\n"))
 
-    | _ -> failwith ("not supported, sorry: " ^ (render_tterm out_arg) ^ ": " ^ (ttype_to_str out_arg.t) ^ " == " ^ ovid ^ " :" ^ (ttype_to_str out_val.t))
+      | _ -> failwith ("not supported, sorry: " ^ (render_tterm out_arg) ^
+                       ": " ^ (ttype_to_str out_arg.t) ^ " == " ^ ovid ^
+                       " :" ^ (ttype_to_str out_val.t))
     end
   | Addr ptee, _ ->
     begin match out_arg.t with
@@ -100,12 +162,17 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
                 (ttype_to_str out_arg.t) ^ " <> val: " ^
                 (ttype_to_str out_val.t));
     (match out_arg with
-     | {v=Deref {v=Id arg_name;t=_};t=_} -> "//@ " ^ head ^ "(" ^ arg_name ^ "!= 0 );\n" (* can be important to know the arg can be read *)
+     | {v=Deref {v=Id arg_name;t=_};t=_} ->
+       "//@ " ^ head ^ "(" ^ arg_name ^ "!= 0 );\n"
+     (* can be important to know the arg can be read *)
      | _ -> "") ^
     String.concat (List.map fields ~f:(fun {name;value} ->
         render_eq_sttmt ~is_assert {v=Str_idx (out_arg, name);t=value.t} value))
-  | Undef, _ -> failwith ("render_eq_sttmt undef for " ^ (render_tterm out_arg) ^ " with val " ^ (render_tterm out_val))
-  | _, _ -> "//@ " ^ head ^ "(" ^ (render_tterm out_arg) ^ " == " ^ (render_tterm out_val) ^ ");\n"
+  | Undef, _ ->
+    failwith ("render_eq_sttmt undef for " ^ (render_tterm out_arg) ^
+              " with val " ^ (render_tterm out_val))
+  | _, _ -> "//@ " ^ head ^ "(" ^ (render_tterm out_arg) ^ " == " ^
+            (render_tterm out_val) ^ ");\n"
 
 let render_fcall_with_prelemmas context =
   (String.concat ~sep:"\n" context.pre_lemmas) ^ "\n" ^
@@ -129,7 +196,8 @@ let render_post_assumptions post_statements =
 
 let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
   match ret_name with
-  | Some name -> (render_eq_sttmt ~is_assert {v=Id name;t=ret_type} ret_val) ^ "\n"
+  | Some name ->
+    (render_eq_sttmt ~is_assert {v=Id name;t=ret_type} ret_val) ^ "\n"
   | None -> "\n"
 
 let render_assignment {lhs;rhs;} =
@@ -140,9 +208,11 @@ let render_assignment {lhs;rhs;} =
         String.concat ~sep:"\n" (List.mapi cells ~f:(fun idx cell ->
             (render_tterm lhs) ^ "[" ^ (string_of_int idx) ^ "] = " ^
             (render_tterm cell) ^ ";"))
-      | Array _, _ -> failwith ((render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^
+      | Array _, _ -> failwith ((render_tterm lhs) ^ " = " ^
+                                (render_tterm rhs) ^
                                " is not handled")
-      | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";" end
+      | _ -> (render_tterm lhs) ^ " = " ^ (render_tterm rhs) ^ ";"
+    end
 
 let rec gen_plain_equalities {lhs;rhs} =
   if term_eq lhs.v rhs.v then []
@@ -165,9 +235,11 @@ let rec gen_plain_equalities {lhs;rhs} =
             {lhs=value;
              rhs={v=Deref {v=Bop (Add, rhs, {v=Int idx;t=Uint32});t=rhs.t};
                   t=ptee_t}})
-      | _ -> failwith ("arrays must be compared to arrays (ptrs not implemented yet): " ^
-                       (ttype_to_str rhs.t) ^ " <> " ^
-                       (ttype_to_str lhs.t))
+      | _ ->
+        failwith ("arrays must be compared to arrays \
+                   (ptrs not implemented yet): " ^
+                  (ttype_to_str rhs.t) ^ " <> " ^
+                  (ttype_to_str lhs.t))
     end
   | Ptr ptee_t, Addr pointee ->
     gen_plain_equalities {lhs={v=Deref lhs;t=ptee_t};
@@ -249,13 +321,19 @@ let render_hist_fun_call {context;result} =
                  "//@ assume(" ^ (Option.value_exn context.ret_name) ^
                  " != " ^ "0);\n") ^
               "/* Do not render the return ptee assumption for hist calls */\n"
-   | _ -> render_ret_equ_sttmt ~is_assert:false context.ret_name context.ret_type result.ret_val) ^
+   | _ -> render_ret_equ_sttmt
+            ~is_assert:false
+            context.ret_name
+            context.ret_type
+            result.ret_val) ^
   "// POSTLEMMAS\n" ^
   (render_postlemmas context) ^ (* postlemmas can depend on the return value *)
   "// POSTCONDITIONS\n" ^ (* Postconditions can depend on post lemmas, e.g.
                              if the the post lemma "close_struct"*)
   (render_args_post_conditions ~is_assert:false
-     (List.join (List.map result.args_post_conditions ~f:gen_plain_equalities) )) ^ (* ret can influence whether args are accessible *)
+     (List.join (List.map result.args_post_conditions
+                   ~f:gen_plain_equalities) )) ^
+  (* ret can influence whether args are accessible *)
   (render_post_assumptions result.post_statements)
 
 let gen_ret_equalities ret_val ret_name ret_type =
@@ -359,8 +437,11 @@ let expand_conjunctions terms =
 
 let fix_constraints tterms =
   let res = List.map tterms ~f:(fun t1 -> match t1.v with
-    | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Int 0;t=Boolean}, real_value);t=_}) -> expand_conjunctions [real_value]
-    | _ ->  [t1]) in
+      | Bop (Eq,
+             {v=Bool false;t=_},
+             {v=Bop (Eq, {v=Int 0;t=Boolean}, real_value);t=_}) ->
+        expand_conjunctions [real_value]
+      | _ ->  [t1]) in
   List.join res
 
 let bubble_equalities tterms =
@@ -385,26 +466,40 @@ let guess_support_assignments constraints symbs =
   Set.iter symbs ~f:(fun name -> printf "%s\n" name;); *)
   let there_is_a_device_constraint = is_there_device_constraint constraints in
   let (assignments,_) =
-    List.fold (bubble_equalities constraints) ~init:([],symbs) ~f:(fun (assignments,symbs) tterm ->
-        (* printf "considering %s\n" (render_tterm tterm); *)
-        match tterm.v with
-        | Bop (Eq, {v=Id x;t}, rhs) when String.Set.mem symbs x ->
-          (* printf "match 1st %s: %s\n" x (ttype_to_str t); *)
-          ({lhs={v=Id x;t};rhs}::assignments, String.Set.remove symbs x)
-        | Bop (Eq, lhs, {v=Id x;t}) when String.Set.mem symbs x ->
-          (* printf "match 2nd %s: %s\n" x (ttype_to_str t); *)
-          ({lhs={v=Id x;t};rhs=lhs}::assignments, String.Set.remove symbs x)
-        | Bop (Le, {v=Int i;t=lt}, {v=Id x;t}) when String.Set.mem symbs x ->
-          (* Stupid hack. If the variable is constrained to not be equal to another variable, we assume they have the same lower bound and assign the second one to bound+2 *)
-          if List.exists constraints ~f:(fun cstr -> match cstr with {v=Bop (Eq,{v=Bool false;_},{v=Bop (Eq,{v=Id _;_},{v=Id r;_});_});_} when r = x -> true | _ -> false) then
-              ({lhs={v=Id x;t};rhs={v=Int (i+2);t=lt}}::assignments, String.Set.remove symbs x)
-          else if there_is_a_device_constraint then (*Dirty hack for a difficult case, analyzed by hand*)
-              ({lhs={v=Id x;t};rhs={v=Int 1;t=lt}}::assignments, String.Set.remove symbs x)
-          else
-              ({lhs={v=Id x;t};rhs={v=Int i;t=lt}}::assignments, String.Set.remove symbs x)
-        | Bop (Le, {v=Id x;t}, rhs) when String.Set.mem symbs x ->
-          ({lhs={v=Id x;t};rhs}::assignments, String.Set.remove symbs x)
-        | _ -> (assignments, symbs))
+    List.fold (bubble_equalities constraints) 
+      ~init:([],symbs)
+      ~f:(fun (assignments,symbs) tterm ->
+          (* printf "considering %s\n" (render_tterm tterm); *)
+          match tterm.v with
+          | Bop (Eq, {v=Id x;t}, rhs) when String.Set.mem symbs x ->
+            (* printf "match 1st %s: %s\n" x (ttype_to_str t); *)
+            ({lhs={v=Id x;t};rhs}::assignments, String.Set.remove symbs x)
+          | Bop (Eq, lhs, {v=Id x;t}) when String.Set.mem symbs x ->
+            (* printf "match 2nd %s: %s\n" x (ttype_to_str t); *)
+            ({lhs={v=Id x;t};rhs=lhs}::assignments, String.Set.remove symbs x)
+          | Bop (Le, {v=Int i;t=lt}, {v=Id x;t}) when String.Set.mem symbs x ->
+            (* Stupid hack. If the variable is constrained to not be equal to
+               another variable, we assume they have the same lower bound and
+               assign the second one to bound+2 *)
+            if List.exists constraints ~f:(fun cstr ->
+                match cstr with
+                | {v=Bop (Eq,
+                          {v=Bool false;_},
+                          {v=Bop (Eq,{v=Id _;_},{v=Id r;_});_});_}
+                  when r = x -> true
+                | _ -> false) then
+              ({lhs={v=Id x;t};rhs={v=Int (i+2);t=lt}}::assignments,
+               String.Set.remove symbs x)
+            else if there_is_a_device_constraint then
+              (*Dirty hack for a difficult case, analyzed by hand*)
+              ({lhs={v=Id x;t};rhs={v=Int 1;t=lt}}::assignments,
+               String.Set.remove symbs x)
+            else
+              ({lhs={v=Id x;t};rhs={v=Int i;t=lt}}::assignments,
+               String.Set.remove symbs x)
+          | Bop (Le, {v=Id x;t}, rhs) when String.Set.mem symbs x ->
+            ({lhs={v=Id x;t};rhs}::assignments, String.Set.remove symbs x)
+          | _ -> (assignments, symbs))
   in
   assignments
 
@@ -423,7 +518,8 @@ let fix_mistyped_tip_ret tterm =
     -> {v=Not {v=Bop (Eq,{v=Int 0;t=Sint32},tterm);
                t=Boolean};
         t=Boolean}
-  | Bop (Bit_and, _, _) -> {v=Not {v=Bop (Eq,{v=Int 0;t=Sint32},tterm);t=Boolean};t=Boolean}
+  | Bop (Bit_and, _, _) ->
+    {v=Not {v=Bop (Eq,{v=Int 0;t=Sint32},tterm);t=Boolean};t=Boolean}
   | _ -> tterm
 
 
@@ -479,9 +575,12 @@ let output_check_and_assignments
     (render_concrete_assignments_as_assertions concrete_assignments) ^ "\n" ^
     "// Model constraints: \n" ^
     (String.concat ~sep:"\n"
-       (List.map upd_model_constraints ~f:(fun constr -> match (fix_mistyped_tip_ret constr) with
-                                                         | {v=Bop (Eq, lhs, rhs);t=_} -> render_eq_sttmt ~is_assert:true lhs rhs
-                                                         | c -> "/*@ assert(" ^ (render_tterm c) ^ "); @*/")))
+       (List.map upd_model_constraints
+          ~f:(fun constr ->
+              match (fix_mistyped_tip_ret constr) with
+              | {v=Bop (Eq, lhs, rhs);t=_} ->
+                render_eq_sttmt ~is_assert:true lhs rhs
+              | c -> "/*@ assert(" ^ (render_tterm c) ^ "); @*/")))
   in
   (output_check, symbolic_var_assignments)
 
@@ -518,20 +617,33 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
           result.ret_val ret_name ret_type
           result.post_statements hist_symbs
           result.args_post_conditions cmplxs in
-      let conditions = result.post_statements@(List.map assignments ~f:eq_cond_to_tterm) in
-      let args_post_conds_tterms = List.map result.args_post_conditions ~f:eq_cond_to_tterm in
-      let conditions = List.filter conditions ~f:(fun s -> not(List.exists args_post_conds_tterms ~f:(fun c -> term_eq s.v c.v))) in
-      let args_conditions = render_args_post_conditions ~is_assert:false result.args_post_conditions in
+      let conditions =
+        result.post_statements@(List.map assignments ~f:eq_cond_to_tterm)
+      in
+      let args_post_conds_tterms =
+        List.map result.args_post_conditions ~f:eq_cond_to_tterm
+      in
+      let conditions =
+        List.filter conditions ~f:(fun s ->
+            not(List.exists args_post_conds_tterms
+                  ~f:(fun c -> term_eq s.v c.v)))
+      in
+      let args_conditions =
+        render_args_post_conditions ~is_assert:false result.args_post_conditions
+      in
       {conditions;output_check;args_conditions}
     in
     let rendered_results = List.map results ~f:render_result in
-    let condition_sets = List.map rendered_results ~f:(fun r -> Set.Poly.of_list r.conditions) in
+    let condition_sets =
+      List.map rendered_results ~f:(fun r -> Set.Poly.of_list r.conditions)
+    in
     let common_conditions = 
       match List.reduce condition_sets ~f:Set.inter with
       | Some conds -> Set.to_list conds
       | None -> failwith "Not possible, there must be at least one result"
     in
-    (render_conditions common_conditions ~is_assert:false) ^ "\n" ^ (do_render rendered_results)
+    (render_conditions common_conditions ~is_assert:false) ^ "\n" ^
+    (do_render rendered_results)
   in
 
   let rec render_ret_conditions groups =
@@ -547,15 +659,23 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
     | [] -> "{\n//@ assert(false);\n}\n"
   in
 
-  (* We only have different return values when the return values are constants, e.g. 0 or 1. *)
+  (* We only have different return values when the return values are constants,
+     e.g. 0 or 1. *)
   let all_const = List.for_all results ~f:(fun r -> is_constt r.ret_val) in
-  let none_const = List.for_all results ~f:(fun r -> not(is_constt r.ret_val)) in
+  let none_const =
+    List.for_all results ~f:(fun r -> not(is_constt r.ret_val))
+  in
   assert(all_const || none_const);
   if all_const then
-    let groups = Map.Poly.of_alist_multi (List.map results ~f:(fun r -> (r.ret_val.v, r))) in
+    let groups =
+      Map.Poly.of_alist_multi (List.map results ~f:(fun r -> (r.ret_val.v, r)))
+    in
     (render_ret_conditions (Map.to_alist groups))
   else
-    let all_same = List.for_all results ~f:(fun r -> term_eq r.ret_val.v (List.nth_exn results 0).ret_val.v) in
+    let all_same =
+      List.for_all results ~f:(fun r ->
+          term_eq r.ret_val.v (List.nth_exn results 0).ret_val.v)
+    in
     if all_same then (render_context_conditions results)
     else failwith "expected all non-constant retvals to be the same"
 
@@ -568,8 +688,9 @@ let render_assignments args =
        (List.map args ~f:(fun arg ->
             List.map (if arg.value.v = Undef then []
                       else
-                        gen_plain_equalities {lhs={v=Id arg.name;t=arg.value.t;};
-                                              rhs=arg.value})
+                        gen_plain_equalities
+                          {lhs={v=Id arg.name;t=arg.value.t;};
+                           rhs=arg.value})
               ~f:render_assignment)))
 
 let render_tip_fun_call
@@ -601,7 +722,9 @@ let render_vars_declarations ( vars : var_spec list ) =
     (List.map vars ~f:(fun v ->
          match v.value.t with
          | Array at -> (ttype_to_str at) ^ " " ^ v.name ^ "[];"
-         | Unknown | Sunknown | Uunknown -> failwith ("Cannot render var decl '" ^ v.name ^ "' for type " ^ (ttype_to_str v.value.t))
+         | Unknown | Sunknown | Uunknown ->
+           failwith ("Cannot render var decl '" ^
+                     v.name ^ "' for type " ^ (ttype_to_str v.value.t))
          | _ -> ttype_to_str v.value.t ^ " " ^ v.name ^ ";")) ^ "\n"
 
 let render_hist_calls hist_funs =
@@ -610,8 +733,11 @@ let render_hist_calls hist_funs =
 let render_cmplexes cmplxes =
   String.concat ~sep:"\n" (List.map (String.Map.data cmplxes) ~f:(fun var ->
       match var.value.t with
-      | Array at -> (ttype_to_str at) ^ " " ^ var.name ^ "[]; //" ^ (render_tterm var.value)
-      | _ -> (ttype_to_str var.value.t) ^ " " ^ var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
+      | Array at ->
+        (ttype_to_str at) ^ " " ^ var.name ^
+        "[]; //" ^ (render_tterm var.value)
+      | _ -> (ttype_to_str var.value.t) ^ " " ^
+             var.name ^ "; //" ^ (render_tterm var.value))) ^ "\n"
 
 let render_allocated_args args =
   String.concat ~sep:"\n"
@@ -629,11 +755,14 @@ let render_args_hack args =
   String.concat ~sep:"\n"
     (List.map (List.filter args ~f:(fun spec -> is_pointer_t spec.value.t))
        ~f:(fun spec -> (spec.name) ^ " = " ^ (spec.name) ^ "bis;\n" ^
-                       "*(&(" ^ (spec.name) ^ ")) = " ^ (spec.name) ^ "bis;")) ^ "\n" ^
-  (* Then the assumptions, which would be overwritten by assignments otherwise *)
+                       "*(&(" ^ (spec.name) ^ ")) = " ^
+                       (spec.name) ^ "bis;")) ^ "\n" ^
+  (* Then the assumptions, which would be overwritten by assignments otherwise
+     *)
   String.concat ~sep:"\n"
     (List.map (List.filter args ~f:(fun spec -> is_pointer_t spec.value.t))
-       ~f:(fun spec -> "//@ assume(" ^ (spec.name) ^ " == " ^ (spec.name) ^ "bis);")) ^ "\n"
+       ~f:(fun spec -> "//@ assume(" ^ (spec.name) ^ " == " ^
+                       (spec.name) ^ "bis);")) ^ "\n"
 
 let render_final finishing ~catch_leaks =
   if finishing && catch_leaks then
@@ -644,9 +773,12 @@ let render_final finishing ~catch_leaks =
 let get_all_symbols calls =
   List.fold calls ~init:String.Set.empty ~f:(fun symbols call ->
       String.Set.union (ids_from_term call.result.ret_val)
-        (String.Set.union (ids_from_eq_conditions call.result.args_post_conditions)
-           (String.Set.union (ids_from_eq_conditions call.context.extra_pre_conditions)
-              (String.Set.union (ids_from_term {v=call.context.application;t=Unknown})
+        (String.Set.union (ids_from_eq_conditions
+                             call.result.args_post_conditions)
+           (String.Set.union (ids_from_eq_conditions
+                                call.context.extra_pre_conditions)
+              (String.Set.union (ids_from_term {v=call.context.application;
+                                                t=Unknown})
                  (match call.context.ret_name with
                   | Some name -> (String.Set.add symbols name)
                   | None -> symbols)))))
@@ -691,11 +823,18 @@ let render_ir ir fout ~render_assertions =
       Out_channel.output_string cout (render_allocated_args ir.arguments);
       Out_channel.output_string cout (render_args_hack ir.arguments);
       Out_channel.output_string cout (render_conditions
-                                        ir.context_assumptions ~is_assert:false);
+                                        ir.context_assumptions
+                                        ~is_assert:false);
       Out_channel.output_string cout (render_assignments ir.arguments);
-      (* Yes, this is stupid; but right before a deadline I will not spend hours refactoring import.ml to fix it. *)
-      let stupid_fix = Str.global_replace (Str.regexp_string "(next_time_0 - vector_data_reset_1_8)") "(uint64_t)(next_time_0 - vector_data_reset_1_8)" in
-      Out_channel.output_string cout (stupid_fix (render_hist_calls ir.hist_calls));
+      (* Yes, this is stupid; but right before a deadline I will not spend hours
+         refactoring import.ml to fix it. *)
+      let stupid_fix =
+        Str.global_replace
+          (Str.regexp_string "(next_time_0 - vector_data_reset_1_8)")
+          "(uint64_t)(next_time_0 - vector_data_reset_1_8)"
+      in
+      Out_channel.output_string cout (stupid_fix (render_hist_calls
+                                                    ir.hist_calls));
       Out_channel.output_string cout (render_semantic_checks ir.semantic_checks);
       Out_channel.output_string cout (stupid_fix (render_tip_fun_call
                                         ir.tip_call ir.export_point

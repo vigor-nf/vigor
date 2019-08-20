@@ -73,14 +73,16 @@ let ityp_name typ = if typ = "uint32_t" then "uint32_t" else typ ^ "i"
 let hash_name name = name ^ "_hash"
 let lhash_name name = "_" ^ name ^ "_hash"
 let pred_name name = if name = "uint32_t" then "u_integer" else name ^ "p"
-let alloc_fun_name typ = if typ = "uint32_t" then "null_init" else typ ^ "_allocate"
+let alloc_fun_name typ =
+  if typ = "uint32_t" then "null_init" else typ ^ "_allocate"
 let eq_fun_name typ = typ ^ "_eq"
 let lsim_variable_name typ = "last_" ^ typ ^ "_searched_in_the_map"
 let lma_literal_name typ = "LMA_" ^ (StringLabels.uppercase_ascii typ)
 
 
 let capture_a_map t name {tmp_gen;_} =
-  "//@ assert mapp<" ^ ityp_name t ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen name) ^ ", _));\n"
+  "//@ assert mapp<" ^ ityp_name t ^ ">(_, _, _, _, mapc(_,?" ^
+  (tmp_gen name) ^ ", _));\n"
 
 let capture_chain ch_name ptr_num {args;tmp_gen;_} =
   "//@ assert double_chainp(?" ^ (tmp_gen ch_name) ^ ", " ^
@@ -113,7 +115,9 @@ let common_fun_types =
                    arg_types = stt [Ptr Sint8; Uint16];
                    extra_ptr_types = [];
                    lemmas_before = [(fun {arg_exps;tmp_gen;_} ->
-                       let packet_ptr = (render_tterm (List.nth_exn arg_exps 0)) in
+                       let packet_ptr =
+                         (render_tterm (List.nth_exn arg_exps 0))
+                       in
                        "char* " ^ (tmp_gen "synonym") ^ " = " ^ packet_ptr ^
                        ";\n/*@ {\n\ assert packetp(" ^ (tmp_gen "synonym") ^
                        ", ?cur_sent_packet, nil);\n\
@@ -129,7 +133,8 @@ let common_fun_types =
                         }\n }\n @*/"
                      )];
                    lemmas_after = [(fun {args;_} ->
-                       "sent_on_ports = cons((uint16_t)" ^ (List.nth_exn args 1) ^ ", sent_on_ports);\n" 
+                       "sent_on_ports = cons((uint16_t)" ^ (List.nth_exn args 1) ^
+                       ", sent_on_ports);\n"
                      )];};
    "packet_borrow_next_chunk", {ret_type = Static Void;
                                 arg_types = [Static (Ptr Sint8);
@@ -154,31 +159,44 @@ let common_fun_types =
                                             "ipv4_options",
                                             Ptr Sint8
                                            ]];
-                                lemmas_before = [(fun _ -> "//@ packet_is_complete = false;")];
+                                lemmas_before =
+                                  [(fun _ -> "//@ packet_is_complete = false;")];
                                 lemmas_after = [
                                   (fun {args;arg_types;_} ->
                                      match (List.nth_exn arg_types 2) with
                                      | Ptr (Ptr (Str (_,_))) ->
-                                       "//@ close_struct(*" ^ (List.nth_exn args 2) ^ ");\n"
+                                       "//@ close_struct(*" ^
+                                       (List.nth_exn args 2) ^ ");\n"
                                      | _ -> ""
                                   );
                                   (fun {args;arg_types;_} ->
                                      match List.nth_exn arg_types 2 with
                                      | Ptr (Ptr (Str ("ether_hdr", _))) ->
-                                       "//@ recv_headers = add_ether_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n" ^
-                                       "//@ open ether_hdrp(*" ^ (List.nth_exn args 2) ^
+                                       "//@ recv_headers = \
+                                        add_ether_header(recv_headers, *" ^
+                                       (List.nth_exn args 2) ^ ");\n" ^
+                                       "//@ open ether_hdrp(*" ^
+                                       (List.nth_exn args 2) ^
                                        ", _);\n\
-                                        //@ open ether_addrp((" ^ (List.nth_exn args 2) ^
+                                        //@ open ether_addrp((" ^
+                                       (List.nth_exn args 2) ^
                                        "->s_addr), _);\n\
-                                        //@ open ether_addrp((" ^ (List.nth_exn args 2) ^
+                                        //@ open ether_addrp((" ^
+                                       (List.nth_exn args 2) ^
                                        "->d_addr), _);\n"
                                      | Ptr (Ptr (Str ("ipv4_hdr", _))) ->
-                                       "//@ recv_headers = add_ipv4_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       "//@ recv_headers = \
+                                        add_ipv4_header(recv_headers, *" ^
+                                       (List.nth_exn args 2) ^ ");\n"
                                      | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
-                                       "//@ recv_headers = add_tcpudp_header(recv_headers, *" ^ (List.nth_exn args 2) ^ ");\n"
+                                       "//@ recv_headers = \
+                                        add_tcpudp_header(recv_headers, *" ^
+                                       (List.nth_exn args 2) ^ ");\n"
                                      | Ptr (Ptr Sint8) ->
                                        ""
-                                     | _ -> failwith "unsupported chunk type in packet_borrow_next_chunk"
+                                     | _ -> failwith
+                                              "unsupported chunk type \
+                                               in packet_borrow_next_chunk"
                                   )];};
    "packet_return_chunk", {ret_type = Static Void;
                            arg_types = [Static (Ptr Sint8);
@@ -196,7 +214,8 @@ let common_fun_types =
                              (fun {arg_exps;arg_types;_} ->
                                 match List.nth_exn arg_types 1 with
                                 | Ptr (Str ("ether_hdr", _)) ->
-                                  "//@ sent_headers = add_ether_header(sent_headers, " ^
+                                  "//@ sent_headers = \
+                                   add_ether_header(sent_headers, " ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ");\n\
                                    //@ open ether_hdrp(" ^
@@ -209,16 +228,20 @@ let common_fun_types =
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   "->d_addr), _);\n"
                                 | Ptr (Str ("ipv4_hdr", _)) ->
-                                  "//@ sent_headers = add_ipv4_header(sent_headers, " ^
+                                  "//@ sent_headers = \
+                                   add_ipv4_header(sent_headers, " ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ");\n"
                                 | Ptr (Str ("tcpudp_hdr", _)) ->
-                                  "//@ sent_headers = add_tcpudp_header(sent_headers, " ^
+                                  "//@ sent_headers = \
+                                   add_tcpudp_header(sent_headers, " ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ");\n"
                                 | Ptr Sint8 ->
                                   ""
-                                | _ -> failwith "unsupported chunk type in packet_return_chunk"
+                                | _ -> failwith
+                                         "unsupported chunk type \
+                                          in packet_return_chunk"
                              );
                              (fun {arg_exps;arg_types;_} ->
                                 match (List.nth_exn arg_types 1) with
@@ -229,9 +252,13 @@ let common_fun_types =
                                 | _ -> ""
                              )];
                            lemmas_after = [(fun {arg_exps;tmp_gen;_} ->
-                               let packet_ptr = (render_tterm (List.nth_exn arg_exps 0)) in
-                               "char* " ^ (tmp_gen "synonym") ^ " = " ^ packet_ptr ^
-                               ";\n/*@ {\n assert packetp(" ^ (tmp_gen "synonym") ^
+                               let packet_ptr =
+                                 (render_tterm (List.nth_exn arg_exps 0))
+                               in
+                               "char* " ^ (tmp_gen "synonym") ^ " = " ^
+                               packet_ptr ^
+                               ";\n/*@ {\n assert packetp(" ^
+                               (tmp_gen "synonym") ^
                                ", _, ?unreturned_chunks);\n\
                                 switch(last_composed_packet) {\n\
                                 case none:\n\
@@ -240,7 +267,8 @@ let common_fun_types =
                                 case some(cp):\n\
                                 assert cp == " ^ packet_ptr ^
                                ";\n};\n\
-                                packet_is_complete = (unreturned_chunks == nil);\n \
+                                packet_is_complete = \
+                                (unreturned_chunks == nil);\n \
                                 }\n@*/"
                              )];};
    "packet_get_unread_length", {ret_type = Static Uint32;
@@ -253,7 +281,8 @@ let common_fun_types =
                                                   Ptr Uint32];
                                  extra_ptr_types = [];
                                  lemmas_before = [(fun {args;} ->
-                                   "packet_size = *" ^ (List.nth_exn args 1) ^ ";\n")];
+                                     "packet_size = *" ^
+                                     (List.nth_exn args 1) ^ ";\n")];
                                  lemmas_after = [];};
    "packet_free", {ret_type = Static Void;
                    arg_types = stt [Ptr Sint8;];
@@ -387,16 +416,19 @@ let vector_alloc_spec vector_specs =
      (fun {tmp_gen;ret_name;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;has_keeper;_} ->
+        (String.concat ~sep:"" (List.mapi vector_specs
+                                  ~f:(fun i {typ;has_keeper;_} ->
              " case " ^ (string_of_int i) ^ ":\n" ^
              (if has_keeper then
                 "/*@ if (" ^ ret_name ^
                 ") {\n\
-                 assert mapp<" ^ ityp_name typ ^ ">(_, _, _, _, mapc(?" ^ (tmp_gen "cap") ^
+                 assert mapp<" ^ ityp_name typ ^ ">(_, _, _, _, mapc(?" ^
+                (tmp_gen "cap") ^
                 ", ?" ^ (tmp_gen "map") ^
                 ", ?" ^ (tmp_gen "addr_map") ^
                 "));\n\
-                 assert vectorp<" ^ ityp_name typ ^ ">(_, _, ?" ^ (tmp_gen "dks") ^
+                 assert vectorp<" ^ ityp_name typ ^ ">(_, _, ?" ^
+                (tmp_gen "dks") ^
                 ", ?" ^ (tmp_gen "dkaddrs") ^
                 ");\n\
                  empty_kkeeper(" ^
@@ -419,14 +451,20 @@ let vector_alloc_spec vector_specs =
 
 let open_callback entry_type arg =
   match entry_type with
-  | Str (name, fields) -> "//@ open [_]" ^ pred_name name ^ "(" ^ render_tterm arg ^ ", _);\n" ^
-                          (String.concat ~sep:"" (List.map fields ~f:(fun (name,ttype) ->
+  | Str (name, fields) -> "//@ open [_]" ^ pred_name name ^
+                          "(" ^ render_tterm arg ^ ", _);\n" ^
+                          (String.concat ~sep:"" (List.map fields
+                                                    ~f:(fun (name,ttype) ->
                                match ttype with
                                | Str (str_name, _) ->
                                  "//@ open [_]" ^ pred_name str_name ^ "(" ^
-                                 render_tterm (simplify_tterm {v=Addr {v=Str_idx ({v=Deref arg;t=Unknown},name);
-                                                                       t=ttype};
-                                                               t=Unknown}) ^ ", _);\n"
+                                 render_tterm (simplify_tterm
+                                                 {v=Addr
+                                                      {v=Str_idx ({v=Deref arg;
+                                                                   t=Unknown},
+                                                                  name);
+                                                       t=ttype};
+                                                  t=Unknown}) ^ ", _);\n"
                                | _ -> "")))
   | Uint32 -> ""
   | _ -> "#error open callback is not implemented"
@@ -452,39 +490,53 @@ let vector_borrow_spec entry_specs =
                Some ((String.concat ~sep:""
                         (List.map (other_types typ)
                            ~f:(fun {typ;_} ->
-                               "//@ close hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
-                        ))) ^"//@ assert vectorp<" ^ ityp ^ ">(" ^ (List.nth_exn args 0) ^
-                     ", " ^ pred_name typ ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^ (tmp_gen "veca") ^
-                     ");\n//@ vector_addrs_same_len_nodups(" ^ (List.nth_exn args 0) ^ ");\n" ^
+                               "//@ close hide_vector<" ^
+                               ityp_name typ ^ ">(_, _, _, _);\n"
+                             ))) ^ "//@ assert vectorp<" ^ ityp ^ ">(" ^
+                     (List.nth_exn args 0) ^
+                     ", " ^ pred_name typ ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^
+                     (tmp_gen "veca") ^
+                     ");\n//@ vector_addrs_same_len_nodups(" ^
+                     (List.nth_exn args 0) ^ ");\n" ^
                      (if has_keeper then
                         "/*@ {\n\
-                         assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_,?" ^ (tmp_gen "fm") ^
+                         assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_,?" ^
+                        (tmp_gen "fm") ^
                         ", ?" ^ (tmp_gen "fma") ^
                         "));\n\
-                         forall2_nth(" ^ (tmp_gen "vec") ^ ", " ^ (tmp_gen "veca") ^
-                        ", (kkeeper)(" ^ (tmp_gen "fma") ^ "), " ^ (List.nth_exn args 1) ^
+                         forall2_nth(" ^ (tmp_gen "vec") ^ ", " ^
+                        (tmp_gen "veca") ^
+                        ", (kkeeper)(" ^ (tmp_gen "fma") ^ "), " ^
+                        (List.nth_exn args 1) ^
                         ");\n} @*/ "
                       else
-                        "//@ forall_mem(nth(" ^ (List.nth_exn args 1) ^ ", " ^ (tmp_gen "vec") ^ "), " ^ (tmp_gen "vec") ^ ", is_one);"))
+                        "//@ forall_mem(nth(" ^ (List.nth_exn args 1) ^
+                        ", " ^ (tmp_gen "vec") ^ "), " ^ (tmp_gen "vec") ^
+                        ", is_one);"))
              else
                None
            ))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)));];
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
      (fun {arg_types;arg_exps;tmp_gen;_} ->
         match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ) ~f:(fun {typ;_} ->
-                           "//@ open hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n")) ^
-                    (open_callback entry_type {v=Deref (List.nth_exn arg_exps 2);t=Unknown}))
+                           "//@ open hide_vector<" ^ ityp_name typ ^
+                           ">(_, _, _, _);\n")) ^
+                    (open_callback entry_type
+                       {v=Deref (List.nth_exn arg_exps 2);
+                        t=Unknown}))
             else
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];}
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 2)))];}
 
 let vector_return_spec entry_specs =
   let other_types excl_typ =
@@ -501,26 +553,33 @@ let vector_return_spec entry_specs =
      (fun {arg_types;args;tmp_gen;_} ->
         match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
-              Some (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun {typ;_} ->
-                         "//@ close hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
+              Some (String.concat ~sep:""
+                      (List.map (other_types typ)
+                         ~f:(fun {typ;_} ->
+                             "//@ close hide_vector<" ^ ityp_name typ ^
+                             ">(_, _, _, _);\n"
                        )))
             else
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 2)))];
    lemmas_after = [
      (fun {arg_types;args;tmp_gen;_} ->
         match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
-              Some (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun {typ;_} ->
-                         "//@ open hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
-                       )))
+              Some (String.concat ~sep:""
+                      (List.map (other_types typ)
+                         ~f:(fun {typ;_} ->
+                             "//@ open hide_vector<" ^ ityp_name typ ^ ">(_, _, _, _);\n"
+                           )))
             else
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 2)))];}
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 2)))];}
 
 let dchain_alloc_spec dchain_specs =
   {ret_type = Static Sint32;
@@ -580,7 +639,8 @@ let loop_invariant_arg_types containers =
        | EMap (_, _, _, _) -> Void))@[Uint32; vigor_time_t]
 
 let loop_invariant_consume_spec containers =
-  loop_invariant_consume_spec_impl (loop_invariant_arg_types (concrete_containers containers))
+  loop_invariant_consume_spec_impl (loop_invariant_arg_types
+                                      (concrete_containers containers))
 
 let loop_invariant_produce_spec containers =
   let linv_prod_arg_types =
@@ -602,42 +662,59 @@ let loop_invariant_produce_spec containers =
    lemmas_after = [
      (fun {args;_} ->
         "/*@ open evproc_loop_invariant (" ^
-        (String.concat ~sep:", " (List.mapi linv_prod_arg_types ~f:(fun i argt ->
-             match argt with
-             | Ptr _ -> "*" ^ (List.nth_exn args i)
-             | _ -> (List.nth_exn args i)))) ^ "); @*/\n");
+        (String.concat ~sep:", " (List.mapi linv_prod_arg_types
+                                    ~f:(fun i argt ->
+                                        match argt with
+                                        | Ptr _ -> "*" ^ (List.nth_exn args i)
+                                        | _ -> (List.nth_exn args i)))) ^
+        "); @*/\n");
      (fun {args;tmp_gen;_} ->
         "/*@ {\n" ^
-        (String.concat ~sep:"" (List.mapi (concrete_containers containers) ~f:(fun i (name,t) ->
-             match t with
-             | Map (typ, _, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
-                                  ";\n assert mapp<" ^ (ityp_name typ) ^ ">(" ^
-                                  (tmp_gen (name ^ "_tmp")) ^ ", _, _, _, mapc(_, ?" ^
-                                  (tmp_gen ("initial_" ^ name)) ^ ", _));\n" ^
-                                  "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
-                                  name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
-             | Vector (typ, _, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
-                                     ";\n assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
-                                     (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
-                                     (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
-                                     "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
-                                     name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
-             | CHT (_, _) -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
-                                ";\n assert vectorp<uint32_t>(" ^
-                                (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
-                                (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
-                             "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
-                             name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
-             | DChain _ -> "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^ (tmp_gen (name ^ "_tmp")) ^
-                           ";\n assert double_chainp(?" ^ (tmp_gen ("initial_" ^ name)) ^ ", " ^
-                           (tmp_gen (name ^ "_tmp")) ^ ");\n" ^
-                           "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
-                           name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
-             | Int
-             | UInt
-             | UInt32 -> name ^ " = " ^ (List.nth_exn args i) ^ ";\n"
-             | EMap (_, _, _, _) -> "#error unexpected abstract container\n"
-           ))) ^
+        (String.concat ~sep:""
+           (List.mapi (concrete_containers containers)
+              ~f:(fun i (name,t) ->
+                  match t with
+                  | Map (typ, _, _) ->
+                    "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^
+                    (tmp_gen (name ^ "_tmp")) ^
+                    ";\n assert mapp<" ^ (ityp_name typ) ^ ">(" ^
+                    (tmp_gen (name ^ "_tmp")) ^ ", _, _, _, mapc(_, ?" ^
+                    (tmp_gen ("initial_" ^ name)) ^ ", _));\n" ^
+                    "initial_" ^ name ^ " = " ^
+                    (tmp_gen ("initial_" ^ name)) ^ ";\n" ^ name ^ "_ptr = " ^
+                    (tmp_gen (name ^ "_tmp")) ^ ";\n"
+                  | Vector (typ, _, _) ->
+                    "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^
+                    (tmp_gen (name ^ "_tmp")) ^
+                    ";\n assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
+                    (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
+                    (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
+                    "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^
+                    ";\n" ^
+                    name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
+                  | CHT (_, _) ->
+                    "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^
+                    (tmp_gen (name ^ "_tmp")) ^
+                    ";\n assert vectorp<uint32_t>(" ^
+                    (tmp_gen (name ^ "_tmp")) ^ ", _, ?" ^
+                    (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
+                    "initial_" ^ name ^ " = " ^
+                    (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                    name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
+                  | DChain _ ->
+                    "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^
+                    (tmp_gen (name ^ "_tmp")) ^
+                    ";\n assert double_chainp(?" ^
+                    (tmp_gen ("initial_" ^ name)) ^ ", " ^
+                    (tmp_gen (name ^ "_tmp")) ^ ");\n" ^
+                    "initial_" ^ name ^ " = " ^
+                    (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                    name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
+                  | Int
+                  | UInt
+                  | UInt32 -> name ^ " = " ^ (List.nth_exn args i) ^ ";\n"
+                  | EMap (_, _, _, _) -> "#error unexpected abstract container\n"
+                ))) ^
      "\n}@*/\n");
    ];}
 
@@ -646,20 +723,23 @@ let constructor_name typ = typ ^ "c"
 let construct_record var tt =
   match tt with
   | Ir.Str (name, fields) ->
-    (constructor_name name) ^ "(" ^ (String.concat ~sep:", " (List.map fields ~f:(fun (name,ft) ->
-        match ft with
-        | Array _ -> (* HACK: we know that the only arrays in use are the ether_addr ones that have exactly
-                        6 cells. so we hardcode it here.
-                        The right way to go about this is to add another type StaticArray that would keep track
-                        of the array size.*)
-          var ^ "->" ^ name ^ "[0], " ^
-          var ^ "->" ^ name ^ "[1], " ^
-          var ^ "->" ^ name ^ "[2], " ^
-          var ^ "->" ^ name ^ "[3], " ^
-          var ^ "->" ^ name ^ "[4], " ^
-          var ^ "->" ^ name ^ "[5]"
-        | _ ->
-          var ^ "->" ^ name))) ^ ")"
+    (constructor_name name) ^ "(" ^
+    (String.concat ~sep:", "
+       (List.map fields ~f:(fun (name,ft) ->
+            match ft with
+            | Array _ -> (* HACK: we know that the only arrays in use are the
+                            ether_addr ones that have exactly 6 cells. so we
+                            hardcode it here. The right way to go about this is
+                            to add another type StaticArray that would keep
+                            track of the array size.*)
+              var ^ "->" ^ name ^ "[0], " ^
+              var ^ "->" ^ name ^ "[1], " ^
+              var ^ "->" ^ name ^ "[2], " ^
+              var ^ "->" ^ name ^ "[3], " ^
+              var ^ "->" ^ name ^ "[4], " ^
+              var ^ "->" ^ name ^ "[5]"
+            | _ ->
+              var ^ "->" ^ name))) ^ ")"
   | _ -> "#error construction of non-structs is not supported"
 
 let hash_spec record_type =
@@ -692,9 +772,12 @@ let map_get_spec (map_specs : map_spec list) =
         match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent;_} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
-                (String.concat ~sep:"" (List.map (other_specs typ) ~f:(fun {typ;_} ->
-                     "//@ close hide_mapp<" ^ ityp_name typ ^ ">(_, _, _, _, _);\n"
-                   ))) ^
+                (String.concat ~sep:""
+                   (List.map (other_specs typ)
+                      ~f:(fun {typ;_} ->
+                          "//@ close hide_mapp<" ^ ityp_name typ ^
+                          ">(_, _, _, _, _);\n"
+                        ))) ^
                 (if coherent then
                    let (binding,expr) =
                      self_dereference (List.nth_exn arg_exps 1) tmp_gen
@@ -713,7 +796,8 @@ let map_get_spec (map_specs : map_spec list) =
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1))
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 1))
 
      );];
    lemmas_after = [
@@ -745,14 +829,17 @@ let map_get_spec (map_specs : map_spec list) =
                     (open_callback entry_type (List.nth_exn arg_exps 1)) ^
                     (String.concat ~sep:"" (List.map (other_specs typ)
                                               ~f:(fun {typ;_} ->
-                                                  "//@ open hide_mapp<" ^ ityp_name typ ^ ">(_, _, _, _, _);\n"
+                                                  "//@ open hide_mapp<" ^
+                                                  ityp_name typ ^
+                                                  ">(_, _, _, _, _);\n"
                                                 )))
                    )
             else
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 1)));
    ];}
 
 let map_put_spec (map_specs : map_spec list) =
@@ -771,12 +858,15 @@ let map_put_spec (map_specs : map_spec list) =
         match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent;_} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
-                (String.concat ~sep:"" (List.map (other_specs typ) ~f:(fun {typ;_} ->
-                     "//@ close hide_mapp<" ^ ityp_name typ ^ ">(_, _, _, _, _);\n"
-                   ))) ^
+                (String.concat ~sep:""
+                   (List.map (other_specs typ)
+                      ~f:(fun {typ;_} ->
+                          "//@ close hide_mapp<" ^ ityp_name typ ^ ">(_, _, _, _, _);\n"
+                        ))) ^
                 if coherent then
                   let ityp = ityp_name typ in
-                  "\n//@ assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^ (tmp_gen "dm") ^
+                  "\n//@ assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?" ^
+                  (tmp_gen "dm") ^
                   ", _));\n" ^
                   "\n/*@ {\n\
                    assert map_vec_chain_coherent<" ^ ityp ^ ">(" ^
@@ -784,7 +874,8 @@ let map_put_spec (map_specs : map_spec list) =
                   (tmp_gen "dv") ^ ", ?" ^
                   (tmp_gen "dh") ^
                   ");\n\
-                   mvc_coherent_dchain_non_out_of_space_map_nonfull<" ^ ityp ^ ">(" ^
+                   mvc_coherent_dchain_non_out_of_space_map_nonfull<" ^ ityp ^
+                  ">(" ^
                   (tmp_gen "dm") ^ ", " ^
                   (tmp_gen "dv") ^ ", " ^
                   (tmp_gen "dh") ^ ");\n" ^
@@ -792,7 +883,10 @@ let map_put_spec (map_specs : map_spec list) =
                   (tmp_gen "dm") ^ ", " ^
                   (tmp_gen "dv") ^ ", " ^
                   (tmp_gen "dh") ^ ");\n} @*/\n" ^
-                  let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                  let arg1 =
+                    Str.global_replace (Str.regexp_string "bis") ""
+                      (List.nth_exn args 1)
+                  in
                   "/*@ { \n\
                    assert mapp<" ^ ityp ^
                   ">(_, _, _, _, mapc(_, _, ?dm_addrs)); \n\
@@ -803,7 +897,8 @@ let map_put_spec (map_specs : map_spec list) =
                   " ^ ityp ^ " vvv = " ^ (construct_record arg1 entry_type) ^
                   "; \n\
                    mvc_coherent_key_abscent(the_dm, the_dv, the_dh, vvv);\n\
-                   kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^ (List.nth_exn args 2) ^
+                   kkeeper_add_one(dv_addrs, the_dv, dm_addrs, vvv, " ^
+                  (List.nth_exn args 2) ^
                   "); \n\
                    } @*/\n"
                 else "")
@@ -811,23 +906,30 @@ let map_put_spec (map_specs : map_spec list) =
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1))
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 1))
               );];
    lemmas_after = [
      (fun {args;tmp_gen;arg_types;_} ->
         match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent;_} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some ((if coherent then
-                       let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                       let arg1 =
+                         Str.global_replace (Str.regexp_string "bis") ""
+                           (List.nth_exn args 1)
+                       in
                        "\n/*@ {\n\
-                        assert map_vec_chain_coherent<" ^ ityp_name typ ^ ">(" ^ (tmp_gen "dm") ^
+                        assert map_vec_chain_coherent<" ^ ityp_name typ ^
+                       ">(" ^ (tmp_gen "dm") ^
                        ", ?" ^ (tmp_gen "dv") ^
                        ", ?" ^ (tmp_gen "dh") ^
                        ");\n\
                        " ^ ityp_name typ ^ " " ^
-                       (tmp_gen "ea") ^ " = " ^ (construct_record arg1 entry_type) ^
+                       (tmp_gen "ea") ^ " = " ^
+                       (construct_record arg1 entry_type) ^
                        ";\n\
-                        mvc_coherent_put<" ^ ityp_name typ ^ ">(" ^ (tmp_gen "dm") ^
+                        mvc_coherent_put<" ^ ityp_name typ ^ ">(" ^
+                       (tmp_gen "dm") ^
                        ", " ^ (tmp_gen "dv") ^
                        ", " ^ (tmp_gen "dh") ^
                        ", " ^ (List.nth_exn args 2) ^
@@ -838,13 +940,15 @@ let map_put_spec (map_specs : map_spec list) =
                      else "") ^
                     (String.concat ~sep:"" (List.map (other_specs typ)
                                               ~f:(fun {typ;_} ->
-                                                  "//@ open hide_mapp<" ^ ityp_name typ ^
+                                                  "//@ open hide_mapp<" ^
+                                                  ityp_name typ ^
                                                   ">(_, _, _, _, _);\n"))))
             else
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));];}
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 1)));];}
 
 let map_erase_spec (map_specs : map_spec list) =
   let other_specs excl_typ =
@@ -863,16 +967,25 @@ let map_erase_spec (map_specs : map_spec list) =
         match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent;_} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
-                (String.concat ~sep:"" (List.map (other_specs typ) ~f:(fun {typ;_} ->
-                     "//@ close hide_mapp<" ^ ityp_name typ ^ ">(_, _, _, _, _);\n"
-                   ))) ^
+                (String.concat ~sep:""
+                   (List.map (other_specs typ)
+                      ~f:(fun {typ;_} ->
+                          "//@ close hide_mapp<" ^ ityp_name typ ^
+                          ">(_, _, _, _, _);\n"
+                        ))) ^
                 if coherent then
                   let ityp = ityp_name typ in
-                  let arg1 = Str.global_replace (Str.regexp_string "bis") "" (List.nth_exn args 1) in
+                  let arg1 =
+                    Str.global_replace (Str.regexp_string "bis") ""
+                      (List.nth_exn args 1)
+                  in
                   "/*@ { \n\
-                   assert mapp<" ^ ityp ^ ">(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
-                   assert vectorp<" ^ ityp ^ ">(_, _, _, ?dv_addrs); \n\
-                   assert map_vec_chain_coherent<" ^ ityp ^ ">(?the_dm, ?the_dv, ?the_dh);\n\
+                   assert mapp<" ^ ityp ^
+                  ">(_, _, _, _, mapc(_, ?dm, ?dm_addrs)); \n\
+                   assert vectorp<" ^ ityp ^
+                  ">(_, _, _, ?dv_addrs); \n\
+                   assert map_vec_chain_coherent<" ^ ityp ^
+                  ">(?the_dm, ?the_dv, ?the_dh);\n\
                    assert LoadBalancedFlowp(" ^ arg1 ^
                   ", ?vvv);\n\
                    kkeeper_erase_one(dv_addrs, the_dv, dm_addrs, map_get_fp(dm, vvv));\n\
@@ -882,21 +995,24 @@ let map_erase_spec (map_specs : map_spec list) =
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1))
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 1))
               );];
    lemmas_after = [
      (fun {args;tmp_gen;arg_types;_} ->
         match (List.find_map map_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
-              Some ((String.concat ~sep:"" (List.map (other_specs typ)
-                                              ~f:(fun {typ;_} ->
-                                                  "//@ open hide_mapp<" ^ ityp_name typ ^
-                                                  ">(_, _, _, _, _);\n"))))
+              Some ((String.concat ~sep:""
+                       (List.map (other_specs typ)
+                          ~f:(fun {typ;_} ->
+                              "//@ open hide_mapp<" ^ ityp_name typ ^
+                              ">(_, _, _, _, _);\n"))))
             else
               None))
         with
         | Some x -> x
-        | None -> "Error: unexpected argument type: " ^ (ttype_to_str (List.nth_exn arg_types 1)));];}
+        | None -> "Error: unexpected argument type: " ^
+                  (ttype_to_str (List.nth_exn arg_types 1)));];}
 
 
 let expire_items_single_map_spec typs =
@@ -913,13 +1029,16 @@ let expire_items_single_map_spec typs =
    lemmas_before = [
      (fun _ ->
         "switch(expire_items_single_map_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi typs ~f:(fun i typ ->
-             " case " ^ (string_of_int i) ^ ":\n" ^
-             (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun other_typ ->
-                  "//@ close hide_mapp<" ^ ityp_name other_typ ^ ">(_, _, _, _, _);\n"
-                ))) ^
-              "break;\n"
-           )) ) ^
+        (String.concat ~sep:""
+           (List.mapi typs ~f:(fun i typ ->
+                " case " ^ (string_of_int i) ^ ":\n" ^
+                (String.concat ~sep:""
+                   (List.map (other_types typ)
+                      ~f:(fun other_typ ->
+                          "//@ close hide_mapp<" ^ ityp_name other_typ ^ ">(_, _, _, _, _);\n"
+                        ))) ^
+                "break;\n"
+              )) ) ^
         "default:\n\
          assert false;\n\
          }\n");
@@ -964,9 +1083,11 @@ let expire_items_single_map_spec typs =
              (tmp_gen "fm") ^ ", " ^
              (tmp_gen "fvk") ^ ", " ^
              (tmp_gen "ch") ^ ");\n} @*/\n" ^
-             (String.concat ~sep:"" (List.map (other_types typ) ~f:(fun other_typ ->
-                  "//@ open hide_mapp<" ^ ityp_name other_typ ^ ">(_, _, _, _, _);\n"
-                ))) ^
+             (String.concat ~sep:""
+                (List.map (other_types typ) ~f:(fun other_typ ->
+                     "//@ open hide_mapp<" ^ ityp_name other_typ ^
+                     ">(_, _, _, _, _);\n"
+                   ))) ^
               "break;\n"
            )) ) ^
         "default:\n\
@@ -987,7 +1108,7 @@ let dchain_allocate_new_index_spec dchain_specs =
         "time_for_allocated_index = " ^ (List.nth_exn args 2) ^
         ";\n");
      (fun params ->
-          "/*@ if(" ^ params.ret_name ^ " != 0) " ^ 
+          "/*@ if(" ^ params.ret_name ^ " != 0) " ^
           "{\n allocate_preserves_index_range(" ^
           (params.tmp_gen "cur_ch") ^
           ", *" ^
@@ -1004,23 +1125,24 @@ let dchain_allocate_new_index_spec dchain_specs =
         (List.nth_exn params.args 1) ^ ";\n");
      (fun {args;tmp_gen;ret_name;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun typ ->
-             " case " ^ lma_literal_name typ ^ ":\n" ^
-             "/*@ if (" ^ ret_name ^
-             " != 0) {\n\
-              assert map_vec_chain_coherent<" ^
-             ityp_name typ ^ ">(?" ^
-             (tmp_gen "cur_map") ^ ", ?" ^
-             (tmp_gen "cur_vec") ^ ", " ^
-             (tmp_gen "cur_ch") ^
-             ");\n\
-              mvc_coherent_alloc_is_halfowned<" ^ ityp_name typ ^
-             ">(" ^
-             (tmp_gen "cur_map") ^ ", " ^
-             (tmp_gen "cur_vec") ^ ", " ^
-             (tmp_gen "cur_ch") ^ ", *" ^
-             (List.nth_exn args 1) ^ ");\n} @*/\n" ^
-             "break;\n"))) ^
+        (String.concat ~sep:""
+           (List.map dchain_specs ~f:(fun typ ->
+                " case " ^ lma_literal_name typ ^ ":\n" ^
+                "/*@ if (" ^ ret_name ^
+                " != 0) {\n\
+                 assert map_vec_chain_coherent<" ^
+                ityp_name typ ^ ">(?" ^
+                (tmp_gen "cur_map") ^ ", ?" ^
+                (tmp_gen "cur_vec") ^ ", " ^
+                (tmp_gen "cur_ch") ^
+                ");\n\
+                 mvc_coherent_alloc_is_halfowned<" ^ ityp_name typ ^
+                ">(" ^
+                (tmp_gen "cur_map") ^ ", " ^
+                (tmp_gen "cur_vec") ^ ", " ^
+                (tmp_gen "cur_ch") ^ ", *" ^
+                (List.nth_exn args 1) ^ ");\n} @*/\n" ^
+                "break;\n"))) ^
         "default:\nassert false;\nbreak;\n}\n");
    ];}
 
@@ -1032,26 +1154,27 @@ let dchain_rejuvenate_index_spec dchain_specs =
      capture_chain "cur_ch" 0;
      (fun {args;tmp_gen;_} ->
         "switch(last_map_accessed) {" ^
-        (String.concat ~sep:"" (List.map dchain_specs ~f:(fun typ ->
-             " case " ^ lma_literal_name typ ^ ":\n" ^
-             "/*@ {\n\
-              assert map_vec_chain_coherent<" ^
-             ityp_name typ ^ ">(?" ^
-             (tmp_gen "cur_map") ^ ", ?" ^
-             (tmp_gen "cur_vec") ^ ", " ^
-             (tmp_gen "cur_ch") ^
-             ");\n\
-              mvc_coherent_same_len(" ^
-             (tmp_gen "cur_map") ^ ", " ^
-             (tmp_gen "cur_vec") ^ ", " ^
-             (tmp_gen "cur_ch") ^ ");\n" ^
-             "rejuvenate_keeps_high_bounded(" ^
-             (tmp_gen "cur_ch") ^
-             ", " ^ (List.nth_exn args 1) ^
-             ", " ^ (List.nth_exn args 2) ^
-             ");\n} @*/\n" ^
-             "break;\n"
-           ))) ^
+        (String.concat ~sep:""
+           (List.map dchain_specs ~f:(fun typ ->
+                " case " ^ lma_literal_name typ ^ ":\n" ^
+                "/*@ {\n\
+                 assert map_vec_chain_coherent<" ^
+                ityp_name typ ^ ">(?" ^
+                (tmp_gen "cur_map") ^ ", ?" ^
+                (tmp_gen "cur_vec") ^ ", " ^
+                (tmp_gen "cur_ch") ^
+                ");\n\
+                 mvc_coherent_same_len(" ^
+                (tmp_gen "cur_map") ^ ", " ^
+                (tmp_gen "cur_vec") ^ ", " ^
+                (tmp_gen "cur_ch") ^ ");\n" ^
+                "rejuvenate_keeps_high_bounded(" ^
+                (tmp_gen "cur_ch") ^
+                ", " ^ (List.nth_exn args 1) ^
+                ", " ^ (List.nth_exn args 2) ^
+                ");\n} @*/\n" ^
+                "break;\n"
+              ))) ^
         "default:\nassert false;\nbreak;\n}\n"
      );];
    lemmas_after = [
@@ -1173,7 +1296,8 @@ let gen_preamble nf_loop containers =
 #include \"libvig/containers/double-chain.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
-  "enum LMA_enum {" ^ (match lma_literals with | _ :: _ -> (String.concat ~sep:", " lma_literals) ^ ", " | _ -> "") ^
+  "enum LMA_enum {" ^ (match lma_literals with | _ :: _ ->
+      (String.concat ~sep:", " lma_literals) ^ ", " | _ -> "") ^
   "LMA_INVALID};\n" ^
   "void to_verify()\n\
    /*@ requires true; @*/ \n\
@@ -1183,25 +1307,26 @@ let gen_preamble nf_loop containers =
    int64_t time_for_allocated_index = 0;\n\
    uint32_t packet_size = 0;\n\
    bool a_packet_received = false;\n" ^
-  (String.concat ~sep:"" (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
-       match ctyp with
-       | Map (typ, _, _) ->
-         "//@ list<pair<" ^ (ityp_name typ) ^ ", int> > initial_" ^ name ^ ";\n" ^
-         "//@ struct Map* " ^ name ^ "_ptr;\n"
-       | Vector (typ, _, _) ->
-         "//@ list<pair<" ^ (ityp_name typ) ^ ", real> > initial_" ^ name ^ ";\n" ^
-         "//@ struct Vector* " ^ name ^ "_ptr;\n"
-       | CHT (_, _) ->
-         "//@ list<pair<uint32_t, real> > initial_" ^ name ^ ";\n" ^
-         "//@ struct Vector* " ^ name ^ "_ptr;\n"
-       | DChain _ ->
-         "//@ dchain initial_" ^ name ^ ";\n" ^
-         "//@ struct DoubleChain* " ^ name ^ "_ptr;\n"
-       | Int
-       | UInt
-       | UInt32 -> "//@ int " ^ name ^ ";\n"
-       | EMap (_, _, _, _) -> "#error only concrete containers at this point"
-     ))) ^
+  (String.concat ~sep:""
+     (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
+          match ctyp with
+          | Map (typ, _, _) ->
+            "//@ list<pair<" ^ (ityp_name typ) ^ ", int> > initial_" ^ name ^ ";\n" ^
+            "//@ struct Map* " ^ name ^ "_ptr;\n"
+          | Vector (typ, _, _) ->
+            "//@ list<pair<" ^ (ityp_name typ) ^ ", real> > initial_" ^ name ^ ";\n" ^
+            "//@ struct Vector* " ^ name ^ "_ptr;\n"
+          | CHT (_, _) ->
+            "//@ list<pair<uint32_t, real> > initial_" ^ name ^ ";\n" ^
+            "//@ struct Vector* " ^ name ^ "_ptr;\n"
+          | DChain _ ->
+            "//@ dchain initial_" ^ name ^ ";\n" ^
+            "//@ struct DoubleChain* " ^ name ^ "_ptr;\n"
+          | Int
+          | UInt
+          | UInt32 -> "//@ int " ^ name ^ ";\n"
+          | EMap (_, _, _, _) -> "#error only concrete containers at this point"
+        ))) ^
   "//@ option<void*> last_composed_packet = none;\n\
    //@ bool packet_is_complete = false;\n\
    //@ list<uint8_t> last_sent_packet = nil;\n\
@@ -1210,16 +1335,19 @@ let gen_preamble nf_loop containers =
    //@ list<uint16_t> sent_on_ports = nil; \n\
    //@ assume(sizeof(struct ether_hdr) == 14);\n\
    //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
-   //@ assume(sizeof(struct ipv4_hdr) == 20);//TODO: handle all this sizeof's explicitly\n"
+   //@ assume(sizeof(struct ipv4_hdr) == 20);\
+   //TODO: handle all this sizeof's explicitly\n"
   ^
   "int vector_allocation_order = 0;\n\
    int map_allocation_order = 0;\n\
    int dchain_allocation_order = 0;\n\
    int expire_items_single_map_order = 0;\n\
-   enum LMA_enum last_map_accessed = " ^ (match lma_literals with | hd :: _ -> hd | _ -> "0") ^ ";\n" ^
+   enum LMA_enum last_map_accessed = " ^
+  (match lma_literals with | hd :: _ -> hd | _ -> "0") ^ ";\n" ^
   (String.concat ~sep:"" (List.map containers ~f:(fun (_,ctyp) ->
        match ctyp with
-       | EMap (typ, _, _, _) -> "//@ " ^ (ityp_name typ) ^ " " ^ (lsim_variable_name typ) ^ ";\n"
+       | EMap (typ, _, _, _) -> "//@ " ^ (ityp_name typ) ^ " " ^
+                                (lsim_variable_name typ) ^ ";\n"
        | _ -> ""
      )))
 
@@ -1231,7 +1359,8 @@ let gen_map_params containers records =
   in
   List.filter_map containers ~f:(fun (name,ctyp) ->
       match ctyp with
-      | Map (typ, _, _) -> Some {typ;coherent=is_map_coherent name;entry_type=String.Map.find_exn records typ}
+      | Map (typ, _, _) -> Some {typ;coherent=is_map_coherent name;
+                                 entry_type=String.Map.find_exn records typ}
       | _ -> None)
 
 let gen_vector_params containers records =
@@ -1242,7 +1371,8 @@ let gen_vector_params containers records =
   in
   List.filter_map containers ~f:(fun (name,ctyp) ->
       match ctyp with
-      | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;entry_type=String.Map.find_exn records typ}
+      | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;
+                                    entry_type=String.Map.find_exn records typ}
       | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32}
       | _ -> None)
 
@@ -1252,17 +1382,20 @@ let abstract_state_capture containers =
        | Map (typ, _, _) -> "assert mapp<" ^ (ityp_name typ) ^ ">(" ^
                             name ^ "_ptr, _, _, _, mapc(_, ?" ^
                             ("final_" ^ name) ^ ", _));\n" ^
-                            "list<pair<" ^ (ityp_name typ) ^ ", int> > " ^ name ^ " = initial_" ^ name ^ ";\n"
+                            "list<pair<" ^ (ityp_name typ) ^ ", int> > " ^
+                            name ^ " = initial_" ^ name ^ ";\n"
        | Vector (typ, _, _) -> "assert vectorp<" ^ (ityp_name typ) ^ ">(" ^
                                name ^ "_ptr, _, ?" ^
                                ("finalizing_final_" ^ name) ^ ", _);\n" ^
-                               "vector<" ^ (ityp_name typ) ^ "> " ^ name ^ " = vector(" ^ "initial_" ^ name ^ ");\n" ^
+                               "vector<" ^ (ityp_name typ) ^ "> " ^ name ^
+                               " = vector(" ^ "initial_" ^ name ^ ");\n" ^
                                "vector<" ^ (ityp_name typ) ^ "> final_" ^ name ^
                                " = vector(" ^ "finalizing_final_" ^ name ^ ");\n"
        | CHT (_, _) -> "assert vectorp<uint32_t>(" ^
                        name ^ "_ptr, _, ?" ^
                        ("final_" ^ name) ^ ", _);\n" ^
-                       "list<pair<uint32_t, real> > " ^ name ^ " = " ^ "initial_" ^ name ^ ";\n"
+                       "list<pair<uint32_t, real> > " ^ name ^ " = " ^
+                       "initial_" ^ name ^ ";\n"
        | DChain _ -> "assert double_chainp(?" ^ "final_" ^ name ^ ", " ^
                      name ^ "_ptr);\n" ^
                      "dchain " ^ name ^ " = " ^ ("initial_" ^ name) ^ ";\n"
@@ -1274,32 +1407,43 @@ let abstract_state_capture containers =
                                 ", initial_" ^ v ^ ", " ^ h ^ ");\n" ^
                                 "emap<" ^ (ityp_name typ) ^ "> final_" ^ name ^
                                 " = emap<" ^ (ityp_name typ) ^ ">(final_" ^ m ^
-                                ", finalizing_final_" ^ v ^ ", final_" ^ h ^ ");\n"
+                                ", finalizing_final_" ^ v ^ ", final_" ^ h ^
+                                ");\n"
      )))
 
 let fun_types containers records =
   String.Map.of_alist_exn
     (common_fun_types @
-     (List.filter_map (String.Map.data records) ~f:(fun record -> match record with
-          | Str (_, _) -> Some (hash_spec record)
-          | _ -> None )) @
+     (List.filter_map
+        (String.Map.data records) ~f:(fun record -> match record with
+            | Str (_, _) -> Some (hash_spec record)
+            | _ -> None )) @
     ["loop_invariant_consume", (loop_invariant_consume_spec containers);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
-     "dchain_allocate_new_index", (dchain_allocate_new_index_spec (gen_dchain_params containers));
-     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec (gen_dchain_params containers));
-     "dchain_free_index", (dchain_free_index_spec (gen_dchain_params containers)) ;
+     "dchain_allocate_new_index", (dchain_allocate_new_index_spec
+                                     (gen_dchain_params containers));
+     "dchain_rejuvenate_index", (dchain_rejuvenate_index_spec
+                                   (gen_dchain_params containers));
+     "dchain_free_index", (dchain_free_index_spec
+                             (gen_dchain_params containers)) ;
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
-     "expire_items_single_map", (expire_items_single_map_spec (gen_dchain_params containers));
-     "map_allocate", (map_alloc_spec (gen_map_params containers records));
+     "expire_items_single_map", (expire_items_single_map_spec
+                                   (gen_dchain_params containers));
+     "map_allocate", (map_alloc_spec
+                        (gen_map_params containers records));
      "map_get", (map_get_spec (gen_map_params containers records));
      "map_put", (map_put_spec (gen_map_params containers records));
      "map_erase", (map_erase_spec (gen_map_params containers records));
      "map_size", map_size_spec;
      "cht_fill_cht", cht_fill_cht_spec;
      "nf_set_ipv4_udptcp_checksum", nf_set_ipv4_udptcp_checksum_spec;
-     "cht_find_preferred_available_backend", cht_find_preferred_available_backend_spec;
-     "vector_allocate", (vector_alloc_spec (gen_vector_params containers records));
-     "vector_borrow",      (vector_borrow_spec (gen_vector_params containers records));
-     "vector_return",      (vector_return_spec (gen_vector_params containers records));])
+     "cht_find_preferred_available_backend",
+     cht_find_preferred_available_backend_spec;
+     "vector_allocate", (vector_alloc_spec
+                           (gen_vector_params containers records));
+     "vector_borrow", (vector_borrow_spec
+                         (gen_vector_params containers records));
+     "vector_return", (vector_return_spec
+                         (gen_vector_params containers records));])
 

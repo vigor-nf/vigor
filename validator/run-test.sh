@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Setup can be overriden by the $TEST_DIR/config file (especially the $FSPEC_PLUGIN variable)
+# Setup can be overriden by the $TEST_DIR/config file
+# (especially the $FSPEC_PLUGIN variable)
 TEST_NAME=$1
 RUN_DIR=$2
 TEST_DIR="regression-tests/$TEST_NAME"
@@ -49,7 +50,8 @@ assert_file_exists $EXPECTED_OUTCOME "the expected validation outcome"
 assert_file_exists $EXPECTED_VF_STDOUT "the expected VeriFast output"
 
 # Run
-./validator.byte $FSPEC_PLUGIN $TRACE_FNAME $UNIQUE_PREFIX verifast $SPEC_DIR > $ACTUAL_OUTCOME
+./validator.byte $FSPEC_PLUGIN $TRACE_FNAME $UNIQUE_PREFIX verifast $SPEC_DIR \
+                 > $ACTUAL_OUTCOME
 
 # Post-run validation
 assert_file_exists $ACTUAL_OUTCOME "the actual validation outcome"

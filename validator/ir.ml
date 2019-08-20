@@ -52,8 +52,10 @@ type eq_condition = {lhs: tterm; rhs: tterm} [@@deriving sexp]
 
 let rec ttype_to_str = function
   | Ptr c_type -> ttype_to_str c_type ^ "*"
-  | Array a_type -> ttype_to_str a_type  ^ "[]" (* Verifast does not like this: "[]" *)
-  | Sint64 -> "int64_t" | Sint32 -> "int32_t" | Sint16 -> "int16_t" | Sint8 -> "int8_t"
+  | Array a_type -> ttype_to_str a_type  ^
+                    "[]" (* Verifast does not like this: "[]" *)
+  | Sint64 -> "int64_t" | Sint32 -> "int32_t"
+  | Sint16 -> "int16_t" | Sint8 -> "int8_t"
   | Uint64 -> "uint64_t"| Uint32 -> "uint32_t"
   | Uint16 -> "uint16_t" | Uint8 -> "uint8_t"
   | Void -> "void" | Str (name, _) -> "struct " ^ name
@@ -173,7 +175,8 @@ let rec render_tterm (t:tterm) =
              fname3) ->
     x ^ "." ^ fname1 ^ "." ^ fname2 ^ "." ^ fname3
   | Str_idx ({v=Deref {v=Id x;t=_};t=_},field_name) -> x ^ "->" ^ field_name
-  | Str_idx ({v=Deref x;_},field_name) -> "(" ^ (render_tterm x) ^ ")->" ^ field_name
+  | Str_idx ({v=Deref x;_},field_name) -> "(" ^ (render_tterm x) ^ ")->" ^
+                                          field_name
   | Str_idx (t,field_name) -> "(" ^ (render_tterm t) ^ ")." ^ field_name
   | Deref {v=Bop (Add, t, {v=Int idx;t=Uint32});t=Array term_type} ->
     "(" ^ (render_tterm t) ^ ")[" ^ (string_of_int idx) ^"]"
@@ -184,7 +187,8 @@ let rec render_tterm (t:tterm) =
   | Zeroptr -> "0" (* "NULL" *)
   | Undef -> "???"
   | Utility util -> render_utility util
-and render_term t = render_tterm {v=t;t=Unknown} (*TODO: reformulate this coupled definition*)
+ (*TODO: reformulate this coupled definition*)
+and render_term t = render_tterm {v=t;t=Unknown}
 
 let term_utility_eq a b =
   match a, b with
@@ -193,7 +197,8 @@ let term_utility_eq a b =
 let rec term_eq a b =
   match a,b with
   | Bop (Eq, lhsa, rhsa), Bop (Eq, lhsb, rhsb) ->
-    ((term_eq lhsa.v lhsb.v) && (term_eq rhsa.v rhsb.v)) || ((term_eq lhsa.v rhsb.v) && (term_eq rhsa.v lhsb.v))
+    ((term_eq lhsa.v lhsb.v) && (term_eq rhsa.v rhsb.v)) ||
+    ((term_eq lhsa.v rhsb.v) && (term_eq rhsa.v lhsb.v))
   | Bop (opa,lhsa,rhsa), Bop (opb,lhsb,rhsb) ->
     opa = opb && (term_eq lhsa.v lhsb.v) && (term_eq rhsa.v rhsb.v)
   | Apply (fa,argsa), Apply (fb, argsb) ->
@@ -209,11 +214,13 @@ let rec term_eq a b =
   | Int ia, Int ib -> ia = ib
   | Bool ba, Bool bb -> ba = bb
   | Not tta, Not ttb -> term_eq tta.v ttb.v
-  | Str_idx (tta,fda), Str_idx (ttb,fdb) -> term_eq tta.v ttb.v && String.equal fda fdb
+  | Str_idx (tta,fda), Str_idx (ttb,fdb) ->
+    term_eq tta.v ttb.v && String.equal fda fdb
   | Deref tta, Deref ttb -> term_eq tta.v ttb.v
   | Fptr fa, Fptr fb -> String.equal fa fb
   | Addr tta, Addr ttb -> term_eq tta.v ttb.v
-  | Cast (ctypea,terma), Cast (ctypeb,termb) -> (ctypea = ctypeb) && (term_eq terma.v termb.v)
+  | Cast (ctypea,terma), Cast (ctypeb,termb) ->
+    (ctypea = ctypeb) && (term_eq terma.v termb.v)
   | Undef, Undef -> true
   | Utility ua, Utility ub -> term_utility_eq ua ub
   | Array cells_a, Array cells_b ->
@@ -226,7 +233,9 @@ let rec call_recursively_on_tterm (f:tterm -> tterm option) tterm =
     {v= begin
         match tterm.v with
         | Bop (op,lhs,rhs) ->
-          Bop (op, call_recursively_on_tterm f lhs, call_recursively_on_tterm f rhs)
+          Bop (op,
+               call_recursively_on_tterm f lhs,
+               call_recursively_on_tterm f rhs)
         | Apply (fname,args) ->
           Apply (fname, List.map args ~f:(call_recursively_on_tterm f))
         | Id x -> Id x
@@ -278,13 +287,26 @@ let rec simplify_tterm tterm =
 let rec replace_tterm old_tt new_tt tterm =
   if tterm = old_tt then new_tt else 
   match tterm.v with
-  | Bop (opa, lhs, rhs) -> {v=Bop (opa, replace_tterm old_tt new_tt lhs, replace_tterm old_tt new_tt rhs);t=tterm.t}
-  | Apply (f, args) -> {v=Apply(f, List.map args ~f:(replace_tterm old_tt new_tt));t=tterm.t}
-  | Struct (name, fields) -> {v=Struct (name, List.map fields ~f:(fun fi -> {fi with value = replace_tterm old_tt new_tt fi.value}));t=tterm.t}
+  | Bop (opa, lhs, rhs) ->
+    {v=Bop (opa,
+            replace_tterm old_tt new_tt lhs,
+            replace_tterm old_tt new_tt rhs);
+     t=tterm.t}
+  | Apply (f, args) ->
+    {v=Apply(f,
+             List.map args ~f:(replace_tterm old_tt new_tt));
+     t=tterm.t}
+  | Struct (name, fields) ->
+    {v=Struct (name,
+               List.map fields ~f:(fun fi ->
+                   {fi with value = replace_tterm old_tt new_tt fi.value}));
+     t=tterm.t}
   | Array cells -> {v=Array (List.map cells ~f:(replace_tterm old_tt new_tt));
                     t=tterm.t}
   | Not tt -> {v=Not (replace_tterm old_tt new_tt tt);t=tterm.t}
-  | Str_idx (term, field) -> {v=Str_idx (replace_tterm old_tt new_tt term, field);t=tterm.t}
+  | Str_idx (term, field) ->
+    {v=Str_idx (replace_tterm old_tt new_tt term, field);
+     t=tterm.t}
   | Deref tt -> {v=Deref (replace_tterm old_tt new_tt tt);t=tterm.t}
   | Addr tt -> {v=Addr (replace_tterm old_tt new_tt tt);t=tterm.t}
   | Cast (ct, tt) -> {v=Cast (ct, replace_tterm old_tt new_tt tt);t=tterm.t}
@@ -298,19 +320,27 @@ let rec replace_tterm old_tt new_tt tterm =
 
 
 let rec append_id_in_term_id_starting_with prefix suffix term = match term with
-  | Bop (opa, lhs, rhs) -> Bop(opa, append_id_in_tterm_id_starting_with prefix suffix lhs, append_id_in_tterm_id_starting_with prefix suffix rhs)
-  | Apply (f, args) -> Apply(f, List.map args ~f:(append_id_in_tterm_id_starting_with prefix suffix))
+  | Bop (opa, lhs, rhs) ->
+    Bop(opa,
+        append_id_in_tterm_id_starting_with prefix suffix lhs,
+        append_id_in_tterm_id_starting_with prefix suffix rhs)
+  | Apply (f, args) ->
+    Apply(f,
+          List.map args ~f:(append_id_in_tterm_id_starting_with prefix suffix))
   | Id x -> if String.is_prefix x ~prefix:prefix then Id (x ^ suffix) else Id x
   | Struct _
   | Array _ -> failwith "not supported here, too lazy"
   | Int _ -> term
   | Bool _ -> term
   | Not tt -> Not (append_id_in_tterm_id_starting_with prefix suffix tt)
-  | Str_idx (tterm, field) -> Str_idx (append_id_in_tterm_id_starting_with prefix suffix tterm, field)
-  | Deref tterm -> Deref (append_id_in_tterm_id_starting_with prefix suffix tterm)
+  | Str_idx (tterm, field) ->
+    Str_idx (append_id_in_tterm_id_starting_with prefix suffix tterm, field)
+  | Deref tterm ->
+    Deref (append_id_in_tterm_id_starting_with prefix suffix tterm)
   | Fptr _ -> term
   | Addr tterm -> Addr (append_id_in_tterm_id_starting_with prefix suffix tterm)
-  | Cast (ctype, tterm) -> Cast (ctype, append_id_in_tterm_id_starting_with prefix suffix tterm)
+  | Cast (ctype, tterm) ->
+    Cast (ctype, append_id_in_tterm_id_starting_with prefix suffix tterm)
   | Undef -> Undef
   | Zeroptr -> Zeroptr
   | Utility _ -> term
@@ -325,9 +355,12 @@ let is_unknown = function
 
 let rec fix_type_of_id_in_tterm (vars: var_spec list) tterm ~cast =
   match tterm.v with
-  | Bop (opa, lhs, rhs) -> {v=Bop(opa, fix_type_of_id_in_tterm vars lhs ~cast,
-                                  fix_type_of_id_in_tterm vars rhs ~cast);t=tterm.t}
-  | Apply (f, args) -> {v=Apply(f, List.map args ~f:(fix_type_of_id_in_tterm vars ~cast));t=tterm.t}
+  | Bop (opa, lhs, rhs) ->
+    {v=Bop(opa, fix_type_of_id_in_tterm vars lhs ~cast,
+           fix_type_of_id_in_tterm vars rhs ~cast);t=tterm.t}
+  | Apply (f, args) ->
+    {v=Apply(f, List.map args ~f:(fix_type_of_id_in_tterm vars ~cast));
+     t=tterm.t}
   | Id x -> begin match List.find vars ~f:(fun v -> v.name = x) with
       | Some v ->
         let id = {v=Id v.name;t=v.value.t} in
@@ -337,17 +370,21 @@ let rec fix_type_of_id_in_tterm (vars: var_spec list) tterm ~cast =
     end
   | Struct (name, fields) ->
     {v=Struct(name, List.map fields ~f:(fun vs ->
-         {vs with value=fix_type_of_id_in_tterm vars vs.value ~cast}));t=tterm.t}
+         {vs with value=fix_type_of_id_in_tterm vars vs.value ~cast}));
+     t=tterm.t}
   | Array cells ->
-    {v=Array (List.map cells ~f:(fix_type_of_id_in_tterm vars ~cast));t=tterm.t}
+    {v=Array (List.map cells ~f:(fix_type_of_id_in_tterm vars ~cast));
+     t=tterm.t}
   | Int _ -> tterm
   | Bool _ -> tterm
   | Not tt -> {v=Not (fix_type_of_id_in_tterm vars tt ~cast);t=tterm.t}
-  | Str_idx (tt, field) -> {v=Str_idx (fix_type_of_id_in_tterm vars tt ~cast, field);t=tterm.t}
+  | Str_idx (tt, field) ->
+    {v=Str_idx (fix_type_of_id_in_tterm vars tt ~cast, field);t=tterm.t}
   | Deref tt -> {v=Deref (fix_type_of_id_in_tterm vars tt ~cast);t=tterm.t}
   | Fptr _ -> tterm
   | Addr tt -> {v=Addr (fix_type_of_id_in_tterm vars tt ~cast);t=tterm.t}
-  | Cast (ctype, tt) -> {v=Cast (ctype, fix_type_of_id_in_tterm vars tt ~cast);t=tterm.t}
+  | Cast (ctype, tt) ->
+    {v=Cast (ctype, fix_type_of_id_in_tterm vars tt ~cast);t=tterm.t}
   | Undef -> tterm
   | Zeroptr -> tterm
   | Utility _ -> tterm

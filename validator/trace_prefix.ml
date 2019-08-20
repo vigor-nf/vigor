@@ -32,4 +32,5 @@ type call_node = {fun_name: string; args: arg list; ret: ret option;
                   call_context: expr list; ret_context: expr list;
                   id: int [@default 0];} [@@deriving sexp]
 
-type trace_prefix = {history: call_node list; tip_calls: call_node list;} [@@deriving sexp]
+type trace_prefix = {history: call_node list;
+                     tip_calls: call_node list;} [@@deriving sexp]

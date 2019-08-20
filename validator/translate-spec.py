@@ -90,11 +90,13 @@ def renderExpr(expr):
             head = objMeta['name'] + '_' + expr.func.attr
             if expr.func.attr in objMeta['modifying']:
                 head = expr.func.value.id + ' = ' + head
-            args = ', '.join([expr.func.value.id] + list(map(renderExpr, expr.args)))
+            args = ', '.join([expr.func.value.id] +
+                             list(map(renderExpr, expr.args)))
         else:
             head = expr.func.id
             args = ', '.join(list(map(renderExpr, expr.args)))
-        assert not expr.keywords, "keywords are not recognized:" + ast.dump(expr)
+        assert not expr.keywords, \
+            "keywords are not recognized:" + ast.dump(expr)
         return "{}({})".format(head, args)
     elif isinstance(expr, ast.Compare):
         left = renderExpr(expr.left)
@@ -136,8 +138,10 @@ def renderExpr(expr):
         return result + "nil" + (")" * len(expr.elts))
     elif isinstance(expr, ast.Attribute):
         assert isinstance(expr.value, ast.Name)
-        assert expr.value.id in objects, "object {} is not known".format(expr.value.id)
-        assert expr.attr in objects[expr.value.id], "object {} has no attribute {}".format(expr.value.id, expr.attr)
+        assert expr.value.id in objects, \
+            "object {} is not known".format(expr.value.id)
+        assert expr.attr in objects[expr.value.id], \
+            "object {} has no attribute {}".format(expr.value.id, expr.attr)
         return objects[expr.value.id][expr.attr]
     elif isinstance(expr, ast.UnaryOp):
         if isinstance(expr.op, ast.USub):
@@ -163,7 +167,8 @@ def genOutcome(portsHeaders):
     assert isinstance(ports, ast.List)
     assert isinstance(headers, ast.List)
     if ports.elts:
-        return "assert sent_on_ports == {};\nassert sent_headers == {};".format(renderExpr(ports), renderExpr(headers))
+        return "assert sent_on_ports == {};\nassert sent_headers == {};".\
+            format(renderExpr(ports), renderExpr(headers))
     else:
         return "assert sent_on_ports == nil;"
 
@@ -206,8 +211,10 @@ def translatePopHeader(binding, body, declaredVars):
     fieldInstances = list(map(lambda f : obj + '_' + f, fields))
     objects[obj] = dict(zip(fields, fieldInstances))
     hdrName = protocol + '_hdr_shell'
-    indentPrint("case {}({}): switch({}) {{".format(protocol + '_hdr', hdrName, hdrName))
-    indentPrint("case {}({}): ".format(protocol + '_hdrc', ", ".join(fieldInstances)))
+    indentPrint("case {}({}): switch({}) {{".\
+                format(protocol + '_hdr', hdrName, hdrName))
+    indentPrint("case {}({}): ".\
+                format(protocol + '_hdrc', ", ".join(fieldInstances)))
     translate(body, declaredVars)
     headerStack = prevHeaderStack
     indentPrint("}}}")
@@ -236,7 +243,9 @@ def translateObjAssignment(binding, body, declaredVars):
     ctor = objConstructors[objConstructKey(binding.value)]['constructor']
     fieldInstances = list(map(lambda f : varName + '_' + f, fields))
     objects[varName] = dict(zip(fields, fieldInstances))
-    indentPrint("switch({}) {{ case {}({}):".format(renderExpr(binding.value), ctor, ", ".join(fieldInstances)))
+    indentPrint("switch({}) {{ case {}({}):".\
+                format(renderExpr(binding.value),
+                       ctor, ", ".join(fieldInstances)))
     translate(body, declaredVars)
     indentPrint("}")
 
@@ -271,7 +280,9 @@ def translate(exprList, declaredVars):
                         indentPrint("{} = {};".format(target.id, value))
                     else:
                         declaredVars.append(target.id)
-                        indentPrint("{} {} = {};".format(guessType(expr.value), target.id, value))
+                        indentPrint("{} {} = {};".\
+                                    format(guessType(expr.value),
+                                           target.id, value))
             else:
                 indentPrint("Weird assignment")
         elif isinstance(expr, ast.If):

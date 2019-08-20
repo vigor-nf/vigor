@@ -33,9 +33,11 @@ analyze_result() {
                 echo $FNAME leak fail >> $REPORT_FNAME
             elif grep -q "Cannot prove" $VF_RESULT; then
                 echo $FNAME unproven fail >> $REPORT_FNAME
-            elif grep -q "Cannot read a ghost variable in a non-pure context" $VF_RESULT; then
+            elif grep -q "Cannot read a ghost variable in a non-pure context" \
+                         $VF_RESULT; then
                 echo $FNAME syntax fail >> $REPORT_FNAME
-            elif grep -q "No such variable, constructor, regular function," $VF_RESULT; then
+            elif grep -q "No such variable, constructor, regular function," \
+                         $VF_RESULT; then
                 echo $FNAME syntax fail >> $REPORT_FNAME
             elif grep -q "Incorrect number of arguments" $VF_RESULT; then
                 echo $FNAME syntax fail >> $REPORT_FNAME
