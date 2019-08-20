@@ -18,36 +18,35 @@
 
 struct nf_config config;
 
-struct FlowManager* flow_manager;
+struct FlowManager *flow_manager;
 
-void nf_init(void)
-{
-  flow_manager = flow_manager_allocate(config.wan_device,
-                                       config.expiration_time,
-                                       config.max_flows);
+void nf_init(void) {
+  flow_manager = flow_manager_allocate(
+      config.wan_device, config.expiration_time, config.max_flows);
 
   if (flow_manager == NULL) {
     rte_exit(EXIT_FAILURE, "Could not allocate flow manager");
   }
 }
 
-int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
-{
+int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
   const int in_port = mbuf->port;
   NF_DEBUG("It is %" PRId64, now);
 
   flow_manager_expire(flow_manager, now);
   NF_DEBUG("Flows have been expired");
 
-  struct ether_hdr* ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
-  uint8_t* ip_options;
-  struct ipv4_hdr* ipv4_header = nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+  struct ether_hdr *ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+  uint8_t *ip_options;
+  struct ipv4_hdr *ipv4_header =
+      nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
   if (ipv4_header == NULL) {
     NF_DEBUG("Not IPv4, dropping");
     return in_port;
   }
 
-  struct tcpudp_hdr* tcpudp_header = nf_then_get_tcpudp_header(ipv4_header, mbuf_pkt(mbuf));
+  struct tcpudp_hdr *tcpudp_header =
+      nf_then_get_tcpudp_header(ipv4_header, mbuf_pkt(mbuf));
   if (tcpudp_header == NULL) {
     NF_DEBUG("Not TCP/UDP, dropping");
     return in_port;
@@ -67,8 +66,8 @@ int nf_process(struct rte_mbuf* mbuf, vigor_time_t now)
     };
 
     uint32_t dst_device_long;
-    if (!flow_manager_get_refresh_flow(flow_manager, &id,
-                                       now, &dst_device_long)) {
+    if (!flow_manager_get_refresh_flow(flow_manager, &id, now,
+                                       &dst_device_long)) {
       NF_DEBUG("Unknown external flow, dropping");
       return in_port;
     }
