@@ -8,6 +8,41 @@ let gen_tmp_name () =
   let func prefix = "tmp" ^ prefix ^ (Int.to_string counter_value) in
   func
 
+let render_conditions assumptions ~is_assert =
+  let rec flatten_assumption (ass: tterm) = match ass.v with
+  (* yeah that bool vs int 0 stuff is annoying, but writing a method to handle it would be more annoying... for now *)
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (And, x, y);t=_}) -> flatten_assumption {v=Bop (Or, {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}, {v=Bop (Eq, {v=Bool false;t=Boolean},y);t=Boolean});t=Boolean}
+  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (And, x, y);t=_}) -> flatten_assumption {v=Bop (Or, {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}, {v=Bop (Eq, {v=Bool false;t=Boolean},y);t=Boolean});t=Boolean}
+  | Bop (And, x, y) -> (flatten_assumption x) @ (flatten_assumption y)
+  | _ -> [ass]
+  in
+  let flattened_assumptions = List.concat (List.map assumptions ~f:flatten_assumption) in
+  let fn = if is_assert then "//@ assert" else "//@ assume" in
+  let rendered_assumptions = List.map flattened_assumptions ~f:(fun t ->
+      match t.v with
+      (* order-independent would be better you say? sure! but that's too bit a refactoring... #ResearchCode *)
+      (* also, yes, this will result in the rather comical but efficient 'false is in {A,B}'  for (false == A || false == B) *)
+      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, x2, b);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, x2, b);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, b, x2);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Bop (Or, {v=Bop (Eq, a, x1);t=_}, {v=Bop (Eq, b, x2);t=_}) when x1 = x2 && a.t = b.t -> fn ^ "(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      (* so we might as well apply it for normal Ors as well! less forking *)
+      | Bop (Or, a, b) -> fn ^"(mem(true, cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
+      | Id x -> fn ^ "(x != 0);"
+      | Bop (Bit_and, _, _) -> fn ^ "(0 != " ^ (render_tterm t) ^ ");"
+      | _ -> fn ^ "(" ^ (render_tterm t) ^ ");") in
+  let unique_assumptions =
+    String.Set.to_list (String.Set.of_list rendered_assumptions)
+  in
+  (String.concat ~sep:"\n" unique_assumptions) ^ "\n"
+
+
 let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   let head = (if is_assert then "assert" else "assume") in
   (* printf "render_eq_sttmt %s %s --- %s %s\n" (render_tterm out_arg) (ttype_to_str out_arg.t) (render_tterm out_val) (ttype_to_str out_val.t); *)
@@ -90,11 +125,7 @@ let render_args_post_conditions ~is_assert apk =
                                     lhs rhs))) ^ "\n"
 
 let render_post_assumptions post_statements =
-  (String.concat ~sep:"\n" (List.map post_statements
-                              ~f:(fun t ->
-                                  "/*@ assume(" ^
-                                  (render_tterm t) ^
-                                  ");@*/"))) ^ "\n"
+  render_conditions post_statements ~is_assert:false
 
 let render_ret_equ_sttmt ~is_assert ret_name ret_type ret_val =
   match ret_name with
@@ -286,29 +317,6 @@ let apply_assignments assignments terms =
   List.fold assignments ~init:terms ~f:(fun terms {lhs;rhs} ->
       List.map terms ~f:(replace_tterm lhs rhs))
 
-let render_assumptions assumptions =
-  let rec flatten_assumption (ass: tterm) = match ass.v with
-  (* yeah that bool vs int 0 stuff is annoying, but writing a method to handle it would be more annoying... for now *)
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Int 0;t=Boolean}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
-  | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
-  | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) -> List.map (List.concat (List.map [x; y] ~f:flatten_assumption)) ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
-  | Bop (And, x, y) -> (flatten_assumption x) @ (flatten_assumption y)
-  | _ -> [ass]
-  in
-  let flattened_assumptions = List.concat (List.map assumptions ~f:flatten_assumption) in
-  let rendered_assumptions = List.map flattened_assumptions ~f:(fun t ->
-      match t.v with
-      | Bop (Or, {v=Bop (Eq, x1, a);t=_}, {v=Bop (Eq, x2, b);t=_}) when x1 == x2 && a.t == b.t -> "//@ assume(mem(" ^ (render_tterm x1) ^ ", cons(" ^ (render_tterm a) ^ ", cons(" ^ (render_tterm b) ^ ", nil))));"
-      | Id x -> "//@ assume(x != 0);"
-      | Bop (Bit_and, _, _) -> "//@ assume(0 != " ^ (render_tterm t) ^ ");"
-      | _ -> "//@ assume(" ^ (render_tterm t) ^ ");") in
-  let unique_assumptions =
-    String.Set.to_list (String.Set.of_list rendered_assumptions)
-  in
-  (String.concat ~sep:"\n" unique_assumptions) ^ "\n"
 
 let ids_from_term term =
   String.Set.of_list
@@ -466,7 +474,7 @@ let output_check_and_assignments
   let output_check =
     "// Output check\n" ^
     "// Input assumptions\n" ^
-    (render_assumptions input_constraints) ^ "\n" ^
+    (render_conditions input_constraints ~is_assert:false) ^ "\n" ^
     "// Concrete equalities: \n" ^
     (render_concrete_assignments_as_assertions concrete_assignments) ^ "\n" ^
     "// Model constraints: \n" ^
@@ -516,10 +524,6 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
       let args_conditions = render_args_post_conditions ~is_assert:false result.args_post_conditions in
       {conditions;output_check;args_conditions}
     in
-    let render_conditions conds =
-      String.concat ~sep:"\n" (List.map conds ~f:(fun c -> "//@ assume(" ^ (render_tterm c) ^ ");\n"))
-    in
-
     let rendered_results = List.map results ~f:render_result in
     let condition_sets = List.map rendered_results ~f:(fun r -> Set.Poly.of_list r.conditions) in
     let common_conditions = 
@@ -527,7 +531,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
       | Some conds -> Set.to_list conds
       | None -> failwith "Not possible, there must be at least one result"
     in
-    (render_conditions common_conditions) ^ "\n" ^ (do_render rendered_results)
+    (render_conditions common_conditions ~is_assert:false) ^ "\n" ^ (do_render rendered_results)
   in
 
   let rec render_ret_conditions groups =
@@ -686,8 +690,8 @@ let render_ir ir fout ~render_assertions =
                                         (String.Map.data ir.free_vars));
       Out_channel.output_string cout (render_allocated_args ir.arguments);
       Out_channel.output_string cout (render_args_hack ir.arguments);
-      Out_channel.output_string cout (render_assumptions
-                                        ir.context_assumptions);
+      Out_channel.output_string cout (render_conditions
+                                        ir.context_assumptions ~is_assert:false);
       Out_channel.output_string cout (render_assignments ir.arguments);
       (* Yes, this is stupid; but right before a deadline I will not spend hours refactoring import.ml to fix it. *)
       let stupid_fix = Str.global_replace (Str.regexp_string "(next_time_0 - vector_data_reset_1_8)") "(uint64_t)(next_time_0 - vector_data_reset_1_8)" in
