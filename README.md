@@ -294,9 +294,7 @@ Table 2:
 - These numbers are obtained using their corresponding targets as mentioned in [Vigor NFs](#vigor-nfs)
 
 Table 3:
-- This is an outdated version of Table 8.
-The numbers can not be obtained on the current version.
-To reproduce these numbers you'll need to roll back about 500 commits.
+- This is an outdated version of Table 8; use `patch -R < optimize.patch` in each NF's folder to revert the optimization if you want to reproduce these numbers.
 
 Table 4:
 - The NF bugs were discovered during development
