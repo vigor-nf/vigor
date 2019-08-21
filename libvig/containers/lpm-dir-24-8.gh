@@ -233,6 +233,18 @@ fixpoint dir_24_8 insert_lpm_24(dir_24_8 dir, lpm_rule rule) {
   }
 }
 
+fixpoint bool can_insert(dir_24_8 dir, int ipv4, int prefixlen) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, long_index):
+      return
+        prefixlen < 25 ||
+        !is_new_index_needed(
+           lookup_lpm_24(index24_from_ipv4(Z_of_int(ipv4, N32)),
+                                           dir)) ||
+        long_index < 256;
+  }
+}
+
 fixpoint dir_24_8 insert_lpm_long(dir_24_8 dir, lpm_rule rule) {
   switch(dir) {
     case tables(lpm_24, lpm_long, long_index): return

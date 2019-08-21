@@ -39,38 +39,35 @@
 
 struct lpm;
 
-struct rule {
-  uint32_t ipv4;
-  uint8_t prefixlen;
-  uint16_t route;
-};
-
-/*@
-  predicate table(struct lpm* t, dir_24_8 dir);
-  predicate rule(struct rule* r; uint32_t ipv4, uint8_t prefixlen,
-                uint16_t route); @*/
+/*@ predicate table(struct lpm* t, dir_24_8 dir); @*/
 
 
 
-struct lpm *lpm_allocate();
-//@ requires true;
+int lpm_allocate(struct lpm ** lpm_out);
+//@ requires *lpm_out |-> ?old_lo;
 /*@ ensures result == 0 ?
-              true
-            :
-              table(result, dir_init()); @*/
+              *lpm_out |-> old_lo :
+              *lpm_out |-> ?new_lo &*&
+              table(new_lo, dir_init()); @*/
 
 void lpm_free(struct lpm *_lpm);
 //@ requires table(_lpm, _);
 //@ ensures true;
 
-int lpm_update_elem(struct lpm *_lpm, struct rule *_rule);
-//@ requires table(_lpm, ?dir) &*& rule(_rule, ?ipv4, ?plen, ?route);
-/*@ ensures table(_lpm,
-                  add_rule(dir,
-                           init_rule(ipv4, plen, route)
-                  )
-            )
-            &*& rule(_rule, ipv4, plen, route); @*/
+int lpm_update_elem(struct lpm *_lpm, uint32_t prefix,
+                    uint8_t prefixlen, uint16_t value);
+/*@ requires table(_lpm, ?dir) &*&
+             prefixlen >= 0 &*& prefixlen <= 32 &*&
+             value != INVALID &*&
+             0 <= value &*& value <= MAX_NEXT_HOP_VALUE &*&
+             false == extract_flag(value) &*&
+             true == valid_entry24(value) &*&
+             true == valid_entry_long(value); @*/
+/*@ ensures can_insert(dir, prefix, prefixlen) == (result != 0) &*&
+            result != 0 ?
+              table(_lpm, add_rule(dir, init_rule(prefix, prefixlen, value)))
+            :
+              table(_lpm, dir); @*/
 
 int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4);
 //@ requires table(_lpm, ?dir);

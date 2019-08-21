@@ -198,6 +198,13 @@
   }
   @*/
 
+struct rule {
+  uint32_t ipv4;
+  uint8_t prefixlen;
+  uint16_t route;
+};
+
+
 struct lpm {
   uint16_t* lpm_24;
   uint16_t* lpm_long;
@@ -353,12 +360,12 @@ uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
   return res;
 }
 
-struct lpm* lpm_allocate()
-//@ requires true;
+int lpm_allocate(struct lpm ** lpm_out)
+//@ requires *lpm_out |-> ?old_lo;
 /*@ ensures result == 0 ?
-              true
-            :
-              table(result, dir_init()); @*/
+              *lpm_out |-> old_lo :
+              *lpm_out |-> ?new_lo &*&
+              table(new_lo, dir_init()); @*/
 {
   struct lpm* _lpm = (struct lpm*) malloc(sizeof(struct lpm));
   if (_lpm == 0) {
@@ -434,7 +441,8 @@ struct lpm* lpm_allocate()
   /*@ close table(_lpm, build_tables(t_24, t_l, lpm_long_first_index));
   @*/
 
-  return _lpm;
+  *lpm_out = _lpm;
+  return 1;
 }
 
 void lpm_free(struct lpm *_lpm)
@@ -522,24 +530,25 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
   }
 }
 
-int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
+int lpm_update_elem(struct lpm *_lpm, uint32_t prefix,
+                    uint8_t prefixlen, uint16_t value)
 /*@ requires table(_lpm, ?dir) &*&
-              rule(_rule, ?ipv4, ?plen, ?route); @*/
-/*@ ensures table(_lpm,
-                  add_rule(dir,
-                           init_rule(ipv4, plen, route)
-                  )
-            )
-            &*& rule(_rule, ipv4, plen, route); @*/
+             prefixlen >= 0 &*& prefixlen <= 32 &*&
+             value != INVALID &*&
+             0 <= value &*& value <= MAX_NEXT_HOP_VALUE &*&
+             false == extract_flag(value) &*&
+             true == valid_entry24(value) &*&
+             true == valid_entry_long(value); @*/
+/*@ ensures can_insert(dir, prefix, prefixlen) == (result != 0) &*&
+            result != 0 ?
+              table(_lpm, add_rule(dir, init_rule(prefix, prefixlen, value)))
+            :
+              table(_lpm, dir); @*/
 {
-  //@ open rule(_rule, ipv4, plen, route);
   //@ open table(_lpm, dir);
 
-  uint8_t prefixlen = _rule->prefixlen;
-  uint32_t ip = _rule->ipv4;
-  //@ Z d = Z_of_uintN(ip, N32);
+  //@ Z d = Z_of_uintN(prefix, N32);
 
-  uint16_t value = _rule->route;
   uint16_t *lpm_24 = _lpm->lpm_24;
   uint16_t *lpm_long = _lpm->lpm_long;
 
@@ -548,14 +557,14 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 
   //@ assert dir == tables(?map_24, ?map_l, ?long_index);
 
-  //@ lpm_rule new_rule = init_rule(ipv4, prefixlen, value);
+  //@ lpm_rule new_rule = init_rule(prefix, prefixlen, value);
 
   uint32_t mask = build_mask_from_prefixlen(prefixlen);
   //@ Z maskZ = mask32_from_prefixlen(prefixlen);
 
-  uint32_t masked_ip = ip & mask;
-  //@ bitand_def(ip, d, mask, maskZ);
-  //@ bitand_limits(ip, mask, N32);
+  uint32_t masked_ip = prefix & mask;
+  //@ bitand_def(prefix, d, mask, maskZ);
+  //@ bitand_limits(prefix, mask, N32);
   //@ Z masked_ipZ = Z_and(d, maskZ);
   //Show that if two uint32_t are equal, then their respective Z values
   // are also equal
@@ -581,7 +590,6 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 
     // @ assert INVALID != value;
     // @ assert true == valid_entry24(value);
-    // @ assert route == value;
     //@ extract_value_is_value(value);
 
     /*@ list<option<pair<bool, Z> > > updated_map =
@@ -634,7 +642,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
     //flag set to 1, use the stored value as base index, otherwise get a new
     //index and store it in the lpm_24
     uint8_t base_index;
-    uint32_t lpm_24_index = lpm_24_extract_first_index(ip);
+    uint32_t lpm_24_index = lpm_24_extract_first_index(prefix);
     // @ assert lpm_24_index == index24_from_ipv4(d);
     // @ assert lpm_24_index == compute_starting_index_24(new_rule);
 
@@ -670,9 +678,8 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
         // @ assert long_index >= 256;
         printf("No more available index for lpm_long!\n");
         fflush(stdout);
-        //@ close rule(_rule, ipv4, plen, route);
         //@ close table(_lpm, dir);
-        return -1;
+        return 0;
 
       } else {
       //generate next index and store it in lpm_24
@@ -728,7 +735,7 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 
     //The last byte in data is used as the starting offset for lpm_long
     //indexes
-    uint32_t first_index = lpm_long_extract_first_index(ip, prefixlen,
+    uint32_t first_index = lpm_long_extract_first_index(prefix, prefixlen,
                                                         base_index);
 
     uint32_t rule_size = compute_rule_size(prefixlen);
@@ -739,10 +746,8 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 
     // @ assert INVALID != value;
     // @ assert true == valid_entry_long(value);
-    // @ assert route == value;
     //@ extract_value_is_value(value);
-    // @ assert route == extract_value(route);
-    //@ assert some(Z_of_int(route, N16)) == entry_long_mapping(value);
+    //@ assert some(Z_of_int(value, N16)) == entry_long_mapping(value);
 
     /*@ list<option<Z> > updated_map =
                          update_n(map_l, first_index,
@@ -784,6 +789,5 @@ int lpm_update_elem(struct lpm *_lpm, struct rule *_rule)
 
     //@ close table(_lpm, build_tables(new_t_24, new_t_l, new_long_index));
   }
-  //@ close rule(_rule, ipv4, plen, route);
-  return 0;
+  return 1;
 }
