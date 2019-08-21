@@ -50,6 +50,7 @@ let gen_loop_invariant containers =
         | UInt32
         | Int -> ["int " ^ name]
         | EMap (_, _, _, _) -> []
+        | LPM _ -> ["struct lpm* " ^ name]
      )
      containers
      ["unsigned int lcore_id";
@@ -92,6 +93,7 @@ let gen_loop_invariant containers =
                                    ">(_" ^ m ^ ", _" ^ v ^ ", _" ^ ch ^ ")";
                                    "true == forall2(_" ^ v ^ ", _" ^ v ^
                                    "_addrs, (kkeeper)(_" ^ m ^ "_addrs))"]
+        | LPM _ -> ["table(" ^ name ^ ", ?_" ^ name ^ ")";]
      )
      containers
      ["lcore_id == 0";
@@ -110,6 +112,7 @@ let untraced_funs_args containers spaces =
         | UInt -> ["unsigned int " ^ name]
         | UInt32 -> ["uint32_t " ^ name]
         | EMap (_, _, _, _) -> []
+        | LPM _ -> ["struct lpm** " ^ name]
      )
      containers
      ["unsigned int lcore_id";
@@ -127,6 +130,7 @@ let gen_invariant_consume_decl containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_,_)
+        | LPM _
         | DChain _ -> ["*" ^ name ^ " |-> ?_" ^ name ^ " &*& "]
         | Int -> []
         | UInt -> []
@@ -141,6 +145,7 @@ let gen_invariant_consume_decl containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
+        | LPM _
         | DChain _ -> ["_" ^ name]
         | Int
         | UInt
@@ -154,6 +159,7 @@ let gen_invariant_consume_decl containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
+        | LPM _
         | DChain _ -> ["*" ^ name ^ " |-> _" ^ name ^ " &*& "]
         | Int -> []
         | UInt -> []
@@ -174,6 +180,7 @@ let gen_invariant_produce_decl containers =
           | UInt -> ["unsigned int " ^ name]
           | UInt32 -> ["uint32_t " ^ name]
           | EMap (_, _, _, _) -> []
+          | LPM _ -> ["struct lpm** " ^ name]
        )
        containers
        ["unsigned int* lcore_id";
@@ -186,6 +193,7 @@ let gen_invariant_produce_decl containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
+        | LPM _
         | DChain _ -> ["*" ^ name ^ " |-> ?_" ^ name]
         | Int -> []
         | UInt -> []
@@ -200,6 +208,7 @@ let gen_invariant_produce_decl containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
+        | LPM _
         | DChain _ -> ["*" ^ name ^ " |-> _" ^ name]
         | Int -> []
         | UInt -> []
@@ -214,6 +223,7 @@ let gen_invariant_produce_decl containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
+        | LPM _
         | DChain _ -> ["_" ^ name]
         | Int
         | UInt
@@ -239,6 +249,7 @@ let gen_loop_reset_impl containers =
         | UInt -> ["unsigned int " ^ name]
         | UInt32 -> ["uint32_t " ^ name]
         | EMap (_, _, _, _) -> []
+        | LPM _ -> ["struct lpm** " ^ name]
      )
      containers
      ["unsigned int lcore_id";
@@ -255,6 +266,7 @@ let gen_loop_reset_impl containers =
         | UInt -> []
         | UInt32 -> []
         | EMap (_, _, _, _) -> []
+        | LPM _ -> []
      )
      containers ["  *time = restart_time();\n"]) ^ "}"
 
@@ -271,6 +283,7 @@ let gen_loop_invariant_consume_stub containers =
           | UInt -> ["unsigned int " ^ name]
           | UInt32 -> ["uint32_t " ^ name]
           | EMap (_, _, _, _) -> []
+          | LPM _ -> ["struct lpm** " ^ name]
        )
        containers
        ["unsigned int lcore_id";
@@ -302,6 +315,9 @@ let gen_loop_invariant_consume_stub containers =
                        name ^ ", \"" ^
                        name ^ "\");\n"]
           | EMap (_, _, _, _) -> []
+          | LPM _ -> ["  klee_trace_param_ptr(" ^
+                      name ^ ", sizeof(struct lpm*), \"" ^
+                      name ^ "\");\n"]
        )
        containers
        ["  klee_trace_param_i32(lcore_id, \"lcore_id\");\n";
@@ -320,6 +336,7 @@ let gen_loop_invariant_produce_stub containers =
           | UInt -> ["unsigned int " ^ name]
           | UInt32 -> ["uint32_t " ^ name]
           | EMap (_, _, _, _) -> []
+          | LPM _ -> ["struct lpm** " ^ name]
        )
        containers
        ["unsigned int* lcore_id";
@@ -351,6 +368,9 @@ let gen_loop_invariant_produce_stub containers =
                        name ^ ", \"" ^
                        name ^ "\");\n"]
           | EMap (_, _, _, _) -> []
+          | LPM _ -> ["  klee_trace_param_ptr(" ^
+                      name ^ ", sizeof(struct lpm*), \"" ^
+                      name ^ "\");\n"]
        )
        containers
        ["  klee_trace_param_ptr(lcore_id, sizeof(unsigned int), \"lcore_id\");\n";
@@ -396,7 +416,9 @@ let gen_struct containers =
         | Int -> ["  int " ^ name ^ ";\n"]
         | UInt -> ["  unsigned int " ^ name ^ ";\n"]
         | UInt32 -> ["  uint32_t " ^ name ^ ";\n"]
-        | EMap (_, _, _, _) -> [] )
+        | EMap (_, _, _, _) -> []
+        | LPM _ -> ["  struct lpm* " ^ name ^ ";\n"]
+     )
      containers []) ^
   "};\n"
 
@@ -412,7 +434,9 @@ let gen_allocation_proto containers =
         | Int -> ["int " ^ name]
         | UInt -> ["unsigned int " ^ name]
         | UInt32 -> ["uint32_t " ^ name]
-        | EMap (_, _, _, _) -> [] )
+        | EMap (_, _, _, _) -> []
+        | LPM _ -> []
+     )
      containers []) ^
   ")"
 
@@ -455,7 +479,10 @@ let gen_allocation containers =
         | Int
         | UInt
         | UInt32 -> ["  ret->" ^ name ^ " = " ^ name ^ ";\n"]
-        | EMap (_, _, _, _) -> [])
+        | EMap (_, _, _, _) -> []
+        | LPM _ -> ["  ret->" ^ name ^ " = NULL;\n";
+                    abort_on_null ("lpm_allocate(&(ret->" ^ name ^ "))")]
+     )
      containers []) ^
   "#ifdef KLEE_VERIFICATION\n" ^
   (concat_flatten_map ""
@@ -488,7 +515,11 @@ let gen_allocation containers =
         | Int -> []
         | UInt -> []
         | UInt32 -> []
-        | EMap (_, _, _, _) -> [])
+        | EMap (_, _, _, _) -> []
+        | LPM cond ->
+          (if String.equal cond "" then [] else
+             ["  lpm_set_entry_condition(ret->" ^ name ^ ", " ^ cond ^ ");\n"])
+     )
      containers []) ^
   "#endif//KLEE_VERIFICATION\n" ^
   "  allocated_nf_state = ret;\n" ^
@@ -508,7 +539,10 @@ let gen_entry_condition_decls containers =
         | Int -> []
         | UInt -> []
         | UInt32 -> []
-        | EMap (_, _, _, _) -> [] )
+        | EMap (_, _, _, _) -> []
+        | LPM cond -> if String.equal cond "" then [] else
+            ["bool " ^ cond ^ "(uint32_t prefix, int value);\n"]
+     )
      containers [])
 
 let gen_loop_iteration_border_call containers =
@@ -521,8 +555,10 @@ let gen_loop_iteration_border_call containers =
         | Map (_, _, _)
         | Vector (_, _, _)
         | CHT (_, _)
+        | LPM _
         | DChain _ -> ["&allocated_nf_state->" ^ name]
-        | _ -> ["allocated_nf_state->" ^ name])
+        | _ -> ["allocated_nf_state->" ^ name]
+     )
      containers ["lcore_id"; "time"]) ^
   ");\n}\n"
 
@@ -534,6 +570,7 @@ let () =
   fprintf cout "#include \"libvig/containers/map.h\"\n";
   fprintf cout "#include \"libvig/containers/vector.h\"\n";
   fprintf cout "#include \"libvig/containers/cht.h\"\n";
+  fprintf cout "#include \"libvig/containers/lpm-dir-24-8.h\"\n";
   fprintf cout "#include \"libvig/coherence.h\"\n";
   fprintf cout "#include \"libvig/nf_time.h\"\n";
   List.iter (fun incl ->
@@ -572,6 +609,7 @@ let () =
   fprintf cout "#include \"libvig/stubs/containers/double-chain_stub-control.h\"\n";
   fprintf cout "#include \"libvig/stubs/containers/map_stub-control.h\"\n";
   fprintf cout "#include \"libvig/stubs/containers/vector_stub-control.h\"\n";
+  fprintf cout "#include \"libvig/stubs/containers/lpm-dir-24-8_stub-control.h\"\n";
   fprintf cout "#endif//KLEE_VERIFICATION\n";
   fprintf cout "struct State* allocated_nf_state = NULL;\n";
   fprintf cout "%s\n" (gen_entry_condition_decls containers);

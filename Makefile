@@ -70,7 +70,8 @@ autogen:
 	@if [ '$(NF_DIR)' == '.' ]; then \
 	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
 	  if [ -e 'dataspec.ml' ]; then \
-      $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
+	    $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; \
+	  fi \
 	fi
 
 

@@ -183,6 +183,11 @@ fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir) {
   }
 }
 
+fixpoint int lpm_lookup(dir_24_8 dir, int ipv4) {
+  return lpm_dir_24_8_lookup(Z_of_int(ipv4, N32), dir);
+}
+
+
 // ADD ROUTE FUNCTIONS
 fixpoint list<t> update_n<t>(list<t> lst, int start, nat count, t x) {
   switch(count) {

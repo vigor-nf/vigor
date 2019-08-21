@@ -360,7 +360,7 @@ uint16_t lpm_long_extract_first_index(uint32_t data, uint8_t prefixlen,
   return res;
 }
 
-int lpm_allocate(struct lpm ** lpm_out)
+int lpm_allocate(struct lpm **lpm_out)
 //@ requires *lpm_out |-> ?old_lo;
 /*@ ensures result == 0 ?
               *lpm_out |-> old_lo :
@@ -455,10 +455,10 @@ void lpm_free(struct lpm *_lpm)
   free(_lpm);
 }
 
-int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
+int lpm_lookup_elem(struct lpm *_lpm, uint32_t prefix)
 //@ requires table(_lpm, ?dir);
 /*@ ensures table(_lpm, dir) &*&
-            result == lpm_dir_24_8_lookup(Z_of_int(ipv4, N32),dir); @*/
+            result == lpm_dir_24_8_lookup(Z_of_int(prefix, N32),dir); @*/
 {
 
   //@ open table(_lpm, dir);
@@ -469,7 +469,7 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
   //@ assert ushorts(lpm_long, lpm_LONG_MAX_ENTRIES, ?t_l);
 
   //get index corresponding to key for lpm_24
-  uint32_t index = lpm_24_extract_first_index(ipv4);
+  uint32_t index = lpm_24_extract_first_index(prefix);
 
   uint16_t value = lpm_24[index];
   //Prove that the value retrieved by lookup_lpm_24 is the mapped value
@@ -489,15 +489,15 @@ int lpm_lookup_elem(struct lpm *_lpm, uint32_t ipv4)
     //(without the first bit) is 0 <= value <= 0xFF
     //@ valid_next_bucket_long(value, value24);
 
-    //@ bitand_limits(ipv4, 0xFF, N32);
+    //@ bitand_limits(prefix, 0xFF, N32);
     uint8_t extracted_index = (uint8_t)(value & 0xFF);
     //@ long_index_extraction_equivalence(value, value24);
     //@ assert extracted_index == extract24_value(value24);
-    uint16_t index_long = lpm_long_extract_first_index(ipv4, 32,
+    uint16_t index_long = lpm_long_extract_first_index(prefix, 32,
                                                        extracted_index);
     //Show that indexlong_from_ipv4 == compute_starting_index_long when
     //the rule has prefixlen == 32
-    //@ long_index_computing_equivalence_on_prefixlen32(ipv4, extracted_index);
+    //@ long_index_computing_equivalence_on_prefixlen32(prefix, extracted_index);
     uint16_t value_long = lpm_long[index_long];
 
     //Prove that the value retrieved by lookup_lpm_long is the mapped value

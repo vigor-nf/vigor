@@ -7,6 +7,7 @@ open Ir
 let map_struct = Ir.Str ("Map", [])
 let vector_struct = Ir.Str ( "Vector", [] )
 let dchain_struct = Ir.Str ( "DoubleChain", [] )
+let lpm_struct = Ir.Str ("lpm", [])
 
 let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array Uint8;])
 let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
@@ -295,6 +296,23 @@ let common_fun_types =
                     extra_ptr_types = [];
                     lemmas_before = [];
                     lemmas_after = [];};
+   "lpm_allocate", {ret_type = Static Sint32;
+                    arg_types = stt [Ptr (Ptr lpm_struct)];
+                    extra_ptr_types = [];
+                    lemmas_before = [];
+                    lemmas_after = [];};
+   "lpm_update_elem", {ret_type = Static Sint32;
+                       arg_types = stt [Ptr lpm_struct;
+                                        (* it is actually ui32, ui8, ui16*)
+                                        Uint32; Uint16; Uint16];
+                       extra_ptr_types = [];
+                       lemmas_before = [];
+                       lemmas_after = [];};
+   "lpm_lookup_elem", {ret_type = Static Sint32;
+                       arg_types = stt [Ptr lpm_struct; Uint32];
+                       extra_ptr_types = [];
+                       lemmas_before = [];
+                       lemmas_after = [];};
   ]
 
 type map_spec = {
@@ -636,7 +654,8 @@ let loop_invariant_arg_types containers =
        | Int -> Sint32
        | UInt -> Uint32
        | UInt32 -> Uint32
-       | EMap (_, _, _, _) -> Void))@[Uint32; vigor_time_t]
+       | EMap (_, _, _, _) -> Void
+       | LPM _ -> (Ptr (Ptr lpm_struct))))@[Uint32; vigor_time_t]
 
 let loop_invariant_consume_spec containers =
   loop_invariant_consume_spec_impl (loop_invariant_arg_types
@@ -653,7 +672,8 @@ let loop_invariant_produce_spec containers =
          | Int -> Sint32
          | UInt -> Uint32
          | UInt32 -> Uint32
-         | EMap (_, _, _, _) -> Void))@[Ptr Uint32; Ptr vigor_time_t])
+         | EMap (_, _, _, _) -> Void
+         | LPM _ -> (Ptr (Ptr lpm_struct))))@[Ptr Uint32; Ptr vigor_time_t])
   in
   {ret_type = Static Void;
    arg_types = stt linv_prod_arg_types;
@@ -714,6 +734,16 @@ let loop_invariant_produce_spec containers =
                   | UInt
                   | UInt32 -> name ^ " = " ^ (List.nth_exn args i) ^ ";\n"
                   | EMap (_, _, _, _) -> "#error unexpected abstract container\n"
+                  | LPM _ ->
+                    "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^
+                    (tmp_gen (name ^ "_tmp")) ^
+                    ";\n assert table(" ^
+                    (tmp_gen (name ^ "_tmp")) ^ ",?" ^
+                    (tmp_gen ("initial_" ^ name)) ^ ");\n" ^
+                    "initial_" ^ name ^ " = " ^
+                    (tmp_gen ("initial_" ^ name)) ^ ";\n" ^
+                    name ^ "_ptr = " ^
+                    (tmp_gen (name ^ "_tmp")) ^ ";\n"
                 ))) ^
      "\n}@*/\n");
    ];}
@@ -1326,6 +1356,9 @@ let gen_preamble nf_loop containers =
           | UInt
           | UInt32 -> "//@ int " ^ name ^ ";\n"
           | EMap (_, _, _, _) -> "#error only concrete containers at this point"
+          | LPM _ ->
+            "//@ dir_24_8 initial_" ^ name ^ ";\n" ^
+            "//@ struct lpm* " ^ name ^ "_ptr;\n"
         ))) ^
   "//@ option<void*> last_composed_packet = none;\n\
    //@ bool packet_is_complete = false;\n\
@@ -1409,6 +1442,11 @@ let abstract_state_capture containers =
                                 " = emap<" ^ (ityp_name typ) ^ ">(final_" ^ m ^
                                 ", finalizing_final_" ^ v ^ ", final_" ^ h ^
                                 ");\n"
+       | LPM _ -> "assert table(" ^
+                  name ^ "_ptr, ?" ^
+                  ("final_" ^ name) ^ ");\n" ^
+                  "dir_24_8 " ^
+                  name ^ " = initial_" ^ name ^ ";\n"
      )))
 
 let fun_types containers records =

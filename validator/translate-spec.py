@@ -13,6 +13,8 @@ emap = {'name' : 'emap',
         'modifying' : ['refresh_idx', 'add', 'expire_all', 'erase']}
 vector = {'name' : 'vector',
           'modifying' : ['set']}
+lpm = {'name' : 'lpm',
+       'modifying' : []}
 headerStack = 'recv_headers'
 dummyCnt = 0
 objects = {}
