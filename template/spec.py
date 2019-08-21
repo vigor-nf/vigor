@@ -57,6 +57,6 @@ if 1 == 2:
 # ether(h1, saddr=...) - this will enforce the same ethernet header as h1,
 # but with an arbitrary saddr
 return ([1 - received_on_port],
-  [ether(h1, saddr=..., daddr=...),
-   ipv4(h2, cksum=..., saddr=..., daddr=...),
-   tcpudp(src_port=..., dst_port=...)])
+        [ether(h1, saddr=..., daddr=...),
+         ipv4(h2, cksum=..., saddr=..., daddr=...),
+         tcpudp(src_port=..., dst_port=...)])

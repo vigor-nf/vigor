@@ -1,0 +1,3 @@
+objConstructors = {}
+typeConstructors = {}
+stateObjects = {}
