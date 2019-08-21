@@ -294,7 +294,11 @@ Table 2:
 - These numbers are obtained using their corresponding targets as mentioned in [Vigor NFs](#vigor-nfs)
 
 Table 3:
-- This is an outdated version of Table 8; use `patch -R < optimize.patch` in each NF's folder to revert the optimization if you want to reproduce these numbers.
+- This is an outdated version of Table 8; use `patch -R < optimize.patch` in each NF's folder to revert the optimization if you want to reproduce these numbers;
+  note that they do not validate any more, sometimes because the specs assume that the NF always expire flows, but the unoptimized NFs do not,
+  sometimes because the types of variables changed a bit.
+  Thus, we extrapolated the time of the "valid" and "assertion failed" traces to the "type mismatch" traces,
+  since type mismatches take almost no time to detect compared to the time it takes to verify a trace.
 
 Table 4:
 - The NF bugs were discovered during development
