@@ -126,6 +126,7 @@ void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out);
 /*@ ensures *val_out |-> ?vo &*&
             vectorp<t>(vector, entp, update(index, pair(val, 0.0), values), addrs) &*&
             vo == nth(index, addrs) &*&
+            vo != 0 &*&
             (frac == 0.0 ? true : [frac]entp(vo, val)); @*/
 
 void vector_return/*@ <t> @*/(struct Vector* vector, int index, void* value);

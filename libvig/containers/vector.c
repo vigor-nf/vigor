@@ -36,6 +36,7 @@ struct Vector {
                             char* data) =
     malloc_block_Vector(vector) &*&
     vector->data |-> data &*&
+    (void*)0 < data &*&
     vector->elem_size |-> el_size &*&
     0 < el_size &*& el_size < 4096 &*&
     vector->capacity |-> cap &*&
@@ -70,6 +71,19 @@ struct Vector {
   @*/
 
 /*@ predicate ptrs_eq(char* p1, int l, char* p2) = p1 == p2 + l;
+  @*/
+
+/*@
+  lemma void gen_vector_address_nonnulls(void* data, int el_size, nat cap)
+  requires data > 0 &*& 0 <= el_size;
+  ensures true == forall(gen_vector_addrs_impl_fp(data, el_size, cap), (neq)((void*)0));
+  {
+    switch(cap) {
+      case zero:
+      case succ(n):
+        gen_vector_address_nonnulls(data + el_size, el_size, n);
+    }
+  }
   @*/
 
 /*@
@@ -277,9 +291,11 @@ void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out)
 /*@ ensures *val_out |-> ?vo &*&
             vectorp<t>(vector, entp, update(index, pair(val, 0.0), values), addrs) &*&
             vo == nth(index, addrs) &*&
+            vo != 0 &*&
             (frac == 0.0 ? true : [frac]entp(vo, val)) ; @*/
 {
   //@ open vectorp<t>(vector, entp, values, addrs);
+  //@ gen_vector_address_nonnulls(vector->data, vector->elem_size, nat_of_int(length(values)));
   //@ extract_by_index<t>(vector->data, index);
   //@ mul_mono_strict(index, length(values), vector->elem_size);
   //@ mul_bounds(index, length(values), vector->elem_size, 4096);
