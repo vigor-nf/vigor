@@ -51,7 +51,7 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 
 | NF                  | Folder              | Description                            |
 | ------------------- | ------------------- | -------------------------------------- |
-| Vigor NOP           | `unverified-nop`    | Vigor-based unverified no-op forwarder |
+| Vigor NOP           | `vignop`            | Vigor-based unverified no-op forwarder |
 | Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
 | Click firewall      | `click-fw`          | Click-based firewall                   |
 | Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
@@ -100,6 +100,7 @@ For instance:
 
 Besides the NF folders mentioned above, the repository contains:
 - `.git*`: Git-related files
+- `.clang-format`: Settings file for the clang-format code formatter
 - `.travis*`: Travis-related files for continuous integration
 - `Docker*` Docker-related files to build an image
 - `Makefile*`: Makefiles for the NFs
@@ -294,7 +295,11 @@ Table 2:
 - These numbers are obtained using their corresponding targets as mentioned in [Vigor NFs](#vigor-nfs)
 
 Table 3:
-- This is an outdated version of Table 8; use `patch -R < optimize.patch` in each NF's folder to revert the optimization if you want to reproduce these numbers.
+- This is an outdated version of Table 8; use `patch -R < optimize.patch` in each NF's folder to revert the optimization if you want to reproduce these numbers;
+  note that they do not validate any more, sometimes because the specs assume that the NF always expire flows, but the unoptimized NFs do not,
+  sometimes because the types of variables changed a bit.
+  Thus, we extrapolated the time of the "valid" and "assertion failed" traces to the "type mismatch" traces,
+  since type mismatches take almost no time to detect compared to the time it takes to verify a trace.
 
 Table 4:
 - The NF bugs were discovered during development
