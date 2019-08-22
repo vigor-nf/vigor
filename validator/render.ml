@@ -25,11 +25,11 @@ let render_conditions assumptions ~is_assert =
            {v=Bool false;t=_},
            {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
     | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) ->
-      List.map (List.concat (List.map [x; y] ~f:flatten_assumption))
-        ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}) @
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, y);t=Boolean})
     | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) ->
-      List.map (List.concat (List.map [x; y] ~f:flatten_assumption))
-        ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}) @
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, y);t=Boolean})
     | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (And, x, y);t=_}) ->
       flatten_assumption {v=Bop (Or,
                                  {v=Bop (Eq, {v=Bool false;t=Boolean}, x);
