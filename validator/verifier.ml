@@ -7,7 +7,7 @@ type verification_outcome =
   | Invalid_rez of string
 
 let verify_ir ir verifast fname outf proj_root lino_fname =
-  Render.render_ir ir fname ~render_assertions:false;
+  Render.render_ir ir fname ~render_assertions:true;
   let _ = Sys.command (verifast ^ " -c -prover z3v4.5 -I " ^ proj_root ^
                        " -I ../libvig/stubs/dpdk" ^
                        " " ^ fname ^ " > " ^ outf)

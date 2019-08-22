@@ -365,7 +365,8 @@ int lpm_allocate(struct lpm **lpm_out)
 /*@ ensures result == 0 ?
               *lpm_out |-> old_lo :
               *lpm_out |-> ?new_lo &*&
-              table(new_lo, dir_init()); @*/
+              table(new_lo, dir_init()) &*&
+              result == 1; @*/
 {
   struct lpm* _lpm = (struct lpm*) malloc(sizeof(struct lpm));
   if (_lpm == 0) {

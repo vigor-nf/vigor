@@ -48,7 +48,8 @@ int lpm_allocate(struct lpm **lpm_out);
 /*@ ensures result == 0 ?
               *lpm_out |-> old_lo :
               *lpm_out |-> ?new_lo &*&
-              table(new_lo, dir_init()); @*/
+              table(new_lo, dir_init()) &*&
+              result == 1; @*/
 
 void lpm_free(struct lpm *_lpm);
 //@ requires table(_lpm, _);

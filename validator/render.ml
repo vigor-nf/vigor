@@ -618,7 +618,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
           result.post_statements hist_symbs
           result.args_post_conditions cmplxs in
       let conditions =
-        result.post_statements@(List.map assignments ~f:eq_cond_to_tterm)
+        (* result.post_statements@ *)(List.map assignments ~f:eq_cond_to_tterm)
       in
       let args_post_conds_tterms =
         List.map result.args_post_conditions ~f:eq_cond_to_tterm
@@ -629,7 +629,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
                   ~f:(fun c -> term_eq s.v c.v)))
       in
       let args_conditions =
-        render_args_post_conditions ~is_assert:false result.args_post_conditions
+        render_args_post_conditions ~is_assert:true result.args_post_conditions
       in
       {conditions;output_check;args_conditions}
     in
@@ -637,7 +637,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
     let condition_sets =
       List.map rendered_results ~f:(fun r -> Set.Poly.of_list r.conditions)
     in
-    let common_conditions = 
+    let common_conditions =
       match List.reduce condition_sets ~f:Set.inter with
       | Some conds -> Set.to_list conds
       | None -> failwith "Not possible, there must be at least one result"
@@ -645,7 +645,6 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
     (render_conditions common_conditions ~is_assert:false) ^ "\n" ^
     (do_render rendered_results)
   in
-
   let rec render_ret_conditions groups =
     match groups with
     | (retval, results) :: tl ->
@@ -658,7 +657,6 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
         (render_ret_conditions tl)
     | [] -> "{\n//@ assert(false);\n}\n"
   in
-
   (* We only have different return values when the return values are constants,
      e.g. 0 or 1. *)
   let all_const = List.for_all results ~f:(fun r -> is_constt r.ret_val) in
