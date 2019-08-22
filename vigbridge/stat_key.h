@@ -2,7 +2,7 @@
 #define _STAT_KEY_H_INCLUDED_
 
 #include <stdint.h>
-#include "libvig/stubs/ether_addr.h"
+#include <rte_ether.h>
 
 struct StaticKey {
   struct ether_addr addr;

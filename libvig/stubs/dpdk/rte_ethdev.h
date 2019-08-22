@@ -2,14 +2,22 @@
 
 #include <inttypes.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "libvig/stubs/core_stub.h"
-#include "libvig/packet-io.h"
-#include "libvig/stubs/packet-io_stub-control.h"
-
+#include <rte_byteorder.h>
 #include <rte_mbuf.h>
+#include <rte_mbuf_ptype.h>
+#include <rte_memory.h>
+#include <rte_ethdev.h>
+
+#include "libvig/verified/packet-io.h"
+#include "libvig/stubs/mbuf_content.h"
+#include "libvig/stubs/str-descr.h"
+#include "libvig/stubs/verified/packet-io_stub-control.h"
 
 #include <klee/klee.h>
+
 
 struct rte_eth_link {
   uint32_t link_speed;
@@ -145,7 +153,87 @@ static inline uint16_t rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
   klee_assert(nb_pkts == 1);  // same
 
   struct rte_mempool *pool = devices_rx_mempool[port_id];
-  stub_core_mbuf_create(port_id, pool, rx_pkts);
+  uint16_t priv_size = rte_pktmbuf_priv_size(pool);
+  uint16_t mbuf_size = sizeof(struct rte_mbuf) + priv_size;
+  uint16_t buf_len = rte_pktmbuf_data_room_size(pool);
+
+  *rx_pkts = rte_mbuf_raw_alloc(pool);
+  if (*rx_pkts == NULL) {
+    return false;
+  }
+
+  struct rte_mbuf *buf_symbol = (struct rte_mbuf *)malloc(pool->elt_size);
+  if (buf_symbol == NULL) {
+    rte_pktmbuf_free(*rx_pkts);
+    return false;
+  }
+
+  // Make the packet symbolic
+  klee_make_symbolic(buf_symbol, pool->elt_size, "buf_value");
+  memcpy(*rx_pkts, buf_symbol, pool->elt_size);
+  free(buf_symbol);
+
+  // Explicitly make the content symbolic - validator depends on an user_buf
+  // symbol for the proof
+  klee_assert(MBUF_MIN_SIZE <= pool->elt_size);
+  void *buf_content_symbol = malloc(pool->elt_size);
+  if (buf_content_symbol == NULL) {
+    rte_pktmbuf_free(*rx_pkts);
+    return false;
+  }
+  klee_make_symbolic(buf_content_symbol, pool->elt_size, "user_buf");
+  memcpy((char *)*rx_pkts + mbuf_size, buf_content_symbol,
+         MBUF_MIN_SIZE);
+  free(buf_content_symbol);
+
+  // We do not support chained mbufs for now, make sure the NF doesn't touch
+  // them
+  struct rte_mbuf *buf_next = (struct rte_mbuf *)malloc(pool->elt_size);
+  if (buf_next == NULL) {
+    rte_pktmbuf_free(*rx_pkts);
+    return false;
+  }
+  klee_forbid_access(buf_next, pool->elt_size, "buf_next");
+
+  uint16_t packet_length = klee_int("pkt_len");
+  uint16_t data_length = klee_int("data_len");
+
+  klee_assume(data_length <= packet_length);
+  klee_assume(sizeof(struct ether_hdr) <= data_length);
+
+  // Keep concrete values for what a driver guarantees
+  // (assignments are in the same order as the rte_mbuf declaration)
+  (*rx_pkts)->buf_addr = (char *)(*rx_pkts) + mbuf_size;
+  (*rx_pkts)->buf_iova = (rte_iova_t)(*rx_pkts)->buf_addr; // we assume VA = PA
+  // TODO: make data_off symbolic (but then we get symbolic pointer addition...)
+  // Alternative: Somehow prove that the code never touches anything outside of
+  // the [data_off, data_off+data_len] range...
+  (*rx_pkts)->data_off = 0; // klee_range(0, pool->elt_size - MBUF_MIN_SIZE
+                          // , "data_off");
+  (*rx_pkts)->refcnt = 1;
+  (*rx_pkts)->nb_segs =
+      1; // TODO do we want to make a possibility of multiple packets? Or we
+         // could just prove the NF never touches this...
+  (*rx_pkts)->port = device;
+  (*rx_pkts)->ol_flags = 0;
+  // packet_type is symbolic, NFs should use the content of the packet as the
+  // source of truth
+  (*rx_pkts)->pkt_len = packet_length;
+  (*rx_pkts)->data_len = data_length;
+  // vlan_tci is symbolic
+  // hash is symbolic
+  // vlan_tci_outer is symbolic
+  (*rx_pkts)->buf_len = (uint16_t)buf_len;
+  // timestamp is symbolic
+  (*rx_pkts)->udata64 = 0;
+  (*rx_pkts)->pool = pool;
+  (*rx_pkts)->next = buf_next;
+  // tx_offload is symbolic
+  (*rx_pkts)->priv_size = priv_size;
+  // timesync is symbolic
+  // seqn is symbolic
+
+  rte_mbuf_sanity_check(*rx_pkts, 1 /* is head mbuf */);
 
   set_packet_receive_success(klee_int("received_a_packet"));
 
@@ -163,41 +251,12 @@ static inline uint16_t rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
 
   packet_send((**tx_pkts).buf_addr, port_id);
 
-  stub_core_mbuf_free(*tx_pkts);
+  // Undo our pseudo-chain trickery
+  klee_allow_access((*tx_pkts)->next, (*tx_pkts)->pool->elt_size);
+  free((*tx_pkts)->next);
+  (*tx_pkts)->next = NULL;
+  rte_mbuf_raw_free((*tx_pkts));
+
   return 1;
 }
 
-// TODO: this belongs to rte_mbuf.h
-// but is here to present a single dpdk_stub API.
-static inline struct rte_mbuf *
-rte_pktmbuf_clone(struct rte_mbuf *frame, struct rte_mempool *clone_pool) {
-  struct rte_mbuf *copy;
-  bool success = stub_core_mbuf_create(frame->port, clone_pool, &copy);
-  if (!success)
-    return NULL;
-  // struct rte_mbuf* copy =malloc(clone_pool->elt_size);//
-  // rte_mbuf_raw_alloc(clone_pool);
-
-  /* memcpy(copy, frame, sizeof(struct rte_mbuf)); */
-  /* struct rte_mbuf* buf_next = (struct rte_mbuf*)
-   * malloc(clone_pool->elt_size); */
-  /* if (buf_next == NULL) { */
-  /* 	rte_pktmbuf_free(copy); */
-  /* 	return false; */
-  /* } */
-  /* copy->next = buf_next; */
-  /* klee_forbid_access(copy->next, clone_pool->elt_size, "clone_buf_next"); */
-
-  packet_clone(frame->buf_addr, &copy->buf_addr);
-  return copy;
-}
-/**
- * Retrieve the contextual information of an Ethernet device.
- *
- * @param port_id
- *   The port identifier of the Ethernet device.
- * @param dev_info
- *   A pointer to a structure of type *rte_eth_dev_info* to be filled with
- *   the contextual information of the Ethernet device.
- */
-void rte_eth_dev_info_get(uint16_t port_id, struct rte_eth_dev_info *dev_info);

@@ -2,6 +2,9 @@
 #define _PACKET_IO_STUB_CONTROL_H_INCLUDED_
 #include "libvig/stubs/containers/str-descr.h"
 
+// kinda stupid place for this but it has to be somewhere
+#define MBUF_MIN_SIZE (sizeof(struct ether_hdr) + sizeof(ipv4_hdr) + sizeof(tcpudp_hdr))
+
 typedef bool (*chunk_constraint)(void *);
 
 void set_packet_receive_success(bool received);

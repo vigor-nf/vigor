@@ -25,45 +25,6 @@ let ipv4_hdr_struct = Ir.Str ("ipv4_hdr", ["version_ihl", Uint8;
                                            "dst_addr", Uint32;])
 let tcpudp_hdr_struct = Ir.Str ("tcpudp_hdr", ["src_port", Uint16;
                                                "dst_port", Uint16])
-let tcp_hdr_struct = Ir.Str ("tcp_hdr", ["src_port", Uint16;
-                                         "dst_port", Uint16;
-                                         "sent_seq", Uint32;
-                                         "recv_ack", Uint32;
-                                         "data_off", Uint8;
-                                         "tcp_flags", Uint8;
-                                         "rx_win", Uint16;
-                                         "cksum", Uint16;
-                                         "tcp_urp", Uint16;])
-
-let stub_mbuf_content_struct = Ir.Str ( "stub_mbuf_content",
-                                        ["ether", ether_hdr_struct;
-                                         "ipv4", ipv4_hdr_struct;
-                                         "tcp", tcp_hdr_struct;])
-
-let rte_mempool_struct = Ir.Str ( "rte_mempool", [] )
-let rte_mbuf_struct = Ir.Str ( "rte_mbuf",
-                               ["buf_addr", Ptr stub_mbuf_content_struct;
-                                "buf_iova", Uint64;
-                                "data_off", Uint16;
-                                "refcnt", Uint16;
-                                "nb_segs", Uint16;
-                                "port", Uint16;
-                                "ol_flags", Uint64;
-                                "packet_type", Uint32;
-                                "pkt_len", Uint32;
-                                "data_len", Uint16;
-                                "vlan_tci", Uint16;
-                                "hash", Uint32;
-                                "vlan_tci_outer", Uint16;
-                                "buf_len", Uint16;
-                                "timestamp", Uint64;
-                                "udata64", Uint64;
-                                "pool", Ptr rte_mempool_struct;
-                                "next", Ptr Void;
-                                "tx_offload", Uint64;
-                                "priv_size", Uint16;
-                                "timesync", Uint16; 
-                                "seqn", Uint32] )
 
 let noop _ = ""
 
@@ -290,12 +251,6 @@ let common_fun_types =
                    extra_ptr_types = [];
                    lemmas_before = [];
                    lemmas_after = [];};
-   "packet_clone", {ret_type = Static Void;
-                    arg_types = stt [Ptr Sint8;
-                                     Ptr (Ptr Sint8)];
-                    extra_ptr_types = [];
-                    lemmas_before = [];
-                    lemmas_after = [];};
    "lpm_allocate", {ret_type = Static Sint32;
                     arg_types = stt [Ptr (Ptr lpm_struct)];
                     extra_ptr_types = [];

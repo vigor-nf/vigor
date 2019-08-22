@@ -33,7 +33,6 @@ $(error Please use the Vigor nf_time header instead of clock_gettime)
 endif
 
 # Default values for arguments
-NF_AUTOGEN_SRCS += $(SELF_DIR)/libvig/stubs/ether_addr.h
 NF_LAYER ?= 2
 NF_BENCH_NEEDS_REVERSE_TRAFFIC ?= false
 

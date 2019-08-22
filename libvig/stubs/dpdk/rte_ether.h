@@ -3,14 +3,18 @@
 #define RTE_ETHER_H
 
 #include <stdint.h>
+
+struct ether_addr {
+  uint8_t addr_bytes[6];
+};
+
+// Our current codegen is a bit primitive and doesn't like this
+#ifndef CODEGEN
 #include <stdio.h>
 
 #define ETHER_TYPE_IPv4 0x0800
 #define ETHER_MAX_LEN 1518
 
-struct ether_addr {
-  uint8_t addr_bytes[6];
-};
 
 struct ether_hdr {
   struct ether_addr d_addr;
@@ -26,4 +30,5 @@ static void ether_format_addr(char *buf, uint16_t size,
            eth_addr->addr_bytes[5]);
 }
 
+#endif
 #endif

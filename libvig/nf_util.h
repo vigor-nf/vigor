@@ -8,13 +8,12 @@
 #include <rte_mbuf.h>
 #include <rte_mbuf_ptype.h>
 #include <rte_ether.h>
+#include <rte_ethdev.h>
 #include <rte_ip.h>
 #include <rte_tcp.h>
 #include <rte_udp.h>
-#include "libvig/packet-io.h"
-#include "libvig/tcpudp.h"
-#include "rte_ethdev.h"
-#include "libvig/stubs/core_stub.h"
+#include "libvig/verified/packet-io.h"
+#include "libvig/verified/tcpudp_hdr.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "libvig/stubs/containers/str-descr.h"

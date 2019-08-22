@@ -75,9 +75,4 @@ void packet_free(void *p);
 /*@ requires packetp(p, _, nil); @*/
 /*@ ensures true; @*/
 
-void packet_clone(void *src, void **clone);
-/*@ requires packetp(src, ?unread, ?mc) &*& *clone |-> _; @*/
-/*@ ensures packetp(src, unread, mc) &*&
-            *clone |-> ?p &*& packetp(p, unread, mc); @*/
-
 #endif // _PACKET_IO_H_INCLUDED_

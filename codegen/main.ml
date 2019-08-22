@@ -448,22 +448,18 @@ let gen_str_field_descrs_decl compinfo =
   "[" ^ (string_of_int nested_descrs_count) ^ "];"
 
 let gen_log_fun_decl compinfo =
-  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj);"
-
-let gen_log_fun compinfo =
-  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
-  "{\n" ^
-  "  NF_DEBUG(\"{\");\n" ^
-  (String.concat "\n" (List.map (fun {fname;ftype;_} ->
+  "#define " ^ (log_fun_name compinfo) ^ "(obj, p);\n"
+  "  p(\"{\"); \\\n" ^
+  (String.concat "\\\n" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (nest_str, _) ->
-         "  NF_DEBUG(\"" ^ fname ^ ":\");\n" ^
+         "  p(\"" ^ fname ^ ":\");\n" ^
          "  " ^ (log_fun_name nest_str) ^ "(&obj->" ^ fname ^ ");"
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            if 0L < i then
-             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
+             "  p(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
              fname ^ "[" ^ current ^ "]" ^ ");\n" ^
              (arr_fields (Int64.sub i 1L))
            else ""
@@ -473,15 +469,10 @@ let gen_log_fun compinfo =
          failwith "An of unsupported array count " ^
          (P.sprint ~width:100 (d_type () ftype))
        | _ ->
-         "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
+         "  p(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
      ) compinfo.cfields)) ^ "\n" ^
-  "  NF_DEBUG(\"}\");\n" ^
+  "  p(\"}\");\\\n" ^
   "}"
-
-let gen_log_fun_dummy compinfo =
-  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
-  "{\n  IGNORE(obj);\n}"
-
 
 
 let fill_impl_file compinfo impl_fname header_fname =
@@ -495,12 +486,6 @@ let fill_impl_file compinfo impl_fname header_fname =
   ignore (P.fprintf cout "#else//KLEE_VERIFICATION\n\n");
   ignore (P.fprintf cout "%s\n\n" (gen_hash compinfo));
   ignore (P.fprintf cout "#endif//KLEE_VERIFICATION\n\n");
-  ignore (P.fprintf cout "#ifdef ENABLE_LOG\n");
-  ignore (P.fprintf cout "#include \"libvig/nf_log.h\"\n");
-  ignore (P.fprintf cout "%s\n\n" (gen_log_fun compinfo));
-  ignore (P.fprintf cout "#  else//ENABLE_LOG\n");
-  ignore (P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo));
-  ignore (P.fprintf cout "#endif//ENABLE_LOG\n\n");
   close_out cout;
   ()
 

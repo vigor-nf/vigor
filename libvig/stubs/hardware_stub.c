@@ -115,7 +115,7 @@ static void stub_device_start(struct stub_device *dev) {
   // need it forward, to make sure packet_receive args are the same in both
   // calls
   uint32_t packet_len =
-      sizeof(struct stub_mbuf_content); // TODO: make length symbolic
+      MBUF_MIN_SIZE; // TODO: make length symbolic
   uint32_t data_len = packet_len;
   if (!received) {
     // no packet
@@ -145,13 +145,12 @@ static void stub_device_start(struct stub_device *dev) {
   uint64_t wb0 =
       0b0000000000000000000000000000000010000000000000000000000000000000;
 
-  struct stub_mbuf_content *mbuf_content =
-      malloc(sizeof(struct stub_mbuf_content));
+  void *mbuf_content = malloc(MBUF_MIN_SIZE);
   if (mbuf_content == NULL) {
     klee_abort();
   }
   // NOTE: validator depends on this specific name, "user_buf"
-  klee_make_symbolic(mbuf_content, sizeof(struct stub_mbuf_content),
+  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE,
                      "user_buf");
 
 #  if __BYTE_ORDER == __BIG_ENDIAN
@@ -2440,7 +2439,7 @@ void stub_hardware_reset_receive(uint16_t device) {
   descr[0] = dev->old_mbuf_addr;
   descr[1] = 0;
 
-  memset((char *)descr[0], 0, sizeof(struct stub_mbuf_content));
+  memset((char *)descr[0], 0, MBUF_MIN_SIZE);
 
   rx_called = false;
   tx_called = false;

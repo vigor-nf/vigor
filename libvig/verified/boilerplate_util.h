@@ -3,7 +3,6 @@
 
 #include <stdint.h>
 #include <limits.h>
-#include "libvig/ignore.h"
 
 //@ fixpoint int crc32_hash(int acc, int x);
 unsigned __builtin_ia32_crc32si(unsigned acc, unsigned int x);
@@ -56,7 +55,7 @@ static inline void vigor_note(int cond) {
   klee_assume(cond);
 }
 #else  // KLEE_VERIFICATION
-static inline void vigor_note(int cond) { IGNORE(cond); }
+static inline void vigor_note(int cond) { (uintptr_t) cond; }
 #endif // KLEE_VERIFICATION
 
 #define NF_STATE(name, type, capacity, key_type, val_type, lower_bound,        \

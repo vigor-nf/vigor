@@ -118,8 +118,7 @@ KERNEL_INCLUDES := -I $(KERNEL_DIR)
 # For DSOS debug output on the VGA buffer
 KERNEL_DEFS := -DDSOS_DEBUG
 
-OTHER_INCLUDES := -I $(STUBS_DIR) -I $(SELF_DIR)/libvig \
-                  --include $(SELF_DIR)/libvig/misc_defs.h
+OTHER_INCLUDES := -I $(STUBS_DIR) -I $(SELF_DIR)/libvig
 
 C_SRCS = $(NF_FILES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) \
          $(STUBS_SRCS) $(KERNEL_SRCS)

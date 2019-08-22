@@ -195,9 +195,3 @@ uint32_t packet_get_unread_length(void *p) {
   klee_assert(global_tot_len_borrowed <= global_packet_len);
   return (uint32_t)(global_packet_len - global_tot_len_borrowed);
 }
-
-void packet_clone(void *src, void **clone) {
-  klee_trace_ret();
-  klee_trace_param_u64((uint64_t)src, "src");
-  klee_trace_param_ptr_directed(clone, sizeof(void *), "clone", TD_OUT);
-}
