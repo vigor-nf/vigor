@@ -51,7 +51,7 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 
 | NF                  | Folder              | Description                            |
 | ------------------- | ------------------- | -------------------------------------- |
-| Vigor NOP           | `unverified-nop`    | Vigor-based unverified no-op forwarder |
+| Vigor NOP           | `vignop`            | Vigor-based unverified no-op forwarder |
 | Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
 | Click firewall      | `click-fw`          | Click-based firewall                   |
 | Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
@@ -100,6 +100,7 @@ For instance:
 
 Besides the NF folders mentioned above, the repository contains:
 - `.git*`: Git-related files
+- `.clang-format`: Settings file for the clang-format code formatter
 - `.travis*`: Travis-related files for continuous integration
 - `Docker*` Docker-related files to build an image
 - `Makefile*`: Makefiles for the NFs
