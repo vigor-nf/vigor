@@ -24,7 +24,13 @@ void nf_init(void) {
   if (state == NULL) {
     rte_exit(EXIT_FAILURE, "Not enough memory for state");
   }
-  // TODO: add routes
+
+  for (uint32_t n = 0; n < 128; n++) {
+    lpm_update_elem(state->lpm, n << 24, 8, 1);
+  }
+  for (uint32_t n = 0; n < 128; n++) {
+    lpm_update_elem(state->lpm, n, 32, 1);
+  }
 }
 
 int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
