@@ -47,12 +47,4 @@ void ether_addr_allocate(void* obj);
   p("addr_bytes[5]: %d", obj->addr_bytes[5]); \
   p("}");
 
-#ifdef KLEE_VERIFICATION
-#  include <klee/klee.h>
-#  include "libvig/model/str-descr.h"
-
-extern struct str_field_descr ether_addr_descrs[1];
-extern struct nested_field_descr ether_addr_nests[0];
-#endif//KLEE_VERIFICATION
-
 #endif //_ETHER_ADDR_H_INCLUDED_

@@ -542,6 +542,7 @@ let traverse_globals (f : file) : unit =
     match g with
     (* don't try to generate dpdk or libc headers *)
     | GCompTag (_, loc) when contains loc.file "dpdk/rte_" -> ()
+    | GCompTag (_, loc) when contains loc.file "/usr/lib" -> ()
     | GCompTag (_, loc) when contains loc.file "/usr/include" -> ()
     | GCompTag (ifo, loc) ->
       let header_fname = loc.file ^ ".gen.h" in

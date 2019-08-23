@@ -607,6 +607,7 @@ let () =
   fprintf cout "#include <stdlib.h>\n";
   fprintf cout "#ifdef KLEE_VERIFICATION\n";
   fprintf cout "#include \"libvig/models/verified/double-chain-control.h\"\n";
+  fprintf cout "#include \"libvig/models/verified/ether.h\"\n";
   fprintf cout "#include \"libvig/models/verified/map-control.h\"\n";
   fprintf cout "#include \"libvig/models/verified/vector-control.h\"\n";
   fprintf cout "#include \"libvig/models/verified/lpm-dir-24-8-control.h\"\n";

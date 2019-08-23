@@ -14,8 +14,8 @@
 #include <cmdline_parse_ipaddr.h>
 
 #include "nf.h"
-#include "libvig/nf_util.h"
-#include "libvig/nf_log.h"
+#include "nf-util.h"
+#include "nf-log.h"
 
 const uint32_t DEFAULT_EXP_TIME = 300000000; // microseconds
 const uint32_t DEFAULT_CAPACITY = 128;       // MAC addresses

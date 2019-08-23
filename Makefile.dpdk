@@ -167,7 +167,7 @@ VERIF_DEFS := -D_GNU_SOURCE -DKLEE_VERIFICATION
 # Number of devices
 VERIF_DEFS += -DSTUB_DEVICES_COUNT=$(NF_DEVICES)
 # NF base
-VERIF_FILES := $(SELF_DIR)/nf.c $(SELF_DIR)/nf-util.c
+VERIF_FILES := $(SELF_DIR)/nf*.c
 # Specific NF
 VERIF_FILES += $(NF_FILES) loop.c
 # Models
