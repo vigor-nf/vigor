@@ -41,7 +41,7 @@ There are currently five Vigor NFs:
 
 | NF            | Folder      | Description                                                                                                                         |
 | ------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://ieeexplore.ieee.org/document/6991462) sections 8.7 and 8.8 |
+| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://ieeexplore.ieee.org/document/6991462) sections 8.7 and 8.8         |
 | Firewall      | `vigfw`     | Firewall whose specification we invented                                                                                            |
 | Load balancer | `viglb`     | Load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)                                               |
 | NAT           | `vignat`    | NAT according to [RFC 3022](https://www.ietf.org/rfc/rfc3022.txt)                                                                   |
@@ -51,12 +51,12 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 
 | NF                  | Folder              | Description                            |
 | ------------------- | ------------------- | -------------------------------------- |
-| Vigor NOP           | `vignop`            | Vigor-based unverified no-op forwarder |
+| Vigor no-op         | `vignop`            | Vigor-based no-op forwarder            |
 | Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
 | Click firewall      | `click-fw`          | Click-based firewall                   |
 | Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
 | Click NAT           | `click-nat`         | Click-based NAT                        |
-| Click no-op         | `click-nop`         | Click-based no-op (rewrites headers)   |
+| Click no-op         | `click-nop`         | Click-based no-op forwarder            |
 | Moonpol             | `moonpol`           | Libmoon-based traffic policer          |
 
 The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true` when running the benchmark targets (see table below).
@@ -64,25 +64,25 @@ The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environme
 
 Pick the NF you want to work with by `cd`-ing to its folder, then use one of the following `make` targets:
 
-| Target(s)                  | Description                                 | Expected duration                  |
-| -------------------------- | ------------------------------------------  | ---------------------------------- |
-| Default                    | Compile the NF                              | <1min                              |
-| `run`                      | Run the NF using recommended arguments      | <1min to start (stop with Ctrl+C)  |
-| `symbex validate`          | Verify the NF with DPDK models              | <1min to symbex, <1h to validate   |
-| `symbex-withdpdk validate` | Verify the NF with hardware and OS models   | <1h to symbex, hours to validate   |
-| `symbex-withdsos validate` | Verify the NF with hardware models on DSOS  | <1h to symbex, hours to validate   |
-| `count-loc`                | Count LoC in the NF                         | <1min                              |
-| `count-spec-loc`           | Count LoC in the specification              | <1min                              |
-| `count-dsos-loc`           | Count LoC in the DSOS                       | <1min                              |
-| `count-libvig-loc`         | Count LoC in libVig                         | <1min                              |
-| `count-dpdk-loc`           | Count LoC in DPDK (not drivers)             | <1min                              |
-| `count-ixgbe-loc`          | Count LoC in the ixgbe driver               | <1min                              |
-| `count-uclibc-loc`         | Count LoC in KLEE-uClibc                    | <1min                              |
-| `benchmark-throughput`     | Benchmark the NF's throughput               | <15min                             |
-| `benchmark-latency`        | Benchmark the NF's latency                  | <5min                              |
-| `dsos-iso`                 | Build a DSOS ISO image runnable in a VM     | <1min                              |
-| `dsos-multiboot1`          | Build a DSOS ISO image suitable for netboot | <1min                              |
-| `dsos-run`                 | Build and run DSOS in a qemu VM             | <1min to start                     |
+| Target(s)                  | Description                                       | Expected duration                  |
+| -------------------------- | ------------------------------------------------- | ---------------------------------- |
+| Default                    | Compile the NF                                    | <1min                              |
+| `run`                      | Run the NF using recommended arguments            | <1min to start (stop with Ctrl+C)  |
+| `symbex validate`          | Verify the NF only                                | <1min to symbex, <1h to validate   |
+| `symbex-withdpdk validate` | Verify the NF + DPDK + driver                     | <1h to symbex, hours to validate   |
+| `symbex-withdsos validate` | Verify the NF + DPDK + driver + DSOS (full stack) | <1h to symbex, hours to validate   |
+| `count-loc`                | Count LoC in the NF                               | <1min                              |
+| `count-spec-loc`           | Count LoC in the specification                    | <1min                              |
+| `count-dsos-loc`           | Count LoC in the DSOS                             | <1min                              |
+| `count-libvig-loc`         | Count LoC in libVig                               | <1min                              |
+| `count-dpdk-loc`           | Count LoC in DPDK (not drivers)                   | <1min                              |
+| `count-ixgbe-loc`          | Count LoC in the ixgbe driver                     | <1min                              |
+| `count-uclibc-loc`         | Count LoC in KLEE-uClibc                          | <1min                              |
+| `benchmark-throughput`     | Benchmark the NF's throughput                     | <15min                             |
+| `benchmark-latency`        | Benchmark the NF's latency                        | <5min                              |
+| `dsos-iso`                 | Build a DSOS ISO image runnable in a VM           | <1min                              |
+| `dsos-multiboot1`          | Build a DSOS ISO image suitable for netboot       | <1min                              |
+| `dsos-run`                 | Build and run DSOS in a qemu VM                   | <1min to start                     |
 
 
 
@@ -105,11 +105,11 @@ Besides the NF folders mentioned above, the repository contains:
 - `Makefile*`: Makefiles for the NFs
 - `README.md`: This file
 - `bench`: Benchmarking scripts, used by the benchmarking make targets
-- `codegen`: Code generators, used as part of the Vigor NF build process
+- `codegen`: Code generators, used as part of the Vigor build process
 - `doc`: Documentation files
 - `grub.cfg`, `linker.ld`, `pxe-boot.sh`: DSOS-related files
-- `libvig`: The libVig folder
-- `nf.h`, `nf_main.c`: Main header/source file for Vigor NFs
+- `libvig`: The libVig folder, containing `verified` code, `models`, and the DSOS `kernel`
+- `nf.{h,c}`, `nf-util.{h,c}`, `nf-log.h`: Skeleton code for Vigor NFs
 - `setup*`: Setup script and related files
 - `template`: Template for new Vigor NFs (see "Create your own Vigor NF" below)
 - `validator`: The Vigor Validator
