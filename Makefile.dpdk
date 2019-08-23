@@ -53,7 +53,7 @@ LIBVIG_SRC_ARITH := $(SELF_DIR)/libvig/verified/arith.c \
                     $(SELF_DIR)/libvig/verified/modulo.c
 LIBVIG_SRC_Z3 := $(subst .c,.o,$(LIBVIG_SRC_ARITH)) \
                  $(SELF_DIR)/libvig/verified/bitopsutils.c \
-                 $(SELF_DIR)/libvig/verified/mod_pow2.c \
+                 $(SELF_DIR)/libvig/verified/mod-pow2.c \
                  $(SELF_DIR)/libvig/verified/lpm-dir-24-8-lemmas.c \
                  $(SELF_DIR)/libvig/verified/lpm-dir-24-8.c
 LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
@@ -80,11 +80,11 @@ VERIFAST_CLEAN_COMMAND := rm -rf $(SELF_DIR)/**/*.vfmanifest
 verifast: autogen
 	@printf '\n\n!!!\n\n'
 	@printf 'This is gonna take a while, go make a nice cup of tea...\n\n'
-	@printf 'Note that we are verifying the code twice,\
-	         once with the power-of-two optimization for the map and once without\n'
-	@printf 'Also, some parts of the proof can only be verified \
-	         with Z3 and some with the standard VeriFast solver, \
-	         so we split the verification in parts...\n'
+	@printf 'Note that we are verifying the code twice,\n'
+	@printf 'once with the pow2 optimization for the map and once without.\n'
+	@printf 'Also, some parts of the proof can only be verified\n'
+	@printf 'with Z3 and some with the standard VeriFast solver,\n'
+	@printf 'so we split the verification in parts...\n'
 	@printf '\n!!!\n\n'
 	@$(VERIFAST_CLEAN_COMMAND)
 	@$(VERIFAST_COMMAND) -emit_vfmanifest $(LIBVIG_SRC_ARITH)
