@@ -293,29 +293,26 @@ run: all
 # and all VeriFast annotations are comments
 
 count-loc:
-	@cloc -q $(NF_FILES) $(subst .c,.h,$(NF_FILES)) $(NF_AUTOGEN_SRCS) 2>/dev/null
+	@cloc -q $(NF_FILES) $(subst .c,.h,$(NF_FILES)) $(NF_AUTOGEN_SRCS) \
+                 $(SELF_DIR)/nf*.{c,h} 2>/dev/null
 
 count-spec-loc:
 	@cloc -q spec.py
 
-count-libvig-ds-loc:
+count-libvig-loc:
 	@# Bit of a hack for this one,
 	@# cloc can\'t be given a custom language but for some reason
 	@# it knows about Pig Latin, which is never gonna happen in our codebase, so...
 	@cloc --quiet --force-lang 'Pig Latin',gh \
-	      $(subst .o,.c,$(LIBVIG_SRC)) $(SELF_DIR)/libvig/verified/*.gh | \
+	      $(SELF_DIR)/libvig/verified/*.{c,h,gh} | \
 	 sed 's/Pig Latin/VeriFast /g'
 	@echo "NOTE: Annotations == VeriFast code + C comments - \
-	       $$(grep '//[^@]' $(subst .o,.c,$(LIBVIG_SRC)) | wc -l) \
+	       $$(grep '//[^@]' $(SELF_DIR)/libvig/verified/*.{c,h} | wc -l) \
 	       (that last number is the non-VeriFast C comments)"
-	@if grep -F '/*' $(subst .o,.c,$(LIBVIG_SRC)) | \
-      grep -vF '/*@'; then \
-    echo 'ERROR: There are multiline non-VeriFast comments in the C code, \
-	        the total above is wrong!'; \
+	@if grep -F '/*' $(SELF_DIR)/libvig/verified/*.{c,h} | grep -vF '/*@'; then \
+           echo 'ERROR: There are multiline non-VeriFast comments in the C code, \
+	         the total above is wrong!'; \
 	 fi
-
-count-libvig-loc:
-	@cloc -q $(SELF_DIR)/libvig/*.{c,h} $(SELF_DIR)/libvig/verified/*
 
 count-dpdk-loc:
 	@cloc -q $(DPDK_FILES) $(subst .c,.h,$(DPDK_FILES)) 2>/dev/null

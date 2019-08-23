@@ -75,7 +75,6 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | `count-spec-loc`           | Count LoC in the specification              | <1min                              |
 | `count-dsos-loc`           | Count LoC in the DSOS                       | <1min                              |
 | `count-libvig-loc`         | Count LoC in libVig                         | <1min                              |
-| `count-libvig-ds-loc`      | Count LoC in libVig data structures         | <1min                              |
 | `count-dpdk-loc`           | Count LoC in DPDK (not drivers)             | <1min                              |
 | `count-ixgbe-loc`          | Count LoC in the ixgbe driver               | <1min                              |
 | `count-uclibc-loc`         | Count LoC in KLEE-uClibc                    | <1min                              |

@@ -11,19 +11,15 @@
 
 //@ predicate last_time(vigor_time_t t);
 
-/**
-   A wrapper around the system time function. Returns the number of
-   nanoseconds since the Epoch (1970-01-01 00:00:00 +0000 (UTC)).
-   @returns the number of nanoseconds since Epoch.
-*/
+// A wrapper around the system time function. Returns the number of
+// nanoseconds since the Epoch (1970-01-01 00:00:00 +0000 (UTC)).
+// @returns the number of nanoseconds since Epoch.
 vigor_time_t current_time(void);
 //@ requires last_time(?x);
 //@ ensures result >= 0 &*& x <= result &*& last_time(result);
 
-/**
-   Returns the last result of current_time. must only be called after
-   current_time was invoked at least once.
- */
+// Returns the last result of current_time. must only be called after
+// current_time was invoked at least once.
 vigor_time_t recent_time(void);
 
 #endif // NF_TIME_H_INCLUDED

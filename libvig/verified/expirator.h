@@ -7,17 +7,15 @@
 #include "vector.h"
 #include "coherence.h"
 
-/**
-  The function takes "coherent" chain allocator and hash map, and current time.
-  It removes flows older than time simultaneously from the allocator and the
-  map.
-  @param chain - DoubleChain index allocator. Items in the allocator are
-                 tagged with timestamps.
-  @param map - DoubleMap hash table holding flows synchronized with the allocator.
-  @param time - Current number of seconds since the Epoch.
 
-  @returns the number of expired flows.
- */
+// The function takes "coherent" chain allocator and hash map, and current time.
+// It removes flows older than time simultaneously from the allocator and the
+// map.
+// @param chain - DoubleChain index allocator. Items in the allocator are
+//                tagged with timestamps.
+// @param map - DoubleMap hash table holding flows synchronized with the allocator.
+// @param time - Current number of seconds since the Epoch.
+// @returns the number of expired flows.
 int expire_items/*@<K1,K2,V> @*/(struct DoubleChain* chain,
                                  struct DoubleMap* map,
                                  vigor_time_t time);
@@ -62,20 +60,18 @@ typedef void entry_pack_key/*@ <kt,et> (predicate (void*;kt) kp,
              true == right_offsets(entry, key); @*/
 /*@ ensures [fr]full_ep(entry, e); @*/
 
-/**
-   The function takes "coherent" chain allocator vector and hash map,
-   and current time.
-   It removes items older than time simultaneously from the allocator, vector
-   and the map.
-   @param chain - DoubleChain index allocator. Items in the allocator are
-                  tagged with timestamps.
-   @param vector - the Vector of the keys, synchronized with the allocator.
-   @param map - Map hash table that keeps mapping of the keys -> indexes,
-                that are synchronized with the allocator.
-   @param time - Current number of seconds since the Epoch.
 
-   @returns the number of expired items.
-*/
+// The function takes "coherent" chain allocator vector and hash map,
+// and current time.
+// It removes items older than time simultaneously from the allocator, vector
+// and the map.
+// @param chain - DoubleChain index allocator. Items in the allocator are
+//                tagged with timestamps.
+// @param vector - the Vector of the keys, synchronized with the allocator.
+// @param map - Map hash table that keeps mapping of the keys -> indexes,
+//               that are synchronized with the allocator.
+// @param time - Current number of seconds since the Epoch.
+// @returns the number of expired items.
 int expire_items_single_map/*@ <kt> @*/(struct DoubleChain* chain,
                                         struct Vector* vector,
                                         struct Map* map,
