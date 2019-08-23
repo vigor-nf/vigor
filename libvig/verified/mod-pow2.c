@@ -2,7 +2,7 @@
 //@ #include <nat.gh>
 //@ #include <listex.gh>
 
-//@ #include "mod_pow2.gh"
+//@ #include "mod-pow2.gh"
 //@ #include "bitopsutils.gh"
 //@ #include "stdex.gh"
 //@ #include "listexex.gh"

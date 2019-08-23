@@ -3,26 +3,25 @@
 
 #include <stdbool.h>
 #include <rte_ether.h>
-#include "boilerplate_util.h"
+#include "boilerplate-util.h"
 
 /*@
-inductive ether_addri = ether_addrc(uint8_t , uint8_t , uint8_t , uint8_t , uint8_t , uint8_t ); @*/
+  inductive ether_addri = ether_addrc(uint8_t , uint8_t , uint8_t , uint8_t , uint8_t , uint8_t );
 
-/*@
-predicate ether_addrp(struct ether_addr* ptr; ether_addri v) = 
-  struct_ether_addr_padding(ptr) &*&
-  uchars(ptr->addr_bytes, 6, ?addr_bytes_f) &*&
-  length(addr_bytes_f) == 6 &*&
-  addr_bytes_f == cons(?addr_bytes_0, cons(?addr_bytes_1, cons(?addr_bytes_2, cons(?addr_bytes_3, cons(?addr_bytes_4, cons(?addr_bytes_5, ?_nil)))))) &*&
-  switch(_nil) { case nil: return true; case cons(nh, nt): return false; } &*&
-  v == ether_addrc(addr_bytes_0, addr_bytes_1, addr_bytes_2, addr_bytes_3, addr_bytes_4, addr_bytes_5); @*/
+  predicate ether_addrp(struct ether_addr* ptr; ether_addri v) =
+    struct_ether_addr_padding(ptr) &*&
+    uchars(ptr->addr_bytes, 6, ?addr_bytes_f) &*&
+    length(addr_bytes_f) == 6 &*&
+    addr_bytes_f == cons(?addr_bytes_0, cons(?addr_bytes_1, cons(?addr_bytes_2, cons(?addr_bytes_3, cons(?addr_bytes_4, cons(?addr_bytes_5, ?_nil)))))) &*&
+    switch(_nil) { case nil: return true; case cons(nh, nt): return false; } &*&
+    v == ether_addrc(addr_bytes_0, addr_bytes_1, addr_bytes_2, addr_bytes_3, addr_bytes_4, addr_bytes_5);
 
-/*@
-fixpoint unsigned _ether_addr_hash(ether_addri x) {
-  switch(x) { case ether_addrc(addr_bytes_0, addr_bytes_1, addr_bytes_2, addr_bytes_3, addr_bytes_4, addr_bytes_5):
-    return crc32_hash(crc32_hash(crc32_hash(crc32_hash(crc32_hash(crc32_hash(0, addr_bytes_0), addr_bytes_1), addr_bytes_2), addr_bytes_3), addr_bytes_4), addr_bytes_5);
+  fixpoint unsigned _ether_addr_hash(ether_addri x) {
+    switch(x) { case ether_addrc(addr_bytes_0, addr_bytes_1, addr_bytes_2, addr_bytes_3, addr_bytes_4, addr_bytes_5):
+      return crc32_hash(crc32_hash(crc32_hash(crc32_hash(crc32_hash(crc32_hash(0, addr_bytes_0), addr_bytes_1), addr_bytes_2), addr_bytes_3), addr_bytes_4), addr_bytes_5);
+    }
   }
-} @*/
+@*/
 
 unsigned ether_addr_hash(void* obj);
 //@ requires [?f]ether_addrp(obj, ?v);

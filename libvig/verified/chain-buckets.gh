@@ -2,7 +2,7 @@
 #define CHAIN_BUCKETS_GH
 
 #include "stdex.gh"
-#include "nth_prop.gh"
+#include "nth-prop.gh"
 #include "natlist.gh"
 
 inductive bucket<kt> = bucket(list<pair<kt, nat> >);

@@ -6,7 +6,7 @@
 //@ #include <listex.gh>
 //@ #include <nat.gh>
 //@ #include "stdex.gh"
-//@ #include "nth_prop.gh"
+//@ #include "nth-prop.gh"
 //@ #include "modulo.gh"
 //@ #include "map.gh"
 //@ #include "natlist.gh"
