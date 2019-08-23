@@ -161,7 +161,7 @@ static struct rte_mbuf *rte_mbuf_raw_alloc(struct rte_mempool *mp) {
   return malloc(mp->elt_size);
 }
 
-// free is called by user code, raw_free by stubs
+// free is called by user code, raw_free by models
 static void rte_pktmbuf_free(struct rte_mbuf *m) {
   assert(m != NULL);
   packet_free(m->buf_addr);

@@ -1,6 +1,6 @@
 #ifdef VIGOR_MODEL_HARDWARE
 
-#  include "hardware_stub.h"
+#  include "hardware.h"
 
 #  include <endian.h>
 #  include <stdbool.h>
@@ -8,7 +8,8 @@
 #  include <stdlib.h>
 #  include <string.h>
 
-// NO OTHER DPDK HEADERS HERE! we're implementing a reference implementation...
+#  include "rte_ip.h"
+#  include "rte_ether.h"
 #  include "rte_cycles.h"         // to include the next one cleanly
 #  include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
@@ -17,6 +18,12 @@
 #  include "libvig/kernel/dsos_pci.h"
 
 #  include <klee/klee.h>
+
+
+struct stub_mbuf_content {
+  struct ether_hdr ether;
+  struct ipv4_hdr ipv4;
+};
 
 
 typedef uint32_t (*stub_register_read)(struct stub_device *dev,
@@ -144,7 +151,8 @@ static void stub_device_start(struct stub_device *dev) {
   uint64_t wb0 =
       0b0000000000000000000000000000000010000000000000000000000000000000;
 
-  void *mbuf_content = malloc(MBUF_MIN_SIZE);
+  struct stub_mbuf_content *mbuf_content =
+    (struct stub_mbuf_content*) malloc(MBUF_MIN_SIZE);
   if (mbuf_content == NULL) {
     klee_abort();
   }

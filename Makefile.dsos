@@ -21,8 +21,8 @@ LINKER_SCRIPT = $(SELF_DIR)/linker.ld
 GRUB_CFG = $(SELF_DIR)/grub.cfg
 LIBC = $(VIGOR_DIR)/klee-uclibc-binary/lib/libc.a # VIGOR_DIR comes from paths.sh
 
-CONTAINERS_DIR = $(SELF_DIR)/libvig/containers
-STUBS_DIR = $(SELF_DIR)/libvig/stubs
+CONTAINERS_DIR = $(SELF_DIR)/libvig/verified
+STUBS_DIR = $(SELF_DIR)/libvig/models
 KERNEL_DIR = $(SELF_DIR)/libvig/kernel
 
 NF_DEFS := -D_GNU_SOURCE
@@ -46,10 +46,10 @@ space := $(null) #
 comma := ,
 NF_DEFS += -DNF_ARGUMENTS="\"$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))\""
 
-NF_COMMON_SOURCES := $(SELF_DIR)/nf_main.c \
-	$(SELF_DIR)/libvig/nf_util.c \
-	$(SELF_DIR)/libvig/nf_time.c \
-	$(SELF_DIR)/libvig/packet-io.c \
+NF_COMMON_SOURCES := $(SELF_DIR)/nf.c \
+	$(SELF_DIR)/nf-util.c \
+	$(CONTAINERS_DIR)/vigor-time.c \
+	$(CONTAINERS_DIR)/packet-io.c \
 	$(wildcard $(RTE_SDK)/lib/librte_cmdline/*.c) \
 	$(CONTAINERS_DIR)/map.c \
 	$(CONTAINERS_DIR)/map-impl.c \
@@ -59,7 +59,7 @@ NF_COMMON_SOURCES := $(SELF_DIR)/nf_main.c \
 	$(CONTAINERS_DIR)/double-chain-impl.c \
 	$(CONTAINERS_DIR)/vector.c \
 	$(CONTAINERS_DIR)/cht.c \
-	$(SELF_DIR)/libvig/expirator.c
+	$(CONTAINERS_DIR)/expirator.c
 
 # For NAT debug output
 # NF_DEFS += -DENABLE_LOG
