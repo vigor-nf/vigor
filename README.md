@@ -46,7 +46,7 @@ There are currently six Vigor NFs:
 | Load balancer | `viglb`     | Load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)                                               |
 | NAT           | `vignat`    | NAT according to [RFC 3022](https://www.ietf.org/rfc/rfc3022.txt)                                                                   |
 | Policer       | `vigpol`    | Traffic policer whose specification we invented                                                                                     |
-| Router        | `vigrouter` | IP router whose specification we invented                                                                                           |
+| Router        | `vigrouter` | IP LPM router whose specification we invented (does not do BGP)                                                                     |
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
@@ -58,7 +58,7 @@ There are additional "baseline" NFs, which can _only be compiled, run and benchm
 | Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
 | Click NAT           | `click-nat`         | Click-based NAT                        |
 | Click no-op         | `click-nop`         | Click-based no-op forwarder            |
-| Click router        | `click-router`      | Click-based IP router                  |
+| Click router        | `click-router`      | Click-based IP LPM router (no BGP)     |
 | Moonpol             | `moonpol`           | Libmoon-based traffic policer          |
 
 The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true` when running the benchmark targets (see table below).
