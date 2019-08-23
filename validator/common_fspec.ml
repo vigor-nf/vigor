@@ -494,13 +494,27 @@ let vector_borrow_spec entry_specs =
         | None -> "Error: unexpected argument type: " ^
                   (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
-     (fun {arg_types;arg_exps;tmp_gen;_} ->
+     (fun {arg_types;args;arg_exps;tmp_gen;_} ->
         match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ) ~f:(fun {typ;_} ->
                            "//@ open hide_vector<" ^ ityp_name typ ^
                            ">(_, _, _, _);\n")) ^
+                    "//@ forall_nth(" ^ (tmp_gen "vec") ^
+                    ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
+                    ");\n" ^
+                    let (binding,expr) =
+                      self_dereference (List.nth_exn arg_exps 2) tmp_gen
+                    in
+                    let Addr expr = expr.v in
+                    binding ^
+                    "\n//@ assert [_]" ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
+                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                    "//@ forall_update(" ^ (tmp_gen "vec") ^
+                    ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
+                    ", pair(" ^ (tmp_gen "fk") ^
+                    ", 0.0));\n" ^
                     (open_callback entry_type
                        {v=Deref (List.nth_exn arg_exps 2);
                         t=Unknown}))
@@ -523,7 +537,15 @@ let vector_return_spec entry_specs =
                     (typ, Ptr entry_type)));];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun {arg_types;args;tmp_gen;_} ->
+     (fun {args;tmp_gen;_}->
+        "//@ assert vectorp(" ^
+        (List.nth_exn args 0) ^
+        ", _, ?" ^ (tmp_gen "vec") ^ ", _);\n" ^
+        "//@ forall_nth(" ^ (tmp_gen "vec") ^
+        ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
+        ");"
+     );
+     (fun {arg_types;args;arg_exps;tmp_gen;_} ->
         match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
               Some (String.concat ~sep:""
@@ -531,7 +553,18 @@ let vector_return_spec entry_specs =
                          ~f:(fun {typ;_} ->
                              "//@ close hide_vector<" ^ ityp_name typ ^
                              ">(_, _, _, _);\n"
-                       )))
+                       )) ^
+                    "\n" ^
+                    let (binding,expr) =
+                      self_dereference (List.nth_exn arg_exps 2) tmp_gen
+                    in
+                    binding ^
+                    "\n//@ assert [?" ^ (tmp_gen "frac") ^ "]" ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
+                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                    "//@ forall_update(" ^ (tmp_gen "vec") ^
+                    ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
+                    ", pair(" ^ (tmp_gen "fk") ^
+                    ", " ^ (tmp_gen "frac") ^ "));\n")
             else
               None))
         with
@@ -1030,6 +1063,8 @@ let expire_items_single_map_spec typs =
      (fun {tmp_gen;args;_} ->
         "//@ assert double_chainp(?" ^
         (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
+        "//@ assert vectorp(" ^ (List.nth_exn args 1) ^
+        ", _, ?" ^ (tmp_gen "cur_vec") ^ ", _);\n" ^
         "//@ expire_olds_keeps_high_bounded(" ^
         (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
      (fun {args;tmp_gen;_} ->
@@ -1048,6 +1083,11 @@ let expire_items_single_map_spec typs =
         (tmp_gen "cur_ch") ^ ", " ^
         (List.nth_exn args 3) ^
         ");\n\
+         vector_erase_all_keep_inv(" ^ (tmp_gen "cur_vec") ^
+        ", dchain_get_expired_indexes_fp(" ^
+        (tmp_gen "cur_ch") ^ ", " ^
+        (List.nth_exn args 3) ^
+        "), flow_cond);\n\
          } @*/");
    ];
    lemmas_after = [

@@ -473,3 +473,26 @@ void vector_return/*@ <t> @*/(struct Vector* vector, int index, void* value)
     close vectorp(vector, entp, values, addrs);
   }
   @*/
+
+/*@
+  lemma void vector_erase_all_keep_inv<t>(list<pair<t, real> > vector,
+                                          list<int> indices,
+                                          fixpoint (t,bool) inv)
+  requires true == forall(vector, (sup)(inv, fst));
+  ensures true == forall(vector_erase_all_fp(vector, indices), (sup)(inv, fst));
+  {
+    switch(indices) {
+      case nil:
+      case cons(h,t):
+        vector_erase_all_keep_inv(vector, t, inv);
+        if (0 <= h && h < length(vector_erase_all_fp(vector, t))) {
+          forall_nth(vector_erase_all_fp(vector, t), (sup)(inv, fst), h);
+          forall_update(vector_erase_all_fp(vector, t), (sup)(inv, fst), h,
+                        pair(fst(nth(h, vector_erase_all_fp(vector, t))), 1.0));
+        } else {
+          update_out_of_bounds(h, pair(fst(nth(h, vector_erase_all_fp(vector, t))), 1.0),
+                               vector_erase_all_fp(vector, t));
+        }
+    }
+  }
+  @*/

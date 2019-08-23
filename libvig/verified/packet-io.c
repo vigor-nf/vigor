@@ -31,6 +31,7 @@ size_t global_read_length = 0;
     (int8_t*)0 <= (int8_t*)p + borrowed_len(missing_chunks) &*&
     (int8_t*)p + borrowed_len(missing_chunks) + length(unread) <=
     (int8_t*)UINTPTR_MAX &*&
+    (int8_t*)0 < p &*&
     true == missing_chunks(missing_chunks, p,
                            (int8_t*)p + borrowed_len(missing_chunks)) &*&
     chars((int8_t*)p + borrowed_len(missing_chunks), length(unread), unread);
@@ -72,11 +73,15 @@ void packet_borrow_next_chunk(void *p, size_t length, void **chunk)
              length + borrowed_len(mc) < INT_MAX &*&
              *chunk |-> _; @*/
 /*@ ensures *chunk |-> ?ptr &*&
+            ptr != 0 &*&
             packetp(p, drop(length, unread), cons(pair(ptr, length), mc)) &*&
             chars(ptr, length, take(length, unread)); @*/
 {
   //@ open packetp(p, unread, mc);
   //@ borrowed_len_nonneg(mc, p, p + borrowed_len(mc));
+  //@ assert 0 <= global_read_length;
+  //@ assert p > 0;
+  //@ assert p + global_read_length > 0;
   // TODO: support mbuf chains.
   *chunk = (char *)p + global_read_length;
   //@ chars_split(*chunk, length);

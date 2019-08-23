@@ -550,7 +550,7 @@ let output_check_and_assignments
       cmplx_symbs
   in
   let support_assignments =
-    guess_support_assignments output_constraints unalloc_symbs
+    [](* guess_support_assignments output_constraints unalloc_symbs *)
   in
   let assignments =
     gen_plain_equalities_for_all (assignments@support_assignments)

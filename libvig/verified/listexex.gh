@@ -1169,4 +1169,15 @@ fixpoint t nth2<t>(list<t> lst, int index) { return nth(index, lst); }
 
 fixpoint bool mem2<t>(list<t> lst, t el) { return mem(el, lst); }
 
+lemma void update_out_of_bounds<t>(int index, t el, list<t> l)
+requires index < 0 || length(l) <= index;
+ensures update(index, el, l) == l;
+{
+  switch(l) {
+    case nil:
+    case cons(h,t):
+      update_out_of_bounds(index - 1, el, t);
+  }
+}
+
 #endif//LISTEXEX_GH

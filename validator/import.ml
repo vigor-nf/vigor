@@ -1775,6 +1775,9 @@ let extract_tip_calls ftype_of calls rets =
           let args_post_conditions =
             compose_args_post_conditions tip ftype_of args
           in
+          let args_post_conditions =
+            (compose_extra_ptrs_post_conditions call ftype_of)@args_post_conditions
+          in
           let ret_val = get_ret_val tip in
           let post_statements = convert_ctxt_list tip.ret_context in
           let args_post_conditions =

@@ -84,6 +84,14 @@ struct Vector;
   @*/
 
 /*@
+  lemma void vector_erase_all_keep_inv<t>(list<pair<t, real> > vector,
+                                          list<int> indices,
+                                          fixpoint (t,bool) inv);
+  requires true == forall(vector, (sup)(inv, fst));
+  ensures true == forall(vector_erase_all_fp(vector, indices), (sup)(inv, fst));
+  @*/
+
+/*@
    fixpoint bool is_one<t>(pair<t,real> r) { return snd(r) == 1.0; }
   @*/
 

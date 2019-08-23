@@ -34,6 +34,7 @@ void packet_borrow_next_chunk(void *p, size_t length, void **chunk);
              length + borrowed_len(mc) < INT_MAX &*&
              *chunk |-> _; @*/
 /*@ ensures *chunk |-> ?ptr &*&
+            ptr != 0 &*&
             packetp(p, drop(length, unread), cons(pair(ptr, length), mc)) &*&
             chars(ptr, length, take(length, unread)); @*/
 
