@@ -13,7 +13,7 @@
 #include <rte_tcp.h>
 #include <rte_udp.h>
 
-#include "nf_util.h"
+#include "nf-util.h"
 
 #ifdef KLEE_VERIFICATION
 #  include <klee/klee.h>

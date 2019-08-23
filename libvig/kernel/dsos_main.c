@@ -16,7 +16,7 @@ extern int nf_main(int argc, char *argv[]);
 /* Initialize filesystem */
 extern void stub_stdio_files_init(struct dsos_pci_nic *devs, int n);
 
-#ifdef VIGOR_STUB_HARDWARE
+#ifdef VIGOR_MODEL_HARDWARE
 extern struct dsos_pci_nic *stub_hardware_get_nics(int *n);
 #endif
 
@@ -35,11 +35,11 @@ int main(void) {
   int num_devs;
   struct dsos_pci_nic *devs;
 
-#ifdef VIGOR_STUB_HARDWARE
+#ifdef VIGOR_MODEL_HARDWARE
   devs = stub_hardware_get_nics(&num_devs);
-#else  // VIGOR_STUB_HARDWARE
+#else  // VIGOR_MODEL_HARDWARE
   devs = dsos_pci_find_nics(&num_devs);
-#endif // VIGOR_STUB_HARDWARE
+#endif // VIGOR_MODEL_HARDWARE
 
   stub_stdio_files_init(devs, num_devs);
 

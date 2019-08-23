@@ -8,7 +8,7 @@
 
 #include "nat_config.h"
 #include "nf.h"
-#include "libvig/nf_util.h"
+#include "nf-util.h"
 
 struct nf_config config;
 

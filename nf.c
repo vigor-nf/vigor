@@ -10,15 +10,15 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
-#include "libvig/nf_log.h"
-#include "libvig/nf_util.h"
-#include "libvig/verified/boilerplate_util.h"
+#include "libvig/verified/boilerplate-util.h"
 #include "libvig/verified/packet-io.h"
+#include "nf-log.h"
+#include "nf-util.h"
 #include "nf.h"
 
 #ifdef KLEE_VERIFICATION
-#  include "libvig/stubs/hardware_stub.h"
-#  include "libvig/stubs/verified/vigor_time_stub-control.h"
+#  include "libvig/models/hardware.h"
+#  include "libvig/models/verified/vigor-time-control.h"
 #  include <klee/klee.h>
 #endif // KLEE_VERIFICATION
 

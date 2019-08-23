@@ -1,4 +1,4 @@
-#ifdef VIGOR_STUB_HARDWARE
+#ifdef VIGOR_MODEL_HARDWARE
 
 #  include "hardware_stub.h"
 
@@ -2445,7 +2445,7 @@ void stub_hardware_reset_receive(uint16_t device) {
   free_called = false;
 }
 
-#else // VIGOR_STUB_HARDWARE
+#else // VIGOR_MODEL_HARDWARE
 
 #  include <assert.h>
 
@@ -2455,4 +2455,4 @@ struct dsos_pci_nic *stub_hardware_get_nics(int *n) {
   assert(0);
 }
 
-#endif // VIGOR_STUB_HARDWARE
+#endif // VIGOR_MODEL_HARDWARE

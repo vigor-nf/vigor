@@ -715,7 +715,7 @@ void stub_stdio_files_init(struct dsos_pci_nic *devs, int n) {
                                   // pretend it doesn't contain anything
 }
 
-#if (defined VIGOR_STUB_HARDWARE) && !(defined DSOS)
+#if (defined VIGOR_MODEL_HARDWARE) && !(defined DSOS)
 __attribute__((constructor(150))) // High prio, must execute after other stuff
                                   // since it relies on hardware stubs
                                   void
@@ -726,7 +726,7 @@ __attribute__((constructor(150))) // High prio, must execute after other stuff
   devs = stub_hardware_get_nics(&num_devs);
   stub_stdio_files_init(devs, num_devs);
 }
-#endif // (defined VIGOR_STUB_HARDWARE) && !(defined DSOS)
+#endif // (defined VIGOR_MODEL_HARDWARE) && !(defined DSOS)
 
 // Helper methods - not part of the external stubs
 

@@ -34,7 +34,7 @@ struct stub_device {
   int interrupts_fd;
 };
 
-#ifdef VIGOR_STUB_HARDWARE
+#ifdef VIGOR_MODEL_HARDWARE
 struct stub_device DEVICES[STUB_DEVICES_COUNT];
 
 void stub_hardware_receive_packet(uint16_t device);
@@ -44,9 +44,9 @@ void stub_hardware_reset_receive(uint16_t device);
 
 struct dsos_pci_nic *stub_hardware_get_nics(int *n);
 
-#else  // VIGOR_STUB_HARDWARE
+#else  // VIGOR_MODEL_HARDWARE
 struct stub_device DEVICES[0];
 
 static inline void stub_hardware_receive_packet(uint16_t device) {}
 static inline void stub_hardware_reset_receive(uint16_t device) {}
-#endif // VIGOR_STUB_HARDWARE
+#endif // VIGOR_MODEL_HARDWARE

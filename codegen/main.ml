@@ -505,7 +505,7 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ignore (P.fprintf cout "#ifndef _%s_GEN_H_INCLUDED_\n" compinfo.cname);
   ignore (P.fprintf cout "#define _%s_GEN_H_INCLUDED_\n\n" compinfo.cname);
   ignore (P.fprintf cout "#include <stdbool.h>\n");  
-  ignore (P.fprintf cout "#include \"libvig/verified/boilerplate_util.h\"\n\n");
+  ignore (P.fprintf cout "#include \"libvig/verified/boilerplate-util.h\"\n\n");
   ignore (P.fprintf cout "#include \"libvig/verified/ether.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_include_deps compinfo def_headers));
   ignore (P.fprintf cout "#include \"%s\"\n\n" orig_fname);
@@ -518,7 +518,7 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ignore (P.fprintf cout "%s\n\n" (gen_log_fun_decl compinfo));
   ignore (P.fprintf cout "#ifdef KLEE_VERIFICATION\n");
   ignore (P.fprintf cout "#  include <klee/klee.h>\n");
-  ignore (P.fprintf cout "#  include \"libvig/stubs/str-descr.h\"\n\n");
+  ignore (P.fprintf cout "#  include \"libvig/models/str-descr.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_str_field_descrs_decl compinfo));
   ignore (P.fprintf cout "#endif//KLEE_VERIFICATION\n\n");
   ignore (P.fprintf cout "#endif//_%s_GEN_H_INCLUDED_\n" compinfo.cname);

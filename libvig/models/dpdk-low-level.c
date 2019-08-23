@@ -1,4 +1,4 @@
-#ifdef VIGOR_STUB_HARDWARE
+#ifdef VIGOR_MODEL_HARDWARE
 #  include <rte_cpuflags.h>
 #  include <rte_log.h>
 #  include <rte_malloc.h> // for ixgbe_rxtx
@@ -59,4 +59,4 @@ __attribute__((constructor)) static void stub_rte_init(void) {
   // Use stderr for logs
   rte_openlog_stream(stderr);
 }
-#endif // VIGOR_STUB_HARDWARE
+#endif // VIGOR_MODEL_HARDWARE
