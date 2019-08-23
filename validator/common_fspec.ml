@@ -1275,10 +1275,10 @@ let gen_dchain_params containers =
 let gen_preamble nf_loop containers =
   let lma_literals = gen_lma_literals containers in
   "\
-#include \"libvig/expirator.h\"\n\
-#include \"libvig/stubs/time_stub_control.h\"\n\
-#include \"libvig/containers/map.h\"\n\
-#include \"libvig/containers/double-chain.h\"\n\
+#include \"libvig/verified/expirator.h\"\n\
+#include \"libvig/verified/map.h\"\n\
+#include \"libvig/verified/double-chain.h\"\n\
+#include \"libvig/models/verified/vigor-time-control.h\"\n\
 #include \"" ^ nf_loop ^ "\"\n" ^
   (In_channel.read_all "preamble.tmpl") ^
   "enum LMA_enum {" ^ (match lma_literals with | _ :: _ ->

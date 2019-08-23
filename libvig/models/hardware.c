@@ -13,7 +13,7 @@
 #  include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
 #  include "libvig/verified/packet-io.h"
-#  include "libvig/stubs/verified/packet-io_stub-control.h"
+#  include "libvig/models/verified/packet-io-control.h"
 #  include "libvig/kernel/dsos_pci.h"
 
 #  include <klee/klee.h>

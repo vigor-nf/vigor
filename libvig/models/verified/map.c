@@ -2,7 +2,7 @@
 #include <string.h>
 #include "klee/klee.h"
 #include "libvig/verified/map.h"
-#include "map_stub-control.h"
+#include "map-control.h"
 
 #define PREALLOC_SIZE (256)
 

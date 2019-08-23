@@ -1,4 +1,4 @@
-#include "libvig/stubs/externals/externals_stub.h"
+#include "_externals.h"
 
 #include <signal.h>
 #include <unistd.h>

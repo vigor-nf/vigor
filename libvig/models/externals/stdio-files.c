@@ -1,5 +1,5 @@
-#include "libvig/stubs/externals/externals_stub.h"
-#include "libvig/stubs/hardware_stub.h"
+#include "_externals.h"
+#include "libvig/models/hardware.h"
 
 #include "libvig/kernel/dsos_pci.h"
 

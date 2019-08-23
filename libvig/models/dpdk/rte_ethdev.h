@@ -12,8 +12,8 @@
 #include <rte_ethdev.h>
 
 #include "libvig/verified/packet-io.h"
-#include "libvig/stubs/str-descr.h"
-#include "libvig/stubs/verified/packet-io_stub-control.h"
+#include "libvig/models/str-descr.h"
+#include "libvig/models/verified/packet-io-control.h"
 
 #include <klee/klee.h>
 

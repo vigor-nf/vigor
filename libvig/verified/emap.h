@@ -1,11 +1,11 @@
 #ifndef _EMAP_H_INCLUDED_
 #define _EMAP_H_INCLUDED_
 
-#include "libvig/verified/vigor_time.h"
-#include "libvig/verified/map.h"
-#include "libvig/verified/vector.h"
-#include "libvig/verified/double-chain.h"
-#include "libvig/verified/cht.h"
+#include "vigor-time.h"
+#include "map.h"
+#include "vector.h"
+#include "double-chain.h"
+#include "cht.h"
 
 /*@
   inductive emap<T> = emap(list<pair<T, int> > m, list<pair<T, real> > v, dchain ch);

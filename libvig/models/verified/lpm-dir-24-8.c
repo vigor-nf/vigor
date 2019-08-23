@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "libvig/verified/lpm-dir-24-8.h"
-#include "lpm-dir-24-8_stub-control.h"
+#include "lpm-dir-24-8-control.h"
 
 #define PREALLOC_SIZE (256)
 #define NUM_ELEMS (3)

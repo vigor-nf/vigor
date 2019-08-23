@@ -1,11 +1,9 @@
-#include "libvig/stubs/externals/externals_stub.h"
-#include "libvig/stubs/hardware_stub.h"
+#include "_externals.h"
+#include "libvig/models/hardware.h"
 #include "libvig/kernel/dsos_pci.h"
 
-// GNU_SOURCE for fopencookie (TODO define here, not on compile line)
-//#define _GNU_SOURCE
+// GNU_SOURCE for fopencookie
 #include <stdio.h>
-//#undef _GNU_SOURCE
 
 #include <limits.h>
 #include <stdarg.h>

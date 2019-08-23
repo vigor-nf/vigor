@@ -2,7 +2,7 @@
 #define _MAP_STUB_CONTROL_H_INCLUDED_
 
 #include "libvig/verified/map.h"
-#include "libvig/stubs/str-descr.h"
+#include "libvig/models/str-descr.h"
 
 #include <stdbool.h>
 

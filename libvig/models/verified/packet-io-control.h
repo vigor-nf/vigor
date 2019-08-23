@@ -1,6 +1,6 @@
 #ifndef _PACKET_IO_STUB_CONTROL_H_INCLUDED_
 #define _PACKET_IO_STUB_CONTROL_H_INCLUDED_
-#include "libvig/stubs/str-descr.h"
+#include "libvig/models/str-descr.h"
 
 // kinda stupid place for this but it has to be somewhere
 #include <rte_ether.h>

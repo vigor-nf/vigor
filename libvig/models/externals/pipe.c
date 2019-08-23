@@ -1,4 +1,4 @@
-#include "libvig/stubs/externals/externals_stub.h"
+#include "_externals.h"
 
 #include <stdbool.h>
 #include <unistd.h>
@@ -30,5 +30,5 @@ int pipe(int pipefd[2]) {
 }
 
 void stub_pipe_write(const void *buf, size_t len) {
-  // TODO for now, nothing, let's see who reads
+  // nothing, we don't implement reads so no need for writes
 }

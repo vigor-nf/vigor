@@ -2,6 +2,7 @@
 #ifndef RTE_ETHER_H
 #define RTE_ETHER_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #define ETHER_TYPE_IPv4 0x0800
@@ -17,7 +18,7 @@ struct ether_hdr {
   uint16_t ether_type;
 };
 
-// Can't include stdio.h here, VeriFast hates it
+// no stdio.h here, verifast hates it; so we get a bunch of warnings instead... yay...
 static void ether_format_addr(char *buf, uint16_t size,
                               const struct ether_addr *eth_addr) {
   snprintf(buf, size, "%02X:%02X:%02X:%02X:%02X:%02X", eth_addr->addr_bytes[0],

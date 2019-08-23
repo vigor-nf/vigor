@@ -18,7 +18,7 @@ popd > /dev/null
 
 for FILE_PATH in $@; do
   PREPROC_FILE_PATH=$FILE_PATH.preproc.c
-  gcc -DCODEGEN -E $FILE_PATH -I $CODEGENDIR/.. -I $CODEGENDIR/../libvig/stubs/dpdk > $PREPROC_FILE_PATH
+  gcc -E $FILE_PATH -I $CODEGENDIR/.. -I $CODEGENDIR/../libvig/stubs/dpdk > $PREPROC_FILE_PATH
   swap $FILE_PATH $PREPROC_FILE_PATH
   $CODEGENDIR/_build/main.byte $FILE_PATH
   swap $FILE_PATH $PREPROC_FILE_PATH

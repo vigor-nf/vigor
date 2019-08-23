@@ -49,7 +49,7 @@ void ether_addr_allocate(void* obj);
 
 #ifdef KLEE_VERIFICATION
 #  include <klee/klee.h>
-#  include "libvig/stubs/str-descr.h"
+#  include "libvig/model/str-descr.h"
 
 extern struct str_field_descr ether_addr_descrs[1];
 extern struct nested_field_descr ether_addr_nests[0];

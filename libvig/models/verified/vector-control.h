@@ -2,7 +2,7 @@
 #define _VECTOR_STUB_CONTROL_H_INCLUDED_
 
 #include "libvig/verified/vector.h"
-#include "libvig/stubs/str-descr.h"
+#include "libvig/models/str-descr.h"
 
 #include <stdbool.h>
 
