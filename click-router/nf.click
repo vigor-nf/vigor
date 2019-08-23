@@ -17,12 +17,12 @@ define(
 
 // Module's I/O
 nicIn0  :: FromDPDKDevice($iface0, BURST $burst);
-nicOut0 :: ToDPDKDevice  ($iface0, IQUEUE $queueSize, BURST $burst);
+//nicOut0 :: ToDPDKDevice  ($iface0, IQUEUE $queueSize, BURST $burst);
 
 nicIn1  :: FromDPDKDevice($iface1, BURST $burst);
 nicOut1 :: ToDPDKDevice  ($iface1, IQUEUE $queueSize, BURST $burst);
 
-lpm :: DirectIPLookup( /* Insert routes here */
+lpm :: DirectIPLookup(
                        0.0.0.0/8 1,
                        1.0.0.0/8 1,
                        2.0.0.0/8 1,
@@ -284,7 +284,7 @@ lpm :: DirectIPLookup( /* Insert routes here */
 ee :: EnsureEther(0x0800, 1:1:1:1:1:0, 90:e2:ba:55:14:10);
 
 nicIn0 -> Strip(14) -> CheckIPHeader -> [0]lpm;
-nicIn1 -> Strip(14) -> CheckIPHeader -> [0]lpm;
+nicIn1 -> Discard;
 
-lpm[0]-> Discard
+lpm[0] -> Discard;
 lpm[1] -> ee[0] -> nicOut1;
