@@ -91,7 +91,7 @@ To run with your own arguments, compile then run `sudo ./build/app/nf -- -?` whi
 To verify using a pay-as-you-go specification, add `VIGOR_SPEC=paygo-your_spec.py` before a verification command; the spec name must begin with `paygo-` and end with `.py`.
 
 For instance:
-- To verify the "broadcast" pay-as-you-go property of the  Vigor bridge using DPDK models, run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
+- To verify the "broadcast" pay-as-you-go property of the Vigor bridge (without verifying DPDK or the DSOS), run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
 - To benchmark the Vigor policer's throughput, run `cd vigpol` then `make benchmark-throughput`
 
 
