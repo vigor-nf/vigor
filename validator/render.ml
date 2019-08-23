@@ -91,7 +91,7 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   (* HACKY HACK - can't do an assume over the arrays themselves because they're
      pointers and VeriFast will assume that the pointers, not the contents, are
      equal *)
-  | Array cells, Array Uint8 when head = "assume" ->
+  | Array cells, Array Uint8 ->
     begin match out_arg.t with
       | Array Uint8 ->
         let tmp_gen = gen_tmp_name() in
