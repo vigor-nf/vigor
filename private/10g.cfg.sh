@@ -1,3 +1,8 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+YOU CANNOT USE THIS FILE AS IT IS RIGHT NOW
+YOU MUST COPY THE VALUES YOU CARE ABOUT INTO THE CURRENT CONFIG
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 # Config for 10G:
 # [mb]{p801p1 (90:e2:ba:55:12:5c)} -- {p801p1 ()}[server]

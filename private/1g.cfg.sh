@@ -1,3 +1,9 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+YOU CANNOT USE THIS FILE AS IT IS RIGHT NOW
+YOU MUST COPY THE VALUES YOU CARE ABOUT INTO THE CURRENT CONFIG
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
 # Configuration file mapping real hosts, addresses and ports
 # to abstract names used in the scripts.
 
