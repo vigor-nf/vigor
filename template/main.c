@@ -3,8 +3,8 @@
 
 #include <rte_common.h>
 
-#include "libvig/nf_log.h"
-#include "libvig/nf_util.h"
+#include "nf-log.h"
+#include "nf-util.h"
 
 // ===
 // Include the state, and the generated structures, like so:
@@ -12,9 +12,9 @@
 #include "state.h"
 #include "flow.h.gen.h"
 
-// It is important to define `config` here, this gives the compiler
-// more opportunity to optimize accesses to the config that
-// are on the critical path (i.e. in nf_process)
+// ===
+// Define the config, which is only an extern in nf.h, like so:
+// ===
 struct nf_config config;
 
 void nf_init(void) {

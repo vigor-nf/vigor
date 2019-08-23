@@ -13,15 +13,15 @@
 #include <rte_byteorder.h>
 
 #include "nf.h"
-#include "libvig/nf_util.h"
-#include "libvig/nf_log.h"
+#include "nf-util.h"
+#include "nf-log.h"
 #include "policer_config.h"
 #include "state.h"
 
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/vector.h"
+#include "libvig/verified/expirator.h"
 
 struct nf_config config;
 

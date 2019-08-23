@@ -2,7 +2,7 @@
 #define _FLOWMANAGER_H_INCLUDED_
 
 #include "flow.h.gen.h"
-#include "libvig/verified/vigor_time.h"
+#include "libvig/verified/vigor-time.h"
 
 #include <stdbool.h>
 #include <stdint.h>

@@ -4,9 +4,9 @@
 #include <rte_common.h>
 #include <rte_ethdev.h>
 
-#include "libvig/nf_log.h"
-#include "libvig/nf_util.h"
-#include "libvig/boilerplate_util.h"
+#include "nf-log.h"
+#include "nf-util.h"
+#include "libvig/verified/boilerplate-util.h"
 
 #include "state.h"
 

@@ -1,4 +1,3 @@
-// used with VeriFast, no pragma
 #ifndef RTE_ETHER_H
 #define RTE_ETHER_H
 
@@ -17,14 +16,5 @@ struct ether_hdr {
   struct ether_addr s_addr;
   uint16_t ether_type;
 };
-
-// no stdio.h here, verifast hates it; so we get a bunch of warnings instead... yay...
-static void ether_format_addr(char *buf, uint16_t size,
-                              const struct ether_addr *eth_addr) {
-  snprintf(buf, size, "%02X:%02X:%02X:%02X:%02X:%02X", eth_addr->addr_bytes[0],
-           eth_addr->addr_bytes[1], eth_addr->addr_bytes[2],
-           eth_addr->addr_bytes[3], eth_addr->addr_bytes[4],
-           eth_addr->addr_bytes[5]);
-}
 
 #endif // RTE_ETHER_H

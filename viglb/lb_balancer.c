@@ -1,10 +1,8 @@
 #include "lb_balancer.h"
 #include "state.h"
 
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/containers/double-chain.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/expirator.h"
 
 #include <linux/limits.h>
 #include <sys/types.h>

@@ -130,7 +130,11 @@ char *nf_mac_to_str(struct ether_addr *addr) {
     rte_exit(EXIT_FAILURE, "Out of memory in nf_mac_to_str!");
   }
 
-  ether_format_addr(buffer, buffer_size, addr);
+  snprintf(buffer, buffer_size, "%02X:%02X:%02X:%02X:%02X:%02X", addr->addr_bytes[0],
+           addr->addr_bytes[1], addr->addr_bytes[2],
+           addr->addr_bytes[3], addr->addr_bytes[4],
+           addr->addr_bytes[5]);
+
   return buffer;
 }
 

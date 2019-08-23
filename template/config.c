@@ -17,8 +17,8 @@
 
 #include <cmdline_parse_etheraddr.h>
 
-#include "libvig/nf_util.h"
-#include "libvig/nf_log.h"
+#include "nf-util.h"
+#include "nf-log.h"
 
 #define PARSE_ERROR(format, ...)                                               \
   nf_config_usage();                                                           \
