@@ -6,9 +6,7 @@ import os
 protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
                    'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
                              'ttl', 'npid', 'cksum', 'saddr', 'daddr'],
-                   'tcpudp' : ['src_port', 'dst_port'],
-                   'tcp' : ['srcp', 'dstp', 'seq', 'ack', 'doff',
-                            'flags', 'win', 'cksum', 'urp']}
+                   'tcpudp' : ['src_port', 'dst_port']}
 emap = {'name' : 'emap',
         'modifying' : ['refresh_idx', 'add', 'expire_all', 'erase']}
 vector = {'name' : 'vector',

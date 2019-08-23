@@ -4,6 +4,9 @@
 #include "libvig/verified/ether.h"
 #include "libvig/verified/emap.h"
 #include "libvig/verified/packet-io.h"
+#include "libvig/verified/tcpudp_hdr.h"
+#include <rte_ip.h>
+#include <rte_ether.h>
 
 /*@
   inductive ether_hdri = ether_hdrc(ether_addri, ether_addri, int);
