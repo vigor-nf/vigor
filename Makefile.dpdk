@@ -99,8 +99,8 @@ verifast: autogen
 # =========================================
 
 # Cleanup
-CLEAN_COMMAND := rm -rf build *.bc *.os *.ll \
-                        {loop,state}.{c,h} $(SELF_DIR)/**/*.gen.{c,h}
+CLEAN_BUILD_ARTIFACTS_COMMAND := rm -rf *.bc *.os *.ll
+CLEAN_ALL_COMMAND := $(CLEAN_BUILD_ARTIFACTS_COMMAND) && rm -rf {loop,state}.{c,h} *.gen.{c,h}
 # Compilation
 COMPILE_COMMAND := clang
 # Linking with klee-uclibc, but without some methods we are modeling
@@ -142,7 +142,7 @@ VERIF_COMMAND := /usr/bin/time -v \
 
 # Cleanup after ourselves, but don't shadow the existing DPDK target
 clean-vigor:
-	@$(CLEAN_COMMAND)
+	@$(CLEAN_ALL_COMMAND)
 clean: clean-vigor
 
 # Built-in DPDK default target, make it aware of autogen,
@@ -187,6 +187,7 @@ symbex: clean autogen
 	@$(LINK_COMMAND)
 	@$(OPT_COMMAND)
 	@$(VERIF_COMMAND) $(NF_ARGS)
+	@$(CLEAN_BUILD_ARTIFACTS_COMMAND)
 
 
 
@@ -240,6 +241,7 @@ symbex-withdpdk: clean autogen
 	@$(LINK_COMMAND)
 	@$(OPT_COMMAND)
 	@$(VERIF_COMMAND) $(NF_ARGS)
+	@$(CLEAN_BUILD_ARTIFACTS_COMMAND)
 
 
 
@@ -264,6 +266,7 @@ symbex-withdsos: clean autogen
 	@$(LINK_COMMAND)
 	@$(OPT_COMMAND)
 	@$(VERIF_COMMAND) $(NF_ARGS)
+	@$(CLEAN_BUILD_ARTIFACTS_COMMAND)
 
 
 
