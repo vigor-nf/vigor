@@ -1,8 +1,8 @@
 #ifndef _MAP_STUB_CONTROL_H_INCLUDED_
 #define _MAP_STUB_CONTROL_H_INCLUDED_
 
-#include "libvig/containers/map.h"
-#include "str-descr.h"
+#include "libvig/verified/map.h"
+#include "libvig/stubs/str-descr.h"
 
 #include <stdbool.h>
 

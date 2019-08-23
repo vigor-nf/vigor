@@ -25,7 +25,7 @@ void ether_addr_allocate(void* obj)
 //@ requires chars(obj, sizeof(struct ether_addr), _);
 //@ ensures ether_addrp(obj, _);
 {
-  IGNORE(obj);
+  (uintptr_t) obj;
   //@ close_struct((struct ether_addr*) obj);
   //@ close ether_addrp(obj, _);
 }

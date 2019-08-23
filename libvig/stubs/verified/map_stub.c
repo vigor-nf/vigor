@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "klee/klee.h"
-#include "libvig/containers/map.h"
+#include "libvig/verified/map.h"
 #include "map_stub-control.h"
 
 #define PREALLOC_SIZE (256)

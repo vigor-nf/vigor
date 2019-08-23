@@ -1,8 +1,8 @@
 #ifndef _VECTOR_STUB_CONTROL_H_INCLUDED_
 #define _VECTOR_STUB_CONTROL_H_INCLUDED_
 
-#include "libvig/containers/vector.h"
-#include "str-descr.h"
+#include "libvig/verified/vector.h"
+#include "libvig/stubs/str-descr.h"
 
 #include <stdbool.h>
 

@@ -1,6 +1,5 @@
-
 #include "klee/klee.h"
-#include "libvig/containers/cht.h"
+#include "libvig/verified/cht.h"
 
 int cht_fill_cht(struct Vector *cht, uint32_t cht_height,
                  uint32_t backend_capacity) {

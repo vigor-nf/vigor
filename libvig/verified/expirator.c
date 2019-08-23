@@ -1,6 +1,5 @@
+#include "expirator.h"
 #include <assert.h>
-#include "libvig/containers/double-chain.h"
-#include "libvig/expirator.h"
 
 
 /*@

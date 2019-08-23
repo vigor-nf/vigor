@@ -1,12 +1,10 @@
 #pragma once
 
-#include <inttypes.h>
+#include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
 
 #include <rte_mbuf.h>
-
-#include "libvig/stubs/mbuf_content.h"
 
 struct stub_device {
   char *name;

@@ -2,7 +2,7 @@
 #define _MY_TIME_STUB_CONTROL_H_INCLUDED_
 
 #include <stdint.h>
-#include "libvig/nf_time.h"
+#include "libvig/verified/vigor_time.h"
 
 vigor_time_t start_time(void);
 //@ requires true;

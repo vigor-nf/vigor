@@ -1,3 +1,4 @@
+#include <inttypes.h>
 // DPDK uses these but doesn't include them. :|
 #include <linux/limits.h>
 #include <sys/types.h>
@@ -9,16 +10,15 @@
 #include <rte_lcore.h>
 #include <rte_mbuf.h>
 
-#include "libvig/boilerplate_util.h"
 #include "libvig/nf_log.h"
-#include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
-#include "libvig/packet-io.h"
+#include "libvig/verified/boilerplate_util.h"
+#include "libvig/verified/packet-io.h"
 #include "nf.h"
 
 #ifdef KLEE_VERIFICATION
 #  include "libvig/stubs/hardware_stub.h"
-#  include "libvig/stubs/time_stub_control.h"
+#  include "libvig/stubs/verified/vigor_time_stub-control.h"
 #  include <klee/klee.h>
 #endif // KLEE_VERIFICATION
 
@@ -27,8 +27,6 @@
 #else // DSOS
 #  define MAIN main
 #endif // DSOS
-
-#include <inttypes.h>
 
 #ifdef KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN                                                     \

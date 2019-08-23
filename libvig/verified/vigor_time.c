@@ -1,4 +1,4 @@
-#include "nf_time.h"
+#include "vigor_time.h"
 
 #include <time.h>
 #include <assert.h>

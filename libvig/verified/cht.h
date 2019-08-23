@@ -1,8 +1,8 @@
 #ifndef _CHT_H_INCLUDED_
 #define _CHT_H_INCLUDED_
 
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/vector.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/vector.h"
 
 //@ #include "prime.gh"
 //@ #include "permutations.gh"

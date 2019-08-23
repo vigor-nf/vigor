@@ -16,8 +16,8 @@
 #include "libvig/verified/tcpudp_hdr.h"
 
 #ifdef KLEE_VERIFICATION
-#  include "libvig/stubs/containers/str-descr.h"
-#  include "libvig/stubs/packet-io_stub-control.h"
+#  include "libvig/stubs/str-descr.h"
+#  include "libvig/stubs/verified/packet-io_stub-control.h"
 #endif // KLEE_VERIFICATION
 
 // rte_ether

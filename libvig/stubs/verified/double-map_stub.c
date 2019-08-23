@@ -2,7 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include "klee/klee.h"
-#include "libvig/containers/double-map.h"
+#include "libvig/verified/double-map.h"
 #include "double-map_stub-control.h"
 
 #define prealloc_size (256)

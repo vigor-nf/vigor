@@ -1,7 +1,6 @@
 #ifdef VIGOR_STUB_HARDWARE
 
-#  include "libvig/stubs/hardware_stub.h"
-#  include "libvig/stubs/core_stub.h"
+#  include "hardware_stub.h"
 
 #  include <endian.h>
 #  include <stdbool.h>
@@ -13,12 +12,12 @@
 #  include "rte_cycles.h"         // to include the next one cleanly
 #  include "generic/rte_cycles.h" // for rte_delay_us_callback_register
 
-#  include "libvig/packet-io.h"
-#  include "libvig/stubs/packet-io_stub-control.h"
+#  include "libvig/verified/packet-io.h"
+#  include "libvig/stubs/verified/packet-io_stub-control.h"
+#  include "libvig/kernel/dsos_pci.h"
 
 #  include <klee/klee.h>
 
-#  include "libvig/kernel/dsos_pci.h"
 
 typedef uint32_t (*stub_register_read)(struct stub_device *dev,
                                        uint32_t offset);

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <klee/klee.h>
-#include "libvig/containers/double-chain.h"
+#include "libvig/verified/double-chain.h"
 
 // TODO: double check that this model is enough for the NAT scenario
 

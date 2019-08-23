@@ -3,7 +3,6 @@
 #include <inttypes.h>
 
 #include <rte_ether.h>
-#include "libvig/nf_time.h"
 #include "nf.h"
 
 struct nf_config {

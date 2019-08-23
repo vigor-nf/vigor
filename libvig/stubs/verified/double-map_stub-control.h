@@ -1,6 +1,6 @@
 #ifndef _DOUBLE_MAP_STUB_CONTROL_H_INCLUDED_
 #define _DOUBLE_MAP_STUB_CONTROL_H_INCLUDED_
-#include "str-descr.h"
+#include "libvig/stubs/str-descr.h"
 
 typedef int entry_condition(void *key_a, void *key_b, int index, void *value,
                             void *state);

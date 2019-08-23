@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "libvig/containers/vector.h"
+#include "libvig/verified/vector.h"
 #include "vector_stub-control.h"
 
 #define PREALLOC_SIZE (256)

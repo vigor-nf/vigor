@@ -1,7 +1,7 @@
 #ifndef _DOUBLE_CHAIN_STUB_CONTROL_H_INCLUDED_
 #define _DOUBLE_CHAIN_STUB_CONTROL_H_INCLUDED_
 
-#include "libvig/containers/double-chain.h"
+#include "libvig/verified/double-chain.h"
 
 void dchain_make_space(struct DoubleChain *chain, int nfreed);
 

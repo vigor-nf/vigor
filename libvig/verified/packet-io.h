@@ -66,11 +66,6 @@ void packet_send(void *p, uint16_t dst_device);
 /*@ requires packetp(p, _, nil); @*/
 /*@ ensures true; @*/
 
-// Flood method for the bridge
-void packet_flood(void *p, uint16_t skip_device, uint16_t nb_devices);
-/*@ requires packetp(p, _, nil); @*/
-/*@ ensures true; @*/
-
 void packet_free(void *p);
 /*@ requires packetp(p, _, nil); @*/
 /*@ ensures true; @*/

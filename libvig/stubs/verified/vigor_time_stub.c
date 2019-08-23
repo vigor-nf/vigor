@@ -4,8 +4,8 @@
 #ifdef KLEE_VERIFICATION
 #  include <klee/klee.h>
 #endif
-#include "libvig/nf_time.h"
-#include "time_stub_control.h"
+#include "libvig/verified/vigor_time.h"
+#include "vigor_time_stub-control.h"
 #include "libvig/kernel/dsos_tsc.h"
 
 vigor_time_t starting_time = 0;

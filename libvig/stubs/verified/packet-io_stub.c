@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <klee/klee.h>
-#include "libvig/stubs/containers/str-descr.h"
-#include "libvig/packet-io.h"
+#include "libvig/stubs/str-descr.h"
+#include "libvig/verified/packet-io.h"
 #include "packet-io_stub-control.h"
 
 #define MAX_CHUNK_SIZE 41
@@ -169,22 +169,6 @@ void packet_free(void *p) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)p, "p");
   // klee_assert(!global_sent);
-}
-
-// flooding is necessary for the bridge to function
-// TODO why does this even exist?
-void packet_flood(void *p, uint16_t skip_device, uint16_t nb_devices) {
-  klee_trace_ret();
-  klee_trace_param_u64((uint64_t)p, "p");
-  klee_trace_param_i32(skip_device, "skip_device");
-  klee_trace_param_i32(nb_devices, "nb_devices");
-  klee_assert(!global_sent);
-  global_sent = true;
-  //  klee_forbid_access(frame->buf_addr, sizeof(struct stub_mbuf_content),
-  //                     "pkt flooded");
-  //  klee_forbid_access(frame,
-  //                     sizeof(struct rte_mbuf),
-  //                     "pkt flooded");
 }
 
 uint32_t packet_get_unread_length(void *p) {

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "libvig/containers/lpm-dir-24-8.h"
+#include "libvig/verified/lpm-dir-24-8.h"
 #include "lpm-dir-24-8_stub-control.h"
 
 #define PREALLOC_SIZE (256)

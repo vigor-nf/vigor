@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "libvig/nf_time.h"
+#include "vigor_time.h"
 
 //@ #include <listex.gh>
 //@ #include "stdex.gh"

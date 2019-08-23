@@ -8,7 +8,6 @@
 
 #include "nat_config.h"
 #include "nf.h"
-#include "libvig/nf_time.h"
 #include "libvig/nf_util.h"
 
 struct nf_config config;

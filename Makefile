@@ -29,7 +29,7 @@ ifeq (true,$(shell if grep -q clock_gettime                     \
                            $(addprefix $(NF_DIR)/,$(NF_FILES)); \
                    then echo 'true';                            \
                    fi))
-$(error Please use the Vigor nf_time header instead of clock_gettime)
+$(error Please use the vigor_time header instead of clock_gettime)
 endif
 
 # Default values for arguments

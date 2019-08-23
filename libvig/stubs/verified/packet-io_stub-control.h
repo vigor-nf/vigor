@@ -1,9 +1,12 @@
 #ifndef _PACKET_IO_STUB_CONTROL_H_INCLUDED_
 #define _PACKET_IO_STUB_CONTROL_H_INCLUDED_
-#include "libvig/stubs/containers/str-descr.h"
+#include "libvig/stubs/str-descr.h"
 
 // kinda stupid place for this but it has to be somewhere
-#define MBUF_MIN_SIZE (sizeof(struct ether_hdr) + sizeof(ipv4_hdr) + sizeof(tcpudp_hdr))
+#include <rte_ether.h>
+#include <rte_ip.h>
+#include "libvig/verified/tcpudp_hdr.h"
+#define MBUF_MIN_SIZE (sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr) + sizeof(struct tcpudp_hdr))
 
 typedef bool (*chunk_constraint)(void *);
 

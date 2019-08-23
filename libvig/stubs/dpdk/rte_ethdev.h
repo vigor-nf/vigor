@@ -12,7 +12,6 @@
 #include <rte_ethdev.h>
 
 #include "libvig/verified/packet-io.h"
-#include "libvig/stubs/mbuf_content.h"
 #include "libvig/stubs/str-descr.h"
 #include "libvig/stubs/verified/packet-io_stub-control.h"
 
@@ -214,7 +213,7 @@ static inline uint16_t rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
   (*rx_pkts)->nb_segs =
       1; // TODO do we want to make a possibility of multiple packets? Or we
          // could just prove the NF never touches this...
-  (*rx_pkts)->port = device;
+  (*rx_pkts)->port = port_id;
   (*rx_pkts)->ol_flags = 0;
   // packet_type is symbolic, NFs should use the content of the packet as the
   // source of truth

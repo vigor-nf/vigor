@@ -1,5 +1,5 @@
 #ifdef KLEE_VERIFICATION
-#  include "libvig/stubs/containers/map_stub-control.h" //for map_reset
+#  include "libvig/stubs/verified/map_stub-control.h" //for map_reset
 #endif                                                  // KLEE_VERIFICATION
 #include <assert.h>
 #include <errno.h>
@@ -19,10 +19,11 @@
 #include "libvig/nf_log.h"
 #include "bridge_config.h"
 
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/vector.h"
+#include "libvig/verified/expirator.h"
+#include "libvig/verified/ether.h"
 
 #include "nf.h"
 #include "state.h"
