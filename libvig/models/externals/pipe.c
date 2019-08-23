@@ -3,11 +3,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-#ifdef KLEE_VERIFICATION
-#  include <klee/klee.h>
-#else
-#  include <dsos-klee.h>
-#endif
+#include <klee/klee.h>
 
 static bool pipe_created = false;
 

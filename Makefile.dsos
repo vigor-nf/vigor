@@ -113,7 +113,7 @@ STUBS_SRCS += $(wildcard $(STUBS_DIR)/externals/*.c)
 
 KERNEL_SRCS := $(wildcard $(KERNEL_DIR)/*.c)
 
-KERNEL_INCLUDES := -I $(KERNEL_DIR)
+KERNEL_INCLUDES := -I $(KERNEL_DIR) -I $(SELF_DIR)/libvig/models/kernel
 
 # For DSOS debug output on the VGA buffer
 KERNEL_DEFS := -DDSOS_DEBUG

@@ -17,11 +17,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#ifdef KLEE_VERIFICATION
-#  include <klee/klee.h>
-#else
-#  include <dsos-klee.h>
-#endif
+#include <klee/klee.h>
 
 #define PCI_MAX_RESOURCE 6
 

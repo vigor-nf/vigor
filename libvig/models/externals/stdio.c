@@ -11,11 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef KLEE_VERIFICATION
-#  include <klee/klee.h>
-#else
-#  include <dsos-klee.h>
-#endif
+#include <klee/klee.h>
 
 extern struct dsos_pci_nic *PCI_DEVICES;
 extern int NUM_PCI_DEVICES;
