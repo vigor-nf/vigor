@@ -9,8 +9,9 @@ before_install:
 
 install:
   - docker run -dt --name=vigor dslabepfl/vigor
-  - docker cp . vigor:/home/vigor/vigor/
-  - docker exec vigor sudo chown -R vigor:vigor /home/vigor/vigor/
+  - docker exec vigor rm -rf /home/vigor/vigor
+  - docker cp . vigor:/home/vigor/vigor
+  - docker exec vigor sudo chown -R vigor:vigor /home/vigor/vigor
 
 script:
   - docker exec vigor /bin/bash -c 'cd vigor && . .travis-test.sh'
