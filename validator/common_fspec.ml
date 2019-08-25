@@ -5,8 +5,8 @@ open Ir
 
 
 let map_struct = Ir.Str ("Map", [])
-let vector_struct = Ir.Str ( "Vector", [] )
-let dchain_struct = Ir.Str ( "DoubleChain", [] )
+let vector_struct = Ir.Str ("Vector", [] )
+let dchain_struct = Ir.Str ("DoubleChain", [] )
 let lpm_struct = Ir.Str ("lpm", [])
 
 let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array Uint8;])
@@ -41,6 +41,7 @@ let eq_fun_name typ = typ ^ "_eq"
 let lsim_variable_name typ = "last_" ^ typ ^ "_searched_in_the_map"
 let lma_literal_name typ = "LMA_" ^ (StringLabels.uppercase_ascii typ)
 let logic_name inv = inv ^ "i"
+let advance_time_lemma inv = "advance_time_" ^ inv
 
 
 let capture_a_map t name {tmp_gen;_} =
@@ -393,7 +394,7 @@ let vector_alloc_spec vector_specs =
        ("\n\
         switch(vector_allocation_order) {\n" ^
         (String.concat ~sep:"" (List.mapi vector_specs
-                                  ~f:(fun i {typ;has_keeper;_} ->
+                                  ~f:(fun i {typ;has_keeper;invariant;_} ->
              " case " ^ (string_of_int i) ^ ":\n" ^
              (if has_keeper then
                 "/*@ if (" ^ ret_name ^
@@ -412,12 +413,11 @@ let vector_alloc_spec vector_specs =
                 ", " ^ (tmp_gen "dks") ^
                 ", " ^ (tmp_gen "addr_map") ^
                 ", " ^ (tmp_gen "cap") ^
-                ");\n\
-                 }@*/"
+                ");\n" ^
+                "}@*/"
               else
-                ""
-             ) ^
-              "break;\n"
+                "") ^
+             "break;\n"
            )) ) ^
           "default:\n\
             assert false;\n\
@@ -507,7 +507,8 @@ let vector_borrow_spec entry_specs =
                     begin match invariant with
                       | Some invariant ->
                         "//@ forall_nth(" ^ (tmp_gen "vec") ^
-                        ", (sup)(" ^ (logic_name invariant) ^ ", fst), " ^
+                        ", (sup)((" ^ (logic_name invariant) ^
+                        ")(recent_time), fst), " ^
                         (List.nth_exn args 1) ^
                         ");\n" ^
                         let (binding,expr) =
@@ -518,7 +519,8 @@ let vector_borrow_spec entry_specs =
                         "\n//@ assert [_]" ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
                         ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
                         "//@ forall_update(" ^ (tmp_gen "vec") ^
-                        ", (sup)(" ^ (logic_name invariant) ^ ", fst), " ^
+                        ", (sup)((" ^ (logic_name invariant) ^
+                        ")(recent_time), fst), " ^
                         (List.nth_exn args 1) ^
                         ", pair(" ^ (tmp_gen "fk") ^
                         ", 0.0));\n"
@@ -570,8 +572,14 @@ let vector_return_spec entry_specs =
                         "\n//@ assert [?" ^ (tmp_gen "frac") ^ "]" ^
                         pred_name typ ^ "(" ^ (render_tterm expr) ^
                         ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                        "//@ assert last_time(?new_recent_time);\n" ^
+                        "//@ " ^ advance_time_lemma invariant ^
+                        "(" ^ (tmp_gen "vec") ^
+                        ", recent_time, new_recent_time);\n" ^
+                        "recent_time = new_recent_time;\n" ^
                         "//@ forall_update(" ^ (tmp_gen "vec") ^
-                        ", (sup)(" ^ (logic_name invariant) ^ ", fst), " ^
+                        ", (sup)((" ^ (logic_name invariant) ^
+                        ")(recent_time), fst), " ^
                         (List.nth_exn args 1) ^
                         ", pair(" ^ (tmp_gen "fk") ^
                         ", " ^ (tmp_gen "frac") ^ "));\n"
@@ -625,13 +633,33 @@ let dchain_alloc_spec dchain_specs =
 
 let loop_invariant_consume_spec_impl types =
   {ret_type = Static Void;
-   arg_types = stt types ;
+   arg_types = stt (List.map types ~f:(fun (_, _, t) -> t)) ;
    extra_ptr_types = [];
    lemmas_before = [
+     (fun {arg_exps;tmp_gen;_} ->
+        "//@ assert last_time(?last_recent_time);\n" ^
+        (String.concat ~sep:""
+           (List.map2_exn arg_exps types ~f:(fun arg (_, t, _) ->
+                match t with
+                | Vector (typ, _, inv) when inv <> "" ->
+                  let (binding,expr) =
+                    self_dereference arg tmp_gen
+                  in
+                  let Addr arg = expr.v in
+                  binding ^ "\n" ^
+                  "//@ assert vectorp<" ^ ityp_name typ ^ ">(" ^
+                  (render_tterm arg) ^ ", " ^ pred_name typ ^ ", ?"
+                  ^ (tmp_gen (typ ^ "vec")) ^
+                  ", _);\n"^
+                  "//@ " ^ advance_time_lemma inv ^ "(" ^ (tmp_gen (typ ^ "vec")) ^
+                  ", recent_time, last_recent_time);\n"
+                | _ -> ""
+              ))) ^
+        "recent_time = last_recent_time;\n");
      (fun {args;_} ->
         "/*@ close evproc_loop_invariant(" ^
         (String.concat ~sep:", "
-           (List.map2_exn args types ~f:(fun arg t ->
+           (List.map2_exn args types ~f:(fun arg (_, _, t) ->
                 match t with
                 | Ptr _ -> "*" ^ arg
                 | _ -> arg
@@ -644,8 +672,26 @@ let concrete_containers containers =
       | _, EMap (_, _, _, _) -> false
       | _ -> true)
 
+let gen_vector_params containers records =
+  let has_keeper vec = List.exists containers ~f:(fun (_,ctyp) ->
+      match ctyp with
+      | EMap (_, _, emap_vec, _) -> vec = emap_vec
+      | _ -> false)
+  in
+  List.filter_map containers ~f:(fun (name,ctyp) ->
+      match ctyp with
+      | Vector (typ, _, invariant) -> Some {typ;has_keeper=has_keeper name;
+                                            entry_type=String.Map.find_exn records typ;
+                                            invariant=if invariant = "" then None
+                                                  else Some invariant}
+      | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32;
+                            invariant=None}
+      | _ -> None)
+
+
 let loop_invariant_arg_types containers =
   (List.map containers ~f:(fun (name,t) ->
+       name, t,
        match t with
        | Map (_, _, _) -> (Ptr (Ptr map_struct))
        | Vector (_, _, _) -> (Ptr (Ptr vector_struct))
@@ -655,9 +701,10 @@ let loop_invariant_arg_types containers =
        | UInt -> Uint32
        | UInt32 -> Uint32
        | EMap (_, _, _, _) -> Void
-       | LPM _ -> (Ptr (Ptr lpm_struct))))@[Uint32; vigor_time_t]
+       | LPM _ -> (Ptr (Ptr lpm_struct))))@["lcore", UInt32, Uint32;
+                                            "time", Int, vigor_time_t]
 
-let loop_invariant_consume_spec containers =
+let loop_invariant_consume_spec containers records =
   loop_invariant_consume_spec_impl (loop_invariant_arg_types
                                       (concrete_containers containers))
 
@@ -745,7 +792,8 @@ let loop_invariant_produce_spec containers =
                     name ^ "_ptr = " ^
                     (tmp_gen (name ^ "_tmp")) ^ ";\n"
                 ))) ^
-     "\n}@*/\n");
+        "\n}@*/\n" ^
+     "recent_time = *" ^ (List.last_exn args) ^ ";\n");
    ];}
 
 let constructor_name typ = typ ^ "c"
@@ -1395,6 +1443,7 @@ let gen_preamble nf_loop containers =
    int the_index_allocated = -1;\n\
    int64_t time_for_allocated_index = 0;\n\
    uint32_t packet_size = 0;\n\
+   vigor_time_t recent_time = 0;\n\
    bool a_packet_received = false;\n" ^
   (String.concat ~sep:""
      (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
@@ -1457,22 +1506,6 @@ let gen_map_params containers records =
               invariant=if invariant = "" then None else Some invariant}
       | _ -> None)
 
-let gen_vector_params containers records =
-  let has_keeper vec = List.exists containers ~f:(fun (_,ctyp) ->
-      match ctyp with
-      | EMap (_, _, emap_vec, _) -> vec = emap_vec
-      | _ -> false)
-  in
-  List.filter_map containers ~f:(fun (name,ctyp) ->
-      match ctyp with
-      | Vector (typ, _, invariant) -> Some {typ;has_keeper=has_keeper name;
-                                            entry_type=String.Map.find_exn records typ;
-                                            invariant=if invariant = "" then None
-                                                  else Some invariant}
-      | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32;
-                            invariant=None}
-      | _ -> None)
-
 let abstract_state_capture containers =
   (String.concat ~sep:"" (List.mapi containers ~f:(fun i (name,t) ->
        match t with
@@ -1520,7 +1553,7 @@ let fun_types containers records =
         (String.Map.data records) ~f:(fun record -> match record with
             | Str (_, _) -> Some (hash_spec record)
             | _ -> None )) @
-    ["loop_invariant_consume", (loop_invariant_consume_spec containers);
+    ["loop_invariant_consume", (loop_invariant_consume_spec containers records);
      "loop_invariant_produce", (loop_invariant_produce_spec containers);
      "dchain_allocate", (dchain_alloc_spec (gen_dchain_params containers));
      "dchain_allocate_new_index", (dchain_allocate_new_index_spec
