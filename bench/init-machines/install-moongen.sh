@@ -5,8 +5,8 @@ pushd $HOME >> /dev/null
       git clone --depth=1 git://github.com/emmericp/MoonGen.git moon-gen
 
       cd moon-gen
-      sudo ./build.sh
-
+      ./build.sh
+      printf '\n\n!!!\nErrors from driver binding failures are normal.\n!!!\n\n'
       touch .built
   fi
 popd >> /dev/null
