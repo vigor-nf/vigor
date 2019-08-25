@@ -102,5 +102,22 @@ ensures map_erase_fp(map_erase_all_fp(m, keys), key) ==
   }
 }
 
+lemma void map_get_inv_holds<kt,vt>(list<pair<kt,vt> > m, kt key,
+                                    fixpoint (pair<kt,vt>,bool) prop)
+requires true == forall(m, prop);
+ensures map_has_fp(m, key) ?
+        true == prop(pair(key, map_get_fp(m, key))) :
+        true;
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(k, v):
+          if (k != key) map_get_inv_holds(t, key, prop);
+      }
+  }
+}
+
 
 #endif//MAP_GH

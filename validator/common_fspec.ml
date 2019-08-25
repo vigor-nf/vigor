@@ -40,6 +40,7 @@ let alloc_fun_name typ =
 let eq_fun_name typ = typ ^ "_eq"
 let lsim_variable_name typ = "last_" ^ typ ^ "_searched_in_the_map"
 let lma_literal_name typ = "LMA_" ^ (StringLabels.uppercase_ascii typ)
+let logic_name inv = inv ^ "i"
 
 
 let capture_a_map t name {tmp_gen;_} =
@@ -274,6 +275,7 @@ type map_spec = {
   typ : string;
   coherent : bool;
   entry_type : ttype;
+  invariant : string option;
 }
 
 
@@ -344,6 +346,7 @@ type vector_params = {
   typ : string;
   has_keeper : bool;
   entry_type : ttype;
+  invariant : string option;
 }
 
 let vector_alloc_spec vector_specs =
@@ -495,26 +498,32 @@ let vector_borrow_spec entry_specs =
                   (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
      (fun {arg_types;args;arg_exps;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;invariant;_} ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ) ~f:(fun {typ;_} ->
                            "//@ open hide_vector<" ^ ityp_name typ ^
                            ">(_, _, _, _);\n")) ^
-                    "//@ forall_nth(" ^ (tmp_gen "vec") ^
-                    ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
-                    ");\n" ^
-                    let (binding,expr) =
-                      self_dereference (List.nth_exn arg_exps 2) tmp_gen
-                    in
-                    let Addr expr = expr.v in
-                    binding ^
-                    "\n//@ assert [_]" ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
-                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
-                    "//@ forall_update(" ^ (tmp_gen "vec") ^
-                    ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
-                    ", pair(" ^ (tmp_gen "fk") ^
-                    ", 0.0));\n" ^
+                    begin match invariant with
+                      | Some invariant ->
+                        "//@ forall_nth(" ^ (tmp_gen "vec") ^
+                        ", (sup)(" ^ (logic_name invariant) ^ ", fst), " ^
+                        (List.nth_exn args 1) ^
+                        ");\n" ^
+                        let (binding,expr) =
+                          self_dereference (List.nth_exn arg_exps 2) tmp_gen
+                        in
+                        let Addr expr = expr.v in
+                        binding ^
+                        "\n//@ assert [_]" ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
+                        ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                        "//@ forall_update(" ^ (tmp_gen "vec") ^
+                        ", (sup)(" ^ (logic_name invariant) ^ ", fst), " ^
+                        (List.nth_exn args 1) ^
+                        ", pair(" ^ (tmp_gen "fk") ^
+                        ", 0.0));\n"
+                      | None -> ""
+                    end ^
                     (open_callback entry_type
                        {v=Deref (List.nth_exn arg_exps 2);
                         t=Unknown}))
@@ -537,16 +546,8 @@ let vector_return_spec entry_specs =
                     (typ, Ptr entry_type)));];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun {args;tmp_gen;_}->
-        "//@ assert vectorp(" ^
-        (List.nth_exn args 0) ^
-        ", _, ?" ^ (tmp_gen "vec") ^ ", _);\n" ^
-        "//@ forall_nth(" ^ (tmp_gen "vec") ^
-        ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
-        ");"
-     );
      (fun {arg_types;args;arg_exps;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun {typ;entry_type;_} ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;invariant;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ)
@@ -554,17 +555,28 @@ let vector_return_spec entry_specs =
                              "//@ close hide_vector<" ^ ityp_name typ ^
                              ">(_, _, _, _);\n"
                        )) ^
-                    "\n" ^
-                    let (binding,expr) =
-                      self_dereference (List.nth_exn arg_exps 2) tmp_gen
-                    in
-                    binding ^
-                    "\n//@ assert [?" ^ (tmp_gen "frac") ^ "]" ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
-                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
-                    "//@ forall_update(" ^ (tmp_gen "vec") ^
-                    ", (sup)(flow_cond, fst), " ^ (List.nth_exn args 1) ^
-                    ", pair(" ^ (tmp_gen "fk") ^
-                    ", " ^ (tmp_gen "frac") ^ "));\n")
+                    "\n" ^ "//@ assert vectorp<" ^ ityp_name typ ^
+                    ">(" ^
+                    (List.nth_exn args 0) ^
+                    ", " ^ pred_name typ ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^
+                    (tmp_gen "veca") ^
+                    ");\n" ^
+                    begin match invariant with
+                      | Some invariant ->
+                        let (binding,expr) =
+                          self_dereference (List.nth_exn arg_exps 2) tmp_gen
+                        in
+                        binding ^
+                        "\n//@ assert [?" ^ (tmp_gen "frac") ^ "]" ^
+                        pred_name typ ^ "(" ^ (render_tterm expr) ^
+                        ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                        "//@ forall_update(" ^ (tmp_gen "vec") ^
+                        ", (sup)(" ^ (logic_name invariant) ^ ", fst), " ^
+                        (List.nth_exn args 1) ^
+                        ", pair(" ^ (tmp_gen "fk") ^
+                        ", " ^ (tmp_gen "frac") ^ "));\n"
+                      | None -> ""
+                    end)
             else
               None))
         with
@@ -796,6 +808,7 @@ let map_get_spec (map_specs : map_spec list) =
                           "//@ close hide_mapp<" ^ ityp_name typ ^
                           ">(_, _, _, _, _);\n"
                         ))) ^
+                capture_a_map typ "map" params ^
                 (if coherent then
                    let (binding,expr) =
                      self_dereference (List.nth_exn arg_exps 1) tmp_gen
@@ -804,9 +817,8 @@ let map_get_spec (map_specs : map_spec list) =
                    "\n//@ assert " ^ pred_name typ ^ "(" ^ (render_tterm expr) ^
                    ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
                    lsim_variable_name typ ^ " = " ^ (tmp_gen "fk") ^ ";\n" ^
-                   capture_a_map typ "dm" params ^
                    "//@ assert map_vec_chain_coherent<" ^ ityp_name typ ^ ">(" ^
-                   (tmp_gen "dm") ^ ", ?" ^
+                   (tmp_gen "map") ^ ", ?" ^
                    (tmp_gen "dv") ^ ", ?" ^
                    (tmp_gen "dh") ^ ");\n"
                  else ""))
@@ -819,31 +831,46 @@ let map_get_spec (map_specs : map_spec list) =
 
      );];
    lemmas_after = [
-     (fun {ret_name;tmp_gen;arg_types;arg_exps;_} ->
-        match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent} ->
+     (fun {ret_name;tmp_gen;arg_types;args;arg_exps;_} ->
+        match (List.find_map map_specs ~f:(fun {typ;entry_type;
+                                                coherent;invariant} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some ((if coherent then
                        "/*@ if (" ^ ret_name ^
                        " != 0) {\n\
                         mvc_coherent_map_get_bounded(" ^
-                       (tmp_gen "dm") ^ ", " ^
+                       (tmp_gen "map") ^ ", " ^
                        (tmp_gen "dv") ^ ", " ^
                        (tmp_gen "dh") ^ ", " ^
                        (tmp_gen "fk") ^
                        ");\n\
                         mvc_coherent_map_get_vec_half(" ^
-                       (tmp_gen "dm") ^ ", " ^
+                       (tmp_gen "map") ^ ", " ^
                        (tmp_gen "dv") ^ ", " ^
                        (tmp_gen "dh") ^ ", " ^
                        (tmp_gen "fk") ^
                        ");\n\
                         mvc_coherent_map_get(" ^
-                       (tmp_gen "dm") ^ ", " ^
+                       (tmp_gen "map") ^ ", " ^
                        (tmp_gen "dv") ^ ", " ^
                        (tmp_gen "dh") ^ ", " ^
                        (tmp_gen "fk") ^ ");\n} @*/\n" ^
                        "last_map_accessed = " ^ lma_literal_name typ ^ ";\n"
                      else "") ^
+                    (match invariant with
+                     | Some invariant ->
+                       "\n//@ assert " ^ pred_name typ ^
+                       "(" ^ (List.nth_exn args 1) ^
+                       ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                       "/*@ if (" ^ ret_name ^
+                       " != 0) {\n" ^
+                       "\nmap_get_inv_holds(" ^
+                       (tmp_gen "map") ^ ", " ^
+                       (tmp_gen "fk") ^ ", (sup)(" ^
+                       (logic_name invariant) ^ ", snd));
+                     \n} @*/\n"
+                     | None -> "")
+                    ^
                     (open_callback entry_type (List.nth_exn arg_exps 1)) ^
                     (String.concat ~sep:"" (List.map (other_specs typ)
                                               ~f:(fun {typ;_} ->
@@ -1033,10 +1060,13 @@ let map_erase_spec (map_specs : map_spec list) =
                   (ttype_to_str (List.nth_exn arg_types 1)));];}
 
 
-let expire_items_single_map_spec typs =
+let expire_items_single_map_spec typs vecs (maps : map_spec list) =
   let other_types excl_typ =
     List.filter typs ~f:(fun typ ->
         typ <> excl_typ)
+  in
+  let other_vec_types excl_typ =
+    List.filter vecs ~f:(fun {typ;_} -> typ <> excl_typ)
   in
   {ret_type = Static Sint32;
    arg_types = stt [Ptr dchain_struct;
@@ -1045,7 +1075,7 @@ let expire_items_single_map_spec typs =
                     vigor_time_t];
    extra_ptr_types = [];
    lemmas_before = [
-     (fun _ ->
+     (fun {tmp_gen;args;_} ->
         "switch(expire_items_single_map_order) {\n" ^
         (String.concat ~sep:""
            (List.mapi typs ~f:(fun i typ ->
@@ -1053,9 +1083,44 @@ let expire_items_single_map_spec typs =
                 (String.concat ~sep:""
                    (List.map (other_types typ)
                       ~f:(fun other_typ ->
-                          "//@ close hide_mapp<" ^ ityp_name other_typ ^ ">(_, _, _, _, _);\n"
+                          "//@ close hide_mapp<" ^ ityp_name other_typ ^
+                          ">(_, _, _, _, _);\n"
                         ))) ^
-                "break;\n"
+                (String.concat ~sep:""
+                   (List.map (other_vec_types typ)
+                      ~f:(fun {typ;_} ->
+                          "//@ close hide_vector<" ^
+                          ityp_name typ ^ ">(_, _, _, _);\n"
+                        ))) ^ "//@ assert vectorp<" ^ ityp_name typ ^
+                ">(" ^
+                (List.nth_exn args 1) ^
+                ", " ^ pred_name typ ^ ", ?" ^ (tmp_gen "vec") ^ ", ?" ^
+                (tmp_gen "veca") ^
+                ");\n" ^
+                (match List.find_map vecs ~f:(fun v ->
+                     if v.typ = typ then v.invariant else None)
+                 with
+                 | Some invariant ->
+                   "vector_erase_all_keep_inv(" ^ (tmp_gen "vec") ^
+                   ", dchain_get_expired_indexes_fp(" ^
+                   (tmp_gen "cur_ch") ^ ", " ^
+                   (List.nth_exn args 3) ^
+                   "), " ^ invariant ^ ");\n"
+                 | None -> "") ^
+                (match List.find_map maps ~f:(fun m ->
+                     if m.typ = typ then m.invariant else None)
+                 with
+                 | Some invariant ->
+                   "//@assert mapp(" ^ (List.nth_exn args 2) ^
+                   ", _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
+                   ", _));\n" ^
+                   "map_erase_all_keep_inv(" ^ (tmp_gen "fm") ^
+                   ", vector_get_values_fp(" ^ (tmp_gen "vec") ^ ", dchain_get_expired_indexes_fp(" ^
+                   (tmp_gen "cur_ch") ^ ", " ^
+                   (List.nth_exn args 3) ^
+                   ")), " ^ (logic_name invariant) ^ ");\n"
+                 | None -> "") ^
+                   "break;\n"
               )) ) ^
         "default:\n\
          assert false;\n\
@@ -1063,8 +1128,6 @@ let expire_items_single_map_spec typs =
      (fun {tmp_gen;args;_} ->
         "//@ assert double_chainp(?" ^
         (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
-        "//@ assert vectorp(" ^ (List.nth_exn args 1) ^
-        ", _, ?" ^ (tmp_gen "cur_vec") ^ ", _);\n" ^
         "//@ expire_olds_keeps_high_bounded(" ^
         (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
      (fun {args;tmp_gen;_} ->
@@ -1082,13 +1145,8 @@ let expire_items_single_map_spec typs =
          (" ^ (List.nth_exn args 0) ^ ", " ^
         (tmp_gen "cur_ch") ^ ", " ^
         (List.nth_exn args 3) ^
-        ");\n\
-         vector_erase_all_keep_inv(" ^ (tmp_gen "cur_vec") ^
-        ", dchain_get_expired_indexes_fp(" ^
-        (tmp_gen "cur_ch") ^ ", " ^
-        (List.nth_exn args 3) ^
-        "), flow_cond);\n\
-         } @*/");
+        ");\n" ^
+         "} @*/");
    ];
    lemmas_after = [
      (fun {tmp_gen;_} ->
@@ -1113,7 +1171,13 @@ let expire_items_single_map_spec typs =
                      "//@ open hide_mapp<" ^ ityp_name other_typ ^
                      ">(_, _, _, _, _);\n"
                    ))) ^
-              "break;\n"
+             (String.concat ~sep:""
+                (List.map (other_vec_types typ)
+                   ~f:(fun {typ;_} ->
+                       "//@ open hide_vector<" ^
+                       ityp_name typ ^ ">(_, _, _, _);\n"
+                     ))) ^
+               "break;\n"
            )) ) ^
         "default:\n\
          assert false;\n\
@@ -1387,8 +1451,10 @@ let gen_map_params containers records =
   in
   List.filter_map containers ~f:(fun (name,ctyp) ->
       match ctyp with
-      | Map (typ, _, _) -> Some {typ;coherent=is_map_coherent name;
-                                 entry_type=String.Map.find_exn records typ}
+      | Map (typ, _, invariant) ->
+        Some {typ;coherent=is_map_coherent name;
+              entry_type=String.Map.find_exn records typ;
+              invariant=if invariant = "" then None else Some invariant}
       | _ -> None)
 
 let gen_vector_params containers records =
@@ -1399,9 +1465,12 @@ let gen_vector_params containers records =
   in
   List.filter_map containers ~f:(fun (name,ctyp) ->
       match ctyp with
-      | Vector (typ, _, _) -> Some {typ;has_keeper=has_keeper name;
-                                    entry_type=String.Map.find_exn records typ}
-      | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32}
+      | Vector (typ, _, invariant) -> Some {typ;has_keeper=has_keeper name;
+                                            entry_type=String.Map.find_exn records typ;
+                                            invariant=if invariant = "" then None
+                                                  else Some invariant}
+      | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32;
+                            invariant=None}
       | _ -> None)
 
 let abstract_state_capture containers =
@@ -1462,7 +1531,9 @@ let fun_types containers records =
                              (gen_dchain_params containers)) ;
      "dchain_is_index_allocated", dchain_is_index_allocated_spec;
      "expire_items_single_map", (expire_items_single_map_spec
-                                   (gen_dchain_params containers));
+                                   (gen_dchain_params containers)
+                                   (gen_vector_params containers records)
+                                   (gen_map_params containers records));
      "map_allocate", (map_alloc_spec
                         (gen_map_params containers records));
      "map_get", (map_get_spec (gen_map_params containers records));
