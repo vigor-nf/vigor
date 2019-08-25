@@ -302,7 +302,7 @@ fi
 
 # ==============================================================================
 # End of compile/runtime dependencies
-if [ $# -eq 0 ] || [ "$1" != 'no-verif' ]; then
+if [ $# -eq 0 ] || [ "$1" != 'no-verify' ]; then
 
 
 
