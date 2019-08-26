@@ -11,5 +11,5 @@ fi
 
 echo "[clean] Killing middlebox..."
 pushd $MIDDLEBOX >> /dev/null
-  sudo killall -SIGINT $(make -s _print-processname) > /dev/null 2>&1
+  sudo killall -SIGKILL $(make -s _print-processname) > /dev/null 2>&1
 popd >> /dev/null
