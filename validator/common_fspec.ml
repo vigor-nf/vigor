@@ -43,7 +43,7 @@ let lma_literal_name typ = "LMA_" ^ (StringLabels.uppercase_ascii typ)
 let logic_name inv = inv ^ "i"
 let advance_time_lemma inv = "advance_time_" ^ inv
 let init_inv_lemma inv = "init_" ^ inv
-let default_value_for typ = "DEFAULT_" ^ typ
+let default_value_for typ = "DEFAULT_" ^ (String.uppercase typ)
 
 
 let capture_a_map t name {tmp_gen;_} =

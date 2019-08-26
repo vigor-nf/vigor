@@ -14,6 +14,9 @@ let alloc_fun_name compinfo = compinfo.cname ^ "_allocate"
 let eq_fun_name compinfo = compinfo.cname ^ "_eq"
 let hash_fun_name compinfo = compinfo.cname ^ "_hash"
 let log_fun_name compinfo = "LOG_" ^ (String.uppercase_ascii compinfo.cname)
+(* let advance_time_lemma inv = "advance_time_" ^ inv
+ * let init_inv_lemma inv = "init_" ^ inv *)
+let default_name compinfo = "DEFAULT_" ^ (String.uppercase_ascii compinfo.cname)
 
 let gen_inductive_type compinfo =
   "/*@\ninductive " ^ (inductive_name compinfo) ^
@@ -38,6 +41,30 @@ let gen_inductive_type compinfo =
        | _ -> P.sprint ~width:100 (d_type () ftype)
      ) compinfo.cfields)) ^
   "); @*/"
+
+let rec gen_default_value compinfo =
+  (constructor_name compinfo) ^ "(" ^
+  (String.concat ", " (List.map (fun {ftype;_} ->
+       match ftype with
+       | TComp (field_str, _) ->
+         (gen_default_value field_str)
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec csl_fields (c : int64) =
+           if 1L < c then
+             "0, " ^ (csl_fields (Int64.sub c 1L))
+           else if 1L = c then
+             "0"
+           else failwith "A 0-element array"
+         in
+         "{" ^ (csl_fields c) ^ "}"
+       | TArray (field_t, _, _) ->
+         failwith "An array of unsupported count" ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ -> "0"
+     ) compinfo.cfields)) ^ ")"
+
+let gen_default_value_macro compinfo =
+  "#define " ^ (default_name compinfo) ^ " " ^ (gen_default_value compinfo)
 
 let gen_predicate compinfo =
   "/*@\npredicate " ^ (predicate_name compinfo) ^ "(struct " ^
@@ -374,16 +401,40 @@ let gen_hash_decl compinfo =
 let alloc_fun_contract compinfo =
   "//@ requires chars(obj, sizeof(struct " ^ compinfo.cname ^
   "), _);\n" ^
-  "//@ ensures " ^ (predicate_name compinfo) ^ "(obj, _);"
+  "//@ ensures " ^ (predicate_name compinfo) ^
+  "(obj, " ^ (default_name compinfo) ^ ");"
 
 let gen_alloc_function compinfo =
   "void " ^ (alloc_fun_name compinfo) ^ "(void* obj)\n" ^
   (alloc_fun_contract compinfo) ^ "\n" ^
   "{\n" ^
-  "  (uintptr_t) obj;\n" ^
   "  //@ close_struct((struct " ^ compinfo.cname ^ "*) obj);\n" ^
-  "  //@ close " ^ (predicate_name compinfo) ^ "(obj, _);\n" ^
-  "}"
+  "  struct " ^ compinfo.cname ^
+  "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
+  let rec zero_fields cstruct name =
+    (String .concat "\n" (List.map (fun {fname;ftype;_} ->
+         let field_id = name ^ "->" ^ fname in
+         match ftype with
+         | TComp (field_str, _) ->
+           (zero_fields field_str field_id)
+         | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+           let rec arr_fields (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+             if 0L < i then
+               "  " ^ field_id ^ "[" ^ current ^ "] = 0;\n" ^
+               (arr_fields (Int64.sub i 1L))
+             else ""
+           in
+           arr_fields c
+         | TArray (field_t, _, _) ->
+           failwith "An of unsupported array count " ^
+           (P.sprint ~width:100 (d_type () ftype))
+         | _ -> "  " ^ field_id ^ " = 0;"
+       ) cstruct.cfields))
+  in
+  (zero_fields compinfo "id") ^ "\n" ^
+  "  //@ close " ^ (predicate_name compinfo) ^ "(obj, " ^ (default_name compinfo) ^ ");\n" ^
+  "}\n"
 
 let gen_alloc_function_decl compinfo =
   "void " ^ (alloc_fun_name compinfo) ^ "(void* obj);\n" ^
@@ -509,6 +560,7 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ignore (P.fprintf cout "#include \"libvig/verified/ether.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_include_deps compinfo def_headers));
   ignore (P.fprintf cout "#include \"%s\"\n\n" orig_fname);
+  ignore (P.fprintf cout "%s\n\n" (gen_default_value_macro compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_inductive_type compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_predicate compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_logical_hash compinfo));
