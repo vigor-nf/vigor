@@ -26,6 +26,10 @@ let alloc_fun_name cname = match cname with
 let eq_fun_name cname = cname ^ "_eq"
 let hash_fun_name cname = cname ^ "_hash"
 let log_fun_name cname = "log_" ^ cname
+let advance_time_lemma inv = "advance_time_" ^ inv
+let init_lemma inv = "init_" ^ inv
+let logic_name inv = inv ^ "l"
+let default_value_for typ = "DEFAULT_" ^ (String.uppercase_ascii typ)
 
 let concat_flatten_map sep f lst extra =
   (String.concat sep ((List.flatten (List.map f lst))@extra))
@@ -36,6 +40,65 @@ let is_free_vector containers name =
       | EMap (_, _, vec_name, _) -> String.equal name vec_name
       | _ -> false)
       containers)
+
+let gen_inv_lemmas containers =
+  "/*@\n" ^
+  (concat_flatten_map "\n"
+     (fun (name, cnt) ->
+        match cnt with
+        | Vector (typ, _, invariant) when invariant <> "" -> [
+            "lemma void " ^ (advance_time_lemma invariant) ^ "(list<pair<" ^
+            inductive_name typ ^
+            ", real> > vec,\n\
+             vigor_time_t old_time,\n\
+             vigor_time_t new_time)\n\
+             requires true == forall(vec, (sup)((" ^
+            (logic_name invariant) ^
+            ")(old_time), fst)) &*&\n\
+            old_time <= new_time;\n\
+             ensures true == forall(vec, (sup)((" ^
+            (logic_name invariant) ^
+            ")(new_time), fst));\n\
+            {\n\
+             switch(vec) {\n\
+            case nil:\n\
+            case cons(h,t):\n\
+            " ^ (advance_time_lemma invariant) ^
+            "(t, old_time, new_time);\n\
+             switch(h) {case pair(v, fr):\n\
+            //switch for v?
+             }\n\
+             }\n\
+             }\n";
+            "lemma void " ^ (init_lemma invariant) ^
+            "(nat cap, vigor_time_t time)\n\
+             requires 0 <= time;\n\
+             ensures true == forall(repeat(pair(" ^ (default_value_for typ) ^
+            ", 1.0), cap), (sup)((" ^
+            (logic_name invariant) ^
+            ")(time), fst));\n\
+             {\n\
+             switch(cap) {\n\
+             case zero:\n\
+             case succ(n):\n\
+            " ^ (init_lemma invariant) ^
+            "(n, time);\n\
+             }\n\
+             }\n"
+          ]
+        | Vector (_, _, _)
+        | Map (_, _, _)
+        | CHT (_,_)
+        | DChain _
+        | UInt
+        | UInt32
+        | Int
+        | EMap (_, _, _, _)
+        | LPM _ -> []
+     )
+     containers
+     []) ^
+  "@*/"
 
 let gen_loop_invariant containers =
   "/*@ predicate evproc_loop_invariant(" ^
@@ -64,15 +127,19 @@ let gen_loop_invariant containers =
                                 ", " ^ (lhash_name typ) ^ ", " ^ "nop_true, " ^
                                 "mapc(" ^ cap ^ ", ?_" ^ name ^ ", ?_" ^ name ^
                                 "_addrs))"]
-        | Vector (typ, cap, _) ->
+        | Vector (typ, cap, invariant) ->
           let vectorp = "vectorp<" ^ (inductive_name typ) ^
                         ">(" ^ name ^ ", " ^ (predicate_name typ) ^
                         ", ?_" ^ name ^ ", ?_" ^ name ^ "_addrs)"
           in
           let len = "length(_" ^ name ^ ") == " ^ cap in
           let is_one = "true == forall(_" ^ name ^ ", is_one)" in
+          let cell_inv =
+            "true == forall(_" ^ name ^ ", (sup)((" ^ (logic_name invariant) ^ ")(time), fst))"
+          in
           vectorp::
           (if is_free_vector containers name then [is_one] else [])@
+          (if invariant <> "" then [cell_inv] else [])@
           (if (String.equal cap "") || (String.equal cap "_") then [] else [len])
         | CHT (depth,height) ->
           let vectorp =
@@ -576,6 +643,7 @@ let () =
   List.iter (fun incl ->
       fprintf cout "#include \"%s\"\n" incl;)
     Nf_data_spec.custom_includes;
+  fprintf cout "%s\n" (gen_inv_lemmas containers);
   fprintf cout "%s\n" (gen_loop_invariant containers);
   fprintf cout "%s\n" (gen_invariant_consume_decl containers);
   fprintf cout "%s\n" (gen_invariant_produce_decl containers);
