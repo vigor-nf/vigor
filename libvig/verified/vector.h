@@ -3,6 +3,7 @@
 
 //@ #include "stdex.gh"
 //@ #include "listexex.gh"
+//@ #include "listutils.gh"
 
 #define VECTOR_CAPACITY_UPPER_LIMIT 140000
 
@@ -105,16 +106,17 @@ struct Vector;
   @*/
 
 typedef void vector_init_elem/*@ <t> (predicate (void*;t) entp,
-                                      int elem_size) @*/
+                                      int elem_size,
+                                      t val) @*/
                              (void* elem);
 /*@ requires chars(elem, elem_size, _); @*/
-/*@ ensures entp(elem, _); @*/
+/*@ ensures entp(elem, val); @*/
 
 int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                                vector_init_elem* init_elem,
                                struct Vector** vector_out);
 /*@ requires 0 < elem_size &*& 0 < capacity &*&
-             [_]is_vector_init_elem<t>(init_elem, ?entp, elem_size) &*&
+             [_]is_vector_init_elem<t>(init_elem, ?entp, elem_size, ?val) &*&
              0 <= elem_size &*& elem_size < 4096 &*&
              0 <= capacity &*& capacity < VECTOR_CAPACITY_UPPER_LIMIT &*&
              *vector_out |-> ?old_vo; @*/
@@ -124,6 +126,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
              result == 1 &*&
              vectorp<t>(new_vo, entp, ?contents, ?addrs) &*&
              length(contents) == capacity &*&
+             contents == repeat(pair(val, 1.0), nat_of_int(capacity)) &*&
              true == forall(contents, is_one)); @*/
 
 void vector_borrow/*@ <t> @*/(struct Vector* vector, int index, void** val_out);

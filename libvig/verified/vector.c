@@ -4,6 +4,7 @@
 
 //@ #include "arith.gh"
 //@ #include "stdex.gh"
+//@ #include "listutils-lemmas.gh"
 
 struct Vector {
   char* data;
@@ -147,7 +148,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                                vector_init_elem* init_elem,
                                struct Vector** vector_out)
 /*@ requires 0 < elem_size &*& 0 < capacity &*&
-             [_]is_vector_init_elem<t>(init_elem, ?entp, elem_size) &*&
+             [_]is_vector_init_elem<t>(init_elem, ?entp, elem_size, ?val) &*&
              0 <= elem_size &*& elem_size < 4096 &*&
              0 <= capacity &*& capacity < VECTOR_CAPACITY_UPPER_LIMIT &*&
              *vector_out |-> ?old_vo; @*/
@@ -156,6 +157,7 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
               (*vector_out |-> ?new_vo &*&
                result == 1 &*&
                vectorp(new_vo, entp, ?contents, ?addrs) &*&
+               contents == repeat(pair(val, 1.0), nat_of_int(capacity)) &*&
                length(contents) == capacity &*&
                true == forall(contents, is_one)); @*/
 {
@@ -189,7 +191,8 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                 entsp(data, elem_size, entp, i, elems) &*&
                 chars((data + elem_size*i),
                       elem_size*(capacity - i), _) &*&
-                [_]is_vector_init_elem<t>(init_elem, entp, elem_size) &*&
+                [_]is_vector_init_elem<t>(init_elem, entp, elem_size, val) &*&
+                elems == repeat(pair(val, 1.0), nat_of_int(i)) &*&
                 true == forall(elems, is_one);
       @*/
     //@ decreases (capacity - i);
@@ -204,11 +207,12 @@ int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
     //@ mul_mono(0, i, elem_size);
     //@ assert 0 <= elem_size*i;
     init_elem((*vector_out)->data + elem_size*(int)i);
-    //@ assert entp(data + elem_size*i, ?x);
+    //@ assert entp(data + elem_size*i, val);
     //@ close upperbounded_ptr(data + elem_size*(i + 1));
     //@ append_to_entsp(data, data + elem_size*i);
-    //@ forall_append(elems, cons(pair(x, 1.0), nil), is_one);
-    //@ elems = append(elems, cons(pair(x, 1.0), nil));
+    //@ forall_append(elems, cons(pair(val, 1.0), nil), is_one);
+    //@ repeat_append(pair(val, 1.0), nat_of_int(i));
+    //@ elems = append(elems, cons(pair(val, 1.0), nil));
   }
   //@ open upperbounded_ptr(_);
   //@ list<void*> addrs = gen_vector_addrs_fp((*vector_out)->data, elem_size, capacity);

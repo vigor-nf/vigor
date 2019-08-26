@@ -359,6 +359,17 @@
         ensures     tail(repeat(elem, n)) == repeat(elem, n_pred);
     {}
 
+    lemma void repeat_append<t>(t elem, nat n)
+        requires    true;
+        ensures     append(repeat(elem, n), cons(elem, nil)) == repeat(elem, succ(n));
+    {
+        switch(n) {
+            case zero:
+            case succ(n_pred):
+              repeat_append(elem, n_pred);
+        }
+    }
+
     // ------------- split_varlim -------------
 
     lemma_auto(length(split_varlim(xs, n, limits))) void length_split_varlim<t>(list<t> xs, int n, list<int> limits)

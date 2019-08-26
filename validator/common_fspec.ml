@@ -42,6 +42,8 @@ let lsim_variable_name typ = "last_" ^ typ ^ "_searched_in_the_map"
 let lma_literal_name typ = "LMA_" ^ (StringLabels.uppercase_ascii typ)
 let logic_name inv = inv ^ "i"
 let advance_time_lemma inv = "advance_time_" ^ inv
+let init_inv_lemma inv = "init_" ^ inv
+let default_value_for typ = "DEFAULT_" ^ typ
 
 
 let capture_a_map t name {tmp_gen;_} =
@@ -366,7 +368,8 @@ let vector_alloc_spec vector_specs =
               vector_init_elem<" ^ ityp_name typ ^ ">(" ^ alloc_fun_name typ ^
              ")(" ^ (pred_name typ) ^
              ", sizeof(" ^ (c_type typ) ^
-             "))(a) \
+             "), " ^ default_value_for typ ^
+             ")(a) \
               {\
               call();\
               }\n\
@@ -378,12 +381,20 @@ let vector_alloc_spec vector_specs =
      (fun {args;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;_} ->
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;invariant;_} ->
              " case " ^ (string_of_int i) ^ ":\n\
                //@assume(sizeof(" ^ (c_type typ) ^ ") == " ^
              (List.nth_exn args 0) ^
-             ");\n\
-              break;\n"
+             ");\n" ^
+             (match invariant with
+              | Some inv ->
+                "//@ " ^ (init_inv_lemma inv) ^
+                "(nat_of_int(" ^
+                (List.nth_exn args 1) ^
+                "), recent_time);\n"
+              | None -> ""
+             ) ^
+             "break;\n"
            )) ) ^
           "default:\n\
             assert false;\n\
