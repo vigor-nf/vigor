@@ -39,14 +39,6 @@ int policer_expire_entries(vigor_time_t time) {
                                  dynamic_ft->dyn_map, min_time);
 }
 
-bool dyn_val_condition(void *key, int index, void *state) {
-  return 0 <= ((struct DynamicValue *)key)
-                  ->bucket_time AND((struct DynamicValue *)key)
-                  ->bucket_time <=
-         recent_time() AND((struct DynamicValue *)key)->bucket_size <=
-         config.burst;
-}
-
 bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
   int index = -1;
   int present = map_get(dynamic_ft->dyn_map, &dst, &index);

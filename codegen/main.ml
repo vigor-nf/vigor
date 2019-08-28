@@ -42,6 +42,43 @@ let gen_inductive_type compinfo =
      ) compinfo.cfields)) ^
   "); @*/"
 
+let rec typ_to_ir_ttype = function
+  | TVoid _ -> "Ir.Void"
+  | TInt (ISChar, _)
+  | TInt (IChar, _) -> "Ir.Sint8"
+  | TInt (IUChar, _) -> "Ir.Uint8"
+  | TInt (IShort, _) -> "Ir.Sint16"
+  | TInt (IUShort, _) -> "Ir.Uint16"
+  | TInt (ILong, _) -> "Ir.Sint64"
+  | TInt (IULong, _) -> "Ir.Uint64"
+  | TInt (ILongLong, _) -> "Ir.Sint64"
+  | TInt (IULongLong, _) -> "Ir.Uint64"
+  | TInt (IInt, _) -> "Ir.Sint32"
+  | TInt (IUInt, _) -> "Ir.Uint32"
+  | TFloat (_, _) -> "Float-not-supported"
+  | TArray (_, _, _) -> "Array-not-supported"
+  | TComp (_, _) -> "TComp-not-supported"
+  | TNamed ({ttype;_}, _) -> typ_to_ir_ttype ttype
+  | _ -> "Not supported Cil type"
+
+let rec gen_fspec_record compinfo =
+  "\"" ^ compinfo.cname ^
+  "\", [" ^
+  (String.concat "; " (List.map (fun {fname;ftype;_} ->
+       let key = "\"" ^ fname ^ "\", " in
+       match ftype with
+       | TComp (field_str, _) ->
+         key ^ "Ir.Str(" ^ (gen_fspec_record field_str) ^ ")"
+       | TArray (field_t, Some (Const (CInt64 (_, _, _))), _) ->
+         key ^ "Ir.Array (" ^ (typ_to_ir_ttype field_t) ^ ")"
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ ->
+         key ^ (typ_to_ir_ttype ftype)
+     ) compinfo.cfields)) ^
+  "]"
+
 let rec gen_default_value compinfo =
   (constructor_name compinfo) ^ "(" ^
   (String.concat ", " (List.map (fun {ftype;_} ->
@@ -588,6 +625,19 @@ let contains s1 s2 =
         try ignore (Str.search_forward re s1 0); true
         with Not_found -> false
 
+let fill_fspec_file header_fname compinfo fspec_fname =
+  let cout = open_out_gen [Open_append] 0 fspec_fname in
+  ignore (P.fprintf cout "let () = \n  \
+                          gen_records := \
+                          (\"%s\", (Ir.Str (%s)))::!gen_records\n\n"
+            compinfo.cname (gen_fspec_record compinfo));
+  ignore (P.fprintf cout "let () = \n  \
+                          gen_custom_includes := \
+                          \"%s\"::!gen_custom_includes\n\n"
+            header_fname);
+  close_out cout;
+  ()
+
 let traverse_globals (f : file) : unit =
   let def_headers = ref [] in
   List.iter (fun g ->
@@ -604,6 +654,7 @@ let traverse_globals (f : file) : unit =
       fill_header_file ifo header_fname
         (relativise_header_path loc.file) !def_headers;
       fill_impl_file ifo impl_fname (relativise_header_path header_fname);
+      fill_fspec_file header_fname ifo "fspec_gen.ml";
       ()
     | _ -> ())
   f.globals

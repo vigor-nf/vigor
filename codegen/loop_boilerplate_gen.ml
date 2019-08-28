@@ -1,7 +1,10 @@
 open Printf
+open Ir
 open Data_spec
 
+let gen_records = !Nf_data_spec.gen_records
 let containers = Nf_data_spec.containers
+let constraints = Nf_data_spec.constraints
 
 
 let inductive_name cname = match cname with
@@ -30,6 +33,8 @@ let advance_time_lemma inv = "advance_time_" ^ inv
 let init_lemma inv = "init_" ^ inv
 let logic_name inv = inv ^ "l"
 let default_value_for typ = "DEFAULT_" ^ (String.uppercase_ascii typ)
+let inductive_name cstruct_name = cstruct_name ^ "i"
+let constructor_name cstruct_name = cstruct_name ^ "c"
 
 let concat_flatten_map sep f lst extra =
   (String.concat sep ((List.flatten (List.map f lst))@extra))
@@ -40,6 +45,31 @@ let is_free_vector containers name =
       | EMap (_, _, vec_name, _) -> String.equal name vec_name
       | _ -> false)
       containers)
+
+let destruct_record name =
+  (constructor_name name) ^ "(" ^
+  (match List.assoc_opt name gen_records with
+     | Some (Ir.Str (strname, fields)) ->
+       (concat_flatten_map ", " (fun (name,_) ->
+            [name]) fields [])
+     | _ -> "unsupported struct") ^ ")"
+
+let gen_inv_conditions constraints =
+  "/*@\n" ^
+  (concat_flatten_map "\n"
+     (fun (inv_name, (cstruct, exps)) ->
+        ["fixpoint bool " ^ logic_name inv_name ^
+        "(vigor_time_t t, " ^ inductive_name cstruct ^
+        " value) {\n\
+         switch(value) {\n\
+         case " ^ destruct_record cstruct ^ ":\n\
+        return " ^ (concat_flatten_map " && " (fun term -> [render_term term]) exps []) ^
+        ";\n\
+         }\n\
+         }\n\
+        "]
+     ) constraints []) ^
+  "@*/"
 
 let gen_inv_lemmas containers =
   "/*@\n" ^
@@ -66,7 +96,7 @@ let gen_inv_lemmas containers =
             " ^ (advance_time_lemma invariant) ^
             "(t, old_time, new_time);\n\
              switch(h) {case pair(v, fr):\n\
-            //switch for v?
+            switch(v) { case " ^ (destruct_record typ) ^":}
              }\n\
              }\n\
              }\n";
@@ -593,6 +623,31 @@ let gen_allocation containers =
   "  return ret;\n" ^
   "}\n"
 
+let gen_inv_c_functions constraints =
+  let transform_to_fields = function
+    | {t;v=Id "t"} -> Some {t;v=Apply ("recent_time", [])}
+    | {t;v=Id x} -> Some {t;v=Str_idx ({v=Deref {v=Id "v";t=Unknown};
+                                        t=Unknown}, x)}
+    | _ -> None
+  in
+  (concat_flatten_map ""
+     (fun (name, (cstruct_name, conditions)) ->
+        ["bool " ^ name ^ "(void* value, int index, void* state) {\n" ^
+         "  struct " ^ cstruct_name ^ " *v = value;\n" ^
+         "  return " ^
+        (concat_flatten_map " AND\n        "
+           (function
+             | Bop (sign, lhs, rhs) ->
+               let lhs = call_recursively_on_tterm transform_to_fields lhs in
+               let rhs = call_recursively_on_tterm transform_to_fields rhs in
+               [render_term (Bop (sign, lhs, rhs))]
+             | term -> ["unsupported expression: " ^ (render_term term)])
+           conditions []
+        ) ^
+        ";\n}"]
+     ) constraints []
+  )
+
 let gen_entry_condition_decls containers =
   (concat_flatten_map ""
      (fun (name, cnt) ->
@@ -642,7 +697,8 @@ let () =
   fprintf cout "#include \"libvig/verified/vigor-time.h\"\n";
   List.iter (fun incl ->
       fprintf cout "#include \"%s\"\n" incl;)
-    Nf_data_spec.custom_includes;
+    !Nf_data_spec.gen_custom_includes;
+  fprintf cout "%s\n" (gen_inv_conditions constraints);
   fprintf cout "%s\n" (gen_inv_lemmas containers);
   fprintf cout "%s\n" (gen_loop_invariant containers);
   fprintf cout "%s\n" (gen_invariant_consume_decl containers);
@@ -681,7 +737,7 @@ let () =
   fprintf cout "#include \"libvig/models/verified/lpm-dir-24-8-control.h\"\n";
   fprintf cout "#endif//KLEE_VERIFICATION\n";
   fprintf cout "struct State* allocated_nf_state = NULL;\n";
-  fprintf cout "%s\n" (gen_entry_condition_decls containers);
+  fprintf cout "%s\n" (gen_inv_c_functions constraints);
   fprintf cout "%s\n" (gen_allocation containers);
   fprintf cout "#ifdef KLEE_VERIFICATION\n";
   fprintf cout "%s\n" (gen_loop_iteration_border_call containers);
