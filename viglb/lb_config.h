@@ -30,4 +30,7 @@ struct nf_config {
   // hoping to get another heartbeat. If no heartbeat comes for a host for this
   // time, it is considered down and removed from the pool of backends.
   uint32_t backend_expiration_time;
+
+  // WAN device, i.e. external
+  uint16_t wan_device;
 };

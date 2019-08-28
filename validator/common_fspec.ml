@@ -934,12 +934,12 @@ let map_get_spec (map_specs : map_spec list) =
                      | Some invariant ->
                        "\n//@ assert " ^ pred_name typ ^
                        "(" ^ (List.nth_exn args 1) ^
-                       ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
+                       ", ?" ^ (tmp_gen "fkk") ^ ");\n" ^
                        "/*@ if (" ^ ret_name ^
                        " != 0) {\n" ^
                        "\nmap_get_inv_holds(" ^
                        (tmp_gen "map") ^ ", " ^
-                       (tmp_gen "fk") ^ ", (" ^
+                       (tmp_gen "fkk") ^ ", (" ^
                        (logic_name invariant) ^ ")(initial_time));
                      \n} @*/\n"
                      | None -> "")
@@ -1192,11 +1192,11 @@ let expire_items_single_map_spec typs vecs (maps : map_spec list) =
                    "//@assert mapp(" ^ (List.nth_exn args 2) ^
                    ", _, _, _, mapc(_, ?" ^ (tmp_gen "fm") ^
                    ", _));\n" ^
-                   "map_erase_all_keep_inv(" ^ (tmp_gen "fm") ^
+                   "//@ map_erase_all_keep_inv(" ^ (tmp_gen "fm") ^
                    ", vector_get_values_fp(" ^ (tmp_gen "vec") ^ ", dchain_get_expired_indexes_fp(" ^
                    (tmp_gen "cur_ch") ^ ", " ^
                    (List.nth_exn args 3) ^
-                   ")), " ^ (logic_name invariant) ^ ");\n"
+                   ")), (" ^ (logic_name invariant) ^ ")(initial_time));\n"
                  | None -> "") ^
                    "break;\n"
               )) ) ^

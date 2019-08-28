@@ -312,3 +312,32 @@ unsigned map_size/*@ <t> @*/(struct Map* map)
 
 @*/
 
+/*@
+  lemma void map_erase_keep_inv<kt,vt>(list<pair<kt, vt> > m,
+                                       kt key,
+                                       fixpoint (pair<kt, vt>, bool) inv)
+  requires true == forall(m, inv);
+  ensures true == forall(map_erase_fp(m, key), inv);
+  {
+    switch(m) {
+      case nil:
+      case cons(h,t):
+        switch(h) {case pair(k, v): }
+        map_erase_keep_inv(t, key, inv);
+    }
+  }
+
+  lemma void map_erase_all_keep_inv<kt,vt>(list<pair<kt, vt> > m,
+                                           list<kt> keys,
+                                           fixpoint (pair<kt, vt>, bool) inv)
+  requires true == forall(m, inv);
+  ensures true == forall(map_erase_all_fp(m, keys), inv);
+  {
+    switch(keys) {
+      case nil:
+      case cons(h,t):
+        map_erase_all_keep_inv(m, t, inv);
+        map_erase_keep_inv(map_erase_all_fp(m, t), h, inv);
+    }
+  }
+  @*/

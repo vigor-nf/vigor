@@ -98,4 +98,12 @@ requires true == map_has_fp(m, k1) &*&
 ensures false == distinct(map(snd, m));
   @*/
 
+/*@
+  lemma void map_erase_all_keep_inv<kt,vt>(list<pair<kt, vt> > m,
+                                           list<kt> keys,
+                                           fixpoint (pair<kt, vt>, bool) inv);
+  requires true == forall(m, inv);
+  ensures true == forall(map_erase_all_fp(m, keys), inv);
+  @*/
+
 #endif//_MAP_H_INCLUDED_

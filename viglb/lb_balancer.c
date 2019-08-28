@@ -22,24 +22,6 @@ struct LoadBalancer {
 
 extern struct LoadBalancer *balancer;
 
-bool lb_backend_id_condition(void *key, int value) {
-  return 0 <= value AND value < balancer->state->backend_capacity;
-}
-
-bool lb_flow_id_condition(void *key, int value) {
-  return 0 <= value AND value < balancer->state->flow_capacity;
-}
-
-bool lb_backend_condition(void *key, int index, void *state) {
-  return 0 < ((struct LoadBalancedBackend *)key)
-                 ->nic AND((struct LoadBalancedBackend *)key)
-                 ->nic < rte_eth_dev_count();
-}
-
-bool lb_flow_id2backend_id_cond(void *key, int index, void *state) {
-  return *(uint32_t *)key < balancer->state->backend_capacity;
-}
-
 struct LoadBalancer *lb_allocate_balancer(uint32_t flow_capacity,
                                           uint32_t backend_capacity,
                                           uint32_t cht_height,

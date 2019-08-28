@@ -10,7 +10,8 @@ NF_ARGS := --flow-expiration $(or $(EXPIRATION_TIME),10) \
            --flow-capacity 65536 \
            --backend-capacity 32 \
            --cht-height 97 \
-           --backend-expiration 3600000000
+           --backend-expiration 3600000000 \
+           --wan 2
 
 NF_LAYER := 3
 
