@@ -1135,6 +1135,11 @@ let expire_items_single_map_spec typs vecs (maps : map_spec list) =
    extra_ptr_types = [];
    lemmas_before = [
      (fun {tmp_gen;args;_} ->
+        "//@ assert double_chainp(?" ^
+        (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
+        "//@ expire_olds_keeps_high_bounded(" ^
+        (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
+     (fun {tmp_gen;args;_} ->
         "switch(expire_items_single_map_order) {\n" ^
         (String.concat ~sep:""
            (List.mapi typs ~f:(fun i typ ->
@@ -1160,11 +1165,11 @@ let expire_items_single_map_spec typs vecs (maps : map_spec list) =
                      if v.typ = typ then v.invariant else None)
                  with
                  | Some invariant ->
-                   "vector_erase_all_keep_inv(" ^ (tmp_gen "vec") ^
+                   "//@ vector_erase_all_keep_inv(" ^ (tmp_gen "vec") ^
                    ", dchain_get_expired_indexes_fp(" ^
                    (tmp_gen "cur_ch") ^ ", " ^
                    (List.nth_exn args 3) ^
-                   "), " ^ invariant ^ ");\n"
+                   "), (" ^ (logic_name invariant) ^ ")(recent_time));\n"
                  | None -> "") ^
                 (match List.find_map maps ~f:(fun m ->
                      if m.typ = typ then m.invariant else None)
@@ -1184,11 +1189,6 @@ let expire_items_single_map_spec typs vecs (maps : map_spec list) =
         "default:\n\
          assert false;\n\
          }\n");
-     (fun {tmp_gen;args;_} ->
-        "//@ assert double_chainp(?" ^
-        (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 0) ^ ");\n" ^
-        "//@ expire_olds_keeps_high_bounded(" ^
-        (tmp_gen "cur_ch") ^ ", " ^ (List.nth_exn args 3) ^ ");\n");
      (fun {args;tmp_gen;_} ->
         "/*@ {\n\
          expire_preserves_index_range(" ^

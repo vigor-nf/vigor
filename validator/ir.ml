@@ -166,6 +166,9 @@ let rec render_tterm (t:tterm) =
   | Int 1 -> if (t.t = Boolean) then "true" else ("1"^ (int_type_postfix t.t))
   | Int i -> string_of_int i ^ (int_type_postfix t.t)
   | Bool b -> string_of_bool b
+  | Not {v=Bop (Eq, lhs, rhs);t=_} -> "(" ^ (render_tterm lhs) ^
+                                      " != " ^
+                                      (render_tterm rhs) ^ ")"
   | Not t -> "!(" ^ (render_tterm t) ^ ")"
   | Str_idx ({v=Id x;t=_}, field_name) -> x ^ "." ^ field_name
   | Str_idx ({v=Str_idx ({v=Id x;t=_}, fname1);t=_}, fname2) ->

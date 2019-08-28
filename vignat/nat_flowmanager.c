@@ -17,14 +17,6 @@ struct FlowManager {
   uint32_t expiration_time; /*nanoseconds*/
 };
 
-bool flow_consistency(void *value, int index, void *state) {
-  struct FlowId *flow_id = value;
-  struct State *st = state;
-  return (0 <= flow_id->internal_device)
-      AND(flow_id->internal_device < rte_eth_dev_count())
-          AND(flow_id->internal_device != st->nat_device);
-}
-
 struct FlowManager *flow_manager_allocate(uint16_t starting_port,
                                           uint32_t nat_ip, uint16_t nat_device,
                                           uint32_t expiration_time,

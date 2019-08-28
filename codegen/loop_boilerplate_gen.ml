@@ -625,9 +625,9 @@ let gen_allocation containers =
 
 let gen_inv_c_functions constraints =
   let transform_to_fields = function
-    | {t;v=Id "t"} -> Some {t;v=Apply ("recent_time", [])}
-    | {t;v=Id x} -> Some {t;v=Str_idx ({v=Deref {v=Id "v";t=Unknown};
-                                        t=Unknown}, x)}
+    | Id "t" -> Some (Apply ("recent_time", []))
+    | Id x -> Some (Str_idx ({v=Deref {v=Id "v";t=Unknown};
+                              t=Unknown}, x))
     | _ -> None
   in
   (concat_flatten_map ""
@@ -636,12 +636,10 @@ let gen_inv_c_functions constraints =
          "  struct " ^ cstruct_name ^ " *v = value;\n" ^
          "  return " ^
         (concat_flatten_map " AND\n        "
-           (function
-             | Bop (sign, lhs, rhs) ->
-               let lhs = call_recursively_on_tterm transform_to_fields lhs in
-               let rhs = call_recursively_on_tterm transform_to_fields rhs in
-               [render_term (Bop (sign, lhs, rhs))]
-             | term -> ["unsupported expression: " ^ (render_term term)])
+           (fun term ->
+              let tterm = call_recursively_on_term transform_to_fields {t=Unknown;
+                                                                       v=term} in
+              [render_tterm tterm])
            conditions []
         ) ^
         ";\n}"]
