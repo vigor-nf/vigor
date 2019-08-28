@@ -92,15 +92,6 @@ void bridge_put_update_entry(struct ether_addr *src, uint16_t src_device,
   }
 }
 
-bool stat_map_condition(void *key, int index) {
-  return 0 <= index & index < rte_eth_dev_count();
-}
-
-bool dyn_val_condition(void *val, int index, void *state) {
-  struct DynamicValue *v = val;
-  return 0 <= v->device & v->device < rte_eth_dev_count();
-}
-
 // File parsing, is not really the kind of code we want to verify.
 #ifdef KLEE_VERIFICATION
 void read_static_ft_from_file(struct Map *stat_map, struct Vector *stat_keys,

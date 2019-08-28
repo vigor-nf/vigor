@@ -23,6 +23,8 @@
   }
 @*/
 
+#define DEFAULT_ETHER_ADDR ether_addrc(0, 0, 0, 0, 0, 0)
+
 unsigned ether_addr_hash(void* obj);
 //@ requires [?f]ether_addrp(obj, ?v);
 //@ ensures [f]ether_addrp(obj, v) &*& result == _ether_addr_hash(v);
@@ -34,7 +36,7 @@ bool ether_addr_eq(void* a, void* b);
 
 void ether_addr_allocate(void* obj);
 //@ requires chars(obj, sizeof(struct ether_addr), _);
-//@ ensures ether_addrp(obj, _);
+//@ ensures ether_addrp(obj, DEFAULT_ETHER_ADDR);
 
 
 #define LOG_ETHER_ADDR(obj, p) \

@@ -23,11 +23,38 @@ bool ether_addr_eq(void* a, void* b)
 
 void ether_addr_allocate(void* obj)
 //@ requires chars(obj, sizeof(struct ether_addr), _);
-//@ ensures ether_addrp(obj, _);
+//@ ensures ether_addrp(obj, DEFAULT_ETHER_ADDR);
 {
-  (uintptr_t) obj;
+
+  struct ether_addr* id = (struct ether_addr*) obj;
+  //@ assert id->addr_bytes[0..6] |-> ?addr_bytes_lst;
+  /*@   switch(addr_bytes_lst) { case cons(h0, t0):
+    switch(t0) { case cons(h1, t1):
+    switch(t1) { case cons(h2, t2):
+    switch(t2) { case cons(h3, t3):
+    switch(t3) { case cons(h4, t4):
+    switch(t4) { case cons(h5, t5):
+
+    case nil: assert false;
+    }
+    case nil: assert false;
+    }
+    case nil: assert false;
+    }
+    case nil: assert false;
+    }
+    case nil: assert false;
+    }
+    case nil: assert false;
+    }@*/
+  id->addr_bytes[0] = 0;
+  id->addr_bytes[1] = 0;
+  id->addr_bytes[2] = 0;
+  id->addr_bytes[3] = 0;
+  id->addr_bytes[4] = 0;
+  id->addr_bytes[5] = 0;
   //@ close_struct((struct ether_addr*) obj);
-  //@ close ether_addrp(obj, _);
+  //@ close ether_addrp(obj, DEFAULT_ETHER_ADDR);
 }
 
 #ifndef KLEE_VERIFICATION

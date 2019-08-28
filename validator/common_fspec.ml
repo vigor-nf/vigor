@@ -583,11 +583,11 @@ let vector_return_spec entry_specs =
                         "\n//@ assert [?" ^ (tmp_gen "frac") ^ "]" ^
                         pred_name typ ^ "(" ^ (render_tterm expr) ^
                         ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
-                        "//@ assert last_time(?new_recent_time);\n" ^
+                        "//@ assert last_time(?" ^ tmp_gen "new_recent_time" ^ ");\n" ^
                         "//@ " ^ advance_time_lemma invariant ^
                         "(" ^ (tmp_gen "vec") ^
-                        ", recent_time, new_recent_time);\n" ^
-                        "recent_time = new_recent_time;\n" ^
+                        ", recent_time, " ^ tmp_gen "new_recent_time" ^");\n" ^
+                        "recent_time = " ^ tmp_gen "new_recent_time" ^ ";\n" ^
                         "//@ forall_update(" ^ (tmp_gen "vec") ^
                         ", (sup)((" ^ (logic_name invariant) ^
                         ")(recent_time), fst), " ^
@@ -664,6 +664,19 @@ let loop_invariant_consume_spec_impl types =
                   ", _);\n"^
                   "//@ " ^ advance_time_lemma inv ^ "(" ^ (tmp_gen (typ ^ "vec")) ^
                   ", recent_time, last_recent_time);\n"
+                | Map (typ, _, inv) when inv <> "" ->
+                  let (binding,expr) =
+                    self_dereference arg tmp_gen
+                  in
+                  let Addr arg = expr.v in
+                  binding ^ "\n" ^
+                  "//@ assert mapp<" ^ ityp_name typ ^ ">(" ^
+                  (render_tterm arg) ^ ", " ^ pred_name typ ^
+                  ", _, _, mapc(_, ?"
+                  ^ (tmp_gen (typ ^ "map")) ^
+                  ", _));\n"^
+                  "//@ " ^ advance_time_lemma inv ^ "(" ^ (tmp_gen (typ ^ "map")) ^
+                  ", initial_time, last_recent_time);\n"
                 | _ -> ""
               ))) ^
         "recent_time = last_recent_time;\n");
@@ -804,7 +817,8 @@ let loop_invariant_produce_spec containers =
                     (tmp_gen (name ^ "_tmp")) ^ ";\n"
                 ))) ^
         "\n}@*/\n" ^
-     "recent_time = *" ^ (List.last_exn args) ^ ";\n");
+        "initial_time = *" ^ (List.last_exn args) ^ ";\n" ^
+        "recent_time = initial_time;\n");
    ];}
 
 let constructor_name typ = typ ^ "c"
@@ -925,8 +939,8 @@ let map_get_spec (map_specs : map_spec list) =
                        " != 0) {\n" ^
                        "\nmap_get_inv_holds(" ^
                        (tmp_gen "map") ^ ", " ^
-                       (tmp_gen "fk") ^ ", (sup)(" ^
-                       (logic_name invariant) ^ ", snd));
+                       (tmp_gen "fk") ^ ", (" ^
+                       (logic_name invariant) ^ ")(initial_time));
                      \n} @*/\n"
                      | None -> "")
                     ^
@@ -1454,6 +1468,7 @@ let gen_preamble nf_loop containers =
    int the_index_allocated = -1;\n\
    int64_t time_for_allocated_index = 0;\n\
    uint32_t packet_size = 0;\n\
+   vigor_time_t initial_time = 0;\n\
    vigor_time_t recent_time = 0;\n\
    bool a_packet_received = false;\n" ^
   (String.concat ~sep:""

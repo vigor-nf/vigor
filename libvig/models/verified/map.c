@@ -30,7 +30,8 @@ __attribute__((noinline)) int map_allocate(map_keys_equality *keq,
     (*map_out)->keq = keq;
     (*map_out)->capacity = capacity;
     (*map_out)->has_layout = 0;
-    (*map_out)->ent_cond = 0;
+    (*map_out)->ent_cond = NULL;
+    (*map_out)->ent_cond_state = NULL;
     (*map_out)->occupancy = klee_range(0, capacity, "map_occupancy");
     (*map_out)->backup_occupancy =
         klee_range(0, capacity, "backup_map_occupancy");
@@ -86,8 +87,10 @@ void map_set_layout(struct Map *map, struct str_field_descr *key_fields,
   map->key_type = key_type;
 }
 
-void map_set_entry_condition(struct Map *map, map_entry_condition *cond) {
+void map_set_entry_condition(struct Map *map, map_entry_condition *cond,
+                             void* cond_state) {
   map->ent_cond = cond;
+  map->ent_cond_state = cond_state;
 }
 
 #define TRACE_KEY_FIELDS(key, map)                                             \
@@ -139,8 +142,10 @@ __attribute__((noinline)) int map_get(struct Map *map, void *key,
     memcpy(map->key_copyp[n], key, map->key_size);
     map->allocated_index[n] = klee_int("allocated_index");
     if (map->ent_cond) {
-      klee_assume(map->ent_cond(map->keyp[n], map->allocated_index[n]));
-      klee_assume(map->ent_cond(map->key_copyp[n], map->allocated_index[n]));
+      klee_assume(map->ent_cond(map->keyp[n], map->allocated_index[n],
+                                map->ent_cond_state));
+      klee_assume(map->ent_cond(map->key_copyp[n], map->allocated_index[n],
+                                map->ent_cond_state));
     }
     *value_out = map->allocated_index[n];
     return 1;
@@ -161,7 +166,7 @@ __attribute__((noinline)) void map_put(struct Map *map, void *key, int value) {
   klee_trace_param_i32(value, "value");
   TRACE_KEY_FIELDS(key, map);
   if (map->ent_cond) {
-    klee_assert(map->ent_cond(key, value));
+    klee_assert(map->ent_cond(key, value, map->ent_cond_state));
   }
   map->occupancy += 1;
   for (int n = 0; n < map->next_unclaimed_entry; ++n) {

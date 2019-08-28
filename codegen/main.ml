@@ -93,7 +93,7 @@ let rec gen_default_value compinfo =
              "0"
            else failwith "A 0-element array"
          in
-         "{" ^ (csl_fields c) ^ "}"
+         (csl_fields c)
        | TArray (field_t, _, _) ->
          failwith "An array of unsupported count" ^
          (P.sprint ~width:100 (d_type () ftype))
@@ -448,12 +448,12 @@ let gen_alloc_function compinfo =
   "  //@ close_struct((struct " ^ compinfo.cname ^ "*) obj);\n" ^
   "  struct " ^ compinfo.cname ^
   "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
-  let rec zero_fields cstruct name =
+  let rec zero_fields cstruct name accessor =
     (String .concat "\n" (List.map (fun {fname;ftype;_} ->
-         let field_id = name ^ "->" ^ fname in
+         let field_id = name ^ accessor ^ fname in
          match ftype with
          | TComp (field_str, _) ->
-           (zero_fields field_str field_id)
+           (zero_fields field_str field_id ".")
          | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
            let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
@@ -462,6 +462,18 @@ let gen_alloc_function compinfo =
                (arr_fields (Int64.sub i 1L))
              else ""
            in
+           let rec arr_switch tail (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+             if 0L < i then
+               "  switch(" ^ tail ^
+               ") { case cons(h" ^ current ^ ", t" ^ current ^ "):\n" ^
+               (arr_switch ("t" ^ current) (Int64.sub i 1L)) ^
+               "\n  case nil: assert false;\n }"
+             else ""
+           in
+           "//@ assert " ^ field_id ^ "[0.." ^ (Int64.to_string c) ^ "] |-> ?" ^
+           fname ^ "_lst;\n" ^
+           "/*@ " ^ arr_switch (fname ^ "_lst") c ^ "@*/\n" ^
            arr_fields c
          | TArray (field_t, _, _) ->
            failwith "An of unsupported array count " ^
@@ -469,7 +481,7 @@ let gen_alloc_function compinfo =
          | _ -> "  " ^ field_id ^ " = 0;"
        ) cstruct.cfields))
   in
-  (zero_fields compinfo "id") ^ "\n" ^
+  (zero_fields compinfo "id" "->") ^ "\n" ^
   "  //@ close " ^ (predicate_name compinfo) ^ "(obj, " ^ (default_name compinfo) ^ ");\n" ^
   "}\n"
 

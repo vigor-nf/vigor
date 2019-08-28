@@ -71,7 +71,8 @@ LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
               $(SELF_DIR)/libvig/verified/packet-io.c \
               $(SELF_DIR)/libvig/verified/map.c \
               $(SELF_DIR)/libvig/verified/coherence.c \
-              $(SELF_DIR)/libvig/verified/expirator.c
+              $(SELF_DIR)/libvig/verified/expirator.c \
+              $(SELF_DIR)/libvig/verified/ether.c
 
 VERIFAST_COMMAND := verifast -I $(SELF_DIR) \
                              -I $(SELF_DIR)/libvig/models/dpdk \

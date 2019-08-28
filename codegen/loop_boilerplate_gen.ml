@@ -54,20 +54,53 @@ let destruct_record name =
             [name]) fields [])
      | _ -> "unsupported struct") ^ ")"
 
-let gen_inv_conditions constraints =
+let condition_kind containers condition =
+  let container = (List.find_opt (function
+      | _, Vector (_, _, invariant) when invariant = condition -> true
+      | _, Map (_, _, invariant) when invariant = condition -> true
+      | _ -> false))
+    containers
+  in
+  match container with
+  | Some (_, Vector (_, _, _)) -> `Vector
+  | Some (_, Map (_, _, _)) -> `Map
+  | _ -> `Unknown
+
+let gen_inv_conditions constraints containers =
   "/*@\n" ^
   (concat_flatten_map "\n"
      (fun (inv_name, (cstruct, exps)) ->
-        ["fixpoint bool " ^ logic_name inv_name ^
-        "(vigor_time_t t, " ^ inductive_name cstruct ^
-        " value) {\n\
-         switch(value) {\n\
-         case " ^ destruct_record cstruct ^ ":\n\
-        return " ^ (concat_flatten_map " && " (fun term -> [render_term term]) exps []) ^
-        ";\n\
-         }\n\
-         }\n\
-        "]
+        match condition_kind containers inv_name with
+        | `Vector ->
+          ["fixpoint bool " ^ logic_name inv_name ^
+           "(vigor_time_t t, " ^ inductive_name cstruct ^
+           " value) {\n\
+            switch(value) {\n\
+            case " ^ destruct_record cstruct ^
+           ":\n\
+            return " ^ (concat_flatten_map " && "
+                          (fun term -> [render_term term]) exps []) ^
+           ";\n\
+            }\n\
+            }\n\
+           "]
+        | `Map ->
+          ["fixpoint bool " ^ logic_name inv_name ^
+           "(vigor_time_t t, pair<" ^ inductive_name cstruct ^
+           ", int> p) {\n\
+            switch(p) { case pair(value, index):\n\
+            return switch(value) {\n\
+            case " ^ destruct_record cstruct ^
+           ":\n\
+            return " ^ (concat_flatten_map " && "
+                          (fun term -> [render_term term]) exps []) ^
+           ";\n\
+            };\n\
+            }\n\
+            }\n\
+           "]
+        | `Unknown ->
+          ["Unknown condition kind: " ^ inv_name]
      ) constraints []) ^
   "@*/"
 
@@ -116,6 +149,31 @@ let gen_inv_lemmas containers =
              }\n\
              }\n"
           ]
+        | Map (typ, _, invariant) when invariant <> "" -> [
+            "lemma void " ^ (advance_time_lemma invariant) ^ "(list<pair<" ^
+            inductive_name typ ^
+            ", int> > map,\n\
+             vigor_time_t old_time,\n\
+             vigor_time_t new_time)\n\
+             requires true == forall(map, (" ^
+            (logic_name invariant) ^
+            ")(old_time)) &*&\n\
+            old_time <= new_time;\n\
+             ensures true == forall(map, (" ^
+            (logic_name invariant) ^
+            ")(new_time));\n\
+            {\n\
+             switch(map) {\n\
+            case nil:\n\
+            case cons(h,t):\n\
+            " ^ (advance_time_lemma invariant) ^
+            "(t, old_time, new_time);\n\
+             switch(h) {case pair(v, fr):\n\
+             switch(v) { case " ^ (destruct_record typ) ^":}
+             }\n\
+             }\n\
+             }\n";
+          ]
         | Vector (_, _, _)
         | Map (_, _, _)
         | CHT (_,_)
@@ -152,11 +210,15 @@ let gen_loop_invariant containers =
   (concat_flatten_map " &*&\n              "
      (fun (name, cnt) ->
         match cnt with
-        | Map (typ, cap, _) -> ["mapp<" ^ (inductive_name typ) ^ ">(" ^
-                                name ^ ", " ^ (predicate_name typ) ^
-                                ", " ^ (lhash_name typ) ^ ", " ^ "nop_true, " ^
-                                "mapc(" ^ cap ^ ", ?_" ^ name ^ ", ?_" ^ name ^
-                                "_addrs))"]
+        | Map (typ, cap, invariant) ->
+          ["mapp<" ^ (inductive_name typ) ^ ">(" ^
+           name ^ ", " ^ (predicate_name typ) ^
+           ", " ^ (lhash_name typ) ^ ", " ^ "nop_true, " ^
+           "mapc(" ^ cap ^ ", ?_" ^ name ^ ", ?_" ^ name ^
+           "_addrs))"]@
+          (if invariant = "" then [] else
+             ["true == forall(_" ^ name ^ ", (" ^
+              (logic_name invariant) ^ ")(time))"])
         | Vector (typ, cap, invariant) ->
           let vectorp = "vectorp<" ^ (inductive_name typ) ^
                         ">(" ^ name ^ ", " ^ (predicate_name typ) ^
@@ -593,7 +655,7 @@ let gen_allocation containers =
            ")/sizeof(" ^ nest_descrs_name typ ^ "[0]), "
            ^ "\"" ^ typ ^ "\");\n")::
           (if String.equal cond "" then [] else
-             ["  map_set_entry_condition(ret->" ^ name ^ ", " ^ cond ^ ");\n"])
+             ["  map_set_entry_condition(ret->" ^ name ^ ", " ^ cond ^ ", ret);\n"])
         | Vector (typ, cap, cond) ->
           (if String.equal typ "uint32_t" then
              "  vector_set_layout(ret->" ^ name ^
@@ -626,11 +688,12 @@ let gen_allocation containers =
 let gen_inv_c_functions constraints =
   let transform_to_fields = function
     | Id "t" -> Some (Apply ("recent_time", []))
+    | Id "index" -> None
     | Id x -> Some (Str_idx ({v=Deref {v=Id "v";t=Unknown};
                               t=Unknown}, x))
     | _ -> None
   in
-  (concat_flatten_map ""
+  (concat_flatten_map "\n"
      (fun (name, (cstruct_name, conditions)) ->
         ["bool " ^ name ^ "(void* value, int index, void* state) {\n" ^
          "  struct " ^ cstruct_name ^ " *v = value;\n" ^
@@ -696,7 +759,7 @@ let () =
   List.iter (fun incl ->
       fprintf cout "#include \"%s\"\n" incl;)
     !Nf_data_spec.gen_custom_includes;
-  fprintf cout "%s\n" (gen_inv_conditions constraints);
+  fprintf cout "%s\n" (gen_inv_conditions constraints containers);
   fprintf cout "%s\n" (gen_inv_lemmas containers);
   fprintf cout "%s\n" (gen_loop_invariant containers);
   fprintf cout "%s\n" (gen_invariant_consume_decl containers);
