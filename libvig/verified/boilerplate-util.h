@@ -22,9 +22,11 @@ unsigned long long __builtin_ia32_crc32di(unsigned long long acc,
 #  define AND &&
 #endif // KLEE_VERIFICATION
 
+#define DEFAULT_UINT32_T 0
+
 static void null_init(void *obj)
 /*@ requires chars(obj, sizeof(uint32_t), _); @*/
-/*@ ensures u_integer(obj, _); @*/
+/*@ ensures u_integer(obj, DEFAULT_UINT32_T); @*/
 {
   *(uint32_t *)obj = 0;
 }

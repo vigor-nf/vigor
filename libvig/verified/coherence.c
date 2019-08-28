@@ -1718,13 +1718,13 @@ ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))
   @*/
 
 /*@
-  fixpoint list<int> filter_idx<t>(fixpoint (t,bool) f, int idx, list<t> l) {
+  fixpoint list<int> filter_idx2<t>(fixpoint (t,bool) f, int idx, list<t> l) {
     switch(l) {
       case nil: return nil;
       case cons(h,t):
         return (f(h)) ?
-               cons(idx, filter_idx(f, idx + 1, t)) :
-               filter_idx(f, idx + 1, t);
+               cons(idx, filter_idx2(f, idx + 1, t)) :
+               filter_idx2(f, idx + 1, t);
     }
   }
   @*/
@@ -1743,32 +1743,32 @@ ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))
   @*/
 
 /*@
-  lemma void filter_idx_is_distinct<t>(fixpoint (t,bool) f, int idx, list<t> l)
+  lemma void filter_idx2_is_distinct<t>(fixpoint (t,bool) f, int idx, list<t> l)
   requires true;
-  ensures true == distinct(filter_idx(f, idx, l)) &*&
-          true == forall(filter_idx(f, idx, l), (ge)(idx));
+  ensures true == distinct(filter_idx2(f, idx, l)) &*&
+          true == forall(filter_idx2(f, idx, l), (ge)(idx));
   {
     switch(l) {
       case nil:
       case cons(h,t):
-        filter_idx_is_distinct(f, idx + 1, t);
+        filter_idx2_is_distinct(f, idx + 1, t);
         if (f(h)) {
-          ge_nonmem(idx, idx + 1, filter_idx(f, idx + 1, t));
+          ge_nonmem(idx, idx + 1, filter_idx2(f, idx + 1, t));
         }
-        ge_le_ge(filter_idx(f, idx + 1, t), idx + 1, idx);
+        ge_le_ge(filter_idx2(f, idx + 1, t), idx + 1, idx);
     }
   }
 
-  lemma void filter_idx_filter_same_len<t>(fixpoint (t,bool) f,
+  lemma void filter_idx2_filter_same_len<t>(fixpoint (t,bool) f,
                                            int idx,
                                            list<t> l)
   requires true;
-  ensures length(filter_idx(f, idx, l)) == length(filter(f, l));
+  ensures length(filter_idx2(f, idx, l)) == length(filter(f, l));
   {
     switch(l) {
       case nil:
       case cons(h,t):
-        filter_idx_filter_same_len(f, idx + 1, t);
+        filter_idx2_filter_same_len(f, idx + 1, t);
     }
   }
   @*/
@@ -1779,9 +1779,9 @@ ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))
                                                  dchain ch,
                                                  int start_idx)
   requires true == forall_idx(v, start_idx, (consistent_pair)(m, ch));
-  ensures true == subset(filter_idx(engaged_cell, start_idx, v),
+  ensures true == subset(filter_idx2(engaged_cell, start_idx, v),
                          dchain_indexes_fp(ch)) &*&
-          true == subset(filter_idx(engaged_cell, start_idx, v),
+          true == subset(filter_idx2(engaged_cell, start_idx, v),
                          map(snd, m));
   {
     switch(v) {
@@ -1830,23 +1830,23 @@ ensures true == mem(k, map(fst, filter(engaged_cell, vector_erase_fp(v, index)))
     assert length(filter(engaged_cell, v)) == length(m);
     assert length(filter(engaged_cell, v)) == length(dchain_indexes_fp(ch));
     consistent_pairs_indexes_subset(m, v, ch, 0);
-    filter_idx_is_distinct(engaged_cell, 0, v);
-    distinct_subset_msubset(filter_idx(engaged_cell, 0, v),
+    filter_idx2_is_distinct(engaged_cell, 0, v);
+    distinct_subset_msubset(filter_idx2(engaged_cell, 0, v),
                             dchain_indexes_fp(ch));
-    filter_idx_filter_same_len(engaged_cell, 0, v);
-    msubset_same_len_eq(filter_idx(engaged_cell, 0, v), dchain_indexes_fp(ch));
-    msubset_distinct(dchain_indexes_fp(ch), filter_idx(engaged_cell, 0, v));
+    filter_idx2_filter_same_len(engaged_cell, 0, v);
+    msubset_same_len_eq(filter_idx2(engaged_cell, 0, v), dchain_indexes_fp(ch));
+    msubset_distinct(dchain_indexes_fp(ch), filter_idx2(engaged_cell, 0, v));
     assert true == distinct(dchain_indexes_fp(ch));
 
-    //assert true == msubset(dchain_indexes_fp(ch), filter_idx(engaged_cell, 0, v));
-    assert true == subset(filter_idx(engaged_cell, 0, v), map(snd, m));
+    //assert true == msubset(dchain_indexes_fp(ch), filter_idx2(engaged_cell, 0, v));
+    assert true == subset(filter_idx2(engaged_cell, 0, v), map(snd, m));
     map_preserves_length(snd, m);
-    assert length(filter_idx(engaged_cell, 0, v)) == length(map(snd, m));
-    distinct_subset_msubset(filter_idx(engaged_cell, 0, v), map(snd, m));
-    msubset_same_len_eq(filter_idx(engaged_cell, 0, v), map(snd, m));
+    assert length(filter_idx2(engaged_cell, 0, v)) == length(map(snd, m));
+    distinct_subset_msubset(filter_idx2(engaged_cell, 0, v), map(snd, m));
+    msubset_same_len_eq(filter_idx2(engaged_cell, 0, v), map(snd, m));
     //assert true == msubset(dchain_indexes_fp(ch), map(snd, m));
-    msubset_distinct(map(snd, m), filter_idx(engaged_cell, 0, v));
-    msubset_trans(map(snd, m), filter_idx(engaged_cell, 0, v), dchain_indexes_fp(ch));
+    msubset_distinct(map(snd, m), filter_idx2(engaged_cell, 0, v));
+    msubset_trans(map(snd, m), filter_idx2(engaged_cell, 0, v), dchain_indexes_fp(ch));
 
     close map_vec_chain_coherent(m, v, ch);
   }

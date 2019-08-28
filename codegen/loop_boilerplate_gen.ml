@@ -33,7 +33,6 @@ let advance_time_lemma inv = "advance_time_" ^ inv
 let init_lemma inv = "init_" ^ inv
 let logic_name inv = inv ^ "l"
 let default_value_for typ = "DEFAULT_" ^ (String.uppercase_ascii typ)
-let inductive_name cstruct_name = cstruct_name ^ "i"
 let constructor_name cstruct_name = cstruct_name ^ "c"
 
 let concat_flatten_map sep f lst extra =
@@ -74,15 +73,20 @@ let gen_inv_conditions constraints containers =
         | `Vector ->
           ["fixpoint bool " ^ logic_name inv_name ^
            "(vigor_time_t t, " ^ inductive_name cstruct ^
-           " value) {\n\
-            switch(value) {\n\
+           " v) {\n" ^
+           (if cstruct = "uint32_t" then
+              "return " ^ (concat_flatten_map " && "
+                             (fun term -> [render_term term]) exps []) ^
+              ";\n"
+            else
+           "switch(v) {\n\
             case " ^ destruct_record cstruct ^
            ":\n\
             return " ^ (concat_flatten_map " && "
                           (fun term -> [render_term term]) exps []) ^
            ";\n\
-            }\n\
-            }\n\
+            }\n") ^
+           "}\n\
            "]
         | `Map ->
           ["fixpoint bool " ^ logic_name inv_name ^
@@ -128,9 +132,12 @@ let gen_inv_lemmas containers =
             case cons(h,t):\n\
             " ^ (advance_time_lemma invariant) ^
             "(t, old_time, new_time);\n\
-             switch(h) {case pair(v, fr):\n\
-            switch(v) { case " ^ (destruct_record typ) ^":}
-             }\n\
+             switch(h) {case pair(v, fr):\n" ^
+            (if typ <> "uint32_t" then
+               "switch(v) { case " ^ (destruct_record typ) ^":}\n"
+             else ""
+            ) ^
+            "}\n\
              }\n\
              }\n";
             "lemma void " ^ (init_lemma invariant) ^
@@ -688,6 +695,7 @@ let gen_allocation containers =
 let gen_inv_c_functions constraints =
   let transform_to_fields = function
     | Id "t" -> Some (Apply ("recent_time", []))
+    | Id "v" -> None
     | Id "index" -> None
     | Id x -> Some (Str_idx ({v=Deref {v=Id "v";t=Unknown};
                               t=Unknown}, x))
@@ -696,7 +704,9 @@ let gen_inv_c_functions constraints =
   (concat_flatten_map "\n"
      (fun (name, (cstruct_name, conditions)) ->
         ["bool " ^ name ^ "(void* value, int index, void* state) {\n" ^
-         "  struct " ^ cstruct_name ^ " *v = value;\n" ^
+         (if cstruct_name = "uint32_t" then
+            "  uint32_t v = *(uint32_t*)value;\n" else
+            "  struct " ^ cstruct_name ^ " *v = value;\n") ^
          "  return " ^
         (concat_flatten_map " AND\n        "
            (fun term ->

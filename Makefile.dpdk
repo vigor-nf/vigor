@@ -62,9 +62,9 @@ LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
               $(SELF_DIR)/libvig/verified/map-impl.c \
               $(SELF_DIR)/libvig/verified/map-impl-pow2.c \
               $(SELF_DIR)/libvig/verified/double-map.c \
-              $(SELF_DIR)/libvig/verified/vector.c \
               $(SELF_DIR)/libvig/verified/prime.c \
               $(SELF_DIR)/libvig/verified/listutils-lemmas.c \
+              $(SELF_DIR)/libvig/verified/vector.c \
               $(SELF_DIR)/libvig/verified/transpose-lemmas.c \
               $(SELF_DIR)/libvig/verified/permutations.c \
               $(SELF_DIR)/libvig/verified/cht.c \
@@ -72,6 +72,7 @@ LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
               $(SELF_DIR)/libvig/verified/map.c \
               $(SELF_DIR)/libvig/verified/coherence.c \
               $(SELF_DIR)/libvig/verified/expirator.c \
+              $(SELF_DIR)/libvig/verified/boilerplate-assumptions.c \
               $(SELF_DIR)/libvig/verified/ether.c
 
 VERIFAST_COMMAND := verifast -I $(SELF_DIR) \

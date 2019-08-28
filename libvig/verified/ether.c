@@ -27,6 +27,7 @@ void ether_addr_allocate(void* obj)
 {
 
   struct ether_addr* id = (struct ether_addr*) obj;
+  //@ close_struct((struct ether_addr*) obj);
   //@ assert id->addr_bytes[0..6] |-> ?addr_bytes_lst;
   /*@   switch(addr_bytes_lst) { case cons(h0, t0):
     switch(t0) { case cons(h1, t1):
@@ -53,7 +54,6 @@ void ether_addr_allocate(void* obj)
   id->addr_bytes[3] = 0;
   id->addr_bytes[4] = 0;
   id->addr_bytes[5] = 0;
-  //@ close_struct((struct ether_addr*) obj);
   //@ close ether_addrp(obj, DEFAULT_ETHER_ADDR);
 }
 

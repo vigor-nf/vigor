@@ -17,12 +17,6 @@ struct FlowManager {
   vigor_time_t expiration_time; /*seconds*/
 };
 
-bool int_dev_bounds(void *value, int index, void *state) {
-  uint32_t *int_dev = value;
-  struct State *st = state;
-  return (*int_dev < rte_eth_dev_count()) AND(*int_dev != st->fw_device);
-}
-
 struct FlowManager *flow_manager_allocate(uint16_t fw_device,
                                           vigor_time_t expiration_time,
                                           uint64_t max_flows) {
