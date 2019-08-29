@@ -63,11 +63,12 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
     return in_port;
   }
 
-  struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now);
+  struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now,
+                                                      config.wan_device);
 
   concretize_devices(&backend.nic, rte_eth_dev_count());
 
-  if (backend.nic != 0) { // If not dropped
+  if (backend.nic != config.wan_device) {
     ipv4_header->dst_addr = backend.ip;
     ether_header->s_addr = config.device_macs[backend.nic];
     ether_header->d_addr = backend.mac;

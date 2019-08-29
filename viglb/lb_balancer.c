@@ -41,7 +41,8 @@ struct LoadBalancer *lb_allocate_balancer(uint32_t flow_capacity,
 
 struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
                                           struct LoadBalancedFlow *flow,
-                                          vigor_time_t now) {
+                                          vigor_time_t now,
+                                          uint16_t wan_device) {
   int flow_index;
   struct LoadBalancedBackend backend;
   if (map_get(balancer->state->flow_to_flow_id, flow, &flow_index) == 0) {
@@ -76,7 +77,7 @@ struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
                     (void *)vec_backend);
     } else {
       // Drop
-      backend.nic = 0; // The wan interface.
+      backend.nic = wan_device; // The wan interface.
     }
 
   } else {
@@ -99,7 +100,7 @@ struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
 
       dchain_free_index(balancer->state->flow_chain, flow_index);
       vector_return(balancer->state->flow_heap, flow_index, (void *)flow_key);
-      return lb_get_backend(balancer, flow, now);
+      return lb_get_backend(balancer, flow, now, wan_device);
     } else {
       dchain_rejuvenate_index(balancer->state->flow_chain, flow_index, now);
 
