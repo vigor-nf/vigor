@@ -59,7 +59,8 @@ NF_COMMON_SOURCES := $(SELF_DIR)/nf.c \
 	$(CONTAINERS_DIR)/double-chain-impl.c \
 	$(CONTAINERS_DIR)/vector.c \
 	$(CONTAINERS_DIR)/cht.c \
-	$(CONTAINERS_DIR)/expirator.c
+	$(CONTAINERS_DIR)/expirator.c \
+	$(CONTAINERS_DIR)/ether.c
 
 # For NAT debug output
 # NF_DEFS += -DENABLE_LOG
