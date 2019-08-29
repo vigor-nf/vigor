@@ -41,25 +41,23 @@ There are currently six Vigor NFs:
 
 | NF            | Folder      | Description                                                                                                                         |
 | ------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://ieeexplore.ieee.org/document/6991462) sections 8.7 and 8.8         |
-| Firewall      | `vigfw`     | Firewall whose specification we invented                                                                                            |
-| Load balancer | `viglb`     | Load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)                                               |
+| NOP           | `vignop`    | No-op forwarder                                                                                                                     |
 | NAT           | `vignat`    | NAT according to [RFC 3022](https://www.ietf.org/rfc/rfc3022.txt)                                                                   |
+| Bridge        | `vigbridge` | Bridge with MAC learning according to [IEEE 802.1Q-2014](https://ieeexplore.ieee.org/document/6991462) sections 8.7 and 8.8         |
+| Load balancer | `viglb`     | Load balancer inspired by Google's [Maglev](https://ai.google/research/pubs/pub44824)                                               |
 | Policer       | `vigpol`    | Traffic policer whose specification we invented                                                                                     |
-| Router        | `vigrouter` | IP LPM router whose specification we invented (does not do BGP)                                                                     |
+| Firewall      | `vigfw`     | Firewall whose specification we invented                                                                                            |
 
 There are additional "baseline" NFs, which can _only be compiled, run and benchmarked_, each in its own folder:
 
 | NF                  | Folder              | Description                            |
 | ------------------- | ------------------- | -------------------------------------- |
-| Vigor no-op         | `vignop`            | Vigor-based no-op forwarder            |
-| Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
-| Click firewall      | `click-fw`          | Click-based firewall                   |
-| Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
+| Click NOP           | `click-nop`         | Click-based no-op forwarder            |
 | Click NAT           | `click-nat`         | Click-based NAT                        |
-| Click no-op         | `click-nop`         | Click-based no-op forwarder            |
-| Click router        | `click-router`      | Click-based IP LPM router (no BGP)     |
+| Click bridge        | `click-bridge`      | Click-based MAC learning bridge        |
+| Click load balancer | `click-lb`          | Click-based load balancer (not Maglev) |
 | Moonpol             | `moonpol`           | Libmoon-based traffic policer          |
+| Click firewall      | `click-fw`          | Click-based firewall                   |
 
 The Click- and Libmoon-based NFs use batching if the `VIGOR_USE_BATCH` environment variable is set to `true` when running the benchmark targets (see table below).
 
@@ -97,6 +95,13 @@ For instance:
 - To benchmark the Vigor policer's throughput, run `cd vigpol` then `make benchmark-throughput`
 
 
+# Create your own Vigor NF
+
+- Run `make new-nf` at the root of the repository, and answer the prompt.
+
+The generated files contain inline comments describing how to write your NF code and your specification.
+
+
 # Repository structure
 
 Besides the NF folders mentioned above, the repository contains:
@@ -113,7 +118,7 @@ Besides the NF folders mentioned above, the repository contains:
 - `libvig`: The libVig folder, containing `verified` code, `models`, and the DSOS `kernel`
 - `nf.{h,c}`, `nf-util.{h,c}`, `nf-log.h`: Skeleton code for Vigor NFs
 - `setup*`: Setup script and related files
-- `template`: Template for new Vigor NFs (see "Create your own Vigor NF" below)
+- `template`: Template for new Vigor NFs (see "Create your own Vigor NF" above)
 - `validator`: The Vigor Validator
 
 
@@ -176,11 +181,6 @@ In BIOS, configure DUT to boot from network, using the interface connected to th
 When you reboot it, you should see some activity in the PXE server output and see DSOS output on DUT (printing the NF configuration).
 At this point you can stop the PXE boot server.
 The DSOS is running!
-
-
-# Create your own Vigor NF
-
-- Run `make new-nf` at the root of the repository, and answer the prompt.
 
 
 # Linux setup for performance
