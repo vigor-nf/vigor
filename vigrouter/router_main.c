@@ -14,11 +14,6 @@ struct nf_config config;
 
 struct State *state;
 
-bool route_condition(uint32_t ipv4, int route) {
-  (void)ipv4;
-  return 0 <= route AND route < rte_eth_dev_count();
-}
-
 void nf_init(void) {
   state = alloc_state();
   if (state == NULL) {

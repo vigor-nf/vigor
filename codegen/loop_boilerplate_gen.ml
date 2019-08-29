@@ -57,12 +57,14 @@ let condition_kind containers condition =
   let container = (List.find_opt (function
       | _, Vector (_, _, invariant) when invariant = condition -> true
       | _, Map (_, _, invariant) when invariant = condition -> true
+      | _, LPM (invariant) when invariant = condition -> true
       | _ -> false))
     containers
   in
   match container with
   | Some (_, Vector (_, _, _)) -> `Vector
   | Some (_, Map (_, _, _)) -> `Map
+  | Some (_, LPM (_)) -> `LPM
   | _ -> `Unknown
 
 let gen_inv_conditions constraints containers =
@@ -91,6 +93,21 @@ let gen_inv_conditions constraints containers =
         | `Map ->
           ["fixpoint bool " ^ logic_name inv_name ^
            "(vigor_time_t t, pair<" ^ inductive_name cstruct ^
+           ", int> p) {\n\
+            switch(p) { case pair(value, index):\n\
+            return switch(value) {\n\
+            case " ^ destruct_record cstruct ^
+           ":\n\
+            return " ^ (concat_flatten_map " && "
+                          (fun term -> [render_term term]) exps []) ^
+           ";\n\
+            };\n\
+            }\n\
+            }\n\
+           "]
+        | `LPM ->
+          ["fixpoint bool " ^ logic_name inv_name ^
+           "(pair<" ^ inductive_name cstruct ^
            ", int> p) {\n\
             switch(p) { case pair(value, index):\n\
             return switch(value) {\n\
@@ -692,7 +709,7 @@ let gen_allocation containers =
   "  return ret;\n" ^
   "}\n"
 
-let gen_inv_c_functions constraints =
+let gen_inv_c_functions constraints containers =
   let transform_to_fields = function
     | Id "t" -> Some (Apply ("recent_time", []))
     | Id "v" -> None
@@ -703,19 +720,30 @@ let gen_inv_c_functions constraints =
   in
   (concat_flatten_map "\n"
      (fun (name, (cstruct_name, conditions)) ->
-        ["bool " ^ name ^ "(void* value, int index, void* state) {\n" ^
-         (if cstruct_name = "uint32_t" then
-            "  uint32_t v = *(uint32_t*)value;\n" else
-            "  struct " ^ cstruct_name ^ " *v = value;\n") ^
-         "  return " ^
-        (concat_flatten_map " AND\n        "
-           (fun term ->
-              let tterm = call_recursively_on_term transform_to_fields {t=Unknown;
-                                                                       v=term} in
-              [render_tterm tterm])
-           conditions []
-        ) ^
-        ";\n}"]
+        match condition_kind containers name with
+        | `Vector | `Map ->
+          ["bool " ^ name ^ "(void* value, int index, void* state) {\n" ^
+           (if cstruct_name = "uint32_t" then
+              "  uint32_t v = *(uint32_t*)value;\n" else
+              "  struct " ^ cstruct_name ^ " *v = value;\n") ^
+           "  return " ^
+           (concat_flatten_map " AND\n        "
+              (fun term ->
+                 let tterm = call_recursively_on_term transform_to_fields {t=Unknown;
+                                                                           v=term} in
+                 [render_tterm tterm])
+              conditions []
+           ) ^
+           ";\n}"]
+        | `LPM ->
+          ["bool " ^ name ^ "(uint32_t prefix, int route) {\n" ^
+           "  return " ^
+           (concat_flatten_map " AND\n        "
+              (fun term -> [render_term term])
+              conditions []
+           ) ^
+           ";\n}"]
+        | `Unknown -> ["unknown: " ^ name]
      ) constraints []
   )
 
@@ -800,6 +828,7 @@ let () =
   let cout = open_out "state.c" in
   fprintf cout "#include \"state.h\"\n";
   fprintf cout "#include <stdlib.h>\n";
+  fprintf cout "#include \"libvig/verified/boilerplate-util.h\"\n";
   fprintf cout "#ifdef KLEE_VERIFICATION\n";
   fprintf cout "#include \"libvig/models/verified/double-chain-control.h\"\n";
   fprintf cout "#include \"libvig/models/verified/ether.h\"\n";
@@ -808,7 +837,7 @@ let () =
   fprintf cout "#include \"libvig/models/verified/lpm-dir-24-8-control.h\"\n";
   fprintf cout "#endif//KLEE_VERIFICATION\n";
   fprintf cout "struct State* allocated_nf_state = NULL;\n";
-  fprintf cout "%s\n" (gen_inv_c_functions constraints);
+  fprintf cout "%s\n" (gen_inv_c_functions constraints containers);
   fprintf cout "%s\n" (gen_allocation containers);
   fprintf cout "#ifdef KLEE_VERIFICATION\n";
   fprintf cout "%s\n" (gen_loop_iteration_border_call containers);
