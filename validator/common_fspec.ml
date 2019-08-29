@@ -346,6 +346,7 @@ let map_alloc_spec map_specs =
         "map_allocation_order += 1;");];}
 
 type vector_params = {
+  name : string;
   typ : string;
   has_keeper : bool;
   entry_type : ttype;
@@ -381,7 +382,7 @@ let vector_alloc_spec vector_specs =
      (fun {args;_} ->
        ("\n\
         switch(vector_allocation_order) {\n" ^
-        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {typ;invariant;_} ->
+        (String.concat ~sep:"" (List.mapi vector_specs ~f:(fun i {name;typ;invariant;_} ->
              " case " ^ (string_of_int i) ^ ":\n\
                //@assume(sizeof(" ^ (c_type typ) ^ ") == " ^
              (List.nth_exn args 0) ^
@@ -391,7 +392,7 @@ let vector_alloc_spec vector_specs =
                 "//@ " ^ (init_inv_lemma inv) ^
                 "(nat_of_int(" ^
                 (List.nth_exn args 1) ^
-                "), recent_time);\n"
+                "), recent_time_" ^ name ^ ");\n"
               | None -> ""
              ) ^
              "break;\n"
@@ -509,7 +510,7 @@ let vector_borrow_spec entry_specs =
                   (ttype_to_str (List.nth_exn arg_types 2)));];
    lemmas_after = [
      (fun {arg_types;args;arg_exps;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun {typ;entry_type;invariant;_} ->
+        match (List.find_map entry_specs ~f:(fun {typ;entry_type;invariant;name;_} ->
             if (List.nth_exn arg_types 2) = (Ptr (Ptr entry_type)) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ) ~f:(fun {typ;_} ->
@@ -519,7 +520,7 @@ let vector_borrow_spec entry_specs =
                       | Some invariant ->
                         "//@ forall_nth(" ^ (tmp_gen "vec") ^
                         ", (sup)((" ^ (logic_name invariant) ^
-                        ")(recent_time), fst), " ^
+                        ")(recent_time_" ^ name ^ "), fst), " ^
                         (List.nth_exn args 1) ^
                         ");\n" ^
                         let (binding,expr) =
@@ -531,7 +532,7 @@ let vector_borrow_spec entry_specs =
                         ", ?" ^ (tmp_gen "fk") ^ ");\n" ^
                         "//@ forall_update(" ^ (tmp_gen "vec") ^
                         ", (sup)((" ^ (logic_name invariant) ^
-                        ")(recent_time), fst), " ^
+                        ")(recent_time_" ^ name ^ "), fst), " ^
                         (List.nth_exn args 1) ^
                         ", pair(" ^ (tmp_gen "fk") ^
                         ", 0.0));\n"
@@ -560,7 +561,8 @@ let vector_return_spec entry_specs =
    extra_ptr_types = [];
    lemmas_before = [
      (fun {arg_types;args;arg_exps;tmp_gen;_} ->
-        match (List.find_map entry_specs ~f:(fun {typ;entry_type;invariant;_} ->
+        match (List.find_map entry_specs
+                 ~f:(fun {name;typ;entry_type;invariant;_} ->
             if (List.nth_exn arg_types 2) = (Ptr entry_type) then
               Some (String.concat ~sep:""
                       (List.map (other_types typ)
@@ -586,11 +588,11 @@ let vector_return_spec entry_specs =
                         "//@ assert last_time(?" ^ tmp_gen "new_recent_time" ^ ");\n" ^
                         "//@ " ^ advance_time_lemma invariant ^
                         "(" ^ (tmp_gen "vec") ^
-                        ", recent_time, " ^ tmp_gen "new_recent_time" ^");\n" ^
-                        "recent_time = " ^ tmp_gen "new_recent_time" ^ ";\n" ^
+                        ", recent_time_" ^ name ^ ", " ^ tmp_gen "new_recent_time" ^");\n" ^
+                        "recent_time_" ^ name ^ " = " ^ tmp_gen "new_recent_time" ^ ";\n" ^
                         "//@ forall_update(" ^ (tmp_gen "vec") ^
                         ", (sup)((" ^ (logic_name invariant) ^
-                        ")(recent_time), fst), " ^
+                        ")(recent_time_" ^ name ^ "), fst), " ^
                         (List.nth_exn args 1) ^
                         ", pair(" ^ (tmp_gen "fk") ^
                         ", " ^ (tmp_gen "frac") ^ "));\n"
@@ -650,7 +652,7 @@ let loop_invariant_consume_spec_impl types =
      (fun {arg_exps;tmp_gen;_} ->
         "//@ assert last_time(?last_recent_time);\n" ^
         (String.concat ~sep:""
-           (List.map2_exn arg_exps types ~f:(fun arg (_, t, _) ->
+           (List.map2_exn arg_exps types ~f:(fun arg (name, t, _) ->
                 match t with
                 | Vector (typ, _, inv) when inv <> "" ->
                   let (binding,expr) =
@@ -663,7 +665,8 @@ let loop_invariant_consume_spec_impl types =
                   ^ (tmp_gen (typ ^ "vec")) ^
                   ", _);\n"^
                   "//@ " ^ advance_time_lemma inv ^ "(" ^ (tmp_gen (typ ^ "vec")) ^
-                  ", recent_time, last_recent_time);\n"
+                  ", recent_time_" ^ name ^ ", last_recent_time);\n" ^
+                  "recent_time_" ^ name ^ " = last_recent_time;\n"
                 | Map (typ, _, inv) when inv <> "" ->
                   let (binding,expr) =
                     self_dereference arg tmp_gen
@@ -678,8 +681,7 @@ let loop_invariant_consume_spec_impl types =
                   "//@ " ^ advance_time_lemma inv ^ "(" ^ (tmp_gen (typ ^ "map")) ^
                   ", initial_time, last_recent_time);\n"
                 | _ -> ""
-              ))) ^
-        "recent_time = last_recent_time;\n");
+              ))));
      (fun {args;_} ->
         "/*@ close evproc_loop_invariant(" ^
         (String.concat ~sep:", "
@@ -704,11 +706,11 @@ let gen_vector_params containers records =
   in
   List.filter_map containers ~f:(fun (name,ctyp) ->
       match ctyp with
-      | Vector (typ, _, invariant) -> Some {typ;has_keeper=has_keeper name;
+      | Vector (typ, _, invariant) -> Some {name;typ;has_keeper=has_keeper name;
                                             entry_type=String.Map.find_exn records typ;
                                             invariant=if invariant = "" then None
                                                   else Some invariant}
-      | CHT (_, _) -> Some {typ="uint32_t";has_keeper=false;entry_type=Uint32;
+      | CHT (_, _) -> Some {name;typ="uint32_t";has_keeper=false;entry_type=Uint32;
                             invariant=None}
       | _ -> None)
 
@@ -760,6 +762,7 @@ let loop_invariant_produce_spec containers =
                                         | _ -> (List.nth_exn args i)))) ^
         "); @*/\n");
      (fun {args;tmp_gen;_} ->
+        "initial_time = *" ^ (List.last_exn args) ^ ";\n" ^
         "/*@ {\n" ^
         (String.concat ~sep:""
            (List.mapi (concrete_containers containers)
@@ -782,7 +785,8 @@ let loop_invariant_produce_spec containers =
                     (tmp_gen ("initial_" ^ name)) ^ ", _);\n" ^
                     "initial_" ^ name ^ " = " ^ (tmp_gen ("initial_" ^ name)) ^
                     ";\n" ^
-                    name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n"
+                    name ^ "_ptr = " ^ (tmp_gen (name ^ "_tmp")) ^ ";\n" ^
+                    "\n}@*/\nrecent_time_" ^ name ^ " = initial_time;\n/*@{\n"
                   | CHT (_, _) ->
                     "assert *" ^ (List.nth_exn args i) ^ " |-> ?" ^
                     (tmp_gen (name ^ "_tmp")) ^
@@ -816,9 +820,7 @@ let loop_invariant_produce_spec containers =
                     name ^ "_ptr = " ^
                     (tmp_gen (name ^ "_tmp")) ^ ";\n"
                 ))) ^
-        "\n}@*/\n" ^
-        "initial_time = *" ^ (List.last_exn args) ^ ";\n" ^
-        "recent_time = initial_time;\n");
+        "\n}@*/\n");
    ];}
 
 let constructor_name typ = typ ^ "c"
@@ -1176,14 +1178,14 @@ let expire_items_single_map_spec typs vecs (maps : map_spec list) =
                 (tmp_gen "veca") ^
                 ");\n" ^
                 (match List.find_map vecs ~f:(fun v ->
-                     if v.typ = typ then v.invariant else None)
+                     if v.typ = typ then Option.map ~f:(fun inv -> (v.name, inv)) v.invariant else None)
                  with
-                 | Some invariant ->
+                 | Some (name, invariant) ->
                    "//@ vector_erase_all_keep_inv(" ^ (tmp_gen "vec") ^
                    ", dchain_get_expired_indexes_fp(" ^
                    (tmp_gen "cur_ch") ^ ", " ^
                    (List.nth_exn args 3) ^
-                   "), (" ^ (logic_name invariant) ^ ")(recent_time));\n"
+                   "), (" ^ (logic_name invariant) ^ ")(recent_time_" ^ name ^ "));\n"
                  | None -> "") ^
                 (match List.find_map maps ~f:(fun m ->
                      if m.typ = typ then m.invariant else None)
@@ -1469,7 +1471,6 @@ let gen_preamble nf_loop containers =
    int64_t time_for_allocated_index = 0;\n\
    uint32_t packet_size = 0;\n\
    vigor_time_t initial_time = 0;\n\
-   vigor_time_t recent_time = 0;\n\
    bool a_packet_received = false;\n" ^
   (String.concat ~sep:""
      (List.map (concrete_containers containers) ~f:(fun (name,ctyp) ->
@@ -1479,7 +1480,8 @@ let gen_preamble nf_loop containers =
             "//@ struct Map* " ^ name ^ "_ptr;\n"
           | Vector (typ, _, _) ->
             "//@ list<pair<" ^ (ityp_name typ) ^ ", real> > initial_" ^ name ^ ";\n" ^
-            "//@ struct Vector* " ^ name ^ "_ptr;\n"
+            "//@ struct Vector* " ^ name ^ "_ptr;\n" ^
+            "vigor_time_t recent_time_" ^ name ^ " = 0;\n"
           | CHT (_, _) ->
             "//@ list<pair<uint32_t, real> > initial_" ^ name ^ ";\n" ^
             "//@ struct Vector* " ^ name ^ "_ptr;\n"
