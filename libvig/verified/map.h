@@ -99,6 +99,12 @@ ensures false == distinct(map(snd, m));
   @*/
 
 /*@
+  lemma void map_erase_keep_inv<kt,vt>(list<pair<kt, vt> > m,
+                                       kt key,
+                                       fixpoint (pair<kt, vt>, bool) inv);
+  requires true == forall(m, inv);
+  ensures true == forall(map_erase_fp(m, key), inv);
+
   lemma void map_erase_all_keep_inv<kt,vt>(list<pair<kt, vt> > m,
                                            list<kt> keys,
                                            fixpoint (pair<kt, vt>, bool) inv);

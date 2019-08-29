@@ -1084,7 +1084,8 @@ let map_erase_spec (map_specs : map_spec list) =
    extra_ptr_types = [];
    lemmas_before = [
      (fun {args;tmp_gen;arg_types;_} ->
-        match (List.find_map map_specs ~f:(fun {typ;entry_type;coherent;_} ->
+        match (List.find_map map_specs
+                 ~f:(fun {typ;entry_type;coherent;invariant;_} ->
             if (List.nth_exn arg_types 1) = (Ptr entry_type) then
               Some (
                 (String.concat ~sep:""
@@ -1093,6 +1094,26 @@ let map_erase_spec (map_specs : map_spec list) =
                           "//@ close hide_mapp<" ^ ityp_name typ ^
                           ">(_, _, _, _, _);\n"
                         ))) ^
+                (match invariant with
+                 | Some invariant ->
+                  let ityp = ityp_name typ in
+                  let arg1 =
+                    Str.global_replace (Str.regexp_string "bis") ""
+                      (List.nth_exn args 1)
+                  in
+                  "/*@ { \n\
+                   assert mapp<" ^ ityp ^
+                  ">(_, _, _, _, mapc(_, ?dm, _)); \n\
+                   assert " ^ pred_name typ ^
+                  "(" ^ arg1 ^ ", ?" ^ tmp_gen "key" ^
+                  ");\n\
+                   map_erase_keep_inv(dm, " ^
+                  (tmp_gen "key") ^ ",(" ^
+                  (logic_name invariant) ^
+                  ")(initial_time));\n\
+                   } @*/\n"
+                 | None -> "")
+                ^
                 if coherent then
                   let ityp = ityp_name typ in
                   let arg1 =
