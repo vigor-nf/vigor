@@ -67,9 +67,13 @@ endif
 # once in the proper dir and once in build/, we only care about the former
 autogen:
 	@if [ '$(NF_DIR)' == '.' ]; then \
-	  cp dataspec.ml fspec_gen.ml ; \
+	  if [ -e dataspec.ml ]; then \
+	    cp dataspec.ml fspec_gen.ml ; \
+	  fi; \
 	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
+	  if [ -e dataspec.ml ]; then \
 	  $(SELF_DIR)/codegen/gen-loop-boilerplate.sh fspec_gen.ml; \
+	  fi; \
 	fi
 
 
