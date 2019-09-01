@@ -1,6 +1,6 @@
 from state import backends, backend_ip_emap
 BACKEND_EXP_TIME = 3600000000 * 1000
-EXT_PORT = 0
+EXT_PORT = 2
 
 if a_packet_received:
     backend_ip_emap.expire_all(now - BACKEND_EXP_TIME)

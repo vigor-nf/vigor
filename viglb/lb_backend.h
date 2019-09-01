@@ -2,7 +2,7 @@
 #define _LB_BACKEND_H_INCLUDED_
 
 #include <stdint.h>
-#include "libvig/stubs/ether_addr.h"
+#include <rte_ether.h>
 
 struct LoadBalancedBackend {
   uint16_t nic;

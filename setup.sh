@@ -191,7 +191,7 @@ fi
 
 
 # ================
-# DSOS build tools
+# NFOS build tools
 # ================
 
 # Make sure grub doesn't ask stupid questions
@@ -201,7 +201,7 @@ sudo DEBIAN_FRONTEND=noninteractive \
                          libcloog-isl-dev libisl-0.18-dev gnupg \
                          xorriso nasm git grub-pc
 
-DSOS_TARGET=x86_64-elf
+NFOS_TARGET=x86_64-elf
 BINUTILS_RELEASE="2.26.1"
 pushd "$BUILDDIR"
   if [ ! -e binutils-build ]; then
@@ -219,7 +219,7 @@ pushd "$BUILDDIR"
 
     mkdir binutils-build
     pushd binutils-build
-      ../binutils/configure --target=$DSOS_TARGET \
+      ../binutils/configure --target=$NFOS_TARGET \
                             --prefix="$BUILDDIR/binutils-build" --with-sysroot \
                             --disable-nls --disable-werror
       make -j$(nproc)
@@ -247,7 +247,7 @@ pushd "$BUILDDIR"
 
     mkdir gcc-build
     pushd gcc-build
-      ../gcc/configure --target=$DSOS_TARGET --prefix="$BUILDDIR/gcc-build" \
+      ../gcc/configure --target=$NFOS_TARGET --prefix="$BUILDDIR/gcc-build" \
                        --disable-nls --enable-languages=c --without-headers
       make -j$(nproc) all-gcc
       make -j$(nproc) all-target-libgcc
@@ -261,7 +261,7 @@ pushd "$BUILDDIR"
 popd
 
 # LLVM required to build klee-uclibc
-# (including the libc necessary to build DSOS)
+# (including the libc necessary to build NFOS)
 sudo apt-get install -y bison flex zlib1g-dev libncurses5-dev \
                         libcap-dev subversion python2.7
 
@@ -279,7 +279,7 @@ if [ ! -e "$BUILDDIR/llvm" ]; then
   popd
 fi
 
-# micro libC for producing the DSOS standalone OS images
+# micro libC for producing the NFOS standalone OS images
 
 if [ ! -e "$BUILDDIR/klee-uclibc-binary" ]; then
   git clone --depth 1 --branch klee_uclibc_v1.2 \

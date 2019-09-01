@@ -5,7 +5,6 @@
 #include <rte_ether.h>
 
 #include "nf.h"
-#include "libvig/nf_time.h"
 
 struct nf_config {
   // WAN device, i.e. external

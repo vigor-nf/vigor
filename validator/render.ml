@@ -25,11 +25,11 @@ let render_conditions assumptions ~is_assert =
            {v=Bool false;t=_},
            {v=Bop (Eq, {v=Bool false;t=_}, tt);t=_}) -> flatten_assumption tt
     | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (Or, x, y);t=_}) ->
-      List.map (List.concat (List.map [x; y] ~f:flatten_assumption))
-        ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}) @
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, y);t=Boolean})
     | Bop (Eq, {v=Bool false;t=_}, {v=Bop (Or, x, y);t=_}) ->
-      List.map (List.concat (List.map [x; y] ~f:flatten_assumption))
-        ~f:(fun a -> {v=Bop (Eq, {v=Bool false;t=Boolean}, a);t=Boolean})
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, x);t=Boolean}) @
+      (flatten_assumption {v=Bop (Eq, {v=Bool false;t=Boolean}, y);t=Boolean})
     | Bop (Eq, {v=Int 0;t=Boolean}, {v=Bop (And, x, y);t=_}) ->
       flatten_assumption {v=Bop (Or,
                                  {v=Bop (Eq, {v=Bool false;t=Boolean}, x);
@@ -91,7 +91,7 @@ let rec render_eq_sttmt ~is_assert out_arg (out_val:tterm) =
   (* HACKY HACK - can't do an assume over the arrays themselves because they're
      pointers and VeriFast will assume that the pointers, not the contents, are
      equal *)
-  | Array cells, Array Uint8 when head = "assume" ->
+  | Array cells, Array Uint8 ->
     begin match out_arg.t with
       | Array Uint8 ->
         let tmp_gen = gen_tmp_name() in
@@ -550,7 +550,7 @@ let output_check_and_assignments
       cmplx_symbs
   in
   let support_assignments =
-    guess_support_assignments output_constraints unalloc_symbs
+    [](* guess_support_assignments output_constraints unalloc_symbs *)
   in
   let assignments =
     gen_plain_equalities_for_all (assignments@support_assignments)
@@ -618,7 +618,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
           result.post_statements hist_symbs
           result.args_post_conditions cmplxs in
       let conditions =
-        result.post_statements@(List.map assignments ~f:eq_cond_to_tterm)
+        (* result.post_statements@ *)(List.map assignments ~f:eq_cond_to_tterm)
       in
       let args_post_conds_tterms =
         List.map result.args_post_conditions ~f:eq_cond_to_tterm
@@ -629,7 +629,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
                   ~f:(fun c -> term_eq s.v c.v)))
       in
       let args_conditions =
-        render_args_post_conditions ~is_assert:false result.args_post_conditions
+        render_args_post_conditions ~is_assert:true result.args_post_conditions
       in
       {conditions;output_check;args_conditions}
     in
@@ -637,7 +637,7 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
     let condition_sets =
       List.map rendered_results ~f:(fun r -> Set.Poly.of_list r.conditions)
     in
-    let common_conditions = 
+    let common_conditions =
       match List.reduce condition_sets ~f:Set.inter with
       | Some conds -> Set.to_list conds
       | None -> failwith "Not possible, there must be at least one result"
@@ -645,7 +645,6 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
     (render_conditions common_conditions ~is_assert:false) ^ "\n" ^
     (do_render rendered_results)
   in
-
   let rec render_ret_conditions groups =
     match groups with
     | (retval, results) :: tl ->
@@ -658,7 +657,6 @@ let render_post_assertions results ret_name ret_type hist_symbs cmplxs =
         (render_ret_conditions tl)
     | [] -> "{\n//@ assert(false);\n}\n"
   in
-
   (* We only have different return values when the return values are constants,
      e.g. 0 or 1. *)
   let all_const = List.for_all results ~f:(fun r -> is_constt r.ret_val) in

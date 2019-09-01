@@ -15,11 +15,6 @@ define(
  $queueSize 1024
 );
 
-AddressInfo(
-    port1    192.168.6.2   10.0.0.0/8        90:e2:ba:55:14:11,
-    port2    192.168.4.10  192.168.4.10/27   90:e2:ba:55:14:10
-);
-
 // Module's I/O
 nicIn0  :: FromDPDKDevice($iface0, BURST $burst);
 nicOut0 :: ToDPDKDevice  ($iface0, IQUEUE $queueSize, BURST $burst);

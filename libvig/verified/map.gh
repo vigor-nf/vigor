@@ -1,0 +1,123 @@
+#ifndef MAP_GH
+#define MAP_GH
+
+fixpoint list<pair<kt,vt> > empty_map_fp<kt,vt>() { return nil; }
+
+fixpoint vt map_get_fp<kt,vt>(list<pair<kt,vt> > m, kt key) {
+  switch(m) {
+    case nil: return default_value<vt>();
+    case cons(h,t):
+      return (fst(h) == key ? snd(h) : map_get_fp(t, key));
+  }
+}
+
+fixpoint bool map_has_fp<kt,vt>(list<pair<kt,vt> > m, kt key) {
+  switch(m) {
+    case nil: return false;
+    case cons(h,t):
+      return (fst(h) == key) || map_has_fp(t, key);
+  }
+}
+
+fixpoint list<pair<kt,vt> > map_put_fp<kt,vt>(list<pair<kt,vt> > m,
+                                              kt key, vt val) {
+  return cons(pair(key,val), m);
+}
+
+fixpoint list<pair<kt,vt> > map_erase_fp<kt,vt>(list<pair<kt,vt> > m, kt key) {
+  switch(m) {
+    case nil: return nil;
+    case cons(h,t):
+      return fst(h) == key ? t : cons(h, map_erase_fp(t, key));
+  }
+}
+
+fixpoint list<pair<kt,vt> > map_erase_all_fp<kt,vt>(list<pair<kt,vt> > m, list<kt> keys) {
+  switch(keys) {
+    case nil: return m;
+    case cons(h,t):
+      return map_erase_fp(map_erase_all_fp(m, t), h);
+  }
+}
+
+fixpoint int map_size_fp<kt,vt>(list<pair<kt,vt> > m) {
+  return length(m);
+}
+
+lemma void map_erase_keeps_others<kt,vt>(list<pair<kt,vt> > m,
+                                         kt v1, kt v2)
+requires v1 != v2;
+ensures map_has_fp(m, v2) == map_has_fp(map_erase_fp(m, v1), v2) &*&
+        map_get_fp(m, v2) == map_get_fp(map_erase_fp(m, v1), v2);
+{
+  switch(m) {
+    case nil: return;
+    case cons(h,t):
+      if (fst(h) != v1 &&
+          fst(h) != v2) {
+        map_erase_keeps_others(t, v1, v2);
+      }
+  }
+}
+
+lemma void map_has_to_mem<kt>(list<pair<kt, int> > m, kt k)
+requires true;
+ensures map_has_fp(m, k) == mem(k, map(fst, m));
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) { case pair(key,value):
+        if (key != k) map_has_to_mem(t, k);
+      }
+  }
+
+}
+
+lemma void map_erase_swap<kt,vt>(list<pair<kt, vt> > m, kt k1, kt k2)
+requires true;
+ensures map_erase_fp(map_erase_fp(m, k1), k2) ==
+        map_erase_fp(map_erase_fp(m, k2), k1);
+{
+  switch(m) {
+    case nil: return;
+    case cons(h,t):
+      if (fst(h) != k1 && fst(h) != k2)
+        map_erase_swap(t, k1, k2);
+  }
+}
+
+lemma void map_erase_another_one<kt,vt>(list<pair<kt,vt> > m,
+                                        list<kt> keys,
+                                        kt key)
+requires true;
+ensures map_erase_fp(map_erase_all_fp(m, keys), key) ==
+        map_erase_all_fp(m, append(keys, cons(key, nil)));
+{
+  switch(keys) {
+    case nil: return;
+    case cons(h,t):
+      map_erase_another_one(m, t, key);
+      map_erase_swap(map_erase_all_fp(m, t), key, h);
+  }
+}
+
+lemma void map_get_inv_holds<kt,vt>(list<pair<kt,vt> > m, kt key,
+                                    fixpoint (pair<kt,vt>,bool) prop)
+requires true == forall(m, prop);
+ensures map_has_fp(m, key) ?
+        true == prop(pair(key, map_get_fp(m, key))) :
+        true;
+{
+  switch(m) {
+    case nil:
+    case cons(h,t):
+      switch(h) {
+        case pair(k, v):
+          if (k != key) map_get_inv_holds(t, key, prop);
+      }
+  }
+}
+
+
+#endif//MAP_GH

@@ -1,4 +1,5 @@
 open Cil
+open Printf
 module F = Frontc
 module E = Errormsg
 module P = Pretty
@@ -12,7 +13,10 @@ let nest_descrs_name compinfo = compinfo.cname ^ "_nests"
 let alloc_fun_name compinfo = compinfo.cname ^ "_allocate"
 let eq_fun_name compinfo = compinfo.cname ^ "_eq"
 let hash_fun_name compinfo = compinfo.cname ^ "_hash"
-let log_fun_name compinfo = "log_" ^ compinfo.cname
+let log_fun_name compinfo = "LOG_" ^ (String.uppercase_ascii compinfo.cname)
+(* let advance_time_lemma inv = "advance_time_" ^ inv
+ * let init_inv_lemma inv = "init_" ^ inv *)
+let default_name compinfo = "DEFAULT_" ^ (String.uppercase_ascii compinfo.cname)
 
 let gen_inductive_type compinfo =
   "/*@\ninductive " ^ (inductive_name compinfo) ^
@@ -37,6 +41,67 @@ let gen_inductive_type compinfo =
        | _ -> P.sprint ~width:100 (d_type () ftype)
      ) compinfo.cfields)) ^
   "); @*/"
+
+let rec typ_to_ir_ttype = function
+  | TVoid _ -> "Ir.Void"
+  | TInt (ISChar, _)
+  | TInt (IChar, _) -> "Ir.Sint8"
+  | TInt (IUChar, _) -> "Ir.Uint8"
+  | TInt (IShort, _) -> "Ir.Sint16"
+  | TInt (IUShort, _) -> "Ir.Uint16"
+  | TInt (ILong, _) -> "Ir.Sint64"
+  | TInt (IULong, _) -> "Ir.Uint64"
+  | TInt (ILongLong, _) -> "Ir.Sint64"
+  | TInt (IULongLong, _) -> "Ir.Uint64"
+  | TInt (IInt, _) -> "Ir.Sint32"
+  | TInt (IUInt, _) -> "Ir.Uint32"
+  | TFloat (_, _) -> "Float-not-supported"
+  | TArray (_, _, _) -> "Array-not-supported"
+  | TComp (_, _) -> "TComp-not-supported"
+  | TNamed ({ttype;_}, _) -> typ_to_ir_ttype ttype
+  | _ -> "Not supported Cil type"
+
+let rec gen_fspec_record compinfo =
+  "\"" ^ compinfo.cname ^
+  "\", [" ^
+  (String.concat "; " (List.map (fun {fname;ftype;_} ->
+       let key = "\"" ^ fname ^ "\", " in
+       match ftype with
+       | TComp (field_str, _) ->
+         key ^ "Ir.Str(" ^ (gen_fspec_record field_str) ^ ")"
+       | TArray (field_t, Some (Const (CInt64 (_, _, _))), _) ->
+         key ^ "Ir.Array (" ^ (typ_to_ir_ttype field_t) ^ ")"
+       | TArray (field_t, _, _) ->
+         failwith "An of unsupported array count " ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ ->
+         key ^ (typ_to_ir_ttype ftype)
+     ) compinfo.cfields)) ^
+  "]"
+
+let rec gen_default_value compinfo =
+  (constructor_name compinfo) ^ "(" ^
+  (String.concat ", " (List.map (fun {ftype;_} ->
+       match ftype with
+       | TComp (field_str, _) ->
+         (gen_default_value field_str)
+       | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+         let rec csl_fields (c : int64) =
+           if 1L < c then
+             "0, " ^ (csl_fields (Int64.sub c 1L))
+           else if 1L = c then
+             "0"
+           else failwith "A 0-element array"
+         in
+         (csl_fields c)
+       | TArray (field_t, _, _) ->
+         failwith "An array of unsupported count" ^
+         (P.sprint ~width:100 (d_type () ftype))
+       | _ -> "0"
+     ) compinfo.cfields)) ^ ")"
+
+let gen_default_value_macro compinfo =
+  "#define " ^ (default_name compinfo) ^ " " ^ (gen_default_value compinfo)
 
 let gen_predicate compinfo =
   "/*@\npredicate " ^ (predicate_name compinfo) ^ "(struct " ^
@@ -373,16 +438,52 @@ let gen_hash_decl compinfo =
 let alloc_fun_contract compinfo =
   "//@ requires chars(obj, sizeof(struct " ^ compinfo.cname ^
   "), _);\n" ^
-  "//@ ensures " ^ (predicate_name compinfo) ^ "(obj, _);"
+  "//@ ensures " ^ (predicate_name compinfo) ^
+  "(obj, " ^ (default_name compinfo) ^ ");"
 
 let gen_alloc_function compinfo =
   "void " ^ (alloc_fun_name compinfo) ^ "(void* obj)\n" ^
   (alloc_fun_contract compinfo) ^ "\n" ^
   "{\n" ^
-  "  IGNORE(obj);\n" ^
   "  //@ close_struct((struct " ^ compinfo.cname ^ "*) obj);\n" ^
-  "  //@ close " ^ (predicate_name compinfo) ^ "(obj, _);\n" ^
-  "}"
+  "  struct " ^ compinfo.cname ^
+  "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
+  let rec zero_fields cstruct name accessor =
+    (String .concat "\n" (List.map (fun {fname;ftype;_} ->
+         let field_id = name ^ accessor ^ fname in
+         match ftype with
+         | TComp (field_str, _) ->
+           (zero_fields field_str field_id ".")
+         | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
+           let rec arr_fields (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+             if 0L < i then
+               "  " ^ field_id ^ "[" ^ current ^ "] = 0;\n" ^
+               (arr_fields (Int64.sub i 1L))
+             else ""
+           in
+           let rec arr_switch tail (i : int64) =
+           let current = (Int64.to_string (Int64.sub c i)) in
+             if 0L < i then
+               "  switch(" ^ tail ^
+               ") { case cons(h" ^ current ^ ", t" ^ current ^ "):\n" ^
+               (arr_switch ("t" ^ current) (Int64.sub i 1L)) ^
+               "\n  case nil: assert false;\n }"
+             else ""
+           in
+           "//@ assert " ^ field_id ^ "[0.." ^ (Int64.to_string c) ^ "] |-> ?" ^
+           fname ^ "_lst;\n" ^
+           "/*@ " ^ arr_switch (fname ^ "_lst") c ^ "@*/\n" ^
+           arr_fields c
+         | TArray (field_t, _, _) ->
+           failwith "An of unsupported array count " ^
+           (P.sprint ~width:100 (d_type () ftype))
+         | _ -> "  " ^ field_id ^ " = 0;"
+       ) cstruct.cfields))
+  in
+  (zero_fields compinfo "id" "->") ^ "\n" ^
+  "  //@ close " ^ (predicate_name compinfo) ^ "(obj, " ^ (default_name compinfo) ^ ");\n" ^
+  "}\n"
 
 let gen_alloc_function_decl compinfo =
   "void " ^ (alloc_fun_name compinfo) ^ "(void* obj);\n" ^
@@ -448,23 +549,19 @@ let gen_str_field_descrs_decl compinfo =
   "[" ^ (string_of_int nested_descrs_count) ^ "];"
 
 let gen_log_fun_decl compinfo =
-  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj);"
-
-let gen_log_fun compinfo =
-  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
-  "{\n" ^
-  "  NF_DEBUG(\"{\");\n" ^
+  "#define " ^ (log_fun_name compinfo) ^ "(obj, p); \\\n" ^
+  "  p(\"{\"); \\\n" ^
   (String.concat "\n" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (nest_str, _) ->
-         "  NF_DEBUG(\"" ^ fname ^ ":\");\n" ^
-         "  " ^ (log_fun_name nest_str) ^ "(&obj->" ^ fname ^ ");"
+         "  p(\"" ^ fname ^ ":\"); \\\n" ^
+         "  " ^ (log_fun_name nest_str) ^ "(&obj->" ^ fname ^ "); \\"
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            if 0L < i then
-             "  NF_DEBUG(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
-             fname ^ "[" ^ current ^ "]" ^ ");\n" ^
+             "  p(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
+             fname ^ "[" ^ current ^ "]" ^ "); \\\n" ^
              (arr_fields (Int64.sub i 1L))
            else ""
          in
@@ -473,20 +570,15 @@ let gen_log_fun compinfo =
          failwith "An of unsupported array count " ^
          (P.sprint ~width:100 (d_type () ftype))
        | _ ->
-         "  NF_DEBUG(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ ");"
+         "  p(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ "); \\"
      ) compinfo.cfields)) ^ "\n" ^
-  "  NF_DEBUG(\"}\");\n" ^
-  "}"
-
-let gen_log_fun_dummy compinfo =
-  "void " ^ (log_fun_name compinfo) ^ "(struct " ^ compinfo.cname ^ "* obj)\n" ^
-  "{\n  IGNORE(obj);\n}"
-
+  "  p(\"}\");\n"
 
 
 let fill_impl_file compinfo impl_fname header_fname =
   let cout = open_out impl_fname in
   ignore (P.fprintf cout "#include \"%s\"\n\n" header_fname);
+  ignore (P.fprintf cout "#include <stdint.h>\n\n");
   ignore (P.fprintf cout "%s\n\n" (gen_eq_function compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_alloc_function compinfo));
   ignore (P.fprintf cout "#ifdef KLEE_VERIFICATION\n");
@@ -495,12 +587,6 @@ let fill_impl_file compinfo impl_fname header_fname =
   ignore (P.fprintf cout "#else//KLEE_VERIFICATION\n\n");
   ignore (P.fprintf cout "%s\n\n" (gen_hash compinfo));
   ignore (P.fprintf cout "#endif//KLEE_VERIFICATION\n\n");
-  ignore (P.fprintf cout "#ifdef ENABLE_LOG\n");
-  ignore (P.fprintf cout "#include \"libvig/nf_log.h\"\n");
-  ignore (P.fprintf cout "%s\n\n" (gen_log_fun compinfo));
-  ignore (P.fprintf cout "#  else//ENABLE_LOG\n");
-  ignore (P.fprintf cout "%s\n" (gen_log_fun_dummy compinfo));
-  ignore (P.fprintf cout "#endif//ENABLE_LOG\n\n");
   close_out cout;
   ()
 
@@ -508,8 +594,9 @@ let gen_include_deps compinfo def_headers =
   (String.concat "" (List.map (fun {fname;ftype;_} ->
        match ftype with
        | TComp (nest_str, _) ->
-         let header_name = List.assoc nest_str.cname def_headers in
-         "#include \"" ^ header_name ^ "\"\n"
+         begin try let header_name = List.assoc nest_str.cname def_headers in
+             "#include \"" ^ header_name ^ "\"\n"
+         with Not_found -> "" end
        | _ -> ""
      ) compinfo.cfields))
 
@@ -517,10 +604,12 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   let cout = open_out header_fname in
   ignore (P.fprintf cout "#ifndef _%s_GEN_H_INCLUDED_\n" compinfo.cname);
   ignore (P.fprintf cout "#define _%s_GEN_H_INCLUDED_\n\n" compinfo.cname);
-  ignore (P.fprintf cout "#include <stdbool.h>\n");
-  ignore (P.fprintf cout "#include \"libvig/boilerplate_util.h\"\n\n");
+  ignore (P.fprintf cout "#include <stdbool.h>\n");  
+  ignore (P.fprintf cout "#include \"libvig/verified/boilerplate-util.h\"\n\n");
+  ignore (P.fprintf cout "#include \"libvig/verified/ether.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_include_deps compinfo def_headers));
   ignore (P.fprintf cout "#include \"%s\"\n\n" orig_fname);
+  ignore (P.fprintf cout "%s\n\n" (gen_default_value_macro compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_inductive_type compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_predicate compinfo));
   ignore (P.fprintf cout "%s\n\n" (gen_logical_hash compinfo));
@@ -530,7 +619,7 @@ let fill_header_file compinfo header_fname orig_fname def_headers =
   ignore (P.fprintf cout "%s\n\n" (gen_log_fun_decl compinfo));
   ignore (P.fprintf cout "#ifdef KLEE_VERIFICATION\n");
   ignore (P.fprintf cout "#  include <klee/klee.h>\n");
-  ignore (P.fprintf cout "#  include \"libvig/stubs/containers/str-descr.h\"\n\n");
+  ignore (P.fprintf cout "#  include \"libvig/models/str-descr.h\"\n\n");
   ignore (P.fprintf cout "%s\n" (gen_str_field_descrs_decl compinfo));
   ignore (P.fprintf cout "#endif//KLEE_VERIFICATION\n\n");
   ignore (P.fprintf cout "#endif//_%s_GEN_H_INCLUDED_\n" compinfo.cname);
@@ -541,14 +630,34 @@ let relativise_header_path fpath =
   let upper_dirs = Str.regexp ".*/libvig/" in
   Str.replace_first upper_dirs "libvig/" fpath
 
+(* I can't believe OCaml doesn't have a string contains... from https://stackoverflow.com/a/8373836 *)
+let contains s1 s2 =
+    let re = Str.regexp_string s2
+    in
+        try ignore (Str.search_forward re s1 0); true
+        with Not_found -> false
+
+let fill_fspec_file header_fname compinfo fspec_fname =
+  let cout = open_out_gen [Open_append] 0 fspec_fname in
+  ignore (P.fprintf cout "let () = \n  \
+                          gen_records := \
+                          (\"%s\", (Ir.Str (%s)))::!gen_records\n\n"
+            compinfo.cname (gen_fspec_record compinfo));
+  ignore (P.fprintf cout "let () = \n  \
+                          gen_custom_includes := \
+                          \"%s\"::!gen_custom_includes\n\n"
+            header_fname);
+  close_out cout;
+  ()
+
 let traverse_globals (f : file) : unit =
   let def_headers = ref [] in
   List.iter (fun g ->
     match g with
-    (* if we expand this, bad stuff happens *)
-    | GCompTag (_, loc) when loc.file =
-                             "/usr/include/x86_64-linux-gnu/bits/types.h" ->
-      ()
+    (* don't try to generate dpdk or libc headers *)
+    | GCompTag (_, loc) when contains loc.file "dpdk/rte_" -> ()
+    | GCompTag (_, loc) when contains loc.file "/usr/lib" -> ()
+    | GCompTag (_, loc) when contains loc.file "/usr/include" -> ()
     | GCompTag (ifo, loc) ->
       let header_fname = loc.file ^ ".gen.h" in
       let impl_fname = loc.file ^ ".gen.c" in
@@ -557,6 +666,7 @@ let traverse_globals (f : file) : unit =
       fill_header_file ifo header_fname
         (relativise_header_path loc.file) !def_headers;
       fill_impl_file ifo impl_fname (relativise_header_path header_fname);
+      fill_fspec_file header_fname ifo "fspec_gen.ml";
       ()
     | _ -> ())
   f.globals

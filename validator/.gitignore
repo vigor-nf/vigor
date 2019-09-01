@@ -1,2 +1,5 @@
 *forwarding_property.tmpl
 *_fspec.ml
+_build
+out
+test-results

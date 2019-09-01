@@ -13,15 +13,15 @@
 #include <rte_byteorder.h>
 
 #include "nf.h"
-#include "libvig/nf_util.h"
-#include "libvig/nf_log.h"
+#include "nf-util.h"
+#include "nf-log.h"
 #include "policer_config.h"
 #include "state.h"
 
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/vector.h"
+#include "libvig/verified/expirator.h"
 
 struct nf_config config;
 
@@ -37,14 +37,6 @@ int policer_expire_entries(vigor_time_t time) {
 
   return expire_items_single_map(dynamic_ft->dyn_heap, dynamic_ft->dyn_keys,
                                  dynamic_ft->dyn_map, min_time);
-}
-
-bool dyn_val_condition(void *key, int index, void *state) {
-  return 0 <= ((struct DynamicValue *)key)
-                  ->bucket_time AND((struct DynamicValue *)key)
-                  ->bucket_time <=
-         recent_time() AND((struct DynamicValue *)key)->bucket_size <=
-         config.burst;
 }
 
 bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {

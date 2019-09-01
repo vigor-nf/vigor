@@ -12,8 +12,8 @@
 #include <cmdline_parse_etheraddr.h>
 
 #include "lb_config.h"
-#include "libvig/nf_util.h"
-#include "libvig/nf_log.h"
+#include "nf-util.h"
+#include "nf-log.h"
 
 #define PARSE_ERROR(format, ...)                                               \
   nf_config_usage();                                                           \
@@ -21,12 +21,15 @@
 
 void nf_config_init(int argc, char **argv) {
   // Init
+  uint16_t nb_devices = rte_eth_dev_count();
+
   struct option long_options[] = {
     { "flow-expiration", required_argument, NULL, 'x' },
     { "flow-capacity", required_argument, NULL, 'f' },
     { "backend-capacity", required_argument, NULL, 's' },
     { "cht-height", required_argument, NULL, 'h' },
     { "backend-expiration", required_argument, NULL, 't' },
+    { "wan", required_argument, NULL, 'w' },
     { NULL, 0, NULL, 0 }
   };
 
@@ -71,6 +74,12 @@ void nf_config_init(int argc, char **argv) {
           PARSE_ERROR("Backend expiration time must be strictly positive.\n");
         }
         break;
+      case 'w':
+        config.wan_device = nf_util_parse_int(optarg, "wan-dev", 10, '\0');
+        if (config.wan_device >= nb_devices) {
+          PARSE_ERROR("WAN device does not exist.\n");
+        }
+        break;
 
       default:
         PARSE_ERROR("Unknown option.\n");
@@ -96,7 +105,8 @@ void nf_config_usage(void) {
           "\t--backend-capacity <n>: backend table capacity.\n"
           "\t--cht-height <n>: consistent hashing table height: bigger <n> "
           "generates more smooth distribution.\n"
-          "\t--backend-expiration <time>: backend expiration time (us).\n");
+          "\t--backend-expiration <time>: backend expiration time (us).\n"
+          "\t--wan <device>: set device to be the external one.\n");
 }
 
 void nf_config_print(void) {
@@ -104,6 +114,8 @@ void nf_config_print(void) {
 // assumes #backends == #devs?
 #ifndef KLEE_VERIFICATION
   NF_INFO("\n--- LoadBalancer Config ---\n");
+
+  NF_INFO("WAN device: %" PRIu16, config.wan_device);
 
   for (uint16_t b = 0; b < config.backend_count; b++) {
     char *dev_mac_str = nf_mac_to_str(&(config.device_macs[b]));

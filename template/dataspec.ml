@@ -1,4 +1,6 @@
 open Data_spec
+open Core
+open Ir
 
 (* ===
   This file describes the NF state that persists the entire
@@ -39,19 +41,24 @@ open Data_spec
 let containers = ["example_value", UInt32;]
 
 (* ===
-  `custom_includes` lists all the headers that declare the data records
-  used in the NF state.
-  These headers are generated automatically from the simple C struct declarations.
-  e.g. "flow.h" with
-  struct flow_id {
-    uint16_t src_port;
-    uint16_t dst_port;
-    uint32_t src_ip;
-    uint32_t dst_ip;
-    uint8_t protocol;
-  };
-  yelds "flow.h.gen.h" with the comparison operator, hash function,
-  allocation function, log function that are requried by
-  libVig data structures.
+   `constraints` lists all the constraints (record predicates) on the elements
+   stored in the containers from above.
+   Each entry has a form of: <record predicate>, (<c-struct name>, <constraint list>)
+   It is a pair of the name of the record predicate, and a pair consisting of the name
+   of the c-struct that represents that record and a list of constraints that are in the form of
+      Bop (<cmp>, {t=Unknown;v=<lhs>}, {t=Unknown;v=<rhs>})
+   or Not {v=Bop (Eq, )}
+   here <cmp> - is one of Le, Lt - for "less or equal", "less than"
+        <lhs> and <rhs> are left- and right- hand side expressions that can be
+        either Int <integer> or Id "<identifier>" which means an integer constant
+            and a variable (or a field) name.
    === *)
-let custom_includes = ["flow.h.gen.h"]
+let constraints = []
+
+(* ===
+
+   Leave these definition as is, they will be filled automatically
+
+   === *)
+let gen_custom_includes = ref []
+let gen_records = ref []

@@ -1,4 +1,6 @@
 open Data_spec
+open Core
+open Ir
 
 let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "dyn_keys", Vector ("ether_addr", "capacity", "");
@@ -11,5 +13,14 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "dev_count", UInt32;
                   "dyn_emap", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
-let custom_includes = ["stat_key.h.gen.h";
-                       "dyn_value.h.gen.h"]
+let constraints = ["dyn_val_condition", ( "DynamicValue",
+                                          [Bop (Le, {t=Unknown;v=Int 0}, {t=Unknown;v=Id "device"});
+                                           Bop (Lt, {t=Unknown;v=Id "device"}, {t=Unknown;v=Int 2});
+                                          ]);
+                   "stat_map_condition", ( "StaticKey",
+                                           [Bop (Le, {t=Unknown;v=Int 0}, {t=Unknown;v=Id "index"});
+                                            Bop (Lt, {t=Unknown;v=Id "index"}, {t=Unknown;v=Int 2});
+                                           ])]
+
+let gen_custom_includes = ref []
+let gen_records = ref []

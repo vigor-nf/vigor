@@ -1,0 +1,294 @@
+#ifndef _LISTUTILS_LEMMAS_GH_INCLUDED_
+#define _LISTUTILS_LEMMAS_GH_INCLUDED_
+
+#include "listutils.gh"
+
+// ------------- filter_idx -------------
+
+lemma void filter_idx_length_count_equiv<t>(list<t> xs, int idx, fixpoint (t, bool) fp);
+    requires    true;
+    ensures     count(xs, fp) == length(filter_idx(xs, idx, fp));
+
+lemma void filter_idx_ge<t>(list<t> xs, int idx, fixpoint(t, bool) fp);
+    requires    true;
+    ensures     true == forall(filter_idx(xs, idx, fp), (ge)(idx));
+
+lemma void filter_idx_lt<t>(list<t> xs, int idx, fixpoint(t, bool) fp);
+    requires    true;
+    ensures     true == forall(filter_idx(xs, idx, fp), (lt)(idx + length(xs)));
+
+lemma void mem_ge(list<int> xs, int low_bound, int x);
+    requires    true == forall(xs, (ge)(low_bound)) &*& x < low_bound;
+    ensures     false == mem(x, xs);
+
+lemma void filter_idx_distinct<t>(list<t> xs, int idx, fixpoint(t, bool) fp);
+    requires    true;
+    ensures     true == distinct(filter_idx(xs, idx, fp));
+
+lemma void filter_idx_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp);
+    requires    true;
+    ensures     filter_idx(append(xs, ys), idx, fp) == append(filter_idx(xs, idx, fp), filter_idx(ys, idx + length(xs), fp));
+
+lemma void filter_idx_count_append<t>(list<t> xs, list<t> ys, int idx, fixpoint (t, bool) fp);
+    requires    true;
+    ensures     length(filter_idx(append(xs, ys), idx, fp)) == count(xs, fp) + count(ys, fp);
+
+lemma void filter_idx_drop_last<t>(list<t> xs, int idx, fixpoint(t, bool) fp, t x);
+    requires    false == fp(x);
+    ensures     filter_idx(xs, idx, fp) == filter_idx(append(xs, cons(x, nil)), idx, fp);
+
+lemma void filter_idx_include_last<t>(list<t> xs, int idx, fixpoint(t, bool) fp, t x);
+    requires    true == fp(x);
+    ensures     append(filter_idx(xs, idx, fp), cons(idx + length(xs), nil)) == filter_idx(append(xs, cons(x, nil)), idx, fp);
+
+lemma void filter_idx_nth_to_mem<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i);
+    requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     true == mem(i + idx, filter_idx(xs, idx, fp));
+
+lemma void filter_idx_mem_to_nth<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i);
+    requires    true == mem(i + idx, filter_idx(xs, idx, fp)) &*& 0 <= i &*& i < length(xs);
+    ensures     true == fp(nth(i, xs));
+
+lemma void count_idx<t>(list<t> xs, fixpoint(t, bool) fp, int i);
+    requires    true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     count(xs, fp) > 0;
+
+lemma void filter_idx_fst<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int i);
+    requires    count(take(i, xs), fp) == 0 &*& true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     nth(0, filter_idx(xs, idx, fp)) == i + idx;
+
+lemma void filter_idx_take<t>(list<t> xs, int idx, fixpoint (t, bool) fp, int count, int i);
+    requires
+        count(take(i, xs), fp) == count &*& true == fp(nth(i, xs)) &*&
+        0 <= count &*& 0 <= i &*& i < length(xs);
+    ensures     
+        nth(count, filter_idx(xs, idx, fp)) == i + idx;
+
+// ------------- index_of_fixpoint -------------
+
+lemma void index_of_fp_exists<t>(list<t> xs, int idx, fixpoint (t,bool) fp, int i);
+    requires    true == forall(take(i, xs), (sup)((eq)(false), fp)) &*& true == fp(nth(i, xs)) &*& 0 <= i &*& i < length(xs);
+    ensures     index_of_fp(xs, idx, fp) == some(idx + i);
+
+// ------------- integer_copies -------------
+
+lemma_auto(integer_copies(val, nb_copies, nil)) void integer_copies_nil(nat val, int nb_copies);
+    requires    0 == nb_copies;
+    ensures     true == integer_copies(val, nb_copies, nil);
+
+lemma void integer_copies_val(int x, nat val, int nb_copies, list<int> xs);
+    requires    true == integer_copies(val, nb_copies, xs) &*& 0 <= x &*& x <= int_of_nat(val);
+    ensures     count(xs, (eq)(x)) == nb_copies;
+
+lemma void integer_copies_append(list<int> xs, list<int> ys, nat val, int nb_copies_xs, int nb_copies_ys);
+    requires    true == integer_copies(val, nb_copies_xs, xs) &*& true == integer_copies(val, nb_copies_ys, ys);
+    ensures     true == integer_copies(val, nb_copies_xs + nb_copies_ys, append(xs, ys));
+
+// ------------- flatten -------------
+
+lemma void flatten_allnil<t>(list< list<t> > xs);
+    requires    true == forall(xs, (eq)(nil));
+    ensures     flatten(xs) == nil;
+
+// ------------- chunk -------------
+
+lemma void chunk_zerosize<t>(list<t> xs, int n);
+    requires true;
+    ensures chunk(xs, n, n) == nil;
+
+lemma_auto(length(chunk(xs, begin, end))) void chunk_length<t>(list<t> xs, int begin, int end);
+    requires    0 <= begin && begin <= end && end <= length(xs);
+    ensures     length(chunk(xs, begin, end)) == end - begin;
+
+lemma void chunk_shift<t>(list<t> xs, int begin, int end, int n);
+    requires    0 <= begin &*& 0 <= n &*& n <= begin &*& begin + n <= length(xs);
+    ensures     chunk(xs, begin, end) == chunk(drop(n, xs), begin - n, end - n);
+
+lemma void chunk_append<t>(list<t> xs, int begin, int end);
+    requires    0 <= begin &*& begin <= end &*& end < length(xs);
+    ensures     chunk(xs, begin, end + 1) == append(chunk(xs, begin, end), cons(nth(end, xs), nil));
+
+lemma void chunk_take<t>(list<t> xs, int begin, int end1, int end2);
+    requires    0 <= begin &*& begin <= end1 &*& end1 <= end2 &*& end2 <= length(xs);
+    ensures     take(end1 - begin, chunk(xs, begin, end2)) == chunk(xs, begin, end1);
+
+lemma void chunk_to_source<t>(list<t> xs, int begin, int end, int i);
+    requires    0 <= begin &*& begin <= end &*& end <= length(xs) &*& 0 <= i &*& i < end - begin;
+    ensures     nth(begin + i, xs) == nth(i, chunk(xs, begin, end));
+
+lemma void chunk_update_unrelevant<t>(list<t> xs, int begin, int end, int i, t val);
+    requires    0 <= begin &*& begin <= end &*& end <= i &*& i < length(xs);
+    ensures     chunk(xs, begin, end) == chunk(update(i, val, xs), begin, end);
+
+// ------------- repeat -------------
+
+lemma_auto(length(repeat(elem, n))) void length_repeat<t>(t elem, nat n);
+    requires    true;
+    ensures     length(repeat(elem, n)) == int_of_nat(n);
+
+lemma void repeat_content<t>(t elem, nat n);
+    requires    true;
+    ensures     true == forall(repeat(elem, n), (eq)(elem));
+
+lemma void repeat_add<t>(t elem, nat n);
+    requires    n == succ(?n_pred);
+    ensures     cons(elem, repeat(elem, n_pred)) == repeat(elem, n);
+
+lemma void repeat_nth<t>(t elem, nat n, int i);
+    requires    0 <= i &*& i < int_of_nat(n);
+    ensures     nth(i, repeat(elem, n)) == elem;
+
+lemma void repeat_tail<t>(t elem, nat n);
+    requires    n == succ(?n_pred);
+    ensures     tail(repeat(elem, n)) == repeat(elem, n_pred);
+
+lemma void repeat_append<t>(t elem, nat n);
+    requires    true;
+    ensures     append(repeat(elem, n), cons(elem, nil)) == repeat(elem, succ(n));
+
+// ------------- split_varlim -------------
+
+lemma_auto(length(split_varlim(xs, n, limits))) void length_split_varlim<t>(list<t> xs, int n, list<int> limits);
+    requires    length(xs) == length(limits) * n && 0 <= n;
+    ensures     length(split_varlim(xs, n, limits)) == length(limits);
+
+lemma void split_varlim_nolim<t>(list<t> xs, int n, list<int> limits);
+    requires    
+        true == forall(limits, (eq)(0)) &*&
+        0 <= n &*& n * length(limits) == length(xs);
+    ensures
+        true == forall(split_varlim(xs, n, limits), (eq)(nil));
+
+lemma void split_varlim_chunk_equiv<t>(list<t> xs, int n, list<int> limits, int j);
+    requires    0 <= n &*& 0 <= j &*& j < length(limits) &*& n * (j+1) <= length(xs) ;
+    ensures     nth(j, split_varlim(xs, n, limits)) == chunk(xs, n * j, n * j + nth(j, limits));
+
+lemma void split_varlim_update<t>(list<t> xs, int n, list<int> limits1, list<int> limits2, int i);
+    requires    
+        0 <= i &*& i < length(limits1) &*& 
+        limits2 == update(i, nth(i, limits2), limits1) &*&
+        nth(i, limits1) != nth(i, limits2);
+    ensures     
+        split_varlim(xs, n, limits2) == update(i, nth(i, split_varlim(xs, n, limits2)), split_varlim(xs, n, limits1));
+
+lemma void split_varlim_update_unrelevant<t>(list<t> xs1, list<t> xs2, list<int> limits, int n, int i, int j, t new_val);
+    requires    
+        xs2 == update(n * j + i, new_val, xs1) &*& nth(n * j + i, xs2) == new_val &*& nth(j, limits) <= i &*&
+        true == forall(limits, (ge)(0)) &*& true == forall(limits, (le)(n)) &*&
+        length(xs1) == n * length(limits) &*&
+        0 <= i &*& i < n &*&
+        0 <= j &*& j < length(limits);
+    ensures     
+        split_varlim(xs1, n, limits) == split_varlim(xs2, n, limits);
+
+lemma void split_varlim_split_equiv<t>(list<t> xs, list<int> limits, int n, nat nb_split);
+    requires    true == forall(limits, (eq)(n)) &*& length(limits) == int_of_nat(nb_split);
+    ensures     split_varlim(xs, n, limits) == split(xs, nb_split, n);
+
+// ------------- split -------------
+
+lemma_auto(length(split(xs, nb_split, n))) void length_split<t>(list<t> xs, nat nb_split, int n);
+    requires    length(xs) == int_of_nat(nb_split) * n && 0 <= n;
+    ensures     length(split(xs, nb_split, n)) == int_of_nat(nb_split);
+
+lemma_auto(length(nth(i, split(xs, nb_split, n)))) void length_split_nth<t>(list<t> xs, nat nb_split, int n, int i);
+    requires    length(xs) == int_of_nat(nb_split) * n && 0 <= n && 0 <= i && i < int_of_nat(nb_split);
+    ensures     length(nth(i, split(xs, nb_split, n))) == n;
+
+lemma void length_split_forall<t>(list<t> xs, nat nb_split, int n);
+    requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= n &*& n <= length(xs);
+    ensures     true == forall(split(xs, nb_split, n), (length_eq)(n));
+
+lemma void split_chunk_equiv<t>(list<t> xs, nat nb_split, int n, int i);
+    requires    0 < n &*& 0 <= i &*& i < int_of_nat(nb_split) &*& n * (i+1) <= length(xs);
+    ensures     nth(i, split(xs, nb_split, n)) == chunk(xs, n * i, n * (i+1));
+
+lemma void split_to_source<t>(list<t> xs, nat nb_split, int n, int i, int j);
+    requires    length(xs) == int_of_nat(nb_split) * n &*& 0 <= n &*&
+                0 <= i &*& i < n &*&
+                0 <= j &*& j < int_of_nat(nb_split);
+    ensures     nth(i, nth(j, split(xs, nb_split, n))) == nth(j * n + i, xs);
+
+lemma void split_append<t>(list<t> xs, nat nb_split, int n);
+    requires    int_of_nat(succ(nb_split)) * n <= length(xs) &*& 0 < n;
+    ensures     split(xs, succ(nb_split), n) == append(split(xs, nb_split, n), cons(chunk(xs, n * int_of_nat(nb_split), n * (int_of_nat(nb_split) + 1)), nil));
+
+lemma void split_update_unrelevant<t>(list<t> xs, nat nb_split, int n, int i, t val);
+    requires    0 < n &*& int_of_nat(nb_split) * n <= i &*& i < length(xs);
+    ensures     split(xs, nb_split, n) == split(update(i, val, xs), nb_split, n);
+
+// ------------- integers_list -------------
+
+lemma_auto(length(integers_list(cnt, index))) void length_integers_list(nat cnt, int index);
+    requires    true;
+    ensures     length(integers_list(cnt, index)) == int_of_nat(cnt);
+
+lemma_auto(nth(i, integers_list(cnt, index))) void val_integers_list(nat cnt, int index, int i);
+    requires    0 <= i && i <  int_of_nat(cnt);
+    ensures     nth(i, integers_list(cnt, index)) == index + i;
+
+lemma void integers_list_bounds(nat cnt, int index);
+    requires    true;
+    ensures     true == forall(integers_list(cnt, index), (ge)(index)) &*& true == forall(integers_list(cnt, index), (lt)(index + int_of_nat(cnt)));
+
+lemma void integers_list_append(nat cnt1, nat cnt2, int index);
+    requires    true;
+    ensures     integers_list( nat_of_int( int_of_nat(cnt1) + int_of_nat(cnt2) ) , index) == append( integers_list(cnt1, index) , integers_list(cnt2, index + int_of_nat(cnt1)));
+
+lemma void integers_list_distinct(nat cnt, int index);
+    requires    true;
+    ensures     true == distinct(integers_list(cnt, index));
+
+lemma void integers_list_subset(list<int> xs, int low_bound, int up_bound);
+    requires    true == forall(xs, (ge)(low_bound)) &*& true == forall(xs, (lt)(up_bound)) &*& low_bound <= up_bound;
+    ensures     true == subset(xs, integers_list(nat_of_int(up_bound - low_bound), low_bound));
+
+// ------------- zip -------------
+
+lemma_auto(length(zip(xs, ys))) void length_zip<t1, t2>(list<t1> xs, list<t2> ys);
+    requires    length(xs) == length(ys);
+    ensures     length(zip(xs, ys)) == length(xs);
+
+lemma_auto(nth(i, zip(xs, ys))) void val_zip<t1, t2>(list<t1> xs, list<t2> ys, int i);
+    requires    0 <= i && i < length(xs) && length(xs) == length(ys);
+    ensures     nth(i, zip(xs, ys)) == pair(nth(i, xs), nth(i, ys));
+
+lemma void zip_unzip_fst<t1, t2>(list<t1> xs, list<t2> ys);
+    requires    length(xs) == length(ys);
+    ensures     xs == map(fst, zip(xs, ys));
+
+lemma void zip_unzip_snd<t1, t2>(list<t1> xs, list<t2> ys);
+    requires    length(xs) == length(ys);
+    ensures     ys == map(snd, zip(xs, ys));
+
+lemma void zip_append<t1, t2>(list<t1> xs1, list<t2> ys1, list<t1> xs2, list<t2> ys2);
+    requires    length(xs1) == length(ys1) &*& length(xs2) == length(ys2);
+    ensures     zip(append(xs1, xs2), append(ys1, ys2)) == append(zip(xs1, ys1), zip(xs2, ys2));
+
+// ------------- zip_index -------------
+
+lemma_auto(length(zip_index(xs, idx))) void length_zip_index<t>(list<t> xs, int idx);
+    requires    true;
+    ensures     length(zip_index(xs, idx)) == length(xs);
+
+lemma_auto(nth(i, zip_index(xs, idx))) void val_zip_index<t>(list<t> xs, int idx, int i);
+    requires    0 <= i && i < length(xs);
+    ensures     nth(i, zip_index(xs, idx)) == pair(i + idx, nth(i, xs));
+
+lemma void zip_index_unzip<t>(list<t> xs, int idx);
+    requires    true;
+    ensures     xs == map(snd, zip_index(xs, idx));
+
+lemma void zip_index_append<t>(list<t> xs, list<t> ys);
+    requires    true;
+    ensures     zip_index(append(xs, ys), 0) == append(zip_index(xs, 0), zip_index(ys, length(xs)));
+
+lemma void zip_index_bounds<t>(list<t> xs, int idx); 
+    requires    true;
+    ensures     true == forall( map(fst, zip_index(xs, idx)), (ge)(idx) ) &*& true == forall( map(fst, zip_index(xs, idx)), (lt)(idx + length(xs)) );
+
+lemma void zip_index_distinct<t>(list<t> xs, int idx);
+    requires    true;
+    ensures     true == distinct(map(fst, zip_index(xs, idx)));
+
+#endif//_LISTUTILS_LEMMAS_GH_INCLUDED_

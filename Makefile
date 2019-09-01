@@ -21,19 +21,18 @@ NF_DIR := $(shell if [ '$(notdir $(shell pwd))' = 'build' ]; \
 
 # Check that the NF doesn't use clock_gettime directly,
 # which would violate Vigor's expectations
-# note: 'nf_main.c' is there for invocations of `make verifast`
+# note: 'nf.c' is there for invocations of `make verifast`
 # outside of any nf directory, which is perfectly valid.
 # otherwise grep with empty argument list will wait on stdin
 ifeq (true,$(shell if grep -q clock_gettime                     \
-                           $(SELF_DIR)/nf_main.c                \
+                           $(SELF_DIR)/nf.c                     \
                            $(addprefix $(NF_DIR)/,$(NF_FILES)); \
                    then echo 'true';                            \
                    fi))
-$(error Please use the Vigor nf_time header instead of clock_gettime)
+$(error Please use the vigor_time header instead of clock_gettime)
 endif
 
 # Default values for arguments
-NF_AUTOGEN_SRCS += $(SELF_DIR)/libvig/stubs/ether_addr.h
 NF_LAYER ?= 2
 NF_BENCH_NEEDS_REVERSE_TRAFFIC ?= false
 
@@ -44,15 +43,15 @@ ifneq (,$(wildcard $(NF_DIR)/dataspec.ml))
 NF_FILES += state.c
 endif
 
-# Define this for the dpdk and dsos makefiles
+# Define this for the dpdk and nfos makefiles
 NF_ARGS := --no-shconf $(NF_DPDK_ARGS) -- $(NF_ARGS)
 
 ifeq (click,$(findstring click,$(shell pwd)))
 # Click baselines
 include $(SELF_DIR)/Makefile.click
-else ifeq (dsos-,$(findstring dsos-,$(MAKECMDGOALS)))
-# DSOS-related targets
-include $(SELF_DIR)/Makefile.dsos
+else ifeq (nfos-,$(findstring nfos-,$(MAKECMDGOALS)))
+# NFOS-related targets
+include $(SELF_DIR)/Makefile.nfos
 else ifeq (,$(findstring moonpol,$(abspath $(NF_DIR))))
 # DPDK-based NFs
 include $(SELF_DIR)/Makefile.dpdk
@@ -68,9 +67,13 @@ endif
 # once in the proper dir and once in build/, we only care about the former
 autogen:
 	@if [ '$(NF_DIR)' == '.' ]; then \
+	  if [ -e dataspec.ml ]; then \
+	    cp dataspec.ml fspec_gen.ml ; \
+	  fi; \
 	  $(SELF_DIR)/codegen/generate.sh $(NF_AUTOGEN_SRCS); \
-	  if [ -e 'dataspec.ml' ]; then \
-      $(SELF_DIR)/codegen/gen-loop-boilerplate.sh dataspec.ml; fi \
+	  if [ -e dataspec.ml ]; then \
+	  $(SELF_DIR)/codegen/gen-loop-boilerplate.sh fspec_gen.ml; \
+	  fi; \
 	fi
 
 

@@ -1,10 +1,11 @@
 #ifndef _LB_BALANCER_H_INCLUDED_ // cannot use pragma once, included by VeriFast
 #define _LB_BALANCER_H_INCLUDED_
 
-#include "libvig/stubs/mbuf_content.h"
-#include "libvig/containers/vector.h"
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/cht.h"
+#include "libvig/verified/vector.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/cht.h"
+
+#include <rte_ether.h>
 
 #include "lb_flow.h.gen.h"
 #include "lb_backend.h.gen.h"
@@ -18,7 +19,8 @@ struct LoadBalancer *lb_allocate_balancer(uint32_t flow_capacity,
                                           vigor_time_t flow_expiration_time);
 struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
                                           struct LoadBalancedFlow *flow,
-                                          vigor_time_t now);
+                                          vigor_time_t now,
+                                          uint16_t wan_device);
 void lb_expire_flows(struct LoadBalancer *balancer, vigor_time_t now);
 void lb_expire_backends(struct LoadBalancer *balancer, vigor_time_t now);
 void lb_process_heartbit(struct LoadBalancer *balancer,

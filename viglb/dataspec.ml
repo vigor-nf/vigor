@@ -1,4 +1,6 @@
 open Data_spec
+open Core
+open Ir
 
 let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity",
                                           "lb_flow_id_condition");
@@ -22,6 +24,27 @@ let containers = ["flow_to_flow_id", Map ("LoadBalancedFlow", "flow_capacity",
                             "active_backends");
                  ]
 
-let custom_includes = ["lb_flow.h.gen.h";
-                       "lb_backend.h.gen.h";
-                       "ip_addr.h.gen.h"]
+let constraints = ["lb_backend_id_condition",
+                   ( "ip_addr",
+                     [Bop (Le, {t=Unknown;v=Int 0}, {t=Unknown;v=Id "index"});
+                      Bop (Lt, {t=Unknown;v=Id "index"}, {t=Unknown;v=Int 32});
+                     ]);
+                   "lb_flow_id_condition",
+                   ( "LoadBalancedFlow",
+                     [Bop (Le, {t=Unknown;v=Int 0}, {t=Unknown;v=Id "index"});
+                      Bop (Lt, {t=Unknown;v=Id "index"}, {t=Unknown;v=Int 65536});
+                     ]);
+                   "lb_backend_condition",
+                   ( "LoadBalancedBackend",
+                     [Bop (Le, {t=Unknown;v=Int 0}, {t=Unknown;v=Id "nic"});
+                      Bop (Lt, {t=Unknown;v=Id "nic"}, {t=Unknown;v=Int 3});
+                      Not {v=Bop (Eq, {t=Unknown;v=Id "nic"}, {t=Unknown;v=Int 2});
+                           t=Unknown};
+                     ]);
+                   "lb_flow_id2backend_id_cond",
+                   ( "uint32_t",
+                     [Bop (Lt, {t=Unknown;v=Id "v"}, {t=Unknown;v=Int 32});
+                     ])]
+
+let gen_custom_includes = ref []
+let gen_records = ref []

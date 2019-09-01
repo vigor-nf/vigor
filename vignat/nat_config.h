@@ -4,8 +4,6 @@
 
 #include <rte_ether.h>
 
-#include "libvig/nf_time.h"
-
 struct nf_config {
   // "Main" LAN (i.e. internal) device, used for no-op not for NAT
   uint16_t lan_main_device;

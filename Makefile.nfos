@@ -1,0 +1,236 @@
+# This file expects to be included from the common Makefile
+# Use this to build an executable image
+
+
+SHELL := /bin/bash -O extglob -c
+
+CC = x86_64-elf-gcc
+NASM = nasm
+QEMU = qemu-system-x86_64
+
+ARCH = x86_64
+BINARY_MULTIBOOT1 = nfos-$(ARCH)-multiboot1.bin
+BINARY_MULTIBOOT2 = nfos-$(ARCH)-multiboot2.bin
+ISO = nfos-$(ARCH).iso
+
+# get current dir, see https://stackoverflow.com/a/8080530
+SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+
+# VIGOR_DIR is an environment variable set in paths.sh
+# where it is defined by the initial insitallation in setup.sh
+LINKER_SCRIPT = $(SELF_DIR)/linker.ld
+GRUB_CFG = $(SELF_DIR)/grub.cfg
+LIBC = $(VIGOR_DIR)/klee-uclibc-binary/lib/libc.a # VIGOR_DIR comes from paths.sh
+
+CONTAINERS_DIR = $(SELF_DIR)/libvig/verified
+STUBS_DIR = $(SELF_DIR)/libvig/models
+KERNEL_DIR = $(SELF_DIR)/libvig/kernel
+
+NF_DEFS := -D_GNU_SOURCE
+NF_DEFS += -DNFOS
+
+# NF
+NF_INCLUDES = -I $(SELF_DIR)
+NF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
+NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include
+NF_INCLUDES += -I /usr/local/include
+NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include-fixed
+NF_INCLUDES += -I /usr/include/x86_64-linux-gnu
+NF_INCLUDES += -I /usr/include
+
+# Convert the bash-style NF arguments (nf --no-shconf -- -n 3 -m 6) into
+# C-style char*[] comma separated list
+# of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for NFOS to put
+# into argv at compilation time.
+dquote := \"
+space := $(null) #
+comma := ,
+NF_DEFS += -DNF_ARGUMENTS="\"$(subst $(space),$(dquote)$(comma)$(dquote),nf $(NF_ARGS))\""
+
+NF_COMMON_SOURCES := $(SELF_DIR)/nf.c \
+	$(SELF_DIR)/nf-util.c \
+	$(CONTAINERS_DIR)/vigor-time.c \
+	$(CONTAINERS_DIR)/packet-io.c \
+	$(wildcard $(RTE_SDK)/lib/librte_cmdline/*.c) \
+	$(CONTAINERS_DIR)/map.c \
+	$(CONTAINERS_DIR)/map-impl.c \
+        $(CONTAINERS_DIR)/map-impl-pow2.c \
+	$(CONTAINERS_DIR)/double-map.c \
+	$(CONTAINERS_DIR)/double-chain.c \
+	$(CONTAINERS_DIR)/double-chain-impl.c \
+	$(CONTAINERS_DIR)/vector.c \
+	$(CONTAINERS_DIR)/cht.c \
+	$(CONTAINERS_DIR)/expirator.c \
+	$(CONTAINERS_DIR)/ether.c
+
+# For NAT debug output
+# NF_DEFS += -DENABLE_LOG
+
+
+# DPDK
+DPDK_INCLUDES = -I $(RTE_SDK)/include/dpdk
+DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_eal/common
+DPDK_INCLUDES += -I $(RTE_SDK)/drivers/bus/pci
+DPDK_INCLUDES += -I $(RTE_SDK)/drivers/net/ixgbe
+DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_kni
+DPDK_INCLUDES += --include=$(STUBS_DIR)/builtin.h --include=rte_config.h
+
+DPDK_DEFS := -D__linux__ -U_FORTIFY_SOURCE
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSE
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSE2
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSE3
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSSE3
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSE4_1
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_SSE4_2
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_AES
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_PCLMULQDQ
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_AVX
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_RDRAND
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_FSGSBASE
+DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_F16C
+DPDK_DEFS += -DRTE_COMPILE_TIME_CPUFLAGS=RTE_CPUFLAG_SSE,RTE_CPUFLAG_SSE2,RTE_CPUFLAG_SSE3,RTE_CPUFLAG_SSSE3,RTE_CPUFLAG_SSE4_1,RTE_CPUFLAG_SSE4_2,RTE_CPUFLAG_AES,RTE_CPUFLAG_PCLMULQDQ,RTE_CPUFLAG_AVX,RTE_CPUFLAG_RDRAND,RTE_CPUFLAG_FSGSBASE,RTE_CPUFLAG_F16C
+
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/common/*.c)
+DPDK_SRCS += $(RTE_SDK)/lib/librte_eal/common/arch/x86/rte_cycles.c
+DPDK_SRCS += $(RTE_SDK)/lib/librte_eal/common/arch/x86/rte_cpuflags.c
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_ether/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_hash/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_mempool/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_mbuf/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_pci/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_ring/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/mempool/ring/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/bus/pci/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/bus/pci/linux/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/base/*.c)
+DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_82599_bypass.c, $(DPDK_SRCS))
+DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c, $(DPDK_SRCS))
+DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_bypass.c, $(DPDK_SRCS))
+DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_neon.c, $(DPDK_SRCS))
+
+# Stubs
+STUBS_SRCS += $(wildcard $(STUBS_DIR)/externals/*.c)
+
+KERNEL_SRCS := $(wildcard $(KERNEL_DIR)/*.c)
+
+KERNEL_INCLUDES := -I $(KERNEL_DIR) -I $(SELF_DIR)/libvig/models/kernel
+
+# For NFOS debug output on the VGA buffer
+KERNEL_DEFS := -DNFOS_DEBUG
+
+OTHER_INCLUDES := -I $(STUBS_DIR) -I $(SELF_DIR)/libvig
+
+C_SRCS = $(NF_FILES) $(NF_COMMON_SOURCES) $(DPDK_SRCS) \
+         $(STUBS_SRCS) $(KERNEL_SRCS)
+C_OBJS := $(patsubst %.c, %.o, $(C_SRCS))
+
+BOOT_SRCS = $(KERNEL_DIR)/asm/boot.asm
+MULTIBOOT1_SRC = $(KERNEL_DIR)/asm/multiboot1_header.asm
+MULTIBOOT2_SRC = $(KERNEL_DIR)/asm/multiboot2_header.asm
+
+BOOT_OBJS := $(patsubst %.asm, %.o, $(BOOT_SRCS))
+MULTIBOOT1_OBJ := $(patsubst %.asm, %.o, $(MULTIBOOT1_SRC))
+MULTIBOOT2_OBJ := $(patsubst %.asm, %.o, $(MULTIBOOT2_SRC))
+
+CFLAGS := -march=native -ffreestanding -flto -O3
+CFLAGS += -DCAPACITY_POW2
+
+CRTI_SRC = $(KERNEL_DIR)/asm/crti.asm
+CRTI_OBJ := $(patsubst %.asm, %.o, $(CRTI_SRC))
+CRTBEGIN_OBJ := $(shell $(CC) $(CFLAGS) -print-file-name=crtbegin.o)
+CRTEND_OBJ := $(shell $(CC) $(CFLAGS) -print-file-name=crtend.o)
+CRTN_SRC = $(KERNEL_DIR)/asm/crtn.asm
+CRTN_OBJ := $(patsubst %.asm, %.o, $(CRTN_SRC))
+
+
+# The order is important
+OBJS = $(BOOT_OBJS) $(CRTI_OBJ) $(CRTBEGIN_OBJ) \
+       $(C_OBJS) $(CRTEND_OBJ) $(CRTN_OBJ)
+
+DEFS = $(NF_DEFS) $(DPDK_DEFS) $(KERNEL_DEFS)
+INCLUDES = $(NF_INCLUDES) $(DPDK_INCLUDES) $(OTHER_INCLUDES) $(KERNEL_INCLUDES)
+
+NASMFLAGS = -felf64
+LDFLAGS = -T $(LINKER_SCRIPT) -nostdlib -Wl,--nmagic
+LIBS = -lgcc
+
+# migratable=off is needed otherwise the hypervisor won't report the TSC
+# frequency as invariant
+QEMUFLAGS = -enable-kvm -cdrom $(ISO) -cpu host,migratable=off -m 1G
+#QEMUFLAGS += -curses
+QEMUFLAGS += -nographic
+QEMUFLAGS += -device vfio-pci,host=06:00.0
+QEMUFLAGS += -device vfio-pci,host=06:00.1
+# QEMUFLAGS += -no-hpet -nodefaults -no-acpi -vga std
+# QEMUFLAGS += -object memory-backend-file,id=mem,prealloc=on,size=1G,mem-path=/mnt/huge1GB
+
+.PHONY: nfos-all nfos-clean nfos-run nfos-debug nfos-iso nfos-multiboot1 nfos-multiboot2
+
+nfos-all: nfos-multiboot1 nfos-multiboot2
+
+nfos-multiboot1: $(BINARY_MULTIBOOT1)
+
+nfos-multiboot2: $(BINARY_MULTIBOOT2)
+
+# We can't remove CRT{BEGIN,END}_OBJ because they're system-provided
+nfos-clean:
+	@rm -f $(C_OBJS) $(MULTIBOOT1_OBJ) $(MULTIBOOT2_OBJ) $(BOOT_OBJS) \
+		$(CRTI_OBJ) $(CRTN_OBJ)
+
+# Launch QEMU
+nfos-run: $(ISO)
+	@sudo $(QEMU) $(QEMUFLAGS)
+
+# Launch QEMU and attach debugger
+nfos-debug: $(ISO)
+	@sudo $(QEMU) -s -S $(QEMUFLAGS) > /dev/null 2>&1 &
+	@sudo gdb -ex "set arch i386:x86-64:intel" \
+		-ex "target remote localhost:1234" \
+		-ex "symbol-file $(BINARY_MULTIBOOT2)" \
+		-ex "hb main" \
+		-ex "c" \
+		-ex "d 1" \
+		-ex "disconnect" \
+		-ex "set arch i386:x86-64" \
+		-ex "target remote localhost:1234" \
+		-ex "b exit" \
+		-ex "b abort" \
+		-ex "b __assert_fail"
+
+	@sudo kill `pidof qemu-system-x86_64`
+
+nfos-iso: $(ISO)
+
+# Make bootable iso image
+$(ISO): autogen $(BINARY_MULTIBOOT2) $(GRUB_CFG)
+	@mkdir -p build/isofiles/boot/grub
+	@cp $(BINARY_MULTIBOOT2) build/isofiles/boot/kernel.bin
+	@cp $(GRUB_CFG) build/isofiles/boot/grub
+	@grub-mkrescue -o $(ISO) build/isofiles 2> /dev/null
+	@rm -r build/isofiles
+
+# Link final executable
+$(BINARY_MULTIBOOT2): autogen $(MULTIBOOT2_OBJ) $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT2_OBJ) $(OBJS) $(LIBC) $(LIBS)
+
+$(BINARY_MULTIBOOT1): autogen $(MULTIBOOT1_OBJ) $(OBJS)
+	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(MULTIBOOT1_OBJ) $(OBJS) $(LIBC) $(LIBS)
+	objcopy -O elf32-i386 $(BINARY_MULTIBOOT1)
+
+%.gen.o: autogen
+	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $(subst .o,.c,$@) -o $@
+state.o: autogen
+	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $(subst .o,.c,$@) -o $@
+
+# Assembly files
+%.o: %.asm
+	$(NASM) $(NASMFLAGS) $< -o $@
+
+# C files
+%.o: %.c
+	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $< -o $@
+
+count-nfos-loc:
+	@cloc -q $(KERNEL_SRCS) $(subst .c,.h,$(KERNEL_SRCS)) $(STUBS_SRCS) 2>/dev/null

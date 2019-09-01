@@ -1,3 +1,18 @@
+# This specification is a formalization of RFC3022.
+# RFC3022 uses an underspecified term "TCP/UDP session",
+# in particular, it doesn't clarify if TCP SYN packets
+# are special w.r.t allocating new flows in the flow table.
+# This specification makes a decision to let all the outgoing
+# packet allocate a new flow when needed.
+# This means we require not to drop outbound TCP non-SYN packets
+# until the flow table fills up.
+#
+# This is not the only interpretation. Some operators may choose
+# to respect the TCP connection semantics and drop TCP non-SYN packets
+# corresponding to unknown flow. This behavior would contradict this
+# specification while not necessarily RFC3022.
+# This specification can be generalized, leaving the handling of
+# outbound TCP non-SYN packets unspecified.
 from state import flow_emap
 EXP_TIME = 10 * 1000
 EXT_IP_ADDR = ext_ip

@@ -1,7 +1,7 @@
 from state import flow_emap, flow_id_to_backend_id, backends, backend_ip_emap
 EXP_TIME = 10 * 1000
 BACKEND_EXP_TIME = 3600000000 * 1000
-EXT_PORT = 0
+EXT_PORT = 2
 
 if a_packet_received:
     flow_emap.expire_all(now - EXP_TIME)

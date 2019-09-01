@@ -1,10 +1,8 @@
 #include "lb_balancer.h"
 #include "state.h"
 
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/containers/double-chain.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/expirator.h"
 
 #include <linux/limits.h>
 #include <sys/types.h>
@@ -23,24 +21,6 @@ struct LoadBalancer {
 };
 
 extern struct LoadBalancer *balancer;
-
-bool lb_backend_id_condition(void *key, int value) {
-  return 0 <= value AND value < balancer->state->backend_capacity;
-}
-
-bool lb_flow_id_condition(void *key, int value) {
-  return 0 <= value AND value < balancer->state->flow_capacity;
-}
-
-bool lb_backend_condition(void *key, int index, void *state) {
-  return 0 < ((struct LoadBalancedBackend *)key)
-                 ->nic AND((struct LoadBalancedBackend *)key)
-                 ->nic < rte_eth_dev_count();
-}
-
-bool lb_flow_id2backend_id_cond(void *key, int index, void *state) {
-  return *(uint32_t *)key < balancer->state->backend_capacity;
-}
 
 struct LoadBalancer *lb_allocate_balancer(uint32_t flow_capacity,
                                           uint32_t backend_capacity,
@@ -61,7 +41,8 @@ struct LoadBalancer *lb_allocate_balancer(uint32_t flow_capacity,
 
 struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
                                           struct LoadBalancedFlow *flow,
-                                          vigor_time_t now) {
+                                          vigor_time_t now,
+                                          uint16_t wan_device) {
   int flow_index;
   struct LoadBalancedBackend backend;
   if (map_get(balancer->state->flow_to_flow_id, flow, &flow_index) == 0) {
@@ -96,7 +77,7 @@ struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
                     (void *)vec_backend);
     } else {
       // Drop
-      backend.nic = 0; // The wan interface.
+      backend.nic = wan_device; // The wan interface.
     }
 
   } else {
@@ -119,7 +100,7 @@ struct LoadBalancedBackend lb_get_backend(struct LoadBalancer *balancer,
 
       dchain_free_index(balancer->state->flow_chain, flow_index);
       vector_return(balancer->state->flow_heap, flow_index, (void *)flow_key);
-      return lb_get_backend(balancer, flow, now);
+      return lb_get_backend(balancer, flow, now, wan_device);
     } else {
       dchain_rejuvenate_index(balancer->state->flow_chain, flow_index, now);
 

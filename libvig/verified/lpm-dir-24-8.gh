@@ -1,0 +1,341 @@
+#ifndef __LPM_DIR_24_8_GH_INCLUDED__
+#define __LPM_DIR_24_8_GH_INCLUDED__
+
+#include <bitops.gh>
+#include "stdex.gh"
+
+inductive lpm_rule = rule(Z, int, int); //ipv4, prefixlen, route
+inductive dir_24_8 = tables(list<option<pair<bool, Z> > >,
+                            list<option<Z> >, int); //last is for lpm_long_index
+
+
+fixpoint Z Z_of_int(int x, nat length) {
+  return Z_of_bits(Zsign(false), snd(bits_of_int(x, length)));
+}
+
+fixpoint lpm_rule init_rule(int ipv4, int prefixlen, int route) {
+  return rule(Z_of_int(ipv4, N32), prefixlen, route);
+}
+
+fixpoint int rule_ipv4(lpm_rule rule) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route): return int_of_Z(ipv4);
+  }
+}
+
+fixpoint int rule_prefixlen(lpm_rule rule) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route): return prefixlen;
+  }
+}
+
+fixpoint int rule_route(lpm_rule rule) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route): return route;
+  }
+}
+
+fixpoint list<option<pair<bool, Z> > > dir_lpm24(dir_24_8 dir) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, lpm_long_index): return lpm_24;
+  }
+}
+
+fixpoint list<option<Z> > dir_lpm_long(dir_24_8 dir) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, lpm_long_index): return lpm_long;
+  }
+}
+
+fixpoint int dir_lpm_long_index(dir_24_8 dir) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, lpm_long_index): return lpm_long_index;
+  }
+}
+	
+fixpoint int rule_24_get_value(Z entry) {
+  return int_of_Z(Z_and(entry, Z_of_int(0x7FFF, N16)));
+}
+	
+// INDEX COMPUTING FUNCTIONS
+fixpoint int index24_from_ipv4(Z ipv4) {
+  return int_of_Z(Z_shiftright(ipv4, N8));
+}
+
+fixpoint int indexlong_from_ipv4(Z ipv4, int index) {
+  return index * 256 + int_of_Z(Z_and(ipv4, Z_of_int(0xFF, N8)));
+}
+
+//Assuming that prefixlen <= 32
+fixpoint int compute_rule_size(int prefixlen) {
+  return prefixlen < 25 ?
+           pow_nat(2, nat_of_int(24 - prefixlen))
+         :
+           pow_nat(2, nat_of_int(32 - prefixlen));
+}
+
+fixpoint Z mask_rec(int mask_length, nat total_length) {
+  switch(total_length) {
+    case zero: return Zsign(false);
+    case succ(n):
+      return int_of_nat(total_length) ==
+             mask_length ?
+               Zdigit(mask_rec(mask_length-1, n), true)
+             :
+               Zdigit(mask_rec(mask_length, n), false);
+  }
+}
+	
+fixpoint Z mask32_from_prefixlen(int prefixlen) {
+  return mask_rec(prefixlen, N32);
+}
+
+
+fixpoint int compute_starting_index_24(lpm_rule rule) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route):
+      return index24_from_ipv4(Z_and(ipv4, mask32_from_prefixlen(prefixlen)));
+  }
+}
+	
+fixpoint int compute_starting_index_long(lpm_rule rule, int base_index) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, value):
+      return base_index * 256 +
+             (int_of_Z(Z_and(Z_and(ipv4, mask32_from_prefixlen(prefixlen)),
+                             Z_of_int(0xFF, N8))));
+  }
+}
+	
+fixpoint bool is_new_index_needed(option<pair<bool, Z> > entry) {
+  switch(entry) {
+    case none: return true;
+    case some(p): return
+      switch(p) {
+        case pair(f,v): return !f;
+      };
+    }
+}
+
+fixpoint int extract24_value(option<pair<bool, Z> > entry) {
+  switch(entry) {
+    case none: return 0xFFFF;
+    case some(p): return int_of_Z(snd(p));
+  }
+}
+
+//Entry is on 16 bits
+fixpoint bool extract_flag(int entry) {
+  return (entry >> 15) == 1;
+}
+
+fixpoint int set_flag(int entry) {
+  return entry | 0x8000;
+}
+
+fixpoint option<pair<bool, Z> > set_flag_entry(option<pair<bool, Z> > entry) {
+  switch(entry) {
+    case none: return none;
+    case some(p): return
+      switch(p) {
+        case pair(b,z): return some(pair(true, z));
+      };
+  }
+}
+
+//The output value does not contain the flag
+fixpoint int extract_value(int entry) {
+  return entry & 0x7FFF;
+}
+	
+// LOOKUP FUNCTIONS
+fixpoint option<pair<bool, Z> > lookup_lpm_24(int index, dir_24_8 dir) {
+  switch(dir) {
+    case(tables(lpm_24, lpm_long, long_index)): return nth(index, lpm_24);
+  }
+}
+
+fixpoint option<Z> lookup_lpm_long(int index, dir_24_8 dir) {
+  switch(dir) {
+    case(tables(lpm_24, lpm_long, long_index)): return nth(index, lpm_long);
+  }
+}
+
+fixpoint int lpm_dir_24_8_lookup(Z ipv4, dir_24_8 dir) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, index_long): return
+      switch(lookup_lpm_24(index24_from_ipv4(ipv4), dir)) {
+        case none: return 0xFFFF;
+        case some(p): return
+          switch(p) {
+            case pair(f, v): return
+              f ?
+                switch(lookup_lpm_long(indexlong_from_ipv4(ipv4, int_of_Z(v)),
+                                       dir))
+                {
+                  case none: return 0xFFFF;
+                  case some(vl): return int_of_Z(vl);
+                }
+              :
+                int_of_Z(v);
+          };
+      };
+  }
+}
+
+fixpoint int lpm_lookup(dir_24_8 dir, int ipv4) {
+  return lpm_dir_24_8_lookup(Z_of_int(ipv4, N32), dir);
+}
+
+
+// ADD ROUTE FUNCTIONS
+fixpoint list<t> update_n<t>(list<t> lst, int start, nat count, t x) {
+  switch(count) {
+    case zero: return lst;
+    case succ(n): return update_n(update(start, x, lst),
+                                  start+1, n, x);
+  }
+}
+
+lemma_auto(length(update_n(lst, start, count, x))) void update_n_length<t>(list<t> lst, int start, nat count, t x)
+  requires true;
+  ensures length(lst) == length(update_n(lst, start, count, x));
+{
+  switch(count) {
+    case zero:
+    case succ(n):
+      list<t> updated = update(start, x, lst);
+      length_update(start, x, lst);
+      update_n_length(updated, start+1, n, x);
+  }
+}
+
+fixpoint list<option<pair<bool, Z> > > insert_route_24(list<option<pair<bool, Z> > > lpm_24,
+                                                       lpm_rule rule) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route):
+      return update_n(lpm_24, compute_starting_index_24(rule),
+                          nat_of_int(compute_rule_size(prefixlen)),
+                          some(pair(false, Z_of_int(route, N16))));
+  }
+}
+	
+fixpoint list<option<Z> > insert_route_long(list<option<Z> > lpm_long,
+                                            lpm_rule rule, int base_index) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route):
+      return update_n(lpm_long,
+                          compute_starting_index_long(rule, base_index),
+                          nat_of_int(compute_rule_size(prefixlen)),
+                          some(Z_of_int(route, N16)));
+  }
+}
+
+fixpoint dir_24_8 insert_lpm_24(dir_24_8 dir, lpm_rule rule) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, long_index):
+      return tables(insert_route_24(lpm_24, rule), lpm_long, long_index);
+  }
+}
+
+fixpoint bool can_insert(dir_24_8 dir, int ipv4, int prefixlen) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, long_index):
+      return
+        prefixlen < 25 ||
+        !is_new_index_needed(
+           lookup_lpm_24(index24_from_ipv4(Z_of_int(ipv4, N32)),
+                                           dir)) ||
+        long_index < 256;
+  }
+}
+
+fixpoint dir_24_8 insert_lpm_long(dir_24_8 dir, lpm_rule rule) {
+  switch(dir) {
+    case tables(lpm_24, lpm_long, long_index): return
+      switch(rule) {
+        case rule(ipv4, prefixlen, route): return
+          //Check whether a new index_long is needed 
+          is_new_index_needed(lookup_lpm_24(index24_from_ipv4(ipv4), dir)) ? 
+            //Check for available index, if not -> no change
+            long_index == 256 ?
+              tables(lpm_24, lpm_long, long_index)
+            :
+              //Update the value in lpm_24 and lpm_long
+              tables(update_n(lpm_24, compute_starting_index_24(rule),
+                                     N1,
+                                     some(pair(true,
+                                               Z_of_int(long_index, N16)))),
+                     insert_route_long(lpm_long, rule, long_index),
+                     long_index + 1)
+          :
+            //No need to update the value in lpm_24, only in tlb_long
+            tables(lpm_24,
+                   insert_route_long(lpm_long, rule,
+                                     extract24_value(lookup_lpm_24(index24_from_ipv4(ipv4),
+                                     dir))),
+                   long_index);		
+      };		
+  }	
+}
+
+fixpoint dir_24_8 add_rule(dir_24_8 dir, lpm_rule rule) {
+  switch(rule) {
+    case rule(ipv4, prefixlen, route):
+      return prefixlen < 25 ?
+               insert_lpm_24(dir, rule)
+             :
+               insert_lpm_long(dir, rule);
+  }
+}
+
+// STRUCTURE BUILDING FUNCTIONS
+
+
+fixpoint option<pair<bool, Z> > entry_24_mapping(int entry) {
+  return entry == 0xFFFF ?
+           none
+         :
+           some(pair(extract_flag(entry), Z_of_int(extract_value(entry), N16)));
+}
+
+fixpoint option<Z> entry_long_mapping(int entry) {
+  return entry == 0xFFFF ? none : some(Z_of_int(entry, N16));
+}
+
+fixpoint dir_24_8 build_tables(list<int> t_24, list<int> t_long,
+                               int long_index) {
+  return tables(map(entry_24_mapping, t_24),
+                map(entry_long_mapping, t_long), long_index);
+}
+
+fixpoint dir_24_8 dir_init() {
+  return tables(repeat_n(nat_of_int(16777216), none),
+                repeat_n(nat_of_int(65536), none), 0);
+}
+
+
+// This function must be called only when the option is known not to be none
+fixpoint pair<bool, Z> get_someOption24(option<pair<bool, Z> > o) {
+  switch(o) {
+    case none: return pair(false, Zsign(false));//should never happen
+    case some(p): return p;
+  }
+}
+
+fixpoint bool valid_entry24(int entry) {
+  return entry == 0xFFFF ?
+           true
+         :
+           (extract_flag(entry) ?
+             (0x8000 <= entry && entry <= 0x80FF) &&
+             (0 <= extract_value(entry) && extract_value(entry) <= 0xFF)
+           :
+             (0 <= entry && entry <= 0x7FFF));
+}
+
+fixpoint bool valid_entry_long(int entry) {
+  return entry == 0xFFFF ? true : 0 <= entry && entry <= 0x7FFF;
+}
+
+#endif//__LPM_DIR_24_8_GH_INCLUDED__

@@ -1,5 +1,5 @@
 #ifdef KLEE_VERIFICATION
-#  include "libvig/stubs/containers/map_stub-control.h" //for map_reset
+#  include "libvig/models/verified/map-control.h" //for map_reset
 #endif                                                  // KLEE_VERIFICATION
 #include <assert.h>
 #include <errno.h>
@@ -15,16 +15,16 @@
 #include <rte_mbuf.h>
 #include <cmdline_parse_etheraddr.h>
 
-#include "libvig/nf_util.h"
-#include "libvig/nf_log.h"
-#include "bridge_config.h"
-
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/vector.h"
+#include "libvig/verified/expirator.h"
+#include "libvig/verified/ether.h"
 
 #include "nf.h"
+#include "nf-util.h"
+#include "nf-log.h"
+#include "bridge_config.h"
 #include "state.h"
 
 struct nf_config config;
@@ -92,15 +92,6 @@ void bridge_put_update_entry(struct ether_addr *src, uint16_t src_device,
   }
 }
 
-bool stat_map_condition(void *key, int index) {
-  return 0 <= index & index < rte_eth_dev_count();
-}
-
-bool dyn_val_condition(void *val, int index, void *state) {
-  struct DynamicValue *v = val;
-  return 0 <= v->device & v->device < rte_eth_dev_count();
-}
-
 // File parsing, is not really the kind of code we want to verify.
 #ifdef KLEE_VERIFICATION
 void read_static_ft_from_file(struct Map *stat_map, struct Vector *stat_keys,
@@ -112,7 +103,7 @@ static void read_static_ft_from_array(struct Map *stat_map,
 
 #else // KLEE_VERIFICATION
 
-#  ifndef DSOS
+#  ifndef NFOS
 static void read_static_ft_from_file(struct Map *stat_map,
                                      struct Vector *stat_keys,
                                      uint32_t stat_capacity) {
@@ -220,7 +211,7 @@ static void read_static_ft_from_file(struct Map *stat_map,
 finally:
   fclose(cfg_file);
 }
-#  endif // DSOS
+#  endif // NFOS
 
 struct {
   const char mac_addr[18];
@@ -274,7 +265,7 @@ void nf_init(void) {
   if (mac_tables == NULL) {
     rte_exit(EXIT_FAILURE, "Could not allocate mac tables");
   } else {
-#ifdef DSOS
+#ifdef NFOS
     read_static_ft_from_array(mac_tables->st_map, mac_tables->st_vec,
                               stat_capacity);
 #else

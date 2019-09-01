@@ -1,6 +1,6 @@
 global start
 extern main
-extern dsos_halt
+extern nfos_halt
 
 ; We claim that executing the code in this file leads to one and only one of 3
 ; outcomes:
@@ -60,7 +60,7 @@ extern dsos_halt
 section .text
 BITS 32
 
-; This is the entry point of DSOS, execution starts here
+; This is the entry point of NFOS, execution starts here
 start:
     ; We must first check that the CPU features that we require are supported.
     ; Because we need to use the CPUID instruction to perform these checks, the
@@ -309,34 +309,34 @@ start:
 
     ; 3 - Load CR3 with the physical base address of the top level page table.
     ;
-    ; Even though DSOS does not make use of virtual memory, 64-bit mode still
+    ; Even though NFOS does not make use of virtual memory, 64-bit mode still
     ; requires that we set up paging and page tables. x86 CPUs use  4-level
     ; hierarchical page tables in 64-bit mode and support page sizes of 4 KiB,
-    ; 2 MiB and 1 GiB. DSOS uses 1 GiB pages because they occupy the least amount
+    ; 2 MiB and 1 GiB. NFOS uses 1 GiB pages because they occupy the least amount
     ; of space in the TLB for a given mapping size. We are not concerned with the
-    ; 1GiB granularity because DSOS does not use multiple address spaces or
+    ; 1GiB granularity because NFOS does not use multiple address spaces or
     ; memory protection.
     ;
     ; The top level (PML4) of a page table hierarchy is always required and each
     ; of its entries references a page table of the second-highest level,
     ; which in turn controls access to a 512 GiB region of the address space.
     ; Because we assume that software will only access memory in the lowest 4 GiB, the
-    ; PML4 set up by DSOS will only have one valid entry - the first.
+    ; PML4 set up by NFOS will only have one valid entry - the first.
     ;
     ; The second-highest level (PDPT) of a page table hierarchy is also
     ; required. Each entry controls access to a 1 GiB region of the address space.
     ; If the page size flag (bit 7) of a PDPT entry is set, the entry maps a 1
     ; GiB page, otherwise it references the next-lowest level of the page table
     ; hierarchy. Because we assume that software never accesses any memory outside
-    ; of the first 4 GiB, DSOS will only set up the first 4 entries of its PDPT.
+    ; of the first 4 GiB, NFOS will only set up the first 4 entries of its PDPT.
     ; Each of those entries will map a 1 GiB page with all permissions.
     ;
-    ; The following code sets up the first (and only) entry in DSOS' PML4.
+    ; The following code sets up the first (and only) entry in NFOS' PML4.
     ;   - Bits (M-1):12 of the PML4 entry (PML4E) must contain bits (M-1):12 of
     ;       the base address of a 4 KiB-aligned PDPT, where M is at most 52
     ;   - Bit 0 (P flag) must be set
     ;   - Bit 1 (R/W flag) must be set to allow writes to the region of memory
-    ;       controlled by this entry. Because DSOS does not use memory protection
+    ;       controlled by this entry. Because NFOS does not use memory protection
     ;       this bit will be set.
     ;   - All other bits will be set to 0.
     ;
@@ -355,7 +355,7 @@ start:
 
 
     ; The CR3 register references the PML4. Bits (M-1):12 point to the base
-    ; address of a 4 KiB-aligned PML4. All othr bits enable features that DSOS
+    ; address of a 4 KiB-aligned PML4. All othr bits enable features that NFOS
     ; does not require, and therefore they can be 0.
     mov eax, pml4
     mov cr3, eax
@@ -392,7 +392,7 @@ start:
     ; structure that controls segmentation. Even though segmentation is mostly
     ; disabled in 64-bit mode, the code segment (CS) descriptor is still
     ; important because it sets the CPU's execution mode (32 vs. 64 bit).
-    ; Therefore DSOS must load a new GDT that contains a 64-bit code segment.
+    ; Therefore NFOS must load a new GDT that contains a 64-bit code segment.
     ;
     ; The LGDT instruction takes as operand the memory location of a GDT
     ; descriptor, a data structure that contains the base address and size of
@@ -400,7 +400,7 @@ start:
     lgdt [gdt64.descriptor]
 
     ; Because the CPU caches segment descriptors in private registers, it is not
-    ; enough to load a new GDT. DSOS must also explicitly load the new CS
+    ; enough to load a new GDT. NFOS must also explicitly load the new CS
     ; descriptor by setting the CS register. Unlike other segment registers, CS
     ; cannot be loaded with the MOV instruction, but only with the JMP, CALL and
     ; RET instructions. Because we want the JMP instruction to set both the
@@ -423,7 +423,7 @@ BITS 64
     ; The 32-bit data segment selectors are still loaded and we shoud replace
     ; them. Segment descriptor 0 (the null segment) is invalid in 32-bit
     ; mode and causes an exception when used, but it is valid in 64-bit mode.
-    ; In order to enable it, DSOS has to write 0 to each data segment register.
+    ; In order to enable it, NFOS has to write 0 to each data segment register.
     xor ax, ax
     mov ss, ax
     mov ds, ax
@@ -435,19 +435,19 @@ BITS 64
     ; they need to be enabled or the CPU will generate an exception when they
     ; are used.
     ;
-    ; In order to enable SSE instructions, DSOS needs to set CR4.OSFXSR[bit 9]
+    ; In order to enable SSE instructions, NFOS needs to set CR4.OSFXSR[bit 9]
     ; and CR4.OSXMMEXCPT[bit 10]
     mov rax, cr4
     or rax, (1 << 9) | (1 << 10)
     mov cr4, rax
 
-    ; Next, DSOS needs to clear CR0.EM[bit 2] and set CR0.MP[bit 1]
+    ; Next, NFOS needs to clear CR0.EM[bit 2] and set CR0.MP[bit 1]
     mov rax, cr0
     and rax, ~(1 << 2)
     or rax, 1 << 1
     mov cr0, rax
 
-    ; In order to enable AVX, DSOS needs to first set CR4.OSXSAVE[bit 18] to 1
+    ; In order to enable AVX, NFOS needs to first set CR4.OSXSAVE[bit 18] to 1
     mov rax, cr4
     or rax, 1 << 18
     mov cr4, rax
@@ -458,17 +458,17 @@ BITS 64
     or eax, 7
     xsetbv
 
-    ; DSOS needs to guarantee that the stack pointer is aligned on a 16-byte
+    ; NFOS needs to guarantee that the stack pointer is aligned on a 16-byte
     ; boundary before main() is invoked. We instruct the assembler to align
     ; stack_bottom to a 16-byte boundary.
     mov esp, stack_bottom
 
-    ; At this point all the preconditions have been satisfied and DSOS can invoke
+    ; At this point all the preconditions have been satisfied and NFOS can invoke
     ; the C main function
     call main
 
     ; main() never returns, therefore this code is unreachable.
-    jmp dsos_halt
+    jmp nfos_halt
 
 
 
@@ -500,7 +500,7 @@ section .data
 
 ; Page tables.
 ;
-; DSOS guarantees that the first 4 GiB of the address space are identity mapped.
+; NFOS guarantees that the first 4 GiB of the address space are identity mapped.
 ; It accomplishes this by creating 4 1-GiB identity mappings with
 ; read-write-execute permissions. The PDPT is initialized statically but the
 ; PML4 has to be initialized at runtime because it contains a pointer to the

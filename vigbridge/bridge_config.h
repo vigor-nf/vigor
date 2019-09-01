@@ -1,7 +1,7 @@
 #pragma once
 
 #include <stdint.h>
-#include "libvig/nf_time.h"
+#include "libvig/verified/vigor-time.h"
 
 #define CONFIG_FNAME_LEN 512
 

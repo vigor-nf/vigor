@@ -14,8 +14,8 @@
 #include "lb_config.h"
 #include "lb_balancer.h"
 #include "nf.h"
-#include "libvig/nf_log.h"
-#include "libvig/nf_util.h"
+#include "nf-log.h"
+#include "nf-util.h"
 
 struct nf_config config;
 
@@ -58,16 +58,17 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
                                    .dst_port = tcpudp_header->dst_port,
                                    .protocol = ipv4_header->next_proto_id };
 
-  if (in_port != 0) {
+  if (in_port != config.wan_device) {
     lb_process_heartbit(balancer, &flow, ether_header->s_addr, in_port, now);
     return in_port;
   }
 
-  struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now);
+  struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now,
+                                                      config.wan_device);
 
   concretize_devices(&backend.nic, rte_eth_dev_count());
 
-  if (backend.nic != 0) { // If not dropped
+  if (backend.nic != config.wan_device) {
     ipv4_header->dst_addr = backend.ip;
     ether_header->s_addr = config.device_macs[backend.nic];
     ether_header->d_addr = backend.mac;

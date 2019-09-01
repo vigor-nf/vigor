@@ -5,10 +5,10 @@
 #include <string.h> //for memcpy
 #include <rte_ethdev.h>
 
-#include "libvig/containers/double-chain.h"
-#include "libvig/containers/map.h"
-#include "libvig/containers/vector.h"
-#include "libvig/expirator.h"
+#include "libvig/verified/double-chain.h"
+#include "libvig/verified/map.h"
+#include "libvig/verified/vector.h"
+#include "libvig/verified/expirator.h"
 
 #include "state.h"
 
@@ -16,12 +16,6 @@ struct FlowManager {
   struct State *state;
   vigor_time_t expiration_time; /*seconds*/
 };
-
-bool int_dev_bounds(void *value, int index, void *state) {
-  uint32_t *int_dev = value;
-  struct State *st = state;
-  return (*int_dev < rte_eth_dev_count()) AND(*int_dev != st->fw_device);
-}
 
 struct FlowManager *flow_manager_allocate(uint16_t fw_device,
                                           vigor_time_t expiration_time,
