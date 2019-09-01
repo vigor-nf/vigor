@@ -1,6 +1,7 @@
 # This file expects to be included from the common Makefile
+# Use this to build an executable image
 
-### Use this to build an executable DSOS image
+
 SHELL := /bin/bash -O extglob -c
 
 CC = x86_64-elf-gcc
@@ -8,9 +9,9 @@ NASM = nasm
 QEMU = qemu-system-x86_64
 
 ARCH = x86_64
-BINARY_MULTIBOOT1 = dsos-$(ARCH)-multiboot1.bin
-BINARY_MULTIBOOT2 = dsos-$(ARCH)-multiboot2.bin
-ISO = dsos-$(ARCH).iso
+BINARY_MULTIBOOT1 = nfos-$(ARCH)-multiboot1.bin
+BINARY_MULTIBOOT2 = nfos-$(ARCH)-multiboot2.bin
+ISO = nfos-$(ARCH).iso
 
 # get current dir, see https://stackoverflow.com/a/8080530
 SELF_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
@@ -26,7 +27,7 @@ STUBS_DIR = $(SELF_DIR)/libvig/models
 KERNEL_DIR = $(SELF_DIR)/libvig/kernel
 
 NF_DEFS := -D_GNU_SOURCE
-NF_DEFS += -DDSOS
+NF_DEFS += -DNFOS
 
 # NF
 NF_INCLUDES = -I $(SELF_DIR)
@@ -39,7 +40,7 @@ NF_INCLUDES += -I /usr/include
 
 # Convert the bash-style NF arguments (nf --no-shconf -- -n 3 -m 6) into
 # C-style char*[] comma separated list
-# of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for DSOS to put
+# of c-strings ("nf","--no-shconf","--","-n","3","-m","6") for NFOS to put
 # into argv at compilation time.
 dquote := \"
 space := $(null) #
@@ -116,8 +117,8 @@ KERNEL_SRCS := $(wildcard $(KERNEL_DIR)/*.c)
 
 KERNEL_INCLUDES := -I $(KERNEL_DIR) -I $(SELF_DIR)/libvig/models/kernel
 
-# For DSOS debug output on the VGA buffer
-KERNEL_DEFS := -DDSOS_DEBUG
+# For NFOS debug output on the VGA buffer
+KERNEL_DEFS := -DNFOS_DEBUG
 
 OTHER_INCLUDES := -I $(STUBS_DIR) -I $(SELF_DIR)/libvig
 
@@ -165,25 +166,25 @@ QEMUFLAGS += -device vfio-pci,host=06:00.1
 # QEMUFLAGS += -no-hpet -nodefaults -no-acpi -vga std
 # QEMUFLAGS += -object memory-backend-file,id=mem,prealloc=on,size=1G,mem-path=/mnt/huge1GB
 
-.PHONY: dsos-all dsos-clean dsos-run dsos-debug dsos-iso dsos-multiboot1 dsos-multiboot2
+.PHONY: nfos-all nfos-clean nfos-run nfos-debug nfos-iso nfos-multiboot1 nfos-multiboot2
 
-dsos-all: dsos-multiboot1 dsos-multiboot2
+nfos-all: nfos-multiboot1 nfos-multiboot2
 
-dsos-multiboot1: $(BINARY_MULTIBOOT1)
+nfos-multiboot1: $(BINARY_MULTIBOOT1)
 
-dsos-multiboot2: $(BINARY_MULTIBOOT2)
+nfos-multiboot2: $(BINARY_MULTIBOOT2)
 
 # We can't remove CRT{BEGIN,END}_OBJ because they're system-provided
-dsos-clean:
+nfos-clean:
 	@rm -f $(C_OBJS) $(MULTIBOOT1_OBJ) $(MULTIBOOT2_OBJ) $(BOOT_OBJS) \
 		$(CRTI_OBJ) $(CRTN_OBJ)
 
 # Launch QEMU
-dsos-run: $(ISO)
+nfos-run: $(ISO)
 	@sudo $(QEMU) $(QEMUFLAGS)
 
 # Launch QEMU and attach debugger
-dsos-debug: $(ISO)
+nfos-debug: $(ISO)
 	@sudo $(QEMU) -s -S $(QEMUFLAGS) > /dev/null 2>&1 &
 	@sudo gdb -ex "set arch i386:x86-64:intel" \
 		-ex "target remote localhost:1234" \
@@ -200,7 +201,7 @@ dsos-debug: $(ISO)
 
 	@sudo kill `pidof qemu-system-x86_64`
 
-dsos-iso: $(ISO)
+nfos-iso: $(ISO)
 
 # Make bootable iso image
 $(ISO): autogen $(BINARY_MULTIBOOT2) $(GRUB_CFG)
@@ -231,5 +232,5 @@ state.o: autogen
 %.o: %.c
 	$(CC) -c $(CFLAGS) $(DEFS) $(INCLUDES) $< -o $@
 
-count-dsos-loc:
+count-nfos-loc:
 	@cloc -q $(KERNEL_SRCS) $(subst .c,.h,$(KERNEL_SRCS)) $(STUBS_SRCS) 2>/dev/null

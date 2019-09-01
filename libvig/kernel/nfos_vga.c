@@ -1,5 +1,5 @@
 #include <stdint.h>
-#include "dsos_vga.h"
+#include "nfos_vga.h"
 
 #define VGA_HEIGHT 25
 #define VGA_WIDTH 80
@@ -16,7 +16,7 @@ static int VGA_COLUMN_POS = 0;
 /* Yellow foreground, black background */
 #define VGA_COLOR_CODE 14
 
-static void dsos_vga_clear_row(int row) {
+static void nfos_vga_clear_row(int row) {
   static const struct vga_char blank = {
     .ascii_char = (uint8_t)' ',
     .color_code = VGA_COLOR_CODE,
@@ -27,7 +27,7 @@ static void dsos_vga_clear_row(int row) {
   }
 }
 
-static void dsos_vga_newline() {
+static void nfos_vga_newline() {
   for (int i = 1; i < VGA_HEIGHT; i++) {
     for (int j = 0; j < VGA_WIDTH; j++) {
       struct vga_char c = VGA_BUFFER[i][j];
@@ -35,16 +35,16 @@ static void dsos_vga_newline() {
     }
   }
 
-  dsos_vga_clear_row(VGA_HEIGHT - 1);
+  nfos_vga_clear_row(VGA_HEIGHT - 1);
   VGA_COLUMN_POS = 0;
 }
 
-static void dsos_vga_write_byte(uint8_t c) {
+static void nfos_vga_write_byte(uint8_t c) {
   if (c == (uint8_t)'\n') {
-    dsos_vga_newline();
+    nfos_vga_newline();
   } else {
     if (VGA_COLUMN_POS >= VGA_WIDTH) {
-      dsos_vga_newline();
+      nfos_vga_newline();
     }
 
     int row = VGA_HEIGHT - 1;
@@ -61,20 +61,20 @@ static void dsos_vga_write_byte(uint8_t c) {
   }
 }
 
-#ifdef DSOS_DEBUG
+#ifdef NFOS_DEBUG
 
 #  ifndef KLEE_VERIFICATION
 
-void dsos_vga_write_char(char c) { dsos_vga_write_byte((uint8_t)c); }
+void nfos_vga_write_char(char c) { nfos_vga_write_byte((uint8_t)c); }
 
-void dsos_vga_write_str(const char *s) {
+void nfos_vga_write_str(const char *s) {
   for (const char *p = s; *p; p++) {
     // Printable ASCII - isprint() technically doesn't exist in
     // freestanding C
     if (*p == '\n' || (*p >= ' ' && *p <= '~')) {
-      dsos_vga_write_char(*p);
+      nfos_vga_write_char(*p);
     } else {
-      dsos_vga_write_byte(0xfe);
+      nfos_vga_write_byte(0xfe);
     }
   }
 }
@@ -84,7 +84,7 @@ void dsos_vga_write_str(const char *s) {
 #    include <stdlib.h>
 #    include <klee/klee.h>
 
-void dsos_vga_write_char(char c) {
+void nfos_vga_write_char(char c) {
   static char *out_buf = NULL;
   static size_t cap = 64;
   static size_t offset = 0;
@@ -106,15 +106,15 @@ void dsos_vga_write_char(char c) {
   }
 }
 
-void dsos_vga_write_str(const char *s) { klee_print_expr(s, NULL); }
+void nfos_vga_write_str(const char *s) { klee_print_expr(s, NULL); }
 
 #  endif // KLEE_VERIFICATION
 
 /* https://groups.google.com/forum/#!topic/comp.lang.c++.moderated/ihafayWmWU8
  */
-void dsos_vga_write_int(int x) {
+void nfos_vga_write_int(int x) {
   if (x < 0) {
-    dsos_vga_write_char('-');
+    nfos_vga_write_char('-');
     x = -x;
   }
 
@@ -126,13 +126,13 @@ void dsos_vga_write_int(int x) {
     buf[i] = '0' + (x % 10);
   }
 
-  dsos_vga_write_str(&buf[i + 1]);
+  nfos_vga_write_str(&buf[i + 1]);
 }
 
-#else // DSOS_DEBUG not defined, don't print anything
+#else // NFOS_DEBUG not defined, don't print anything
 
-void dsos_vga_write_char(char c) {}
-void dsos_vga_write_str(const char *s) {}
-void dsos_vga_write_int(int x) {}
+void nfos_vga_write_char(char c) {}
+void nfos_vga_write_str(const char *s) {}
+void nfos_vga_write_int(int x) {}
 
-#endif // DSOS_DEBUG
+#endif // NFOS_DEBUG

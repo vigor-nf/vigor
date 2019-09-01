@@ -2,9 +2,9 @@
 #include <stddef.h>
 #include <stdio.h>
 
-#include "dsos_pci.h"
-#include "dsos_halt.h"
-#include "dsos_serial.h"
+#include "nfos_pci.h"
+#include "nfos_halt.h"
+#include "nfos_serial.h"
 
 extern void _init(void);
 extern void do_map_test(void);
@@ -14,10 +14,10 @@ extern int main(void);
 /* NF main */
 extern int nf_main(int argc, char *argv[]);
 /* Initialize filesystem */
-extern void stub_stdio_files_init(struct dsos_pci_nic *devs, int n);
+extern void stub_stdio_files_init(struct nfos_pci_nic *devs, int n);
 
 #ifdef VIGOR_MODEL_HARDWARE
-extern struct dsos_pci_nic *stub_hardware_get_nics(int *n);
+extern struct nfos_pci_nic *stub_hardware_get_nics(int *n);
 #endif
 
 int main(void) {
@@ -29,16 +29,16 @@ int main(void) {
   static const int argc = (sizeof(argv) / sizeof(argv[0])) - 1;
 
 #ifndef KLEE_VERIFICATION
-  dsos_serial_init();
+  nfos_serial_init();
 #endif //! KLEE_VERIFICATION
 
   int num_devs;
-  struct dsos_pci_nic *devs;
+  struct nfos_pci_nic *devs;
 
 #ifdef VIGOR_MODEL_HARDWARE
   devs = stub_hardware_get_nics(&num_devs);
 #else  // VIGOR_MODEL_HARDWARE
-  devs = dsos_pci_find_nics(&num_devs);
+  devs = nfos_pci_find_nics(&num_devs);
 #endif // VIGOR_MODEL_HARDWARE
 
   stub_stdio_files_init(devs, num_devs);

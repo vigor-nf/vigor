@@ -2,9 +2,9 @@
 #  include <stdlib.h>
 #endif
 
-#include "dsos_halt.h"
+#include "nfos_halt.h"
 
-void dsos_halt(void) {
+void nfos_halt(void) {
 
 #ifdef KLEE_VERIFICATION
 

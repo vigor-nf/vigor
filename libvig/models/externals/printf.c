@@ -34,8 +34,8 @@
 #include <stdint.h>
 #include <stdarg.h>
 
-#include "libvig/kernel/dsos_serial.h"
-#include "libvig/kernel/dsos_vga.h"
+#include "libvig/kernel/nfos_serial.h"
+#include "libvig/kernel/nfos_vga.h"
 
 // ntoa conversion buffer size, this must be big enough to hold
 // one converted numeric number including padded zeros (dynamically created on
@@ -106,8 +106,8 @@ static inline void _out_char(char character, void *buffer, unsigned int idx,
   (void)idx;
   (void)maxlen;
   if (character) {
-    dsos_vga_write_char(character);
-    dsos_serial_write_char(character);
+    nfos_vga_write_char(character);
+    nfos_serial_write_char(character);
   }
 }
 

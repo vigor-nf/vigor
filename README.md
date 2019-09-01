@@ -70,19 +70,19 @@ Pick the NF you want to work with by `cd`-ing to its folder, then use one of the
 | `run`                      | Run the NF using recommended arguments            | <1min to start (stop with Ctrl+C)  |
 | `symbex validate`          | Verify the NF only                                | <1min to symbex, <1h to validate   |
 | `symbex-withdpdk validate` | Verify the NF + DPDK + driver                     | <1h to symbex, hours to validate   |
-| `symbex-withdsos validate` | Verify the NF + DPDK + driver + DSOS (full stack) | <1h to symbex, hours to validate   |
+| `symbex-withnfos validate` | Verify the NF + DPDK + driver + NFOS (full stack) | <1h to symbex, hours to validate   |
 | `count-loc`                | Count LoC in the NF                               | <1min                              |
 | `count-spec-loc`           | Count LoC in the specification                    | <1min                              |
-| `count-dsos-loc`           | Count LoC in the DSOS                             | <1min                              |
+| `count-nfos-loc`           | Count LoC in the NFOS                             | <1min                              |
 | `count-libvig-loc`         | Count LoC in libVig                               | <1min                              |
 | `count-dpdk-loc`           | Count LoC in DPDK (not drivers)                   | <1min                              |
 | `count-ixgbe-loc`          | Count LoC in the ixgbe driver                     | <1min                              |
 | `count-uclibc-loc`         | Count LoC in KLEE-uClibc                          | <1min                              |
 | `benchmark-throughput`     | Benchmark the NF's throughput                     | <15min                             |
 | `benchmark-latency`        | Benchmark the NF's latency                        | <5min                              |
-| `dsos-iso`                 | Build a DSOS ISO image runnable in a VM           | <1min                              |
-| `dsos-multiboot1`          | Build a DSOS ISO image suitable for netboot       | <1min                              |
-| `dsos-run`                 | Build and run DSOS in a qemu VM                   | <1min to start                     |
+| `nfos-iso`                 | Build a NFOS ISO image runnable in a VM           | <1min                              |
+| `nfos-multiboot1`          | Build a NFOS ISO image suitable for netboot       | <1min                              |
+| `nfos-run`                 | Build and run NFOS in a qemu VM                   | <1min to start                     |
 
 
 
@@ -91,7 +91,7 @@ To run with your own arguments, compile then run `sudo ./build/app/nf -- -?` whi
 To verify using a pay-as-you-go specification, add `VIGOR_SPEC=paygo-your_spec.py` before a verification command; the spec name must begin with `paygo-` and end with `.py`.
 
 For instance:
-- To verify the "broadcast" pay-as-you-go property of the Vigor bridge (without verifying DPDK or the DSOS), run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
+- To verify the "broadcast" pay-as-you-go property of the Vigor bridge (without verifying DPDK or the NFOS), run `cd vigbridge` then `VIGOR_SPEC=paygo-broadcast.py make symbex validate`.
 - To benchmark the Vigor policer's throughput, run `cd vigpol` then `make benchmark-throughput`
 
 
@@ -114,26 +114,26 @@ Besides the NF folders mentioned above, the repository contains:
 - `bench`: Benchmarking scripts, used by the benchmarking make targets
 - `codegen`: Code generators, used as part of the Vigor build process
 - `doc`: Documentation files
-- `grub.cfg`, `linker.ld`, `pxe-boot.sh`: DSOS-related files
-- `libvig`: The libVig folder, containing `verified` code, `models`, and the DSOS `kernel`
+- `grub.cfg`, `linker.ld`, `pxe-boot.sh`: NFOS-related files
+- `libvig`: The libVig folder, containing `verified` code, `models`, and the NFOS `kernel`
 - `nf.{h,c}`, `nf-util.{h,c}`, `nf-log.h`: Skeleton code for Vigor NFs
 - `setup*`: Setup script and related files
 - `template`: Template for new Vigor NFs (see "Create your own Vigor NF" above)
 - `validator`: The Vigor Validator
 
 
-# Using the DSOS
+# Using the NFOS
 
-Vigor includes a Domain-Specific Operating System (DSOS) that is simple enough to be symbolically executed, besides trusted boot code.
+Vigor includes a NF OS that is simple enough to be symbolically executed, besides trusted boot code.
 
-You can run DSOS either in a virtual machine, using qemu, or on bare metal, using PXE boot.
+You can run NFOS either in a virtual machine, using qemu, or on bare metal, using PXE boot.
 
-Note, that as DSOS can not read cmdline arguments, all the NF arguments are compiled into the image during the build.
+Note, that as NFOS can not read cmdline arguments, all the NF arguments are compiled into the image during the build.
 You can set the NF arguments in the respective NF Makefile.
 
-## Running the DSOS in a VM
+## Running the NFOS in a VM
 
-In order to run the DSOS inside a virtual machine, you need your kernel allow direct device access through VFIO.
+In order to run the NFOS inside a virtual machine, you need your kernel allow direct device access through VFIO.
 For that you need to pass `intel_iommu=on iommu=pt` to your linux kernel in the command line arguments in your bootloader.
 
 Further, you need to load the vfio-pci module to forward your NICs to the VM with ;
@@ -150,37 +150,37 @@ You can find the PCI addresses of your NICs using `dpdk-devbind.py -s`.
 > :warning: **Warning**: after the next step your terminal will stop responding.
 > Make sure you have a spare terminal open on this machine.
 
-Finally, to run the NF with DSOS in a VM, get in to the NF directory, e.g. `vigor/vignat`, and run:
+Finally, to run the NF with NFOS in a VM, get in to the NF directory, e.g. `vigor/vignat`, and run:
 
-    $ make dsos-run
+    $ make nfos-run
     
-This will build the NF with DPDK, device driver and DSOS, produce the bootable ISO image and start
+This will build the NF with DPDK, device driver and NFOS, produce the bootable ISO image and start
 a qemu machine executing that image.
-Note that DSOS ignores any input, so your terminal will show the DSOS output and will stop responding.
+Note that NFOS ignores any input, so your terminal will show the NFOS output and will stop responding.
 You will need to kill the qemu process from a different terminal.
 
-## Running the DSOS on bare metal over the network
+## Running the NFOS on bare metal over the network
 
-In order to run the DSOS on bare metal you will need an extra ethernet connection of the machine intended to run the DSOS (we call it DUT from now on) and a PXE server machine.
+In order to run the NFOS on bare metal you will need an extra ethernet connection of the machine intended to run the NFOS (we call it DUT from now on) and a PXE server machine.
 
-You will need `dsos-x86_64-multiboot1.bin` image on the machine that will serve PXE requests.
+You will need `nfos-x86_64-multiboot1.bin` image on the machine that will serve PXE requests.
 You can build it either directly on the machine, or build it on DUT and copy it over.
 To build the image, run:
 
-    $ make dsos-multiboot1
+    $ make nfos-multiboot1
     
 To serve the image, run on the machine intended as a PXE server:
 
-    $ ./pxe-boot.sh dsos-x86_64-multiboot1.bin
+    $ ./pxe-boot.sh nfos-x86_64-multiboot1.bin
     
 This will start a DHCP server and a PXE server and wait for network boot requests.
 As our image is larger than 64KB, we use a two step boot process, booting first an ipxe/undionly.kpxe image that
-then fetches the DSOS image and boots it.
+then fetches the NFOS image and boots it.
 
 In BIOS, configure DUT to boot from network, using the interface connected to the PXE server.
-When you reboot it, you should see some activity in the PXE server output and see DSOS output on DUT (printing the NF configuration).
+When you reboot it, you should see some activity in the PXE server output and see NFOS output on DUT (printing the NF configuration).
 At this point you can stop the PXE boot server.
-The DSOS is running!
+The NFOS is running!
 
 
 # Linux setup for performance
@@ -244,7 +244,7 @@ Figure 1:
 - "Packet I/O framework" is the `lib` folder in [the DPDK 17.11 repository](https://git.dpdk.org/dpdk/tree/?h=v17.11)
 - "libVig" is in `libvig`
 - "Driver" is a DPDK driver; we verified `drivers/net/ixgbe` in [the DPDK 17.11 repository](https://git.dpdk.org/dpdk/tree/?h=v17.11)
-- "NF-specific OS" is the DSOS in `libvig/kernel`
+- "NF-specific OS" is the NFOS in `libvig/kernel`
 
 Figure 2:
 - "NF logic" / "libVig" / "System stack" have the same meanings as in Figure 1
@@ -280,7 +280,7 @@ Figure 9:
 - This is a simplified version of `vigbridge/paygo-broadcast.py`
 
 Figure 10:
-- This is a simplified version of `vigbridge/paygo-no_loop.py`
+- This is a made-up example for the paper, using standard Vigor spec syntax.
 
 Figure 11:
 - This is a graphical version of the setup described by `bench/config.sh`

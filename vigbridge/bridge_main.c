@@ -103,7 +103,7 @@ static void read_static_ft_from_array(struct Map *stat_map,
 
 #else // KLEE_VERIFICATION
 
-#  ifndef DSOS
+#  ifndef NFOS
 static void read_static_ft_from_file(struct Map *stat_map,
                                      struct Vector *stat_keys,
                                      uint32_t stat_capacity) {
@@ -211,7 +211,7 @@ static void read_static_ft_from_file(struct Map *stat_map,
 finally:
   fclose(cfg_file);
 }
-#  endif // DSOS
+#  endif // NFOS
 
 struct {
   const char mac_addr[18];
@@ -265,7 +265,7 @@ void nf_init(void) {
   if (mac_tables == NULL) {
     rte_exit(EXIT_FAILURE, "Could not allocate mac tables");
   } else {
-#ifdef DSOS
+#ifdef NFOS
     read_static_ft_from_array(mac_tables->st_map, mac_tables->st_vec,
                               stat_capacity);
 #else

@@ -43,15 +43,15 @@ ifneq (,$(wildcard $(NF_DIR)/dataspec.ml))
 NF_FILES += state.c
 endif
 
-# Define this for the dpdk and dsos makefiles
+# Define this for the dpdk and nfos makefiles
 NF_ARGS := --no-shconf $(NF_DPDK_ARGS) -- $(NF_ARGS)
 
 ifeq (click,$(findstring click,$(shell pwd)))
 # Click baselines
 include $(SELF_DIR)/Makefile.click
-else ifeq (dsos-,$(findstring dsos-,$(MAKECMDGOALS)))
-# DSOS-related targets
-include $(SELF_DIR)/Makefile.dsos
+else ifeq (nfos-,$(findstring nfos-,$(MAKECMDGOALS)))
+# NFOS-related targets
+include $(SELF_DIR)/Makefile.nfos
 else ifeq (,$(findstring moonpol,$(abspath $(NF_DIR))))
 # DPDK-based NFs
 include $(SELF_DIR)/Makefile.dpdk

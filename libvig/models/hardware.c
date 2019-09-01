@@ -15,7 +15,6 @@
 
 #  include "libvig/verified/packet-io.h"
 #  include "libvig/models/verified/packet-io-control.h"
-#  include "libvig/kernel/dsos_pci.h"
 
 #  include <klee/klee.h>
 
@@ -2402,15 +2401,15 @@ stub_hardware_init(void) {
   }
 }
 
-struct dsos_pci_nic *stub_hardware_get_nics(int *n) {
-  struct dsos_pci_nic *devs;
+struct nfos_pci_nic *stub_hardware_get_nics(int *n) {
+  struct nfos_pci_nic *devs;
 
-  devs = malloc(STUB_DEVICES_COUNT * sizeof(struct dsos_pci_nic));
+  devs = malloc(STUB_DEVICES_COUNT * sizeof(struct nfos_pci_nic));
   if (!devs) {
     return NULL;
   }
 
-  memset(devs, 0, STUB_DEVICES_COUNT * sizeof(struct dsos_pci_nic));
+  memset(devs, 0, STUB_DEVICES_COUNT * sizeof(struct nfos_pci_nic));
 
   for (int i = 0; i < STUB_DEVICES_COUNT; i++) {
     devs[i].vendor_id = 32902;
@@ -2459,7 +2458,7 @@ void stub_hardware_reset_receive(uint16_t device) {
 
 /* With "real" hardware these should never be called */
 void stub_hardware_init(void) { assert(0); }
-struct dsos_pci_nic *stub_hardware_get_nics(int *n) {
+struct nfos_pci_nic *stub_hardware_get_nics(int *n) {
   assert(0);
 }
 

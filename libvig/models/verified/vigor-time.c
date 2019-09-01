@@ -5,7 +5,6 @@
 #  include <klee/klee.h>
 #endif
 #include "vigor-time-control.h"
-#include "libvig/kernel/dsos_tsc.h"
 
 vigor_time_t starting_time = 0;
 vigor_time_t last_time = 0;

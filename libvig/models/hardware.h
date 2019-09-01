@@ -6,6 +6,9 @@
 
 #include <rte_mbuf.h>
 
+#include "libvig/kernel/nfos_pci.h"
+
+
 struct stub_device {
   char *name;
 
@@ -42,7 +45,7 @@ void stub_hardware_receive_packet(uint16_t device);
 // havocing
 void stub_hardware_reset_receive(uint16_t device);
 
-struct dsos_pci_nic *stub_hardware_get_nics(int *n);
+struct nfos_pci_nic *stub_hardware_get_nics(int *n);
 
 #else  // VIGOR_MODEL_HARDWARE
 struct stub_device DEVICES[0];

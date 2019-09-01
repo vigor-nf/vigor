@@ -22,11 +22,11 @@
 #  include <klee/klee.h>
 #endif // KLEE_VERIFICATION
 
-#ifdef DSOS
+#ifdef NFOS
 #  define MAIN nf_main
-#else // DSOS
+#else // NFOS
 #  define MAIN main
-#endif // DSOS
+#endif // NFOS
 
 #ifdef KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN                                                     \

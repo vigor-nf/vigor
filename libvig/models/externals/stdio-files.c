@@ -1,7 +1,7 @@
 #include "_externals.h"
 #include "libvig/models/hardware.h"
 
-#include "libvig/kernel/dsos_pci.h"
+#include "libvig/kernel/nfos_pci.h"
 
 #include <dirent.h>
 #include <endian.h>
@@ -80,7 +80,7 @@ static char *FILE_CONTENT_HPINFO = (char *)-200;
 // Special case: Hugepage files
 static char *FILE_CONTENT_HUGEPAGE = (char *)-300;
 
-struct dsos_pci_nic *PCI_DEVICES;
+struct nfos_pci_nic *PCI_DEVICES;
 int NUM_PCI_DEVICES;
 
 const int MSR_FD = 1337;
@@ -461,7 +461,7 @@ int munmap(void *addr, size_t length) {
   // First off, are we trying to unmap device memory?
   for (int n = 0; n < NUM_PCI_DEVICES; n++) {
     for (int i = 0; i < PCI_NUM_RESOURCES; i++) {
-      struct dsos_pci_nic *p;
+      struct nfos_pci_nic *p;
 
       if (addr == PCI_DEVICES[n].resources[i].start) {
         klee_assert(length == PCI_DEVICES[n].resources[i].size &&
@@ -502,7 +502,7 @@ int __libc_open(const char *pathname, int flags, mode_t mode) {
   return open(pathname, flags, mode);
 }
 
-void stub_stdio_files_init(struct dsos_pci_nic *devs, int n) {
+void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
   // Helper methods declarations
   char *stub_pci_file(const char *device_name, const char *file_name);
   char *stub_pci_folder(const char *device_name);
@@ -525,7 +525,7 @@ void stub_stdio_files_init(struct dsos_pci_nic *devs, int n) {
   // PCI-related files
   int *dev_folders = (int *)malloc(NUM_PCI_DEVICES * sizeof(int));
   for (int n = 0; n < NUM_PCI_DEVICES; n++) {
-    struct dsos_pci_nic *p;
+    struct nfos_pci_nic *p;
 
     char *dev = stub_pci_name(n);
 
@@ -711,18 +711,18 @@ void stub_stdio_files_init(struct dsos_pci_nic *devs, int n) {
                                   // pretend it doesn't contain anything
 }
 
-#if (defined VIGOR_MODEL_HARDWARE) && !(defined DSOS)
+#if (defined VIGOR_MODEL_HARDWARE) && !(defined NFOS)
 __attribute__((constructor(150))) // High prio, must execute after other stuff
                                   // since it relies on hardware models
                                   void
                                   stub_stdio_files_init_constructor(void) {
   int num_devs;
-  struct dsos_pci_nic *devs;
+  struct nfos_pci_nic *devs;
 
   devs = stub_hardware_get_nics(&num_devs);
   stub_stdio_files_init(devs, num_devs);
 }
-#endif // (defined VIGOR_MODEL_HARDWARE) && !(defined DSOS)
+#endif // (defined VIGOR_MODEL_HARDWARE) && !(defined NFOS)
 
 // Helper methods - not part of the models
 

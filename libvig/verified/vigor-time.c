@@ -3,13 +3,13 @@
 #include <time.h>
 #include <assert.h>
 
-#ifdef DSOS
-#  include <dsos_tsc.h>
+#ifdef NFOS
+#  include <nfos_tsc.h>
 #endif
 
 vigor_time_t last_time = 0;
 
-#ifdef DSOS
+#ifdef NFOS
 time_t time(time_t *timer) { assert(0); }
 
 int clock_gettime(clockid_t clk_id, struct timespec *tp) {
@@ -18,8 +18,8 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
     return -1;
   }
 
-  __uint128_t tsc = dsos_rdtsc();
-  __uint128_t freq = dsos_tsc_get_freq();
+  __uint128_t tsc = nfos_rdtsc();
+  __uint128_t freq = nfos_tsc_get_freq();
   uint64_t time_ns = (uint64_t)(tsc * 1000000000ul / freq);
 
 #  ifdef KLEE_VERIFICATION

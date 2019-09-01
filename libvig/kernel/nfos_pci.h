@@ -1,5 +1,5 @@
-#ifndef DSOS_PCI_H
-#define DSOS_PCI_H
+#ifndef NFOS_PCI_H
+#define NFOS_PCI_H
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -7,13 +7,13 @@
 
 #define PCI_NUM_RESOURCES 6
 
-struct dsos_pci_resource {
+struct nfos_pci_resource {
   void *start;
   size_t size;
   bool is_mem;
 };
 
-struct dsos_pci_nic {
+struct nfos_pci_nic {
   uint16_t vendor_id;
   uint16_t device_id;
 
@@ -22,11 +22,11 @@ struct dsos_pci_nic {
 
   uint32_t class_code;
 
-  struct dsos_pci_resource resources[PCI_NUM_RESOURCES];
+  struct nfos_pci_resource resources[PCI_NUM_RESOURCES];
 
   int interrupts_fd;
 };
 
-extern struct dsos_pci_nic *dsos_pci_find_nics(int *n);
+extern struct nfos_pci_nic *nfos_pci_find_nics(int *n);
 
 #endif

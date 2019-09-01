@@ -1,6 +1,6 @@
 #include "_externals.h"
 #include "libvig/models/hardware.h"
-#include "libvig/kernel/dsos_pci.h"
+#include "libvig/kernel/nfos_pci.h"
 
 // GNU_SOURCE for fopencookie
 #include <stdio.h>
@@ -13,14 +13,14 @@
 
 #include <klee/klee.h>
 
-extern struct dsos_pci_nic *PCI_DEVICES;
+extern struct nfos_pci_nic *PCI_DEVICES;
 extern int NUM_PCI_DEVICES;
 
 // Because DPDK might call fflush on this file we need to be able to recognize
 // it
 static FILE *fopencookie_ret = NULL;
 
-#ifdef DSOS
+#ifdef NFOS
 int vprintf1(const char *fmt, va_list va);
 #endif
 
@@ -33,9 +33,9 @@ int fflush(FILE *stream) {
 int vfprintf(FILE *stream, const char *format, _G_va_list __arg) {
   klee_assert(stream == stderr || stream == stdout ||
               (stream != NULL && stream == fopencookie_ret));
-#if (defined DSOS) && (!defined KLEE_VERIFICATION)
+#if (defined NFOS) && (!defined KLEE_VERIFICATION)
   vprintf1(format, __arg);
-#endif //(defined DSOS) && (!defined KLEE_VERIFICATION)
+#endif //(defined NFOS) && (!defined KLEE_VERIFICATION)
 
   return 0; // OK, whatever
 }
