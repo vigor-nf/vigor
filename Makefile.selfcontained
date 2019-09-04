@@ -1,0 +1,23 @@
+# Arguments:
+# - NF_FILES, the list of files
+# - NF_ARGS, the arguments when running
+# - NF_LAYER, the layer for benchmarking
+
+# Using this Makefile, you can:
+# - `make` to compile
+# - `make run` to run
+# - `make benchmark-throughput` / `make benchmark-latency` to benchmark
+
+CC := gcc
+BUILD_DIR := build
+APP := nf
+
+build: $(NF_FILES)
+	@mkdir -p $(BUILD_DIR)
+	@$(CC) $(NF_FILES) -o $(BUILD_DIR)/$(APP)
+
+clean:
+	@rm -rf $(BUILD_DIR)
+
+run: build
+	@sudo ./$(BUILD_DIR)/$(APP)
