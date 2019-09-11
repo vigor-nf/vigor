@@ -4,12 +4,8 @@
 
 #include <netinet/in.h>
 
-#include <rte_byteorder.h>
 #include <rte_common.h>
 #include <rte_ether.h>
-#include <rte_ip.h>
-#include <rte_mbuf.h>
-#include <rte_mbuf_ptype.h>
 #include <rte_tcp.h>
 #include <rte_udp.h>
 
