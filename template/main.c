@@ -1,8 +1,6 @@
 #include "nf.h"
 #include "config.h"
 
-#include <rte_common.h>
-
 #include "nf-log.h"
 #include "nf-util.h"
 
@@ -17,14 +15,12 @@
 // ===
 struct nf_config config;
 
-void nf_init(void) {
+bool nf_init(void) {
   // ===
   // Initialize your NF here, e.g. non-configuration global variables
   // You must at least allocate the state.
   // ===
-  if (alloc_state(42) == NULL) {
-    rte_exit(EXIT_FAILURE, "Not enough memory for state");
-  }
+  return alloc_state(42) != NULL;
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {

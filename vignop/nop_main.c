@@ -1,17 +1,12 @@
-// DPDK uses these but doesn't include them. :|
-#include <linux/limits.h>
-#include <sys/types.h>
-#include <unistd.h>
-
-#include <rte_ethdev.h>
-
 #include "nat_config.h"
 #include "nf.h"
 #include "nf-util.h"
 
 struct nf_config config;
 
-void nf_init(void) {}
+bool nf_init(void) {
+  return true;
+}
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, time_t now) {
   // Mark now as unused, we don't care about time

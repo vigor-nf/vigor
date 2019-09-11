@@ -159,7 +159,9 @@ static void lcore_main(void) {
     }
   }
 
-  nf_init();
+  if (!nf_init()) {
+    rte_exit(EXIT_FAILURE, "Error initializing NF");
+  }
 
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 

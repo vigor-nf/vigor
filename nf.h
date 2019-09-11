@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #include "libvig/verified/vigor-time.h"
@@ -8,7 +9,7 @@
 
 struct nf_config;
 
-void nf_init(void);
+bool nf_init(void);
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now);
 
 extern struct nf_config config;
