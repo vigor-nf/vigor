@@ -4,6 +4,7 @@
 #  define NF_INFO(text, ...)
 #else // KLEE_VERIFICATION
 #  include <stdio.h>
+#  include <inttypes.h>
 #  define NF_INFO(text, ...)                                                   \
     printf(text "\n", ##__VA_ARGS__);                                          \
     fflush(stdout);
@@ -11,6 +12,7 @@
 
 #ifdef ENABLE_LOG
 #  include <stdio.h>
+#  include <inttypes.h>
 #  define NF_DEBUG(text, ...)                                                  \
     fprintf(stderr, "DEBUG: " text "\n", ##__VA_ARGS__);                       \
     fflush(stderr);
