@@ -1,12 +1,4 @@
-// DPDK requires these but doesn't include them. :|
-#include <linux/limits.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <stdlib.h>
-
-#include <rte_common.h>
-#include <rte_ip.h>
 
 #include "flow.h.gen.h"
 #include "fw_flowmanager.h"
@@ -19,13 +11,10 @@ struct nf_config config;
 
 struct FlowManager *flow_manager;
 
-void nf_init(void) {
+bool nf_init(void) {
   flow_manager = flow_manager_allocate(
       config.wan_device, config.expiration_time, config.max_flows);
-
-  if (flow_manager == NULL) {
-    rte_exit(EXIT_FAILURE, "Could not allocate flow manager");
-  }
+  return flow_manager != NULL;
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {

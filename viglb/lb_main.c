@@ -1,14 +1,4 @@
-// DPDK requires these but doesn't include them. :|
-#include <linux/limits.h>
-#include <sys/types.h>
-#include <unistd.h>
-
 #include <stdlib.h>
-
-#include <rte_common.h>
-#include <rte_ethdev.h>
-#include <rte_ether.h>
-#include <rte_ip.h>
 
 #include "lb_config.h"
 #include "lb_balancer.h"
@@ -20,13 +10,11 @@ struct nf_config config;
 
 struct LoadBalancer *balancer;
 
-void nf_init(void) {
+bool nf_init(void) {
   balancer = lb_allocate_balancer(
       config.flow_capacity, config.backend_capacity, config.cht_height,
       config.backend_expiration_time, config.flow_expiration_time);
-  if (balancer == NULL) {
-    rte_exit(EXIT_FAILURE, "Could not allocate balancer");
-  }
+  return balancer != NULL;
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {

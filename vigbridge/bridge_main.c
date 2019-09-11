@@ -255,23 +255,23 @@ static void read_static_ft_from_array(struct Map *stat_map,
 
 #endif // KLEE_VERIFICATION
 
-void nf_init(void) {
+bool nf_init(void) {
   unsigned stat_capacity = 8192; // Has to be power of 2
   unsigned capacity = config.dyn_capacity;
   assert(stat_capacity < CAPACITY_UPPER_LIMIT - 1);
 
   mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count());
   if (mac_tables == NULL) {
-    rte_exit(EXIT_FAILURE, "Could not allocate mac tables");
-  } else {
-#ifdef NFOS
-    read_static_ft_from_array(mac_tables->st_map, mac_tables->st_vec,
-                              stat_capacity);
-#else
-    read_static_ft_from_file(mac_tables->st_map, mac_tables->st_vec,
-                             stat_capacity);
-#endif
+    return false;
   }
+#ifdef NFOS
+  read_static_ft_from_array(mac_tables->st_map, mac_tables->st_vec,
+                            stat_capacity);
+#else
+  read_static_ft_from_file(mac_tables->st_map, mac_tables->st_vec,
+                           stat_capacity);
+#endif
+  return true;
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {

@@ -3,13 +3,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-// DPDK uses these but doesn't include them. :|
-#include <linux/limits.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <rte_common.h>
-#include <rte_ethdev.h>
-#include <rte_byteorder.h>
 
 #include "nf.h"
 #include "nf-util.h"
@@ -109,12 +102,10 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
   }
 }
 
-void nf_init(void) {
+bool nf_init(void) {
   unsigned capacity = config.dyn_capacity;
   dynamic_ft = alloc_state(capacity, rte_eth_dev_count());
-  if (dynamic_ft == NULL) {
-    rte_exit(EXIT_FAILURE, "error allocating nf state");
-  }
+  return dynamic_ft != NULL;
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
