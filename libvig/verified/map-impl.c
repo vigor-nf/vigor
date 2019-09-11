@@ -1,5 +1,6 @@
 #ifndef CAPACITY_POW2
 #include "map-impl.h"
+#include <stdint.h>
 
 //@ #include <list.gh>
 //@ #include <listex.gh>
