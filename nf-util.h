@@ -63,9 +63,6 @@ bool nf_has_ipv4_header(struct ether_hdr *header);
 
 bool nf_has_tcpudp_header(struct ipv4_hdr *header);
 
-void nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr *ip_header,
-                             void *l4_header);
-
 void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet);
 
