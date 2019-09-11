@@ -42,47 +42,6 @@ void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
   ip_header->hdr_checksum = klee_int("checksum");
 }
 #else  // KLEE_VERIFICATION
-void nf_set_ipv4_checksum_hw(struct rte_mbuf *mbuf, struct ipv4_hdr *ip_header,
-                             void *l4_header) {
-  /*
-    https://doc.dpdk.org/guides/prog_guide/mbuf_lib.html#meta-information
-
-    In order to use hardware offloading of header checksum we need to set
-    a few parameters in the mbuf structure before sending the packet.
-
-    We need to set
-      * the IPv4 checksum to 0
-      * the l2 length to the size of the Ethernet header
-      * the l3 length to the size of the IPv4 header
-      * the offloading flags to PKT_TX_IPV4 | PKT_TX_IP_CKSUM ORed with
-        either PKT_TX_TCP_CKSUM or PKT_TX_UDP_CKSUM depending on the type
-        of the packet (setting both all the time doesn't work, the NIC
-        will not send the packet)
-      * the TCP/UDP header to the IPv4 pseudoheader checksum
-
-    If any of these are wrong the NIC will not send the packet
-
-    The NIC itself and the tx queue need to be configured for this as well,
-    see nf_init_device.
-  */
-
-  ip_header->hdr_checksum = 0;
-
-  mbuf->ol_flags |= PKT_TX_IPV4 | PKT_TX_IP_CKSUM;
-  mbuf->l2_len = sizeof(struct ether_hdr);
-  mbuf->l3_len = sizeof(struct ipv4_hdr);
-
-  if (ip_header->next_proto_id == IPPROTO_TCP) {
-    struct tcp_hdr *tcp_header = (struct tcp_hdr *)l4_header;
-    tcp_header->cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-    mbuf->ol_flags |= PKT_TX_TCP_CKSUM;
-  } else if (ip_header->next_proto_id == IPPROTO_UDP) {
-    struct udp_hdr *udp_header = (struct udp_hdr *)l4_header;
-    udp_header->dgram_cksum = rte_ipv4_phdr_cksum(ip_header, mbuf->ol_flags);
-    mbuf->ol_flags |= PKT_TX_UDP_CKSUM;
-  }
-}
-
 void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet) {
   // Make sure the packet pointer points to the TCPUDP continuation
