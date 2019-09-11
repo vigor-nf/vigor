@@ -555,12 +555,12 @@ let gen_log_fun_decl compinfo =
        match ftype with
        | TComp (nest_str, _) ->
          "  p(\"" ^ fname ^ ":\"); \\\n" ^
-         "  " ^ (log_fun_name nest_str) ^ "(&obj->" ^ fname ^ "); \\"
+         "  " ^ (log_fun_name nest_str) ^ "(&(obj)->" ^ fname ^ "); \\"
        | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
          let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
            if 0L < i then
-             "  p(\"" ^ fname ^ "[" ^ current ^ "]: %d\", obj->" ^
+             "  p(\"" ^ fname ^ "[" ^ current ^ "]: %d\", (obj)->" ^
              fname ^ "[" ^ current ^ "]" ^ "); \\\n" ^
              (arr_fields (Int64.sub i 1L))
            else ""
@@ -570,7 +570,7 @@ let gen_log_fun_decl compinfo =
          failwith "An of unsupported array count " ^
          (P.sprint ~width:100 (d_type () ftype))
        | _ ->
-         "  p(\"" ^ fname ^ ": %d\", obj->" ^ fname ^ "); \\"
+         "  p(\"" ^ fname ^ ": %d\", (obj)->" ^ fname ^ "); \\"
      ) compinfo.cfields)) ^ "\n" ^
   "  p(\"}\");\n"
 
