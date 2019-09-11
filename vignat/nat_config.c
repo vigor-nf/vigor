@@ -2,6 +2,7 @@
 
 #include <getopt.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 // DPDK needs these but doesn't include them. :|
 #include <linux/limits.h>

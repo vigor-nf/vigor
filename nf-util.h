@@ -4,18 +4,14 @@
 #include <stdint.h>
 #include <assert.h>
 
-#include <rte_byteorder.h>
 #include <rte_mbuf.h>
-#include <rte_mbuf_ptype.h>
-#include <rte_ether.h>
 #include <rte_ethdev.h>
 #include <rte_ip.h>
-#include <rte_tcp.h>
-#include <rte_udp.h>
 #include "libvig/verified/packet-io.h"
 #include "libvig/verified/tcpudp_hdr.h"
 
 #ifdef KLEE_VERIFICATION
+#  include <rte_ether.h>
 #  include "libvig/models/str-descr.h"
 #  include "libvig/models/verified/packet-io-control.h"
 #endif // KLEE_VERIFICATION
@@ -23,9 +19,6 @@
 // rte_ether
 struct ether_addr;
 struct ether_hdr;
-
-// rte_ip
-struct ipv4_hdr;
 
 #define IP_MIN_SIZE_WORDS 5
 #define WORD_SIZE 4
@@ -56,19 +49,8 @@ static struct str_field_descr ipv4_fields[] = {
   { offsetof(struct ipv4_hdr, dst_addr), sizeof(uint32_t), 0, "dst_addr" }
 };
 static struct str_field_descr tcpudp_fields[] = {
-  { offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), 0, "src_port" },
-  { offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), 0, "dst_port" }
-};
-static struct str_field_descr tcp_fields[] = {
-  { offsetof(struct tcp_hdr, src_port), sizeof(uint16_t), 0, "src_port" },
-  { offsetof(struct tcp_hdr, dst_port), sizeof(uint16_t), 0, "dst_port" },
-  { offsetof(struct tcp_hdr, sent_seq), sizeof(uint32_t), 0, "sent_seq" },
-  { offsetof(struct tcp_hdr, recv_ack), sizeof(uint32_t), 0, "recv_ack" },
-  { offsetof(struct tcp_hdr, data_off), sizeof(uint8_t), 0, "data_off" },
-  { offsetof(struct tcp_hdr, tcp_flags), sizeof(uint8_t), 0, "tcp_flags" },
-  { offsetof(struct tcp_hdr, rx_win), sizeof(uint16_t), 0, "rx_win" },
-  { offsetof(struct tcp_hdr, cksum), sizeof(uint16_t), 0, "cksum" },
-  { offsetof(struct tcp_hdr, tcp_urp), sizeof(uint16_t), 0, "tcp_urp" }
+  { offsetof(struct tcpudp_hdr, src_port), sizeof(uint16_t), 0, "src_port" },
+  { offsetof(struct tcpudp_hdr, dst_port), sizeof(uint16_t), 0, "dst_port" }
 };
 static struct nested_field_descr ether_nested_fields[] = {
   { offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes" },
