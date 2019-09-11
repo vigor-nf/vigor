@@ -12,7 +12,6 @@
 #include <unistd.h>
 #include <rte_common.h>
 #include <rte_ethdev.h>
-#include <rte_mbuf.h>
 #include <cmdline_parse_etheraddr.h>
 
 #include "libvig/verified/double-chain.h"
@@ -275,14 +274,13 @@ void nf_init(void) {
   }
 }
 
-int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
-  const uint16_t in_port = mbuf->port;
-  struct ether_hdr *ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+  struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
 
   bridge_expire_entries(now);
-  bridge_put_update_entry(&ether_header->s_addr, in_port, now);
+  bridge_put_update_entry(&ether_header->s_addr, device, now);
 
-  int forward_to = bridge_get_device(&ether_header->d_addr, in_port);
+  int forward_to = bridge_get_device(&ether_header->d_addr, device);
 
   if (forward_to == -1) {
     return FLOOD_FRAME;
@@ -290,7 +288,7 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
 
   if (forward_to == -2) {
     NF_DEBUG("filtered frame");
-    return in_port;
+    return device;
   }
 
   return forward_to;

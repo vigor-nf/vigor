@@ -166,8 +166,9 @@ static void lcore_main(void) {
   VIGOR_LOOP_BEGIN
     struct rte_mbuf *mbuf;
     if (nf_receive_packet(VIGOR_DEVICE, &mbuf)) {
-      uint16_t dst_device = nf_process(mbuf, VIGOR_NOW);
-      nf_return_all_chunks(mbuf_pkt(mbuf));
+      uint8_t* packet = rte_pktmbuf_mtod(mbuf, uint8_t*);
+      uint16_t dst_device = nf_process(mbuf->port, packet, mbuf->data_len, VIGOR_NOW);
+      nf_return_all_chunks(packet);
 
       if (dst_device == VIGOR_DEVICE) {
         nf_free_packet(mbuf);

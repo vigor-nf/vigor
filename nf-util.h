@@ -139,9 +139,7 @@ static inline struct ether_hdr *nf_then_get_ether_header(void *p) {
 
 static inline struct ipv4_hdr *
 nf_then_get_ipv4_header(void *ether_header_, void *p, uint8_t **ip_options) {
-  struct ether_hdr *ether_header =
-      (struct ether_hdr *)ether_header_; // we want it void* so it can be called
-                                         // with mbuf_pkt which returns void*
+  struct ether_hdr *ether_header = (struct ether_hdr *)ether_header_;
   *ip_options = NULL;
 
   uint16_t unread_len = packet_get_unread_length(p);
@@ -181,17 +179,13 @@ nf_then_get_tcpudp_header(struct ipv4_hdr *ip_header, void *p) {
                                                    sizeof(struct tcpudp_hdr));
 }
 
-static inline void *mbuf_pkt(struct rte_mbuf *mbuf) {
-  return ((char *)mbuf->buf_addr) + mbuf->data_off;
-}
-
 static inline bool nf_receive_packet(uint16_t src_device,
                                      struct rte_mbuf **mbuf) {
   uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
   if (actual_rx_len != 0) {
     // TODO: for multi-mbuf packets, make sure to differentiate
     // between pkt_len and data_len
-    packet_state_total_length(mbuf_pkt(*mbuf), &(**mbuf).pkt_len);
+    packet_state_total_length(rte_pktmbuf_mtod(*mbuf, char*), &(**mbuf).pkt_len);
     return true;
   } else {
     return false;

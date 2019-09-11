@@ -9,7 +9,6 @@
 #include <rte_ethdev.h>
 #include <rte_ether.h>
 #include <rte_ip.h>
-#include <rte_mbuf.h>
 
 #include "lb_config.h"
 #include "lb_balancer.h"
@@ -30,26 +29,24 @@ void nf_init(void) {
   }
 }
 
-int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
   lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
 
-  const int in_port = mbuf->port;
-
-  struct ether_hdr *ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+  struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
   uint8_t *ip_options;
   struct ipv4_hdr *ipv4_header =
-      nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+      nf_then_get_ipv4_header(ether_header, buffer, &ip_options);
   if (ipv4_header == NULL) {
     NF_DEBUG("Malformed IPv4, dropping");
-    return in_port;
+    return device;
   }
 
   struct tcpudp_hdr *tcpudp_header =
-      nf_then_get_tcpudp_header(ipv4_header, mbuf_pkt(mbuf));
+      nf_then_get_tcpudp_header(ipv4_header, buffer);
   if (tcpudp_header == NULL) {
     NF_DEBUG("Not TCP/UDP, dropping");
-    return in_port;
+    return device;
   }
 
   struct LoadBalancedFlow flow = { .src_ip = ipv4_header->src_addr,
@@ -58,9 +55,9 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
                                    .dst_port = tcpudp_header->dst_port,
                                    .protocol = ipv4_header->next_proto_id };
 
-  if (in_port != config.wan_device) {
-    lb_process_heartbit(balancer, &flow, ether_header->s_addr, in_port, now);
-    return in_port;
+  if (device != config.wan_device) {
+    lb_process_heartbit(balancer, &flow, ether_header->s_addr, device, now);
+    return device;
   }
 
   struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now,
@@ -74,7 +71,7 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
     ether_header->d_addr = backend.mac;
 
     // Checksum
-    nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, mbuf_pkt(mbuf));
+    nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, buffer);
   }
 
   return backend.nic;
