@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <rte_common.h>
 #include <rte_ethdev.h>
-#include <rte_mbuf.h>
 #include <rte_byteorder.h>
 
 #include "nf.h"
@@ -118,28 +117,27 @@ void nf_init(void) {
   }
 }
 
-int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
   NF_DEBUG("Received packet");
-  const uint16_t in_port = mbuf->port;
-  struct ether_hdr *ether_header = nf_then_get_ether_header(mbuf_pkt(mbuf));
+  struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
 
   uint8_t *ip_options;
   struct ipv4_hdr *ipv4_header =
-      nf_then_get_ipv4_header(ether_header, mbuf_pkt(mbuf), &ip_options);
+      nf_then_get_ipv4_header(ether_header, buffer, &ip_options);
   if (ipv4_header == NULL) {
     NF_DEBUG("Not IPv4, dropping");
-    return in_port;
+    return device;
   }
 
   policer_expire_entries(now);
 
-  if (in_port == config.lan_device) {
+  if (device == config.lan_device) {
     // Simply forward outgoing packets.
     NF_DEBUG("Outgoing packet. Not policing.");
     return config.wan_device;
-  } else if (in_port == config.wan_device) {
+  } else if (device == config.wan_device) {
     // Police incoming packets.
-    bool fwd = policer_check_tb(ipv4_header->dst_addr, mbuf->pkt_len, now);
+    bool fwd = policer_check_tb(ipv4_header->dst_addr, buffer_length, now);
 
     if (fwd) {
       NF_DEBUG("Incoming packet within policed rate. Forwarding.");
@@ -151,6 +149,6 @@ int nf_process(struct rte_mbuf *mbuf, vigor_time_t now) {
   } else {
     // Drop any other packets.
     NF_DEBUG("Unknown port. Dropping.");
-    return in_port;
+    return device;
   }
 }

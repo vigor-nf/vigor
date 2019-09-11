@@ -6,11 +6,10 @@
 
 #define FLOOD_FRAME ((uint16_t) -1)
 
-struct rte_mbuf;
 struct nf_config;
 
 void nf_init(void);
-int nf_process(struct rte_mbuf *pkt, vigor_time_t now);
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now);
 
 extern struct nf_config config;
 void nf_config_init(int argc, char **argv);
