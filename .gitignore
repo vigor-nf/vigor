@@ -35,3 +35,4 @@ klee-last
 *.swp
 .vscode/*
 *.vfmanifest
+fspec_gen.ml
