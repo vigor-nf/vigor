@@ -20,8 +20,6 @@ struct LoadBalancer {
   struct State *state;
 };
 
-extern struct LoadBalancer *balancer;
-
 struct LoadBalancer *lb_allocate_balancer(uint32_t flow_capacity,
                                           uint32_t backend_capacity,
                                           uint32_t cht_height,
