@@ -2,7 +2,7 @@
 # Middlebox #
 # --------- #
 
-export MB_CPU=8 # the index of the CPU on which the middlebox will run
+export MB_CPU=6 # the index of the CPU on which the middlebox will run
 export MB_HOST=icnalsp3s3.epfl.ch
 export MB_PCI_INTERNAL=0000:06:00.1
 export MB_PCI_EXTERNAL=0000:06:00.0
