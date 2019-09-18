@@ -2,6 +2,7 @@
 
 # Skeleton Makefile for Vigor NFs
 # Variables that should be defined by inheriting Makefiles:
+# - NF_NO_BASE := <true to not include nf*.c files>
 # - NF_DEVICES := <number of devices during verif-time, default 2>
 # - NF_ARGS := <arguments to pass to the NF>
 # -----------------------------------------------------------------------
@@ -26,12 +27,14 @@ SHELL := /bin/bash -O extglob -O globstar -c
 # NF base source;
 # somehow because of DPDK makefile magic wildcards mess up everything here,
 # so we ask echo to expand those
-SRCS-y := $(shell echo $(SELF_DIR)/nf*.c \
-                       $(SELF_DIR)/libvig/verified/*.c)
+ifneq (true,$(NF_NO_BASE))
+SRCS-y := $(shell echo $(SELF_DIR)/nf*.c)
+endif
+SRCS-y += $(shell echo $(SELF_DIR)/libvig/verified/*.c)
 SRCS-y += $(NF_FILES)
 # Compiler flags
 CFLAGS += -I $(SELF_DIR)
-CFLAGS += -std=gnu99
+CFLAGS += -std=gnu11
 CFLAGS += -DCAPACITY_POW2
 CFLAGS += -O3
 #CFLAGS += -O0 -g -rdynamic -DENABLE_LOG -Wfatal-errors
