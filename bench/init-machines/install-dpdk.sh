@@ -1,39 +1,37 @@
 #!/bin/bash
 # See http://dpdk.org/doc/quick-start
 
-# TODO would be nice to reuse the main install script...
-
 # DPDK release to install
 DPDK_RELEASE='17.11'
 
-pushd "$HOME" >> /dev/null
+if [ "$RTE_SDK" = '' ]; then
+  export RTE_SDK="$HOME/dpdk"
+fi
 
 # Check if it's already installed; we manually create a file with the version
-if [ ! -f dpdk/.version ] || [ "$(cat dpdk/.version)" != "$DPDK_RELEASE" ]; then
+if [ ! -f "$RTE_SDK/.version" ] || [ "$(cat "$RTE_SDK/.version")" != "$DPDK_RELEASE" ]; then
     echo "[init] DPDK not found or obsolete, installing..."
 
     # Install required packages
     sudo apt-get install -yqq wget build-essential linux-headers-`uname -r`
 
     # If the directory already exists, assume it's an older version, delete it
-    if [ -d dpdk ]; then
-        rm -rf dpdk
+    if [ -d "$RTE_SDK" ]; then
+        rm -rf "$RTE_SDK"
     fi
 
     # Download DPDK
     wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
     tar xf dpdk.tar.xz
-    mv "dpdk-$DPDK_RELEASE" dpdk
+    mv "dpdk-$DPDK_RELEASE" "$RTE_SDK"
     rm dpdk.tar.xz
 
     # Compile it
-    cd dpdk
-    sed -ri 's,(PMD_PCAP=).*,\1y,' config/common_linuxapp
-    make config T=x86_64-native-linuxapp-gcc
-    make install -j T=x86_64-native-linuxapp-gcc DESTDIR=.
+    pushd "$RTE_SDK" >> /dev/null
+      make install -j$(nproc) T=x86_64-native-linuxapp-gcc DESTDIR=.
 
-    # Write out the version for next run
-    echo "$DPDK_RELEASE" > .version
+      # Write out the version for next run
+      echo "$DPDK_RELEASE" > .version
+    popd >> /dev/null
 fi
 
-popd >> /dev/null
