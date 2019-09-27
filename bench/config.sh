@@ -26,8 +26,10 @@ export KERN_NIC_DRIVER=ixgbe
 export DPDK_NIC_DRIVER=igb_uio
 
 # Change only if you know what you're doing (e.g. you installed DPDK to a different path than home)
-export RTE_SDK=$HOME/dpdk
-export RTE_TARGET=x86_64-native-linuxapp-gcc
+if [ "$RTE_SDK" = '' ]; then
+  export RTE_SDK=$HOME/dpdk
+  export RTE_TARGET=x86_64-native-linuxapp-gcc
+fi
 
 # --- #
 # Old #
