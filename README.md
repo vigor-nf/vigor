@@ -9,21 +9,24 @@ As an alternative to installing the dependencies on your own machine, we provide
 However, you must still use Ubuntu 18.04 as a host, since the guest uses the host's kernel and DPDK needs kernel headers to compile.
 This image can be generated with the `./Docker-build.sh` script.
 
-_Please note that running the setup.sh script can take an hour, since it downloads and compiles many dependencies._
+_Please note that running the setup.sh script can take an hour, since it downloads and compiles many dependencies, and uses `sudo` which will prompt for your credentials._
 
 To **compile and run** Vigor NFs, you need:
 
+- 20 GB of disk space
 - 16 GB of RAM, 8 GB of which is allocated as 4096x2MB hugepages; see the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/sys_reqs.html#linux-gsg-hugepages) to set up hugepages.
 - A DPDK-compatible NIC with at least two ports, bound to DPDK using the `dpdk-devbind.py` tool.
 - To run `setup.sh no-verify`.
 
 To **verify** NFs using **DPDK models**, you need:
 
-- 16 GB of RAM
+- 20 GB of disk space
+- 8 GB of RAM
 - To run `setup.sh` (no arguments)
 
 To **verify** NFs using **hardware models**, you need:
 
+- 20 GB of disk space
 - 128 GB of RAM
 - To run `setup.sh` (no arguments)
 
