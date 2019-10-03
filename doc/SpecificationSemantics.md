@@ -8,10 +8,10 @@ The following BNF summarizes the syntax of the Vigor specification language:
 <import>                ::= "import" <python-symbol> "\n"
                           | "from" <python-symbol> "import" <symbols> "\n"
 <symbols>               ::= <python-symbol> | <python-symbol> "," <symbols>
-<constant-decls>        ::= <constant-decl> | <constant-decl> <constant-decl>
+<constant-decls>        ::= <constant-decl> | <constant-decl> <constant-decls>
 <constant-decl>         ::= <python-symbol> "=" <expression> "\n"
 <block>                 ::= <statements>
-<statements>            ::= <tatement> | <tatement> <statements>
+<statements>            ::= <statement> | <statement> <statements>
 <statement>             ::= <if-statement> | <if-else-statement>
                           | <assignment-statement> | <pop-header-statement>
                           | <assert-statement> | <return-statement>
@@ -32,9 +32,9 @@ The following BNF summarizes the syntax of the Vigor specification language:
                           | <list-expression>
 <list-expression>       ::= "[" <expressions> "]"
 <aexpression>           ::= <aexpression> "/" <aexpression>
-                          > <aexpression> "*" <aexpression>
-                          > <aexpression> "-" <aexpression>
-                          > <aexpression> "+" <aexpression>
+                          | <aexpression> "*" <aexpression>
+                          | <aexpression> "-" <aexpression>
+                          | <aexpression> "+" <aexpression>
 <bexpression>           ::= <aexpression> "<" <aexpression>
                           | <aexpression> "<=" <aexpression>
                           | <aexpression> ">" <aexpression>
@@ -42,12 +42,12 @@ The following BNF summarizes the syntax of the Vigor specification language:
                           | <aexpression> "==" <aexpression>
                           | <aexpression> "!=" <aexpression>
                           | <aexpression> "<>" <aexpression>
-                          > <bexpression> "and" <bexpression>
+                          | <bexpression> "and" <bexpression>
                           | <bexpression> "or" <bexpression>
-                          > <bexpression> "not" <bexpression>
+                          | <bexpression> "not" <bexpression>
 <term>                  ::= <python-symbol> | <literal>
                           | <call> | <attribute> | <constructor>
-<literal>               ::= NUMBER | True | False
+<literal>               ::= NUMBER | "True" | "False"
 <call>                  ::= <python-symbol> "(" <expressions> ")"
                           | <attribute> "(" <expressions> ")"
 <attribute>             ::= <python-symbol> "." <python-symbol>
@@ -63,9 +63,9 @@ The following BNF summarizes the syntax of the Vigor specification language:
   The variable that enters the context will have the same name and type, specified in the NF declaration.
   The variable will be initialized to the value at the beginning of the packet processing iteration.
   The variable is mutable, and the final mutated value will be compared against the computed value at the end of the iteration.
-- Constant declaration (`<constant-decl>`): Declare the constant with the given value (like C preprocessor `#define).
+- Constant declaration (`<constant-decl>`): Declare the constant with the given value (like C preprocessor `#define`).
 - If statement (`<if-statement`, `<if-else-statement>`): A regular Python `if` statement with optional `else` branch.
-  If the condition holds the block that immediately follows is executed, otherwise the block that follows the `else` keyword, if present, is executed.
+  If the condition holds, the block that immediately follows is executed, otherwise the block that follows the `else` keyword, if present, is executed.
   The block is identified by its indentation.
 - Assignment (`<assignment-statement>`): Creates or updates a variable on the left hand side and assigns it the value from right hand side of `=`.
 - Pop header (`<pop-header-statement>`): Parses a header of the protocol that is specified as the first element, and stores it in the variable on the left hand side of `=`.
