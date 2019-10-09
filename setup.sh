@@ -117,7 +117,7 @@ if ! grep -q opam "$PATHSFILE"; then
 fi
 
 # Codegenerator dependencies
-opam install goblint-cil -y
+opam install goblint-cil core -y
 
 
 
@@ -430,7 +430,7 @@ fi
 sudo apt-get install -y time parallel bc
 
 # Validator dependencies
-opam install ocamlfind core sexplib menhir -y
+opam install ocamlfind sexplib menhir -y
 
 
 
