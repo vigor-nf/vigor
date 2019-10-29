@@ -180,7 +180,8 @@ static inline void nf_free_packet(struct rte_mbuf *mbuf) {
 static inline void nf_send_packet(struct rte_mbuf *mbuf, int dst_device) {
   uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
   if (actual_tx_len != 1) {
-    rte_exit(EXIT_FAILURE, "We assume the hardware will allways accept a packet for send.\n");
+    printf("We assume the hardware will allways accept a packet for send.\n");
+    exit(1);
   }
   return;
 }
