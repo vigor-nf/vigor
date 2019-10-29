@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include <rte_common.h>
 #include <rte_byteorder.h>
 #include <rte_mbuf.h>
 #include <rte_ethdev.h>
@@ -178,7 +179,8 @@ static inline void nf_free_packet(struct rte_mbuf *mbuf) {
 
 static inline void nf_send_packet(struct rte_mbuf *mbuf, int dst_device) {
   uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
-  if (actual_tx_len == 0) {
-    rte_pktmbuf_free(mbuf);
+  // Block, until we succeed at pushing the packet into the NIC buffer
+  while (actual_tx_len != 1) {
+    actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
   }
 }

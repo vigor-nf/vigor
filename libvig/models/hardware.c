@@ -46,8 +46,11 @@ static uint64_t TIME;
 
 // Checks for the traced_mbuf hack soundness
 static bool rx_called;
-static bool tx_called;
+static bool tx_completed;
 static bool free_called;
+
+static uint32_t tx_failures = 0;
+static const uint32_t max_tx_failures = 1;
 
 // Helper bit macros
 #  define GET_BIT(n, k) (((n) >> (k)) & 1)
@@ -978,12 +981,22 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
     device_index++;
   }
 
-  packet_send((void *)buf_addr, device_index);
-  uint8_t ret = 1;
+  uint8_t ret = 0;
 
-  // Soundness check
-  klee_assert(!tx_called);
-  tx_called = true;
+  // No space left for the packet, please try another time
+  if (tx_failures < max_tx_failures &&
+      klee_int("tx_fails")) {
+    ret = 0;
+    ++tx_failures;
+  } else {
+    packet_send((void *)buf_addr, device_index);
+    ret = 1;
+    tx_failures = 0;
+
+    // Soundness check
+    klee_assert(!tx_completed);
+    tx_completed = true;
+  }
 
   if (ret != 0) {
     // Write phase
@@ -2448,7 +2461,8 @@ void stub_hardware_reset_receive(uint16_t device) {
   memset((char *)descr[0], 0, MBUF_MIN_SIZE);
 
   rx_called = false;
-  tx_called = false;
+  tx_completed = false;
+  tx_failures = 0;
   free_called = false;
 }
 
