@@ -102,8 +102,7 @@ static int nf_init_device(uint16_t device, struct rte_mempool *mbuf_pool) {
   int retval;
 
   // device_conf passed to rte_eth_dev_configure cannot be NULL
-  struct rte_eth_conf device_conf;
-  memset(&device_conf, 0, sizeof(struct rte_eth_conf));
+  struct rte_eth_conf device_conf = {0};
   device_conf.rxmode.hw_strip_crc = 1;
 
   // Configure the device
