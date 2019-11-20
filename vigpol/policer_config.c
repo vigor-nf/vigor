@@ -16,10 +16,10 @@
 #include "nf-util.h"
 #include "nf-log.h"
 
-const uint32_t DEFAULT_LAN = 1;
-const uint32_t DEFAULT_WAN = 0;
-const uint32_t DEFAULT_RATE = 1000000; // 1MB/s
-const uint32_t DEFAULT_BURST = 100000; // 100kB
+const uint16_t DEFAULT_LAN = 1;
+const uint16_t DEFAULT_WAN = 0;
+const uint64_t DEFAULT_RATE = 1000000; // 1MB/s
+const uint64_t DEFAULT_BURST = 100000; // 100kB
 const uint32_t DEFAULT_CAPACITY = 128; // IPs
 
 #define PARSE_ERROR(format, ...)                                               \
