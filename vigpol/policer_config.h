@@ -14,10 +14,10 @@ struct nf_config {
   uint16_t wan_device;
 
   // Policer rate in B/s
-  uint32_t rate;
+  uint64_t rate;
 
   // Policer burst size in B
-  uint32_t burst;
+  uint64_t burst;
 
   // Size of the dynamic filtering table
   uint32_t dyn_capacity;
