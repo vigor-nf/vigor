@@ -117,7 +117,7 @@ if ! grep -q opam "$PATHSFILE"; then
 fi
 
 # Codegenerator dependencies
-opam install goblint-cil core -y
+opam install goblint-cil core  -y
 
 
 

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <rte_common.h>
 #include <rte_byteorder.h>
 #include <rte_mbuf.h>
 #include <rte_ethdev.h>

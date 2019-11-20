@@ -25,6 +25,8 @@ struct rte_eth_link {
   uint16_t link_status : 1;
 };
 
+const static uint32_t max_send_failures = 2;
+
 /**
  * A structure used to configure the TX features of an Ethernet port.
  */
@@ -255,7 +257,6 @@ static inline uint16_t rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
   free((*tx_pkts)->next);
   (*tx_pkts)->next = NULL;
   rte_mbuf_raw_free((*tx_pkts));
-
-  return 1;
+  return 1; // Assume the NIC will always accept the packet for a send.
 }
 

@@ -2,7 +2,7 @@
 # Middlebox #
 # --------- #
 
-export MB_CPU=8 # the index of the CPU on which the middlebox will run
+export MB_CPU=6 # the index of the CPU on which the middlebox will run
 export MB_HOST=icnalsp3s3.epfl.ch
 export MB_PCI_INTERNAL=0000:06:00.1
 export MB_PCI_EXTERNAL=0000:06:00.0
@@ -26,8 +26,10 @@ export KERN_NIC_DRIVER=ixgbe
 export DPDK_NIC_DRIVER=igb_uio
 
 # Change only if you know what you're doing (e.g. you installed DPDK to a different path than home)
-export RTE_SDK=$HOME/dpdk
-export RTE_TARGET=x86_64-native-linuxapp-gcc
+if [ "$RTE_SDK" = '' ]; then
+  export RTE_SDK=$HOME/dpdk
+  export RTE_TARGET=x86_64-native-linuxapp-gcc
+fi
 
 # --- #
 # Old #
