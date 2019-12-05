@@ -118,7 +118,7 @@ Besides the NF folders mentioned above, the repository contains:
 - `codegen`: Code generators, used as part of the Vigor build process
 - `doc`: Documentation files
 - `grub.cfg`, `linker.ld`, `pxe-boot.sh`: NFOS-related files
-- `libvig`: The libVig folder, containing `verified` code, `models`, and the NFOS `kernel`
+- `libvig`: The libVig folder, containing `verified` code, `proof` code, `models`, and the NFOS `kernel`
 - `nf.{h,c}`, `nf-util.{h,c}`, `nf-log.h`: Skeleton code for Vigor NFs
 - `setup*`: Setup script and related files
 - `template`: Template for new Vigor NFs (see "Create your own Vigor NF" above)
