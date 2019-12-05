@@ -2,9 +2,9 @@
 #include <stdint.h>
 #include "vector.h"
 
-//@ #include "arith.gh"
-//@ #include "stdex.gh"
-//@ #include "listutils-lemmas.gh"
+//@ #include "../proof/arith.gh"
+//@ #include "../proof/stdex.gh"
+//@ #include "../proof/listutils-lemmas.gh"
 
 struct Vector {
   char* data;

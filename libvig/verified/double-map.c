@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stddef.h>
 
-//@ #include "arith.gh"
+//@ #include "../proof/arith.gh"
 
 #ifndef NULL
 #define NULL 0

@@ -5,8 +5,8 @@
 #include <stdint.h>
 
 //@ #include <nat.gh>
-//@ #include "stdex.gh"
-//@ #include "map.gh"
+//@ #include "../proof/stdex.gh"
+//@ #include "../proof/map.gh"
 
 //  This implementation expects keys to be the part of the value. The keys
 //  are extracted with dmap_extract_keys function and are put back with

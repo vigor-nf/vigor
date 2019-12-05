@@ -1,9 +1,9 @@
 #ifndef _COHERENCE_H_INCLUDED_
 #define _COHERENCE_H_INCLUDED_
-#include "vector.h"
-#include "map.h"
-#include "double-map.h"
-#include "double-chain.h"
+#include "../verified/vector.h"
+#include "../verified/map.h"
+#include "../verified/double-map.h"
+#include "../verified/double-chain.h"
 
 
 /*@

@@ -1,6 +1,6 @@
 #include "lpm-dir-24-8.h"
 
-//@ #include "lpm-dir-24-8-lemmas.gh"
+//@ #include "../proof/lpm-dir-24-8-lemmas.gh"
 
 /*@
   predicate table(struct lpm* t, dir_24_8 dir) =

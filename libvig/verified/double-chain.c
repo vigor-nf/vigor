@@ -6,8 +6,8 @@
 #include "double-chain-impl.h"
 
 //@ #include <nat.gh>
-//@ #include "arith.gh"
-//@ #include "stdex.gh"
+//@ #include "../proof/arith.gh"
+//@ #include "../proof/stdex.gh"
 
 #ifndef NULL
 #define NULL 0

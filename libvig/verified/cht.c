@@ -2,11 +2,11 @@
 #include <assert.h>
 #include <stdlib.h>
 
-//@ #include "prime.gh"
-//@ #include "permutations.gh"
-//@ #include "transpose.gh"
-//@ #include "listutils-lemmas.gh"
-//@ #include "transpose-lemmas.gh"
+//@ #include "../proof/prime.gh"
+//@ #include "../proof/permutations.gh"
+//@ #include "../proof/transpose.gh"
+//@ #include "../proof/listutils-lemmas.gh"
+//@ #include "../proof/transpose-lemmas.gh"
 
 static uint64_t loop(uint64_t k, uint64_t capacity)
 //@ requires    0 < capacity &*& capacity < INT_MAX;

@@ -4,9 +4,9 @@
 #include <stdbool.h>
 #include "map-util.h"
 
-//@ #include "map.gh"
-//@ #include "stdex.gh"
-//@ #include "mod-pow2.gh"
+//@ #include "../proof/map.gh"
+//@ #include "../proof/stdex.gh"
+//@ #include "../proof/mod-pow2.gh"
 
 /*@ predicate pred_arg4<t1,t2,t3,t4>(predicate (t1,t2,t3,t4) p) = true;
     predicate pred_arg2<t1,t2>(predicate (t1,t2) p) = true;

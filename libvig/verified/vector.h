@@ -1,9 +1,9 @@
 #ifndef _VECTOR_H_INCLUDED_
 #define _VECTOR_H_INCLUDED_
 
-//@ #include "stdex.gh"
-//@ #include "listexex.gh"
-//@ #include "listutils.gh"
+//@ #include "../proof/stdex.gh"
+//@ #include "../proof/listexex.gh"
+//@ #include "../proof/listutils.gh"
 
 #define VECTOR_CAPACITY_UPPER_LIMIT 140000
 
