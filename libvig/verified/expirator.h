@@ -5,7 +5,7 @@
 #include "double-map.h"
 #include "map.h"
 #include "vector.h"
-#include "coherence.h"
+#include "../proof/coherence.h"
 
 
 // The function takes "coherent" chain allocator and hash map, and current time.

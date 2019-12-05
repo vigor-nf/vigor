@@ -4,9 +4,9 @@
 #include "libvig/verified/double-chain.h"
 #include "libvig/verified/vector.h"
 
-//@ #include "prime.gh"
-//@ #include "permutations.gh"
-//@ #include "listutils.gh"
+//@ #include "../proof/prime.gh"
+//@ #include "../proof/permutations.gh"
+//@ #include "../proof/listutils.gh"
 
 // MAX_CHT_HEIGHT*MAX_CHT_HEIGHT < MAX_INT
 #define MAX_CHT_HEIGHT 40000

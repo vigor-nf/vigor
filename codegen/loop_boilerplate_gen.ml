@@ -792,7 +792,7 @@ let () =
   fprintf cout "#include \"libvig/verified/vector.h\"\n";
   fprintf cout "#include \"libvig/verified/cht.h\"\n";
   fprintf cout "#include \"libvig/verified/lpm-dir-24-8.h\"\n";
-  fprintf cout "#include \"libvig/verified/coherence.h\"\n";
+  fprintf cout "#include \"libvig/proof/coherence.h\"\n";
   fprintf cout "#include \"libvig/verified/vigor-time.h\"\n";
   List.iter (fun incl ->
       fprintf cout "#include \"%s\"\n" incl;)

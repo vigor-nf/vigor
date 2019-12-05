@@ -5,12 +5,12 @@
 //@ #include <list.gh>
 //@ #include <listex.gh>
 //@ #include <nat.gh>
-//@ #include "stdex.gh"
-//@ #include "nth-prop.gh"
-//@ #include "modulo.gh"
-//@ #include "map.gh"
-//@ #include "natlist.gh"
-//@ #include "chain-buckets.gh"
+//@ #include "../proof/stdex.gh"
+//@ #include "../proof/nth-prop.gh"
+//@ #include "../proof/modulo.gh"
+//@ #include "../proof/map.gh"
+//@ #include "../proof/natlist.gh"
+//@ #include "../proof/chain-buckets.gh"
 
 
 /*@

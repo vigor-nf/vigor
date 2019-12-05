@@ -6,7 +6,7 @@
 #include "vigor-time.h"
 
 //@ #include <listex.gh>
-//@ #include "stdex.gh"
+//@ #include "../proof/stdex.gh"
 
 struct DoubleChain;
 // Makes sure the allocator structur fits into memory, and particularly into

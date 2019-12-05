@@ -3,7 +3,7 @@
 
 #include "map-util.h"
 
-//@ #include "map.gh"
+//@ #include "../proof/map.gh"
 
 struct Map;
 

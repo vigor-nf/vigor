@@ -52,12 +52,12 @@ endif
 # VeriFast
 # ========
 
-LIBVIG_SRC_ARITH := $(SELF_DIR)/libvig/verified/arith.c \
-                    $(SELF_DIR)/libvig/verified/modulo.c
+LIBVIG_SRC_ARITH := $(SELF_DIR)/libvig/proof/arith.c \
+                    $(SELF_DIR)/libvig/proof/modulo.c
 LIBVIG_SRC_Z3 := $(subst .c,.o,$(LIBVIG_SRC_ARITH)) \
-                 $(SELF_DIR)/libvig/verified/bitopsutils.c \
-                 $(SELF_DIR)/libvig/verified/mod-pow2.c \
-                 $(SELF_DIR)/libvig/verified/lpm-dir-24-8-lemmas.c \
+                 $(SELF_DIR)/libvig/proof/bitopsutils.c \
+                 $(SELF_DIR)/libvig/proof/mod-pow2.c \
+                 $(SELF_DIR)/libvig/proof/lpm-dir-24-8-lemmas.c \
                  $(SELF_DIR)/libvig/verified/lpm-dir-24-8.c
 LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
               $(SELF_DIR)/libvig/verified/double-chain-impl.c \
@@ -65,17 +65,17 @@ LIBVIG_SRC := $(subst .c,.o,$(LIBVIG_SRC_Z3)) \
               $(SELF_DIR)/libvig/verified/map-impl.c \
               $(SELF_DIR)/libvig/verified/map-impl-pow2.c \
               $(SELF_DIR)/libvig/verified/double-map.c \
-              $(SELF_DIR)/libvig/verified/prime.c \
-              $(SELF_DIR)/libvig/verified/listutils-lemmas.c \
+              $(SELF_DIR)/libvig/proof/prime.c \
+              $(SELF_DIR)/libvig/proof/listutils-lemmas.c \
               $(SELF_DIR)/libvig/verified/vector.c \
-              $(SELF_DIR)/libvig/verified/transpose-lemmas.c \
-              $(SELF_DIR)/libvig/verified/permutations.c \
+              $(SELF_DIR)/libvig/proof/transpose-lemmas.c \
+              $(SELF_DIR)/libvig/proof/permutations.c \
               $(SELF_DIR)/libvig/verified/cht.c \
               $(SELF_DIR)/libvig/verified/packet-io.c \
               $(SELF_DIR)/libvig/verified/map.c \
-              $(SELF_DIR)/libvig/verified/coherence.c \
+              $(SELF_DIR)/libvig/proof/coherence.c \
               $(SELF_DIR)/libvig/verified/expirator.c \
-              $(SELF_DIR)/libvig/verified/boilerplate-assumptions.c \
+              $(SELF_DIR)/libvig/proof/boilerplate-assumptions.c \
               $(SELF_DIR)/libvig/verified/ether.c
 
 VERIFAST_COMMAND := verifast -I $(SELF_DIR) \
@@ -312,12 +312,12 @@ count-libvig-loc:
 	@# cloc can\'t be given a custom language but for some reason
 	@# it knows about Pig Latin, which is never gonna happen in our codebase, so...
 	@cloc --quiet --force-lang 'Pig Latin',gh \
-	      $(SELF_DIR)/libvig/verified/*.{c,h,gh} | \
+	      $(SELF_DIR)/libvig/verified/* $(SELF_DIR)/libvig/proof/* | \
 	 sed 's/Pig Latin/VeriFast /g'
 	@echo "NOTE: Annotations == VeriFast code + C comments - \
 	       $$(grep '//[^@]' $(SELF_DIR)/libvig/verified/*.{c,h} | wc -l) \
 	       (that last number is the non-VeriFast C comments)"
-	@if grep -F '/*' $(SELF_DIR)/libvig/verified/*.{c,h} | grep -vF '/*@'; then \
+	@if grep -F '/*' $(SELF_DIR)/libvig/verified/* $(SELF_DIR)/libvig/proof/* | grep -vF '/*@'; then \
            echo 'ERROR: There are multiline non-VeriFast comments in the C code, \
 	         the total above is wrong!'; \
 	 fi

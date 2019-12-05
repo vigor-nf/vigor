@@ -2,8 +2,8 @@
 
 //@ #include <nat.gh>
 //@ #include <listex.gh>
-//@ #include "arith.gh"
-//@ #include "stdex.gh"
+//@ #include "../proof/arith.gh"
+//@ #include "../proof/stdex.gh"
 
 enum DCHAIN_ENUM {
     ALLOC_LIST_HEAD = 0,

@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 
-//@ #include "lpm-dir-24-8.gh"
+//@ #include "../proof/lpm-dir-24-8.gh"
 
 #define lpm_PLEN_MAX 32
 #define BYTE_SIZE 8
