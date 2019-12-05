@@ -30,7 +30,7 @@ SHELL := /bin/bash -O extglob -O globstar -c
 ifneq (true,$(NF_NO_BASE))
 SRCS-y := $(shell echo $(SELF_DIR)/nf*.c)
 endif
-SRCS-y += $(shell echo $(SELF_DIR)/libvig/verified/*.c)
+SRCS-y += $(shell echo $(SELF_DIR)/libvig/verified/!(boilerplate-assumptions).c)
 SRCS-y += $(NF_FILES)
 # Compiler flags
 CFLAGS += -I $(SELF_DIR)
