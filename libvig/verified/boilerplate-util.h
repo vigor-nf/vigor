@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <limits.h>
 
+// verifast doesn't know about these
 //@ fixpoint int crc32_hash(int acc, int x);
 unsigned __builtin_ia32_crc32si(unsigned acc, unsigned int x);
 /*@ requires true; @*/
