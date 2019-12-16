@@ -39,6 +39,13 @@ CFLAGS += -DCAPACITY_POW2
 CFLAGS += -O3
 #CFLAGS += -O0 -g -rdynamic -DENABLE_LOG -Wfatal-errors
 
+# GCC optimizes a checksum check in rte_ip.h into a CMOV, which is a very poor choice
+# that causes 99th percentile latency to go through the roof;
+# force it to not do that with no-if-conversion
+ifeq ($(CC),gcc)
+CFLAGS += -fno-if-conversion -fno-if-conversion2
+endif
+
 # It seems the DPDK makefiles really don't like being recursively invoked -
 # and benchmarking invokes make run;
 # so we just don't include the DPDK makefile if we're benchmarking

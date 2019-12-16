@@ -160,29 +160,3 @@ nf_then_get_tcpudp_header(struct ipv4_hdr *ip_header, void *p) {
   return (struct tcpudp_hdr *)nf_borrow_next_chunk(p,
                                                    sizeof(struct tcpudp_hdr));
 }
-
-static inline bool nf_receive_packet(uint16_t src_device,
-                                     struct rte_mbuf **mbuf) {
-  uint16_t actual_rx_len = rte_eth_rx_burst(src_device, 0, mbuf, 1);
-  if (actual_rx_len != 0) {
-    // TODO: for multi-mbuf packets, make sure to differentiate
-    // between pkt_len and data_len
-    packet_state_total_length(rte_pktmbuf_mtod(*mbuf, char*), &(**mbuf).pkt_len);
-    return true;
-  } else {
-    return false;
-  }
-}
-
-static inline void nf_free_packet(struct rte_mbuf *mbuf) {
-  rte_pktmbuf_free(mbuf);
-}
-
-static inline void nf_send_packet(struct rte_mbuf *mbuf, int dst_device) {
-  uint16_t actual_tx_len = rte_eth_tx_burst(dst_device, 0, &mbuf, 1);
-  if (actual_tx_len != 1) {
-    printf("We assume the hardware will allways accept a packet for send.\n");
-    exit(1);
-  }
-  return;
-}
