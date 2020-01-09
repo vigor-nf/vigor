@@ -107,10 +107,10 @@ static inline void *nf_borrow_next_chunk(void *p, size_t length) {
                     sizeof(fields) / sizeof(fields[0]), NULL, 0, #str_name);
 
 static inline void nf_return_all_chunks(void *p) {
-  do {
+  while (chunks_borrowed_num != 0) {
+    packet_return_chunk(p, chunks_borrowed[chunks_borrowed_num - 1]);
     chunks_borrowed_num--;
-    packet_return_chunk(p, chunks_borrowed[chunks_borrowed_num]);
-  } while (chunks_borrowed_num != 0);
+  }
 }
 
 static inline struct ether_hdr *nf_then_get_ether_header(void *p) {

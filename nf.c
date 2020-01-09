@@ -22,6 +22,14 @@
 #  include <klee/klee.h>
 #endif // KLEE_VERIFICATION
 
+#ifdef VIGOR_DEBUG_PERF
+#  include <stdio.h>
+#  include "papi.h"
+#  if VIGOR_BATCH_SIZE == 1
+#    error Batch and perf debugging are not supported together
+#  endif
+#endif
+
 #ifdef NFOS
 #  define MAIN nf_main
 #else // NFOS
@@ -168,8 +176,25 @@ static void lcore_main(void) {
 
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
+#ifdef VIGOR_DEBUG_PERF
+  NF_INFO("Counters: instructions, L1d, L1i, L2, L3");
+  int papi_events[] = {PAPI_TOT_INS, PAPI_L1_DCM, PAPI_L1_ICM, PAPI_L2_TCM, PAPI_L3_TCM};
+  #define papi_events_count sizeof(papi_events)/sizeof(papi_events[0])
+  #define papi_batch_size 10000
+  long long papi_values[papi_batch_size][papi_events_count];
+  if (PAPI_start_counters(papi_events, papi_events_count) != PAPI_OK) {
+    rte_exit(EXIT_FAILURE, "Couldn't start PAPI counters.");
+  }
+  uint64_t papi_counter = 0;
+#endif
+
 #if VIGOR_BATCH_SIZE == 1
   VIGOR_LOOP_BEGIN
+
+#ifdef VIGOR_DEBUG_PERF
+    PAPI_read_counters(papi_values[papi_counter], papi_events_count);
+#endif
+
     struct rte_mbuf *mbuf;
     if (rte_eth_rx_burst(VIGOR_DEVICE, 0, &mbuf, 1) != 0) {
       uint8_t* packet = rte_pktmbuf_mtod(mbuf, uint8_t*);
@@ -184,10 +209,29 @@ static void lcore_main(void) {
       } else {
         concretize_devices(&dst_device, rte_eth_dev_count());
         if (rte_eth_tx_burst(dst_device, 0, &mbuf, 1) != 1) {
+#ifdef VIGOR_DEBUG_PERF
+          rte_pktmbuf_free(mbuf); // in perf debug we don't care about dropped packets
+#else
           printf("We assume the hardware will allways accept a packet for send.\n");
           exit(1);
+#endif
         }
       }
+
+#ifdef VIGOR_DEBUG_PERF
+      PAPI_read_counters(papi_values[papi_counter], papi_events_count);
+      papi_counter++;
+      if (papi_counter == papi_batch_size) {
+        papi_counter = 0;
+        for (uint64_t n = 0; n < papi_batch_size; n++) {
+          for (uint64_t e = 0; e < papi_events_count; e++) {
+            printf("%lld ", papi_values[n][e]);
+          }
+          printf("\n");
+        }
+      }
+#endif
+
     }
   VIGOR_LOOP_END
 #else
