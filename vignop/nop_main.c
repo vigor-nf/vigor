@@ -12,6 +12,11 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, time_t 
   // Mark now as unused, we don't care about time
   (void)now;
 
+#ifdef VIGOR_DEBUG_REALNOP
+  // "Real" no-op, i.e. do absolutely nothing, this is unrealistic but useful
+  // to measure performance of the overall Vigor architecture
+  return 1 - device;
+#else
   // This is a bit of a hack; the benchmarks are designed for a NAT, which knows
   // where to forward packets, but for a plain forwarding app without any logic,
   // we just send all packets from LAN to the WAN port, and all packets from WAN
@@ -30,4 +35,5 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, time_t 
   ether_header->d_addr = config.endpoint_macs[dst_device];
 
   return dst_device;
+#endif
 }
