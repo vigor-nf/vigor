@@ -209,8 +209,8 @@ static void lcore_main(void) {
       } else {
         concretize_devices(&dst_device, rte_eth_dev_count());
         if (rte_eth_tx_burst(dst_device, 0, &mbuf, 1) != 1) {
-#ifdef VIGOR_DEBUG_PERF
-          rte_pktmbuf_free(mbuf); // in perf debug we don't care about dropped packets
+#if defined(VIGOR_ALLOW_DROPS) || defined(VIGOR_DEBUG_PERF)
+          rte_pktmbuf_free(mbuf);
 #else
           printf("We assume the hardware will allways accept a packet for send.\n");
           exit(1);
