@@ -44,6 +44,7 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_t
                                    .protocol = ipv4_header->next_proto_id };
 
   if (device != config.wan_device) {
+    NF_DEBUG("Processing heartbeat, device is %" PRIu16, device);
     lb_process_heartbit(balancer, &flow, ether_header->s_addr, device, now);
     return device;
   }
@@ -51,6 +52,7 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_t
   struct LoadBalancedBackend backend = lb_get_backend(balancer, &flow, now,
                                                       config.wan_device);
 
+  NF_DEBUG("Processing packet from %" PRIu16 " to %" PRIu16, device, backend.nic);
   concretize_devices(&backend.nic, rte_eth_dev_count());
 
   if (backend.nic != config.wan_device) {
