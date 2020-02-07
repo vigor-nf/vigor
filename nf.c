@@ -22,10 +22,14 @@
 #  include <klee/klee.h>
 #endif // KLEE_VERIFICATION
 
+#ifndef VIGOR_BATCH_SIZE
+#  define VIGOR_BATCH_SIZE 1
+#endif
+
 #ifdef VIGOR_DEBUG_PERF
 #  include <stdio.h>
 #  include "papi.h"
-#  if VIGOR_BATCH_SIZE == 1
+#  if VIGOR_BATCH_SIZE != 1
 #    error Batch and perf debugging are not supported together
 #  endif
 #endif
@@ -35,10 +39,6 @@
 #else // NFOS
 #  define MAIN main
 #endif // NFOS
-
-#ifndef VIGOR_BATCH_SIZE
-#  define VIGOR_BATCH_SIZE 1
-#endif
 
 #ifdef KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN                                                     \
@@ -177,8 +177,8 @@ static void lcore_main(void) {
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
 #ifdef VIGOR_DEBUG_PERF
-  NF_INFO("Counters: instructions, L1d, L1i, L2, L3");
-  int papi_events[] = {PAPI_TOT_INS, PAPI_L1_DCM, PAPI_L1_ICM, PAPI_L2_TCM, PAPI_L3_TCM};
+  NF_INFO("Counters: cycles, instructions, L1d, L1i, L2, L3");
+  int papi_events[] = {PAPI_TOT_CYC, PAPI_TOT_INS, PAPI_L1_DCM, PAPI_L1_ICM, PAPI_L2_TCM, PAPI_L3_TCM};
   #define papi_events_count sizeof(papi_events)/sizeof(papi_events[0])
   #define papi_batch_size 10000
   long long papi_values[papi_batch_size][papi_events_count];
@@ -186,6 +186,7 @@ static void lcore_main(void) {
     rte_exit(EXIT_FAILURE, "Couldn't start PAPI counters.");
   }
   uint64_t papi_counter = 0;
+  uint64_t papi_batch_counter = 0;
 #endif
 
 #if VIGOR_BATCH_SIZE == 1
@@ -222,12 +223,17 @@ static void lcore_main(void) {
       PAPI_read_counters(papi_values[papi_counter], papi_events_count);
       papi_counter++;
       if (papi_counter == papi_batch_size) {
-        papi_counter = 0;
         for (uint64_t n = 0; n < papi_batch_size; n++) {
           for (uint64_t e = 0; e < papi_events_count; e++) {
             printf("%lld ", papi_values[n][e]);
           }
           printf("\n");
+        }
+        papi_counter = 0;
+        papi_batch_counter++;
+        if (papi_batch_counter == VIGOR_DEBUG_PERF)
+        {
+          exit(0);
         }
       }
 #endif
