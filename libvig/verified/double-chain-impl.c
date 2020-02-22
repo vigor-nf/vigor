@@ -2080,7 +2080,7 @@ int dchain_impl_free_index(struct dchain_cell *cells, int index)
 /*@
   lemma void alloc_list_empty(list<dcell> cls, list<int> al, int start)
   requires alloc_listp(cls, al, start, start) &*&
-           nth(start, cls) == dcell(start, start);
+           nth(start, cls) == dcell(_, start);
   ensures alloc_listp(cls, al, start, start) &*&
           al == nil;
   {
@@ -2127,15 +2127,13 @@ int dchain_impl_get_oldest_index(struct dchain_cell *cells, int *index)
   //@ extract_heads(cells, cls);
   struct dchain_cell *al_head = cells + ALLOC_LIST_HEAD;
   // No allocated indexes.
-  if (al_head->next == al_head->prev) {
-    if (al_head->next == ALLOC_LIST_HEAD) {
-      //@ alloc_list_empty(cls, al, ALLOC_LIST_HEAD);
-      //@ assert al == nil;
-      //@ shift_inds_empty(dchaini_alist_fp(dc), INDEX_SHIFT);
-      //@ attach_heads(cells, cls);
-      //@ close dchainip(dc, cells);
-      return 0;
-    }
+  if (al_head->next == ALLOC_LIST_HEAD) {
+    //@ alloc_list_empty(cls, al, ALLOC_LIST_HEAD);
+    //@ assert al == nil;
+    //@ shift_inds_empty(dchaini_alist_fp(dc), INDEX_SHIFT);
+    //@ attach_heads(cells, cls);
+    //@ close dchainip(dc, cells);
+    return 0;
   }
   //@ open alloc_listp(cls, al, ALLOC_LIST_HEAD, ALLOC_LIST_HEAD);
   //@ assert al == cons(?oldest, _);
