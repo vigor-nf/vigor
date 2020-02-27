@@ -115,9 +115,8 @@ typedef void vector_init_elem/*@ <t> (predicate (void*;t) entp,
 int vector_allocate/*@ <t> @*/(int elem_size, unsigned capacity,
                                vector_init_elem* init_elem,
                                struct Vector** vector_out);
-/*@ requires 0 < elem_size &*& 0 < capacity &*&
-             [_]is_vector_init_elem<t>(init_elem, ?entp, elem_size, ?val) &*&
-             0 <= elem_size &*& elem_size < 4096 &*&
+/*@ requires [_]is_vector_init_elem<t>(init_elem, ?entp, elem_size, ?val) &*&
+             0 < elem_size &*& elem_size < 4096 &*&
              0 <= capacity &*& capacity < VECTOR_CAPACITY_UPPER_LIMIT &*&
              *vector_out |-> ?old_vo; @*/
 /*@ ensures result == 0 ?
