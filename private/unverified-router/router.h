@@ -11,8 +11,6 @@
 #include "parse_utils.h"
 #include <stdio.h>
 #include <ctype.h>
-#include <linux/limits.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <rte_common.h>
 #include <rte_ethdev.h>

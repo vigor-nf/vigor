@@ -4,8 +4,6 @@
 #include "libvig/verified/map.h"
 #include "libvig/verified/expirator.h"
 
-#include <linux/limits.h>
-#include <sys/types.h>
 #include <rte_ethdev.h>
 
 #include <assert.h>
