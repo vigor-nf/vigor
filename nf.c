@@ -26,9 +26,6 @@
 #ifdef VIGOR_DEBUG_PERF
 #  include <stdio.h>
 #  include "papi.h"
-#  if VIGOR_BATCH_SIZE != 1
-#    error Batch and perf debugging are not supported together
-#  endif
 #endif
 
 #ifdef NFOS
@@ -79,16 +76,23 @@
     }
 #endif // KLEE_VERIFICATION
 
+
+
 // Number of RX/TX queues
 static const uint16_t RX_QUEUES_COUNT = 1;
 static const uint16_t TX_QUEUES_COUNT = 1;
 
 // Queue sizes for receiving/transmitting packets
+#if VIGOR_BATCH_SIZE == 1
+static const uint16_t RX_QUEUE_SIZE = 128;
+static const uint16_t TX_QUEUE_SIZE = 128;
+#else
 // NOT powers of 2 so that ixgbe doesn't use vector stuff
 // but they have to be multiples of 8, and at least 32, otherwise the driver
 // refuses
 static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
+#endif
 
 void flood(struct rte_mbuf *frame, uint16_t skip_device, uint16_t nb_devices) {
   rte_mbuf_refcnt_set(frame, nb_devices - 1);
@@ -179,11 +183,12 @@ static void lcore_main(void) {
   #define papi_events_count sizeof(papi_events)/sizeof(papi_events[0])
   #define papi_batch_size 10000
   long long papi_values[papi_batch_size][papi_events_count];
+  uint16_t batch_counters[papi_batch_size];
   if (PAPI_start_counters(papi_events, papi_events_count) != PAPI_OK) {
     rte_exit(EXIT_FAILURE, "Couldn't start PAPI counters.");
   }
   uint64_t papi_counter = 0;
-  uint64_t papi_batch_counter = 0;
+  uint64_t papi_total_counter = 0;
 #endif
 
 #if VIGOR_BATCH_SIZE == 1
@@ -219,6 +224,7 @@ static void lcore_main(void) {
 #ifdef VIGOR_DEBUG_PERF
       PAPI_read_counters(papi_values[papi_counter], papi_events_count);
       papi_counter++;
+      papi_total_counter++;
       if (papi_counter == papi_batch_size) {
         for (uint64_t n = 0; n < papi_batch_size; n++) {
           for (uint64_t e = 0; e < papi_events_count; e++) {
@@ -227,8 +233,7 @@ static void lcore_main(void) {
           printf("\n");
         }
         papi_counter = 0;
-        papi_batch_counter++;
-        if (papi_batch_counter == VIGOR_DEBUG_PERF)
+        if (papi_total_counter >= VIGOR_DEBUG_PERF)
         {
           exit(0);
         }
@@ -245,6 +250,11 @@ static void lcore_main(void) {
   NF_INFO("Running with batches, this code is unverified!");
 
   VIGOR_LOOP_BEGIN
+
+#ifdef VIGOR_DEBUG_PERF
+    PAPI_read_counters(papi_values[papi_counter], papi_events_count);
+#endif
+
     struct rte_mbuf *mbufs[VIGOR_BATCH_SIZE];
     struct rte_mbuf *mbufs_to_send[VIGOR_BATCH_SIZE];
     int mbuf_send_index = 0;
@@ -267,6 +277,29 @@ static void lcore_main(void) {
     for (uint16_t n = sent_count; n < mbuf_send_index; n++) {
       rte_pktmbuf_free(mbufs[n]); // should not happen, but we're in the unverified case anyway
     }
+
+#ifdef VIGOR_DEBUG_PERF
+      PAPI_read_counters(papi_values[papi_counter], papi_events_count);
+      batch_counters[papi_counter] = received_count;
+      papi_counter++;
+      papi_total_counter += received_count;
+      if (papi_counter >= papi_batch_size) {
+        for (uint64_t n = 0; n < papi_counter; n++) {
+          for (uint64_t b = 0; b < batch_counters[n]; b++) {
+            for (uint64_t e = 0; e < papi_events_count; e++) {
+              printf("%lf ", (double) papi_values[n][e] / (double) batch_counters[n]);
+            }
+            printf("\n");
+          }
+        }
+        papi_counter = 0;
+        if (papi_total_counter >= VIGOR_DEBUG_PERF)
+        {
+          exit(0);
+        }
+      }
+#endif
+
   VIGOR_LOOP_END
 #endif
 }
