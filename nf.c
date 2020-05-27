@@ -65,6 +65,7 @@
     nf_loop_iteration_border(_vigor_lcore_id, VIGOR_NOW);                      \
     }
 #else // KLEE_VERIFICATION
+#if VIGOR_BATCH_SIZE == 1
 #  define VIGOR_LOOP_BEGIN                                                     \
     while (1) {                                                                \
       vigor_time_t VIGOR_NOW = current_time();                                 \
@@ -74,6 +75,16 @@
 #  define VIGOR_LOOP_END                                                       \
     }                                                                          \
     }
+#else
+#  define VIGOR_LOOP_BEGIN                                                     \
+    while (1) {                                                                \
+      unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count();                      \
+      for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT;      \
+           VIGOR_DEVICE++) {
+#  define VIGOR_LOOP_END                                                       \
+    }                                                                          \
+    }
+#endif
 #endif // KLEE_VERIFICATION
 
 
@@ -260,6 +271,7 @@ static void lcore_main(void) {
     int mbuf_send_index = 0;
     uint16_t received_count = rte_eth_rx_burst(VIGOR_DEVICE, 0, mbufs, VIGOR_BATCH_SIZE);
     for (uint16_t n = 0; n < received_count; n++) {
+      vigor_time_t VIGOR_NOW = current_time();
       uint8_t* packet = rte_pktmbuf_mtod(mbufs[n], uint8_t*);
       packet_state_total_length(packet, &(mbufs[n]->pkt_len));
       uint16_t dst_device = nf_process(mbufs[n]->port, packet, mbufs[n]->data_len, VIGOR_NOW);
