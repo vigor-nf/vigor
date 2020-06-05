@@ -448,12 +448,12 @@ let gen_alloc_function compinfo =
   "  //@ close_struct((struct " ^ compinfo.cname ^ "*) obj);\n" ^
   "  struct " ^ compinfo.cname ^
   "* id = (struct " ^ compinfo.cname ^ "*) obj;\n" ^
-  let rec zero_fields cstruct name accessor =
+  let rec zero_fields cstruct name field_name accessor =
     (String .concat "\n" (List.map (fun {fname;ftype;_} ->
          let field_id = name ^ accessor ^ fname in
          match ftype with
          | TComp (field_str, _) ->
-           (zero_fields field_str field_id ".")
+           (zero_fields field_str field_id fname ".")
          | TArray (field_t, Some (Const (CInt64 (c, _, _))), _) ->
            let rec arr_fields (i : int64) =
            let current = (Int64.to_string (Int64.sub c i)) in
@@ -472,8 +472,8 @@ let gen_alloc_function compinfo =
              else ""
            in
            "//@ assert " ^ field_id ^ "[0.." ^ (Int64.to_string c) ^ "] |-> ?" ^
-           fname ^ "_lst;\n" ^
-           "/*@ " ^ arr_switch (fname ^ "_lst") c ^ "@*/\n" ^
+           field_name ^ "_" ^ fname ^ "_lst;\n" ^
+           "/*@ " ^ arr_switch (field_name ^ "_" ^ fname ^ "_lst") c ^ "@*/\n" ^
            arr_fields c
          | TArray (field_t, _, _) ->
            failwith "An of unsupported array count " ^
@@ -481,7 +481,7 @@ let gen_alloc_function compinfo =
          | _ -> "  " ^ field_id ^ " = 0;"
        ) cstruct.cfields))
   in
-  (zero_fields compinfo "id" "->") ^ "\n" ^
+  (zero_fields compinfo "id" "id" "->") ^ "\n" ^
   "  //@ close " ^ (predicate_name compinfo) ^ "(obj, " ^ (default_name compinfo) ^ ");\n" ^
   "}\n"
 
