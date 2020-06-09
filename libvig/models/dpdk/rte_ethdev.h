@@ -209,12 +209,9 @@ static inline uint16_t rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
   // TODO: make data_off symbolic (but then we get symbolic pointer addition...)
   // Alternative: Somehow prove that the code never touches anything outside of
   // the [data_off, data_off+data_len] range...
-  (*rx_pkts)->data_off = 0; // klee_range(0, pool->elt_size - MBUF_MIN_SIZE
-                          // , "data_off");
+  (*rx_pkts)->data_off = 0;
   (*rx_pkts)->refcnt = 1;
-  (*rx_pkts)->nb_segs =
-      1; // TODO do we want to make a possibility of multiple packets? Or we
-         // could just prove the NF never touches this...
+  (*rx_pkts)->nb_segs = 1;
   (*rx_pkts)->port = port_id;
   (*rx_pkts)->ol_flags = 0;
   // packet_type is symbolic, NFs should use the content of the packet as the
@@ -250,13 +247,16 @@ static inline uint16_t rte_eth_tx_burst(uint16_t port_id, uint16_t queue_id,
   klee_assert(queue_id == 0); // we only support that
   klee_assert(nb_pkts == 1);  // same
 
-  packet_send((**tx_pkts).buf_addr, port_id);
+  packet_send(tx_pkts[0]->buf_addr, port_id);
 
-  // Undo our pseudo-chain trickery
-  klee_allow_access((*tx_pkts)->next, (*tx_pkts)->pool->elt_size);
-  free((*tx_pkts)->next);
-  (*tx_pkts)->next = NULL;
-  rte_mbuf_raw_free((*tx_pkts));
+  tx_pkts[0]->refcnt--;
+  if (tx_pkts[0]->refcnt == 0) {
+    // Undo our pseudo-chain trickery
+    klee_allow_access(tx_pkts[0]->next, tx_pkts[0]->pool->elt_size);
+    free(tx_pkts[0]->next);
+    tx_pkts[0]->next = NULL;
+    rte_mbuf_raw_free(tx_pkts[0]);
+  }
   return 1; // Assume the NIC will always accept the packet for a send.
 }
 
