@@ -10,6 +10,16 @@ set -euo pipefail
 # Setup
 # =====
 
+# OCaml (installed later) uses variables in its scripts without
+# defining them first - we're in strict mode!
+if [ -z ${PERL5LIB+x} ]; then
+  export PERL5LIB=''
+fi
+if [ -z ${MANPATH+x} ]; then
+  export MANPATH=''
+fi
+
+
 VNDSDIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 BUILDDIR=`pwd`
 PATHSFILE="$BUILDDIR/paths.sh"
@@ -97,15 +107,6 @@ popd
 # =====
 
 sudo apt-get install -y opam m4
-
-# OCaml uses variables in its scripts without
-# defining them first - we're in strict mode!
-if [ -z ${PERL5LIB+x} ]; then
-  export PERL5LIB=''
-fi
-if [ -z ${MANPATH+x} ]; then
-  export MANPATH=''
-fi
 
 opam init -y
 opam switch 4.06.0
