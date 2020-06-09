@@ -1,10 +1,9 @@
-// NOTE: The name of this file is because if it's just called "socket.c", KLEE
-// ignores it (even if explicitly included in the Makefile)
-//       Not sure why...
+// NOTE: The name of this file is because if it's just called "socket.c",
+//       it doesn't get included somehow... maybe a conflict with KLEE-uclibc?
 
+#include <sys/socket.h>
 #include <errno.h>
 #include <stdio.h>
-#include <sys/socket.h>
 
 #ifdef KLEE_VERIFICATION
 #  include <klee/klee.h>
