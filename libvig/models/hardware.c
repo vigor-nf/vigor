@@ -117,10 +117,9 @@ static void stub_device_start(struct stub_device *dev) {
 
   bool received = klee_int("received");
   set_packet_receive_success(received);
-  // need it forward, to make sure packet_receive args are the same in both
-  // calls
-  uint32_t packet_len =
-      MBUF_MIN_SIZE; // TODO: make length symbolic
+  // make sure packet_receive args are the same in both calls
+  // TODO: make length symbolic
+  uint32_t packet_len = MBUF_MIN_SIZE;
   uint32_t data_len = packet_len;
   if (!received) {
     // no packet
@@ -156,8 +155,7 @@ static void stub_device_start(struct stub_device *dev) {
     klee_abort();
   }
   // NOTE: validator depends on this specific name, "user_buf"
-  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE,
-                     "user_buf");
+  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
 
 #  if __BYTE_ORDER == __BIG_ENDIAN
   bool is_ipv4 = mbuf_content->ether.ether_type == 0x0800;
@@ -2352,7 +2350,7 @@ void stub_hardware_write(uint64_t addr, unsigned offset, unsigned size,
 }
 
 void stub_free(struct rte_mbuf *mbuf) {
-  packet_free(mbuf->buf_addr);
+  packet_free(mbuf->buf_addr + mbuf->data_off);
 
   // Still need to free the actual mbuf though
   rte_mbuf_raw_free(mbuf);
