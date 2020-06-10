@@ -109,7 +109,12 @@ popd
 sudo apt-get install -y opam m4
 
 opam init -y
-opam switch 4.06.0
+# Opam 1.x doesn't have "create", later versions require it
+if opam --version | grep '^1.' >/dev/null ; then
+  opam switch 4.06.0
+else
+  opam switch create 4.06.0
+fi
 
 if ! grep -q opam "$PATHSFILE"; then
   echo 'PATH='"$HOME/.opam/system/bin"':$PATH' >> "$PATHSFILE"
