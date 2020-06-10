@@ -5,10 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <rte_common.h>
 #include <rte_ethdev.h>
-#include <cmdline_parse_etheraddr.h>
-#include <cmdline_parse_ipaddr.h>
 
 #include "nf.h"
 #include "nf-util.h"
@@ -17,9 +14,10 @@
 const uint32_t DEFAULT_EXP_TIME = 300000000; // microseconds
 const uint32_t DEFAULT_CAPACITY = 128;       // MAC addresses
 
-#define PARSE_ERROR(format, ...)                                               \
-  nf_config_usage();                                                           \
-  rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
+#define PARSE_ERROR(format, ...)          \
+  nf_config_usage();                      \
+  fprintf(stderr, format, ##__VA_ARGS__); \
+  exit(EXIT_FAILURE);
 
 void nf_config_init(int argc, char **argv) {
   // Set the default values

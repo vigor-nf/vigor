@@ -5,10 +5,6 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <rte_common.h>
-#include <rte_ethdev.h>
-#include <cmdline_parse_etheraddr.h>
-
 #include "nf-util.h"
 #include "nf-log.h"
 
@@ -18,9 +14,10 @@ const uint64_t DEFAULT_RATE = 1000000; // 1MB/s
 const uint64_t DEFAULT_BURST = 100000; // 100kB
 const uint32_t DEFAULT_CAPACITY = 128; // IPs
 
-#define PARSE_ERROR(format, ...)                                               \
-  nf_config_usage();                                                           \
-  rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
+#define PARSE_ERROR(format, ...)          \
+  nf_config_usage();                      \
+  fprintf(stderr, format, ##__VA_ARGS__); \
+  exit(EXIT_FAILURE);
 
 void nf_config_init(int argc, char **argv) {
   // Set the default values

@@ -146,7 +146,7 @@ int open(const char *file, int oflag, ...) {
     if (FILES[n].path != NULL && !strcmp(file, FILES[n].path) &&
         FILES[n].kind == desired_kind) {
       if (FILES[n].content == FILE_CONTENT_NOTPRESENT) {
-        klee_abort();
+        return -1;
       }
       klee_assert(FILES[n].pos == POS_UNOPENED);
 
@@ -404,13 +404,11 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd,
 
   // We don't really care about flags, since we're single-threaded
 
-  // addr must be NULL, unless we're mmapping hugepages
-  // TODO check the address somehow when it's a hugepage
   if (FILES[fd].content == FILE_CONTENT_HUGEPAGE) {
     // if it's a hugepage, length is well-defined
     klee_assert(length % (2048 * 1024) == 0);
   } else {
-    klee_assert(addr == NULL);
+    // ignore 'addr', it's a hint anyway, the OS is free to not use it
     klee_assert(length >= strlen(FILES[fd].content));
   }
 
@@ -578,6 +576,8 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
     // Driver symlink
     int driver_fd =
         stub_add_link(stub_pci_file(dev, "driver"), "/drivers/igb_uio");
+
+    stub_add_file(stub_pci_file(dev, "iommu/intel-iommu/cap"), FILE_CONTENT_NOTPRESENT);
 
     // 'uio' folder, itself containing an empty folder 'uioN' (where N is the
     // device number)

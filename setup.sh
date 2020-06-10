@@ -18,6 +18,9 @@ fi
 if [ -z ${MANPATH+x} ]; then
   export MANPATH=''
 fi
+if [ -z ${PROMPT_COMMAND+x} ]; then
+  export PROMPT_COMMAND=''
+fi
 
 
 VNDSDIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
@@ -72,7 +75,8 @@ if [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
   sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
 
-DPDK_RELEASE='17.11'
+DPDK_RELEASE='17.11.10'
+DPDK_SUFFIX='-stable' # e.g. for LTS releases '-stable', for non-LTS ''
 pushd "$BUILDDIR"
   if [ ! -f dpdk/.version ] || \
      [ "$(cat dpdk/.version)" != "$DPDK_RELEASE" ]; then
@@ -81,7 +85,7 @@ pushd "$BUILDDIR"
     wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
     tar xf dpdk.tar.xz
     rm dpdk.tar.xz
-    mv "dpdk-$DPDK_RELEASE" dpdk
+    mv "dpdk$DPDK_SUFFIX-$DPDK_RELEASE" dpdk
 
     echo 'export RTE_TARGET=x86_64-native-linuxapp-gcc' >> "$PATHSFILE"
     echo "export RTE_SDK=$BUILDDIR/dpdk" >> "$PATHSFILE"
@@ -106,7 +110,8 @@ popd
 # OCaml
 # =====
 
-sudo apt-get install -y opam m4
+# we depend on an OCaml package that needs libgmp-dev
+sudo apt-get install -y opam m4 libgmp-dev
 
 opam init -y
 # Opam 1.x doesn't have "create", later versions require it but only the first time

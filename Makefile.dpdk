@@ -172,8 +172,8 @@ all: clean autogen
 #              they're not UB and DPDK depends on them)
 #              also no unused-value, DPDK triggers that...
 VERIF_FLAGS := -c -g -emit-llvm -fsanitize=signed-integer-overflow -Wno-unused-value
-# Basic includes: NF root, KLEE, DPDK cmdline
-VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE) -I $(RTE_SDK)/lib/librte_cmdline
+# Basic includes: NF root, KLEE
+VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE)
 # Basic defines
 VERIF_DEFS := -D_GNU_SOURCE -DKLEE_VERIFICATION
 # Number of devices
@@ -185,10 +185,6 @@ VERIF_FILES += $(NF_FILES) loop.c
 # Models
 VERIF_FILES += $(SELF_DIR)/libvig/models/verified/*.c \
                $(SELF_DIR)/libvig/models/externals/*.c
-# DPDK cmdline parsing library, always included,
-# we don't want/need to model it... and the string function it uses
-VERIF_FILES += $(RTE_SDK)/lib/librte_cmdline/*.c \
-               $(RTE_SDK)/lib/librte_eal/common/eal_common_string_fns.c
 
 # The only thing we don't put in variables is the DPDK model headers,
 # since we don't want to use those for the other symbex targets
