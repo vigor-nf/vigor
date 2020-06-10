@@ -109,11 +109,13 @@ popd
 sudo apt-get install -y opam m4
 
 opam init -y
-# Opam 1.x doesn't have "create", later versions require it
+# Opam 1.x doesn't have "create", later versions require it but only the first time
 if opam --version | grep '^1.' >/dev/null ; then
   opam switch 4.06.0
 else
-  opam switch create 4.06.0
+  if ! opam switch list | grep -q 4.06 ; then
+    opam switch create 4.06.0
+  fi
 fi
 
 if ! grep -q opam "$PATHSFILE"; then
@@ -123,7 +125,7 @@ if ! grep -q opam "$PATHSFILE"; then
 fi
 
 # Codegenerator dependencies
-opam install goblint-cil core  -y
+opam install goblint-cil core -y
 
 
 
