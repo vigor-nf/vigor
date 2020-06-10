@@ -9,7 +9,6 @@
 #include <unistd.h>
 #include <rte_common.h>
 #include <rte_ethdev.h>
-#include <cmdline_parse_etheraddr.h>
 
 #include "libvig/verified/double-chain.h"
 #include "libvig/verified/map.h"
@@ -20,6 +19,7 @@
 #include "nf.h"
 #include "nf-util.h"
 #include "nf-log.h"
+#include "nf-parse.h"
 #include "bridge_config.h"
 #include "state.h"
 
@@ -176,8 +176,7 @@ static void read_static_ft_from_file(struct Map *stat_map,
     vector_borrow(stat_keys, count, (void **)&key);
 
     // Ouff... the strings are extracted, now let's parse them.
-    result = cmdline_parse_etheraddr(NULL, mac_addr_str, &key->addr,
-                                     sizeof(struct ether_addr));
+    result = nf_parse_etheraddr(mac_addr_str, &key->addr);
     if (result < 0) {
       NF_INFO("Invalid MAC address: %s, skip", mac_addr_str);
       continue;
@@ -234,8 +233,7 @@ static void read_static_ft_from_array(struct Map *stat_map,
     struct StaticKey *key = 0;
     vector_borrow(stat_keys, count, (void **)&key);
 
-    int result = cmdline_parse_etheraddr(NULL, static_rules[idx].mac_addr,
-                                         &key->addr, sizeof(struct ether_addr));
+    int result = nf_parse_etheraddr(static_rules[idx].mac_addr, &key->addr);
     if (result < 0) {
       NF_INFO("Invalid MAC address: %s, skip", static_rules[idx].mac_addr);
       continue;
