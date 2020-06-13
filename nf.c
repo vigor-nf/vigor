@@ -213,7 +213,7 @@ static void lcore_main(void) {
     if (rte_eth_rx_burst(VIGOR_DEVICE, 0, &mbuf, 1) != 0) {
       uint8_t* packet = rte_pktmbuf_mtod(mbuf, uint8_t*);
       packet_state_total_length(packet, &(mbuf->pkt_len));
-      uint16_t dst_device = nf_process(mbuf->port, packet, mbuf->data_len, VIGOR_NOW);
+      uint16_t dst_device = nf_process(mbuf->port, packet, mbuf->pkt_len, VIGOR_NOW);
       nf_return_all_chunks(packet);
 
       if (dst_device == VIGOR_DEVICE) {
@@ -274,7 +274,7 @@ static void lcore_main(void) {
       vigor_time_t VIGOR_NOW = current_time();
       uint8_t* packet = rte_pktmbuf_mtod(mbufs[n], uint8_t*);
       packet_state_total_length(packet, &(mbufs[n]->pkt_len));
-      uint16_t dst_device = nf_process(mbufs[n]->port, packet, mbufs[n]->data_len, VIGOR_NOW);
+      uint16_t dst_device = nf_process(mbufs[n]->port, packet, mbufs[n]->pkt_len, VIGOR_NOW);
       nf_return_all_chunks(packet);
 
       if (dst_device == VIGOR_DEVICE) {

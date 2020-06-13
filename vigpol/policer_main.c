@@ -108,7 +108,7 @@ bool nf_init(void) {
   return dynamic_ft != NULL;
 }
 
-int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
   NF_DEBUG("Received packet");
   struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
 
@@ -128,7 +128,7 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_t
     return config.wan_device;
   } else if (device == config.wan_device) {
     // Police incoming packets.
-    bool fwd = policer_check_tb(ipv4_header->dst_addr, buffer_length, now);
+    bool fwd = policer_check_tb(ipv4_header->dst_addr, packet_length, now);
 
     if (fwd) {
       NF_DEBUG("Incoming packet within policed rate. Forwarding.");

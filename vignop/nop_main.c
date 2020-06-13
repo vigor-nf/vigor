@@ -8,7 +8,7 @@ bool nf_init(void) {
   return true;
 }
 
-int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
   // Mark now as unused, we don't care about time
   (void)now;
 
