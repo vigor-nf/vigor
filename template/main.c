@@ -23,7 +23,7 @@ bool nf_init(void) {
   return alloc_state(42) != NULL;
 }
 
-int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
   // ===
   // Process the packet here, and return either the device on which the packet
   // should be forwarded, or:

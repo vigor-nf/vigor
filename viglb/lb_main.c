@@ -17,7 +17,7 @@ bool nf_init(void) {
   return balancer != NULL;
 }
 
-int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
   lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
 
