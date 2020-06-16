@@ -19,7 +19,7 @@ bool nf_init(void) {
   return flow_manager != NULL;
 }
 
-int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
   NF_DEBUG("It is %" PRId64, now);
 
   flow_manager_expire(flow_manager, now);
