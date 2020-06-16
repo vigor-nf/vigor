@@ -34,8 +34,8 @@ if not a_packet_received:
 # The on_mismatch argument has the same semantics as a return; if the input packet did not have this header, it will return that value
 # ===
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
-h2 = pop_header(ipv4, on_mismatch=([],[]))
-h1 = pop_header(ether, on_mismatch=([],[]))
+h2 = pop_header(rte_ipv4, on_mismatch=([],[]))
+h1 = pop_header(rte_ether, on_mismatch=([],[]))
 
 # ===
 # You can write assertions
@@ -54,9 +54,9 @@ if 1 == 2:
 # ... (Python's ellipsis) indicates the framework to ignore the corresponding field.
 # i.e. if you do not want to specify ether.saddr value, because it is set by the L2, you can
 # "skip" when specifying the ethernet header with
-# ether(h1, saddr=...) - this will enforce the same ethernet header as h1,
+# rte_ether(h1, saddr=...) - this will enforce the same ethernet header as h1,
 # but with an arbitrary saddr
 return ([1 - received_on_port],
-        [ether(h1, saddr=..., daddr=...),
-         ipv4(h2, cksum=..., saddr=..., daddr=...),
+        [rte_ether(h1, saddr=..., daddr=...),
+         rte_ipv4(h2, cksum=..., saddr=..., daddr=...),
          tcpudp(src_port=..., dst_port=...)])

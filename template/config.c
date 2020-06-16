@@ -24,8 +24,8 @@ void nf_config_init(int argc, char **argv) {
   struct option long_options[] = { { "eth-dest", required_argument, NULL, 'm' },
                                    { NULL, 0, NULL, 0 } };
 
-  config.device_macs = calloc(nb_devices, sizeof(struct ether_addr));
-  config.endpoint_macs = calloc(nb_devices, sizeof(struct ether_addr));
+  config.device_macs = calloc(nb_devices, sizeof(struct rte_ether_addr));
+  config.endpoint_macs = calloc(nb_devices, sizeof(struct rte_ether_addr));
 
   // Set the devices' own MACs
   for (uint16_t device = 0; device < nb_devices; device++) {
