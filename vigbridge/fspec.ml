@@ -4,7 +4,7 @@ open Fspec_api
 open Ir
 open Common_fspec
 
-let static_key_struct = Ir.Str ( "StaticKey", ["addr", ether_addr_struct;
+let static_key_struct = Ir.Str ( "StaticKey", ["addr", rte_ether_addr_struct;
                                                "device", Uint16] )
 let dynamic_value_struct = Ir.Str ( "DynamicValue", ["device", Uint16] )
 
@@ -12,8 +12,8 @@ let dynamic_value_struct = Ir.Str ( "DynamicValue", ["device", Uint16] )
 module Iface : Fspec_api.Spec =
 struct
 (* FIXME: borrowed from ../nf/vigbridge/bridge_data_spec.ml*)
-let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
-                  "dyn_keys", Vector ("ether_addr", "capacity", "");
+let containers = ["dyn_map", Map ("rte_ether_addr", "capacity", "");
+                  "dyn_keys", Vector ("rte_ether_addr", "capacity", "");
                   "dyn_vals", Vector ("DynamicValue", "capacity", "dyn_val_condition");
                   "st_map", Map ("StaticKey", "stat_capacity", "stat_map_condition");
                   "st_vec", Vector ("StaticKey", "stat_capacity", "");
@@ -21,10 +21,10 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "capacity", UInt32;
                   "stat_capacity", UInt32;
                   "dev_count", UInt32;
-                  "dyn_emap", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
+                  "dyn_emap", EMap ("rte_ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
 let records = String.Map.of_alist_exn
-    ["ether_addr", ether_addr_struct;
+    ["rte_ether_addr", rte_ether_addr_struct;
      "DynamicValue", dynamic_value_struct;
      "StaticKey", static_key_struct]
 end

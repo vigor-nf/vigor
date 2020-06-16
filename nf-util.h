@@ -20,58 +20,58 @@
 #endif // KLEE_VERIFICATION
 
 // rte_ether
-struct ether_addr;
-struct ether_hdr;
+struct rte_ether_addr;
+struct rte_ether_hdr;
 
 #define IP_MIN_SIZE_WORDS 5
 #define WORD_SIZE 4
 
 #ifdef KLEE_VERIFICATION
 static struct str_field_descr ether_fields[] = {
-  { offsetof(struct ether_hdr, ether_type), sizeof(uint16_t), 0, "ether_type" },
-  { offsetof(struct ether_hdr, d_addr), sizeof(struct ether_addr), 0,
+  { offsetof(struct rte_ether_hdr, ether_type), sizeof(uint16_t), 0, "ether_type" },
+  { offsetof(struct rte_ether_hdr, d_addr), sizeof(struct rte_ether_addr), 0,
     "d_addr" },
-  { offsetof(struct ether_hdr, s_addr), sizeof(struct ether_addr), 0, "s_addr" }
+  { offsetof(struct rte_ether_hdr, s_addr), sizeof(struct rte_ether_addr), 0, "s_addr" }
 };
 static struct str_field_descr ipv4_fields[] = {
-  { offsetof(struct ipv4_hdr, version_ihl), sizeof(uint8_t), 0, "version_ihl" },
-  { offsetof(struct ipv4_hdr, type_of_service), sizeof(uint8_t), 0,
+  { offsetof(struct rte_ipv4_hdr, version_ihl), sizeof(uint8_t), 0, "version_ihl" },
+  { offsetof(struct rte_ipv4_hdr, type_of_service), sizeof(uint8_t), 0,
     "type_of_service" },
-  { offsetof(struct ipv4_hdr, total_length), sizeof(uint16_t), 0,
+  { offsetof(struct rte_ipv4_hdr, total_length), sizeof(uint16_t), 0,
     "total_length" },
-  { offsetof(struct ipv4_hdr, packet_id), sizeof(uint16_t), 0, "packet_id" },
-  { offsetof(struct ipv4_hdr, fragment_offset), sizeof(uint16_t), 0,
+  { offsetof(struct rte_ipv4_hdr, packet_id), sizeof(uint16_t), 0, "packet_id" },
+  { offsetof(struct rte_ipv4_hdr, fragment_offset), sizeof(uint16_t), 0,
     "fragment_offset" },
-  { offsetof(struct ipv4_hdr, time_to_live), sizeof(uint8_t), 0,
+  { offsetof(struct rte_ipv4_hdr, time_to_live), sizeof(uint8_t), 0,
     "time_to_live" },
-  { offsetof(struct ipv4_hdr, next_proto_id), sizeof(uint8_t), 0,
+  { offsetof(struct rte_ipv4_hdr, next_proto_id), sizeof(uint8_t), 0,
     "next_proto_id" },
-  { offsetof(struct ipv4_hdr, hdr_checksum), sizeof(uint16_t), 0,
+  { offsetof(struct rte_ipv4_hdr, hdr_checksum), sizeof(uint16_t), 0,
     "hdr_checksum" },
-  { offsetof(struct ipv4_hdr, src_addr), sizeof(uint32_t), 0, "src_addr" },
-  { offsetof(struct ipv4_hdr, dst_addr), sizeof(uint32_t), 0, "dst_addr" }
+  { offsetof(struct rte_ipv4_hdr, src_addr), sizeof(uint32_t), 0, "src_addr" },
+  { offsetof(struct rte_ipv4_hdr, dst_addr), sizeof(uint32_t), 0, "dst_addr" }
 };
 static struct str_field_descr tcpudp_fields[] = {
   { offsetof(struct tcpudp_hdr, src_port), sizeof(uint16_t), 0, "src_port" },
   { offsetof(struct tcpudp_hdr, dst_port), sizeof(uint16_t), 0, "dst_port" }
 };
 static struct nested_field_descr ether_nested_fields[] = {
-  { offsetof(struct ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes" },
-  { offsetof(struct ether_hdr, s_addr), 0, sizeof(uint8_t), 6, "addr_bytes" }
+  { offsetof(struct rte_ether_hdr, d_addr), 0, sizeof(uint8_t), 6, "addr_bytes" },
+  { offsetof(struct rte_ether_hdr, s_addr), 0, sizeof(uint8_t), 6, "addr_bytes" }
 };
 #endif // KLEE_VERIFICATION
 
-bool nf_has_ipv4_header(struct ether_hdr *header);
+bool nf_has_ipv4_header(struct rte_ether_hdr *header);
 
-bool nf_has_tcpudp_header(struct ipv4_hdr *header);
+bool nf_has_tcpudp_header(struct rte_ipv4_hdr *header);
 
-void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
+void nf_set_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet);
 
 uintmax_t nf_util_parse_int(const char *str, const char *name, int base,
                             char next);
 
-char *nf_mac_to_str(struct ether_addr *addr);
+char *nf_mac_to_str(struct rte_ether_addr *addr);
 
 char *nf_ipv4_to_str(uint32_t addr);
 
@@ -113,26 +113,26 @@ static inline void nf_return_all_chunks(void *p) {
   }
 }
 
-static inline struct ether_hdr *nf_then_get_ether_header(void *p) {
-  CHUNK_LAYOUT_N(p, ether_hdr, ether_fields, ether_nested_fields);
-  void *hdr = nf_borrow_next_chunk(p, sizeof(struct ether_hdr));
-  return (struct ether_hdr *)hdr;
+static inline struct rte_ether_hdr *nf_then_get_ether_header(void *p) {
+  CHUNK_LAYOUT_N(p, rte_ether_hdr, ether_fields, ether_nested_fields);
+  void *hdr = nf_borrow_next_chunk(p, sizeof(struct rte_ether_hdr));
+  return (struct rte_ether_hdr *)hdr;
 }
 
-static inline struct ipv4_hdr *
+static inline struct rte_ipv4_hdr *
 nf_then_get_ipv4_header(void *ether_header_, void *p, uint8_t **ip_options) {
-  struct ether_hdr *ether_header = (struct ether_hdr *)ether_header_;
+  struct rte_ether_hdr *ether_header = (struct rte_ether_hdr *)ether_header_;
   *ip_options = NULL;
 
   uint16_t unread_len = packet_get_unread_length(p);
   if ((!nf_has_ipv4_header(ether_header)) |
-      (unread_len < sizeof(struct ipv4_hdr))) {
+      (unread_len < sizeof(struct rte_ipv4_hdr))) {
     return NULL;
   }
 
-  CHUNK_LAYOUT(p, ipv4_hdr, ipv4_fields);
-  struct ipv4_hdr *hdr =
-      (struct ipv4_hdr *)nf_borrow_next_chunk(p, sizeof(struct ipv4_hdr));
+  CHUNK_LAYOUT(p, rte_ipv4_hdr, ipv4_fields);
+  struct rte_ipv4_hdr *hdr =
+      (struct rte_ipv4_hdr *)nf_borrow_next_chunk(p, sizeof(struct rte_ipv4_hdr));
 
   uint8_t ihl = hdr->version_ihl & 0x0f;
   if ((ihl < IP_MIN_SIZE_WORDS) |
@@ -141,7 +141,7 @@ nf_then_get_ipv4_header(void *ether_header_, void *p, uint8_t **ip_options) {
   }
   uint16_t ip_options_length = (ihl - IP_MIN_SIZE_WORDS) * WORD_SIZE;
   if ((ip_options_length != 0) &
-      (unread_len - sizeof(struct ipv4_hdr) >= ip_options_length)) {
+      (unread_len - sizeof(struct rte_ipv4_hdr) >= ip_options_length)) {
     // Do not really trace the ip options chunk, as it's length
     // is unknown statically
     CHUNK_LAYOUT_IMPL(p, 1, NULL, 0, NULL, 0, "ipv4_options");
@@ -151,7 +151,7 @@ nf_then_get_ipv4_header(void *ether_header_, void *p, uint8_t **ip_options) {
 }
 
 static inline struct tcpudp_hdr *
-nf_then_get_tcpudp_header(struct ipv4_hdr *ip_header, void *p) {
+nf_then_get_tcpudp_header(struct rte_ipv4_hdr *ip_header, void *p) {
   if ((!nf_has_tcpudp_header(ip_header)) |
       (packet_get_unread_length(p) < sizeof(struct tcpudp_hdr))) {
     return NULL;

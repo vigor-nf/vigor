@@ -1,0 +1,309 @@
+rm -rf out
+rm -rf _build
+find -iname '*.cmo' -delete
+find -iname '*.cma' -delete
+find -iname '*.log' -delete
+rm -f validator.byte
+corebuild -no-hygiene -use-menhir -lib dynlink -lib str \
+          validator.byte -use-ocamlfind -cflag -unsafe-string
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules validator.ml > validator.ml.depends
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules common_fspec.ml > common_fspec.ml.depends
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules fspec_api.ml > fspec_api.ml.depends
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules ir.ml > ir.ml.depends
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o ir.cmo ir.ml
++ ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o ir.cmo ir.ml
+File "ir.ml", line 147, characters 6-15:
+Warning 26: unused variable term_type.
+File "ir.ml", line 184, characters 56-65:
+Warning 27: unused variable term_type.
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o fspec_api.cmo fspec_api.ml
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules import.mli > import.mli.depends
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules verifier.ml > verifier.ml.depends
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules render.mli > render.mli.depends
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o render.cmi render.mli
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o common_fspec.cmo common_fspec.ml
++ ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o common_fspec.cmo common_fspec.ml
+File "common_fspec.ml", line 945, characters 66-67:
+Warning 29: unescaped end-of-line in a string constant (non-portable code)
+File "common_fspec.ml", line 249, characters 55-62:
+Warning 9: the following labels are not bound in this record pattern:
+arg_exps, tmp_gen, is_tip, arg_types, exptr_types, ret_type
+Either bind these labels explicitly or add '; _' to the pattern.
+File "common_fspec.ml", line 529, characters 28-37:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(Zeroptr|Undef|Apply (_, _)|Id _|Struct (_, _)|Array _|Int _|Bool _|Fptr _)
+File "common_fspec.ml", line 661, characters 22-30:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(Zeroptr|Undef|Apply (_, _)|Id _|Struct (_, _)|Array _|Int _|Bool _|Fptr _)
+File "common_fspec.ml", line 674, characters 22-30:
+Warning 8: this pattern-matching is not exhaustive.
+Here is an example of a case that is not matched:
+(Zeroptr|Undef|Apply (_, _)|Id _|Struct (_, _)|Array _|Int _|Bool _|Fptr _)
+File "common_fspec.ml", line 1457, characters 25-32:
+Warning 9: the following labels are not bound in this record pattern:
+arg_exps, tmp_gen, is_tip, arg_types, exptr_types, ret_type
+Either bind these labels explicitly or add '; _' to the pattern.
+File "common_fspec.ml", line 409, characters 60-69:
+Warning 27: unused variable invariant.
+File "common_fspec.ml", line 608, characters 21-25:
+Warning 27: unused variable args.
+File "common_fspec.ml", line 608, characters 26-33:
+Warning 27: unused variable tmp_gen.
+File "common_fspec.ml", line 733, characters 43-50:
+Warning 27: unused variable records.
+File "common_fspec.ml", line 739, characters 57-61:
+Warning 27: unused variable name.
+File "common_fspec.ml", line 876, characters 39-43:
+Warning 27: unused variable args.
+File "common_fspec.ml", line 1143, characters 11-15:
+Warning 27: unused variable args.
+File "common_fspec.ml", line 1143, characters 16-23:
+Warning 27: unused variable tmp_gen.
+File "common_fspec.ml", line 1472, characters 28-33:
+Warning 27: unused variable chain.
+File "common_fspec.ml", line 1559, characters 55-56:
+Warning 27: unused variable i.
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o import.cmi import.mli
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o verifier.cmo verifier.ml
++ ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o verifier.cmo verifier.ml
+File "verifier.ml", line 9, characters 47-57:
+Warning 27: unused variable lino_fname.
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o validator.cmo validator.ml
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules import.ml > import.ml.depends
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules trace_prefix.ml > trace_prefix.ml.depends
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o trace_prefix.cmo trace_prefix.ml
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o import.cmo import.ml
++ ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o import.cmo import.ml
+File "import.ml", line 3, characters 0-7:
+Warning 45: this open statement shadows the label value (which is later used)
+File "import.ml", line 4, characters 0-14:
+Warning 45: this open statement shadows the label args (which is later used)
+File "import.ml", line 4, characters 0-14:
+Warning 45: this open statement shadows the label ret_type (which is later used)
+File "import.ml", line 4, characters 0-14:
+Warning 45: this open statement shadows the label ret_name (which is later used)
+File "import.ml", line 4, characters 0-14:
+Warning 45: this open statement shadows the label ret_val (which is later used)
+File "import.ml", line 531, characters 29-30:
+Warning 27: unused variable t.
+File "import.ml", line 761, characters 42-47:
+Warning 27: unused variable width.
+File "import.ml", line 766, characters 42-47:
+Warning 27: unused variable width.
+File "import.ml", line 960, characters 50-55:
+Warning 27: unused variable fname.
+File "import.ml", line 1627, characters 18-24:
+Warning 27: unused variable ptee_t.
+File "import.ml", line 1632, characters 20-26:
+Warning 27: unused variable ptee_t.
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules render.ml > render.ml.depends
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o render.cmo render.ml
++ ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o render.cmo render.ml
+File "render.ml", line 461, characters 4-29:
+Warning 32: unused value guess_support_assignments.
+File "render.ml", line 543, characters 6-19:
+Warning 26: unused variable unalloc_symbs.
+ocamlfind ocamlc dynlink.cma str.cma -linkpkg -g -thread -package core ir.cmo fspec_api.cmo common_fspec.cmo trace_prefix.cmo import.cmo render.cmo verifier.cmo validator.cmo -o validator.byte
+ocamlfind ocamldep -package core -ppx 'ppx-jane -as-ppx' -modules vignop_fspec.ml > vignop_fspec.ml.depends
+ocamlfind ocamlc -c -w A-4-33-40-41-42-43-34-44 -strict-sequence -unsafe-string -g -bin-annot -short-paths -thread -package core -ppx 'ppx-jane -as-ppx' -o vignop_fspec.cmo vignop_fspec.ml
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[1/22] ../vignop/klee-last/call-prefix000013.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[2/22] ../vignop/klee-last/call-prefix000018.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[4/22] ../vignop/klee-last/call-prefix000012.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[5/22] ../vignop/klee-last/call-prefix000020.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[5/22] ../vignop/klee-last/call-prefix000019.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[6/22] ../vignop/klee-last/call-prefix000010.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[7/22] ../vignop/klee-last/call-prefix000011.txt : Uncaught
+Uncaught exception:
+  
+  (Failure
+   "Can not guess a dynamic type for packet_borrow_next_chunk/4 argument # 2")
+
+Raised at file "pervasives.ml", line 32, characters 22-33
+Called from file "import.ml", line 1920, characters 19-134
+Called from file "src/list.ml", line 475, characters 60-69
+Called from file "list.ml", line 111, characters 24-34
+Called from file "src/list.ml", line 475, characters 6-72
+Called from file "import.ml", line 1914, characters 10-797
+Called from file "list.ml", line 111, characters 24-34
+Called from file "import.ml", line 2058, characters 26-59
+Called from file "validator.ml", line 27, characters 4-233
+Called from file "validator.ml", line 62, characters 2-82
+[8/22] ../vignop/klee-last/call-prefix000021.txt : Uncaught
+out/000008.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[9/22] ../vignop/klee-last/call-prefix000008.txt : Invalid
+out/000005.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[11/22] ../vignop/klee-last/call-prefix000005.txt : Invalid
+out/000002.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[11/22] ../vignop/klee-last/call-prefix000002.txt : Invalid
+out/000014.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[12/22] ../vignop/klee-last/call-prefix000014.txt : Invalid
+out/000003.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[13/22] ../vignop/klee-last/call-prefix000003.txt : Invalid
+out/000009.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[14/22] ../vignop/klee-last/call-prefix000009.txt : Invalid
+out/000017.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[15/22] ../vignop/klee-last/call-prefix000017.txt : Invalid
+out/000007.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[16/22] ../vignop/klee-last/call-prefix000007.txt : Invalid
+out/000001.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[18/22] ../vignop/klee-last/call-prefix000001.txt : Invalid
+out/000006.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[18/22] ../vignop/klee-last/call-prefix000006.txt : Invalid
+out/000022.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[19/22] ../vignop/klee-last/call-prefix000022.txt : Invalid
+out/000015.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[20/22] ../vignop/klee-last/call-prefix000015.txt : Invalid
+out/000004.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[21/22] ../vignop/klee-last/call-prefix000004.txt : Invalid
+out/000016.c
+../libvig/verified/ether.h(12,5-30): No such predicate: struct_ether_addr_padding
+Invalid output.
+[22/22] ../vignop/klee-last/call-prefix000016.txt : Invalid
+Test completed.
+total:         22
+success:       0
+inconsistent:  0
+assertion:     0
+no chunks:     0
+cannot prove:  0
+leaks:         0
+syntax err:    0
+type mismatch: 0
+parse errs:    0
+spec errs:     0
+arithmetic:    0
+vl exception:  8
+unknown fail:  14

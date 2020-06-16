@@ -23,9 +23,9 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_t
   flow_manager_expire(flow_manager, now);
   NF_DEBUG("Flows have been expired");
 
-  struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
+  struct rte_ether_hdr *ether_header = nf_then_get_ether_header(buffer);
   uint8_t *ip_options;
-  struct ipv4_hdr *ipv4_header =
+  struct rte_ipv4_hdr *ipv4_header =
       nf_then_get_ipv4_header(ether_header, buffer, &ip_options);
   if (ipv4_header == NULL) {
     NF_DEBUG("Not IPv4, dropping");
@@ -71,7 +71,7 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_t
     dst_device = config.wan_device;
   }
 
-  concretize_devices(&dst_device, rte_eth_dev_count());
+  concretize_devices(&dst_device, rte_eth_dev_count_avail());
 
   ether_header->s_addr = config.device_macs[dst_device];
   ether_header->d_addr = config.endpoint_macs[dst_device];

@@ -25,6 +25,6 @@ void lb_expire_flows(struct LoadBalancer *balancer, vigor_time_t now);
 void lb_expire_backends(struct LoadBalancer *balancer, vigor_time_t now);
 void lb_process_heartbit(struct LoadBalancer *balancer,
                          struct LoadBalancedFlow *flow,
-                         struct ether_addr mac_addr, int nic, vigor_time_t now);
+                         struct rte_ether_addr mac_addr, int nic, vigor_time_t now);
 
 #endif // _LB_BALANCER_H_INCLUDED_

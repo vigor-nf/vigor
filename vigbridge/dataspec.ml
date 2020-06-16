@@ -2,8 +2,8 @@ open Data_spec
 open Core
 open Ir
 
-let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
-                  "dyn_keys", Vector ("ether_addr", "capacity", "");
+let containers = ["dyn_map", Map ("rte_ether_addr", "capacity", "");
+                  "dyn_keys", Vector ("rte_ether_addr", "capacity", "");
                   "dyn_vals", Vector ("DynamicValue", "capacity", "dyn_val_condition");
                   "st_map", Map ("StaticKey", "stat_capacity", "stat_map_condition");
                   "st_vec", Vector ("StaticKey", "stat_capacity", "");
@@ -11,7 +11,7 @@ let containers = ["dyn_map", Map ("ether_addr", "capacity", "");
                   "capacity", UInt32;
                   "stat_capacity", UInt32;
                   "dev_count", UInt32;
-                  "dyn_emap", EMap ("ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
+                  "dyn_emap", EMap ("rte_ether_addr", "dyn_map", "dyn_keys", "dyn_heap")]
 
 let constraints = ["dyn_val_condition", ( "DynamicValue",
                                           [Bop (Le, {t=Unknown;v=Int 0}, {t=Unknown;v=Id "device"});

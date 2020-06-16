@@ -75,8 +75,8 @@ if [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
   sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
 
-DPDK_RELEASE='17.11.10'
-DPDK_SUFFIX='-stable' # e.g. for LTS releases '-stable', for non-LTS ''
+DPDK_RELEASE='20.05'
+DPDK_SUFFIX='' # e.g. for LTS releases '-stable', for non-LTS ''
 pushd "$BUILDDIR"
   if [ ! -f dpdk/.version ] || \
      [ "$(cat dpdk/.version)" != "$DPDK_RELEASE" ]; then

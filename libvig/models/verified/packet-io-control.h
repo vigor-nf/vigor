@@ -6,7 +6,7 @@
 #include <rte_ether.h>
 #include <rte_ip.h>
 #include "libvig/verified/tcpudp_hdr.h"
-#define MBUF_MIN_SIZE (sizeof(struct ether_hdr) + sizeof(struct ipv4_hdr) + sizeof(struct tcpudp_hdr))
+#define MBUF_MIN_SIZE (sizeof(struct rte_ether_hdr) + sizeof(struct rte_ipv4_hdr) + sizeof(struct tcpudp_hdr))
 
 typedef bool (*chunk_constraint)(void *);
 

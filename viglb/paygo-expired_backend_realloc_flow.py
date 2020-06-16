@@ -8,8 +8,8 @@ if a_packet_received:
     backend_ip_emap.expire_all(now - BACKEND_EXP_TIME)
 
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
-h2 = pop_header(ipv4, on_mismatch=([],[]))
-h1 = pop_header(ether, on_mismatch=([],[]))
+h2 = pop_header(rte_ipv4, on_mismatch=([],[]))
+h1 = pop_header(rte_ether, on_mismatch=([],[]))
 
 packet_flow = LoadBalancedFlowc(h2.saddr, h2.daddr, h3.src_port, h3.dst_port, h2.npid)
 if received_on_port == EXT_PORT and flow_emap.has(packet_flow):

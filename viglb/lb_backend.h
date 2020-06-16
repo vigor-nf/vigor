@@ -6,7 +6,7 @@
 
 struct LoadBalancedBackend {
   uint16_t nic;
-  struct ether_addr mac;
+  struct rte_ether_addr mac;
   uint32_t ip;
 };
 

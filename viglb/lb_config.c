@@ -14,7 +14,7 @@
 
 void nf_config_init(int argc, char **argv) {
   // Init
-  uint16_t nb_devices = rte_eth_dev_count();
+  uint16_t nb_devices = rte_eth_dev_count_avail();
 
   struct option long_options[] = {
     { "flow-expiration", required_argument, NULL, 'x' },
@@ -84,8 +84,8 @@ void nf_config_init(int argc, char **argv) {
   optind = 1;
 
   // Fill in the mac addresses
-  config.device_macs = malloc(sizeof(struct ether_addr) * rte_eth_dev_count());
-  for (int i = 0; i < rte_eth_dev_count(); ++i) {
+  config.device_macs = malloc(sizeof(struct rte_ether_addr) * rte_eth_dev_count_avail());
+  for (int i = 0; i < rte_eth_dev_count_avail(); ++i) {
     rte_eth_macaddr_get(i, &config.device_macs[i]);
   }
 }

@@ -25,7 +25,7 @@ void nf_config_init(int argc, char **argv) {
   config.dyn_capacity = DEFAULT_CAPACITY;    // MAC addresses
   config.static_config_fname[0] = '\0'; // no static filtering configuration
 
-  unsigned nb_devices = rte_eth_dev_count();
+  unsigned nb_devices = rte_eth_dev_count_avail();
 
   struct option long_options[] = { { "expire", required_argument, NULL, 't' },
                                    { "capacity", required_argument, NULL, 'c' },

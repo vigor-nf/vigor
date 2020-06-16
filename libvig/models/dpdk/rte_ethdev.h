@@ -71,7 +71,7 @@ int devices_promiscuous[STUB_DEVICES_COUNT];
 // To allocate mbufs
 struct rte_mempool *devices_rx_mempool[STUB_DEVICES_COUNT];
 
-static inline uint16_t rte_eth_dev_count(void) { return STUB_DEVICES_COUNT; }
+static inline uint16_t rte_eth_dev_count_avail(void) { return STUB_DEVICES_COUNT; }
 
 static inline int rte_eth_dev_configure(uint16_t port_id, uint16_t nb_rx_queue,
                                         uint16_t nb_tx_queue,
@@ -136,13 +136,13 @@ static inline int rte_eth_promiscuous_get(uint16_t port_id) {
 }
 
 static inline int rte_eth_dev_socket_id(uint16_t port_id) {
-  klee_assert(port_id < rte_eth_dev_count());
+  klee_assert(port_id < rte_eth_dev_count_avail());
 
   return 0;
 }
 
 static inline void rte_eth_macaddr_get(uint16_t port_id,
-                                       struct ether_addr *mac_addr) {
+                                       struct rte_ether_addr *mac_addr) {
   // TODO?
 }
 
@@ -200,7 +200,7 @@ static inline uint16_t rte_eth_rx_burst(uint16_t port_id, uint16_t queue_id,
   uint16_t data_length = klee_int("data_len");
 
   klee_assume(data_length <= packet_length);
-  klee_assume(sizeof(struct ether_hdr) <= data_length);
+  klee_assume(sizeof(struct rte_ether_hdr) <= data_length);
 
   // Keep concrete values for what a driver guarantees
   // (assignments are in the same order as the rte_mbuf declaration)

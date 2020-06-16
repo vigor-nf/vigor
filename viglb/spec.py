@@ -8,8 +8,8 @@ if a_packet_received:
     backend_ip_emap.expire_all(now - BACKEND_EXP_TIME)
 
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
-h2 = pop_header(ipv4, on_mismatch=([],[]))
-h1 = pop_header(ether, on_mismatch=([],[]))
+h2 = pop_header(rte_ipv4, on_mismatch=([],[]))
+h1 = pop_header(rte_ether, on_mismatch=([],[]))
 
 assert a_packet_received
 assert h1.type == 8 # 0x0800 == IPv4 in big endian
@@ -25,8 +25,8 @@ if received_on_port == EXT_PORT: # Packet from the external network - client
             flow_emap.refresh_idx(flow_emap.get(packet_flow), now)
             backend = backends.get(backend_id)
             return ([backend.nic],
-                    [ether(h1, saddr=..., daddr=backend.mac),
-                     ipv4(h2, cksum=..., daddr=backend.ip),
+                    [rte_ether(h1, saddr=..., daddr=backend.mac),
+                     rte_ipv4(h2, cksum=..., daddr=backend.ip),
                      tcpudp(h3)])
         else:
             flow_emap.erase(packet_flow)
@@ -42,8 +42,8 @@ if received_on_port == EXT_PORT: # Packet from the external network - client
                 flow_id_to_backend_id.set(idx, bknd)
             backend = backends.get(bknd)
             return ([backend.nic],
-                    [ether(h1, saddr=..., daddr=backend.mac),
-                     ipv4(h2, cksum=..., daddr=backend.ip),
+                    [rte_ether(h1, saddr=..., daddr=backend.mac),
+                     rte_ipv4(h2, cksum=..., daddr=backend.ip),
                      tcpudp(h3)])
         else:
             return ([],[])

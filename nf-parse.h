@@ -6,7 +6,7 @@
 
 #include <rte_ether.h>
 
-bool nf_parse_etheraddr(const char* str, struct ether_addr* addr)
+bool nf_parse_etheraddr(const char* str, struct rte_ether_addr* addr)
 {
   return sscanf(str, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
                 addr->addr_bytes + 0,

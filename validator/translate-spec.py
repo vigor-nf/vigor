@@ -3,8 +3,8 @@ import ast
 import sys
 import os
 
-protocolHeaders = {'ether' : ['saddr', 'daddr', 'type'],
-                   'ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
+protocolHeaders = {'rte_ether' : ['saddr', 'daddr', 'type'],
+                   'rte_ipv4' : ['vihl', 'tos', 'len', 'pid', 'foff',
                              'ttl', 'npid', 'cksum', 'saddr', 'daddr'],
                    'tcpudp' : ['src_port', 'dst_port']}
 emap = {'name' : 'emap',

@@ -10,7 +10,7 @@ let lb_flow_struct = Ir.Str ( "LoadBalancedFlow", ["src_ip", Uint32;
                                                    "dst_port", Uint16;
                                                    "protocol", Uint8;])
 let lb_backend_struct = Ir.Str ( "LoadBalancedBackend", ["nic", Uint16;
-                                                         "mac", ether_addr_struct;
+                                                         "mac", rte_ether_addr_struct;
                                                          "ip", Uint32])
 
 let ip_addr_struct = Ir.Str("ip_addr", ["addr", Uint32])

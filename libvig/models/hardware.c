@@ -20,8 +20,8 @@
 
 
 struct stub_mbuf_content {
-  struct ether_hdr ether;
-  struct ipv4_hdr ipv4;
+  struct rte_ether_hdr ether;
+  struct rte_ipv4_hdr ipv4;
 };
 
 
