@@ -21,10 +21,10 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
   lb_expire_flows(balancer, now);
   lb_expire_backends(balancer, now);
 
-  struct rte_ether_hdr *rte_ether_header = nf_then_get_ether_header(buffer);
+  struct rte_ether_hdr *rte_ether_header = nf_then_get_rte_ether_header(buffer);
   uint8_t *ip_options;
   struct rte_ipv4_hdr *rte_ipv4_header =
-      nf_then_get_ipv4_header(rte_ether_header, buffer, &ip_options);
+      nf_then_get_rte_ipv4_header(rte_ether_header, buffer, &ip_options);
   if (rte_ipv4_header == NULL) {
     NF_DEBUG("Malformed IPv4, dropping");
     return device;
@@ -61,7 +61,7 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
     rte_ether_header->d_addr = backend.mac;
 
     // Checksum
-    nf_set_ipv4_udptcp_checksum(rte_ipv4_header, tcpudp_header, buffer);
+    nf_set_rte_ipv4_udptcp_checksum(rte_ipv4_header, tcpudp_header, buffer);
   }
 
   return backend.nic;

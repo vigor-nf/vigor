@@ -126,7 +126,7 @@ void nf_config_print(void) {
           config.lan_main_device);
   NF_INFO("WAN device: %" PRIu16, config.wan_device);
 
-  char *ext_ip_str = nf_ipv4_to_str(config.external_addr);
+  char *ext_ip_str = nf_rte_ipv4_to_str(config.external_addr);
   NF_INFO("External IP: %s", ext_ip_str);
   free(ext_ip_str);
 

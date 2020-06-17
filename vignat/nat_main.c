@@ -25,16 +25,16 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
   flow_manager_expire(flow_manager, now);
   NF_DEBUG("Flows have been expired");
 
-  struct rte_ether_hdr *ether_header = nf_then_get_ether_header(buffer);
+  struct rte_ether_hdr *rte_ether_header = nf_then_get_rte_ether_header(buffer);
   uint8_t *ip_options;
-  struct rte_ipv4_hdr *ipv4_header =
-      nf_then_get_ipv4_header(ether_header, buffer, &ip_options);
-  if (ipv4_header == NULL) {
+  struct rte_ipv4_hdr *rte_ipv4_header =
+      nf_then_get_rte_ipv4_header(rte_ether_header, buffer, &ip_options);
+  if (rte_ipv4_header == NULL) {
     NF_DEBUG("Not IPv4, dropping");
     return device;
   }
   struct tcpudp_hdr *tcpudp_header =
-      nf_then_get_tcpudp_header(ipv4_header, buffer);
+      nf_then_get_tcpudp_header(rte_ipv4_header, buffer);
   if (tcpudp_header == NULL) {
     NF_DEBUG("Not TCP/UDP, dropping");
     return device;
@@ -52,14 +52,14 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
       NF_DEBUG("Found internal flow.");
       LOG_FLOWID(&internal_flow, NF_DEBUG);
 
-      if (internal_flow.dst_ip != ipv4_header->src_addr |
+      if (internal_flow.dst_ip != rte_ipv4_header->src_addr |
           internal_flow.dst_port != tcpudp_header->src_port |
-          internal_flow.protocol != ipv4_header->next_proto_id) {
+          internal_flow.protocol != rte_ipv4_header->next_proto_id) {
         NF_DEBUG("Spoofing attempt, dropping.");
         return device;
       }
 
-      ipv4_header->dst_addr = internal_flow.src_ip;
+      rte_ipv4_header->dst_addr = internal_flow.src_ip;
       tcpudp_header->dst_port = internal_flow.src_port;
       dst_device = internal_flow.internal_device;
     } else {
@@ -69,9 +69,9 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
   } else {
     struct FlowId id = { .src_port = tcpudp_header->src_port,
                          .dst_port = tcpudp_header->dst_port,
-                         .src_ip = ipv4_header->src_addr,
-                         .dst_ip = ipv4_header->dst_addr,
-                         .protocol = ipv4_header->next_proto_id,
+                         .src_ip = rte_ipv4_header->src_addr,
+                         .dst_ip = rte_ipv4_header->dst_addr,
+                         .protocol = rte_ipv4_header->next_proto_id,
                          .internal_device = device };
 
     NF_DEBUG("For id:");
@@ -93,17 +93,17 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
 
     NF_DEBUG("Forwarding from ext port:%d", external_port);
 
-    ipv4_header->src_addr = config.external_addr;
+    rte_ipv4_header->src_addr = config.external_addr;
     tcpudp_header->src_port = external_port;
     dst_device = config.wan_device;
   }
 
-  nf_set_ipv4_udptcp_checksum(ipv4_header, tcpudp_header, buffer);
+  nf_set_rte_ipv4_udptcp_checksum(rte_ipv4_header, tcpudp_header, buffer);
 
   concretize_devices(&dst_device, rte_eth_dev_count_avail());
 
-  ether_header->s_addr = config.device_macs[dst_device];
-  ether_header->d_addr = config.endpoint_macs[dst_device];
+  rte_ether_header->s_addr = config.device_macs[dst_device];
+  rte_ether_header->d_addr = config.endpoint_macs[dst_device];
 
   return dst_device;
 }

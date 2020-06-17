@@ -16,8 +16,8 @@
     rte_ether->ether_type |-> ?et &*&
     hdr == rte_ether_hdrc(saddr, daddr, et);
 
-  inductive ipv4_hdri = rte_ipv4_hdrc(int, int, int, int, int, int, int, int, int, int);
-  predicate ipv4_hdrp(struct rte_ipv4_hdr* hdr; ipv4_hdri val) =
+  inductive rte_ipv4_hdri = rte_ipv4_hdrc(int, int, int, int, int, int, int, int, int, int);
+  predicate rte_ipv4_hdrp(struct rte_ipv4_hdr* hdr; rte_ipv4_hdri val) =
     hdr->version_ihl |-> ?vihl &*&
     hdr->type_of_service |-> ?tos &*&
     hdr->total_length |-> ?len &*&
@@ -37,16 +37,16 @@
     val == tcpudp_hdrc(srcp, dstp);
 
   inductive phdr = rte_ether_hdr(rte_ether_hdri)
-                 | rte_ipv4_hdr(ipv4_hdri)
+                 | rte_ipv4_hdr(rte_ipv4_hdri)
                  | tcpudp_hdr(tcpudp_hdri);
 
   lemma list<phdr> add_rte_ether_header(list<phdr> prev, void* chunk);
   requires rte_ether_hdrp(chunk, ?eh);
   ensures rte_ether_hdrp(chunk, eh) &*& result == cons(rte_ether_hdr(eh), prev);
 
-  lemma list<phdr> add_ipv4_header(list<phdr> prev, void* chunk);
-  requires ipv4_hdrp(chunk, ?ih);
-  ensures ipv4_hdrp(chunk, ih) &*& result == cons(rte_ipv4_hdr(ih), prev);
+  lemma list<phdr> add_rte_ipv4_header(list<phdr> prev, void* chunk);
+  requires rte_ipv4_hdrp(chunk, ?ih);
+  ensures rte_ipv4_hdrp(chunk, ih) &*& result == cons(rte_ipv4_hdr(ih), prev);
 
   lemma list<phdr> add_tcpudp_header(list<phdr> prev, void* chunk);
   requires tcpudp_hdrp(chunk, ?th);
@@ -84,14 +84,14 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 }
 @*/
 
-void nf_set_ipv4_udptcp_checksum(struct rte_ipv4_hdr* ip_header,
+void nf_set_rte_ipv4_udptcp_checksum(struct rte_ipv4_hdr* ip_header,
                                  struct tcpudp_hdr* l4_header,
                                  void* packet);
-/*@ requires ipv4_hdrp(ip_header, rte_ipv4_hdrc(?vihl, ?tos, ?len, ?pid, ?foff,
+/*@ requires rte_ipv4_hdrp(ip_header, rte_ipv4_hdrc(?vihl, ?tos, ?len, ?pid, ?foff,
                                             ?ttl, ?npid, _, ?saddr, ?daddr)) &*&
              tcpudp_hdrp(l4_header, tcpudp_hdrc(?srcp, ?dstp)) &*&
              packetp(packet, ?payload_len, ?x); @*/
-/*@ ensures ipv4_hdrp(ip_header, rte_ipv4_hdrc(vihl, tos, len, pid, foff,
+/*@ ensures rte_ipv4_hdrp(ip_header, rte_ipv4_hdrc(vihl, tos, len, pid, foff,
                                            ttl, npid, _, saddr, daddr)) &*&
              tcpudp_hdrp(l4_header, tcpudp_hdrc(srcp, dstp)) &*&
              packetp(packet, payload_len, x); @*/

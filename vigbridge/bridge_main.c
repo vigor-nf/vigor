@@ -233,7 +233,7 @@ static void read_static_ft_from_array(struct Map *stat_map,
     struct StaticKey *key = 0;
     vector_borrow(stat_keys, count, (void **)&key);
 
-    int result = nf_parse_etheraddr(static_rules[idx].mac_addr, &key->addr);
+    int result = nf_parse_rte_etheraddr(static_rules[idx].mac_addr, &key->addr);
     if (result < 0) {
       NF_INFO("Invalid MAC address: %s, skip", static_rules[idx].mac_addr);
       continue;
@@ -270,12 +270,12 @@ bool nf_init(void) {
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
-  struct rte_ether_hdr *ether_header = nf_then_get_ether_header(buffer);
+  struct rte_ether_hdr *rte_ether_header = nf_then_get_rte_ether_header(buffer);
 
   bridge_expire_entries(now);
-  bridge_put_update_entry(&ether_header->s_addr, device, now);
+  bridge_put_update_entry(&rte_ether_header->s_addr, device, now);
 
-  int forward_to = bridge_get_device(&ether_header->d_addr, device);
+  int forward_to = bridge_get_device(&rte_ether_header->d_addr, device);
 
   if (forward_to == -1) {
     return FLOOD_FRAME;

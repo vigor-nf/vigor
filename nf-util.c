@@ -18,7 +18,7 @@
 void *chunks_borrowed[MAX_N_CHUNKS];
 size_t chunks_borrowed_num = 0;
 
-bool nf_has_ipv4_header(struct rte_ether_hdr *header) {
+bool nf_has_rte_ipv4_header(struct rte_ether_hdr *header) {
   return header->ether_type == rte_be_to_cpu_16(RTE_ETHER_TYPE_IPV4);
 }
 
@@ -31,7 +31,7 @@ bool nf_has_tcpudp_header(struct rte_ipv4_hdr *header) {
 }
 
 #ifdef KLEE_VERIFICATION
-void nf_set_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
+void nf_set_rte_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)ip_header, "ip_header");
@@ -42,7 +42,7 @@ void nf_set_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
   ip_header->hdr_checksum = klee_int("checksum");
 }
 #else  // KLEE_VERIFICATION
-void nf_set_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
+void nf_set_rte_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet) {
   // Make sure the packet pointer points to the TCPUDP continuation
   // This check is exercised during verification, no need to repeat it.
@@ -93,13 +93,13 @@ char *nf_mac_to_str(struct rte_ether_addr *addr) {
   return buffer;
 }
 
-char *nf_ipv4_to_str(uint32_t addr) {
+char *nf_rte_ipv4_to_str(uint32_t addr) {
   // format is xxx.xxx.xxx.xxx\0
   uint16_t buffer_size = 4 * 3 + 3 + 1;
   char *buffer = (char *)calloc(buffer_size,
                                 sizeof(char)); // FIXME: why dynamic alloc here?
   if (buffer == NULL) {
-    rte_exit(EXIT_FAILURE, "Out of memory in nf_ipv4_to_str!");
+    rte_exit(EXIT_FAILURE, "Out of memory in nf_rte_ipv4_to_str!");
   }
 
   snprintf(buffer, buffer_size, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8,

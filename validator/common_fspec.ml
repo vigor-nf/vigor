@@ -152,7 +152,7 @@ let common_fun_types =
                                        "->d_addr), _);\n"
                                      | Ptr (Ptr (Str ("rte_ipv4_hdr", _))) ->
                                        "//@ recv_headers = \
-                                        add_ipv4_header(recv_headers, *" ^
+                                        add_rte_ipv4_header(recv_headers, *" ^
                                        (List.nth_exn args 2) ^ ");\n"
                                      | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
                                        "//@ recv_headers = \
@@ -195,7 +195,7 @@ let common_fun_types =
                                   "->d_addr), _);\n"
                                 | Ptr (Str ("rte_ipv4_hdr", _)) ->
                                   "//@ sent_headers = \
-                                   add_ipv4_header(sent_headers, " ^
+                                   add_rte_ipv4_header(sent_headers, " ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ");\n"
                                 | Ptr (Str ("tcpudp_hdr", _)) ->
@@ -1427,7 +1427,7 @@ let map_size_spec =
    lemmas_before = [];
    lemmas_after = [];}
 
-let nf_set_ipv4_udptcp_checksum_spec =
+let nf_set_rte_ipv4_udptcp_checksum_spec =
   {ret_type = Static Void;
    arg_types = stt [Ptr rte_ipv4_hdr_struct;
                     Ptr tcpudp_hdr_struct;
@@ -1623,7 +1623,7 @@ let fun_types containers records =
      "map_erase", (map_erase_spec (gen_map_params containers records));
      "map_size", map_size_spec;
      "cht_fill_cht", cht_fill_cht_spec;
-     "nf_set_ipv4_udptcp_checksum", nf_set_ipv4_udptcp_checksum_spec;
+     "nf_set_rte_ipv4_udptcp_checksum", nf_set_rte_ipv4_udptcp_checksum_spec;
      "cht_find_preferred_available_backend",
      cht_find_preferred_available_backend_spec;
      "vector_allocate", (vector_alloc_spec

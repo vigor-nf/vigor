@@ -20,8 +20,8 @@
 
 
 struct stub_mbuf_content {
-  struct rte_ether_hdr ether;
-  struct rte_ipv4_hdr ipv4;
+  struct rte_ether_hdr rte_ether;
+  struct rte_ipv4_hdr rte_ipv4;
 };
 
 
@@ -158,16 +158,16 @@ static void stub_device_start(struct stub_device *dev) {
   klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
 
 #  if __BYTE_ORDER == __BIG_ENDIAN
-  bool is_ipv4 = mbuf_content->ether.ether_type == 0x0800;
-  bool is_ipv6 = mbuf_content->ether.ether_type == 0x86DD;
+  bool is_ipv4 = mbuf_content->rte_ether.ether_type == 0x0800;
+  bool is_ipv6 = mbuf_content->rte_ether.ether_type == 0x86DD;
 #  else
-  bool is_ipv4 = mbuf_content->ether.ether_type == 0x0008;
-  bool is_ipv6 = mbuf_content->ether.ether_type == 0xDD86;
+  bool is_ipv4 = mbuf_content->rte_ether.ether_type == 0x0008;
+  bool is_ipv6 = mbuf_content->rte_ether.ether_type == 0xDD86;
 #  endif
 
-  bool is_tcp = is_ipv4 & (mbuf_content->ipv4.next_proto_id == 6);
-  bool is_udp = is_ipv4 & (mbuf_content->ipv4.next_proto_id == 17);
-  bool is_sctp = is_ipv4 & (mbuf_content->ipv4.next_proto_id == 132);
+  bool is_tcp = is_ipv4 & (mbuf_content->rte_ipv4.next_proto_id == 6);
+  bool is_udp = is_ipv4 & (mbuf_content->rte_ipv4.next_proto_id == 17);
+  bool is_sctp = is_ipv4 & (mbuf_content->rte_ipv4.next_proto_id == 132);
 
   // NOTE: Allowing all of those to be symbols means the symbex takes
   // suuuuper-long... worth doing sometimes, but not all the time
@@ -239,11 +239,11 @@ static void stub_device_start(struct stub_device *dev) {
           (is_ipv4 & (
   // Multicast addr?
 #  if __BYTE_ORDER == __BIG_ENDIAN
-                         ((mbuf_content->ipv4.dst_addr >= 0xE0000000) &
-                          (mbuf_content->ipv4.dst_addr < 0xF0000000))
+                         ((mbuf_content->rte_ipv4.dst_addr >= 0xE0000000) &
+                          (mbuf_content->rte_ipv4.dst_addr < 0xF0000000))
 #  else
-                         (((mbuf_content->ipv4.dst_addr & 0xFF) >= 0xE0) &
-                          ((mbuf_content->ipv4.dst_addr & 0xFF) < 0xF0))
+                         (((mbuf_content->rte_ipv4.dst_addr & 0xFF) >= 0xE0) &
+                          ((mbuf_content->rte_ipv4.dst_addr & 0xFF) < 0xF0))
 #  endif
                          // Or just a broadcast, which can be pretty much
                          // anything
