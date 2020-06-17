@@ -117,10 +117,9 @@ static void stub_device_start(struct stub_device *dev) {
 
   bool received = klee_int("received");
   set_packet_receive_success(received);
-  // need it forward, to make sure packet_receive args are the same in both
-  // calls
-  uint32_t packet_len =
-      MBUF_MIN_SIZE; // TODO: make length symbolic
+  // make sure packet_receive args are the same in both calls
+  // TODO: make length symbolic
+  uint32_t packet_len = MBUF_MIN_SIZE;
   uint32_t data_len = packet_len;
   if (!received) {
     // no packet
@@ -156,8 +155,7 @@ static void stub_device_start(struct stub_device *dev) {
     klee_abort();
   }
   // NOTE: validator depends on this specific name, "user_buf"
-  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE,
-                     "user_buf");
+  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
 
 #  if __BYTE_ORDER == __BIG_ENDIAN
   bool is_ipv4 = mbuf_content->ether.ether_type == 0x0800;
@@ -1065,6 +1063,12 @@ static uint32_t stub_register_autoc_write(struct stub_device *dev,
   return new_value;
 }
 
+static uint32_t stub_register_esdp_write(struct stub_device *dev,
+                                         uint32_t offset, uint32_t new_value) {
+  // The value is lost in the mystical undocumented ESDP black hole.
+  return REGISTERS[0x00020].initial_value;
+}
+
 static void stub_registers_init(void) {
 #  define REG(addr, val, mask)                                                 \
     do {                                                                       \
@@ -1127,8 +1131,11 @@ static void stub_registers_init(void) {
 
   // page 545
   // Extended SDP Control — ESDP (0x00020; RW)
-  // NOTE: The ixgbe driver checks that SDP2 Data Value is 1 and assumes the
-  // link is down otherwise. TODO Why?
+  // NOTE: The ixgbe driver checks that SDP2 value is 1 and SDP3 value is 0,
+  // and assumes the link is down otherwise. TODO Why?
+  // Also, it turns off a laser by writing here...
+  // This register in general seems to be the home of a lot of dubious undocumented
+  // stuff that we have to live with. :(
 
   // 0-7: SDPn Data Value, where 'n' is bit number (0 - default)
   // 8-15: SDPn Pin Directionality, where 'n' is bit number (0 - default)
@@ -1136,8 +1143,9 @@ static void stub_registers_init(void) {
   // 24-25: Reserved (0)
   // 26-31: SDPn Native Mode Functionality, where 'n' is bit number PLUS TWO! (0
   // - default)
-  REG(0x00020, 0b00000000000000000000000000000000,
-      0b00000000000000000000000000000100);
+  REG(0x00020, 0b00000000000000000000000000000100,
+      0b00000000000000000000000000001000);
+  REGISTERS[0x00020].write = stub_register_esdp_write;
 
   // page 549
   // I2C Control — I2CCTL (0x00028; RW)
@@ -1216,6 +1224,12 @@ static void stub_registers_init(void) {
   REG(0x00888, 0b00000000000000000000000000000000,
       0b01111111111111111111111111111111);
   REGISTERS[0x00888].readable = false;
+
+  // page 597
+  // General Purpose Interrupt Enable - GPIE (0x00898; RW)
+  // All bits default to 0 and deal with MSI-X interrupts, which we don't care about
+  REG(0x00898, 0b00000000000000000000000000000000,
+      0b00000000000000000000000000000000);
 
   // page 575
   // Extended Interrupt Mask Clear Registers — EIMC[n] (0x00AB0 + 4*(n-1),
@@ -2295,8 +2309,14 @@ uint64_t stub_hardware_read(uint64_t addr, unsigned offset, unsigned size) {
     uint32_t current_value = DEV_REG(dev, offset);
 
     struct stub_register reg = REGISTERS[offset];
-    klee_assert(reg.present);
-    klee_assert(reg.readable);
+    if (!reg.present) {
+      klee_print_expr("not present reg", offset);
+      klee_abort();
+    }
+    if (!reg.readable) {
+      klee_print_expr("unreadable reg", offset);
+      klee_abort();
+    }
 
     if (reg.read != NULL) {
       DEV_REG(dev, offset) = reg.read(dev, (uint32_t)offset);
@@ -2352,7 +2372,7 @@ void stub_hardware_write(uint64_t addr, unsigned offset, unsigned size,
 }
 
 void stub_free(struct rte_mbuf *mbuf) {
-  packet_free(mbuf->buf_addr);
+  packet_free(mbuf->buf_addr + mbuf->data_off);
 
   // Still need to free the actual mbuf though
   rte_mbuf_raw_free(mbuf);

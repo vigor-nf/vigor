@@ -10,6 +10,19 @@ set -euo pipefail
 # Setup
 # =====
 
+# OCaml (installed later) uses variables in its scripts without
+# defining them first - we're in strict mode!
+if [ -z ${PERL5LIB+x} ]; then
+  export PERL5LIB=''
+fi
+if [ -z ${MANPATH+x} ]; then
+  export MANPATH=''
+fi
+if [ -z ${PROMPT_COMMAND+x} ]; then
+  export PROMPT_COMMAND=''
+fi
+
+
 VNDSDIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 BUILDDIR=`pwd`
 PATHSFILE="$BUILDDIR/paths.sh"
@@ -62,7 +75,8 @@ if [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
   sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
 
-DPDK_RELEASE='17.11'
+DPDK_RELEASE='17.11.10'
+DPDK_SUFFIX='-stable' # e.g. for LTS releases '-stable', for non-LTS ''
 pushd "$BUILDDIR"
   if [ ! -f dpdk/.version ] || \
      [ "$(cat dpdk/.version)" != "$DPDK_RELEASE" ]; then
@@ -71,7 +85,7 @@ pushd "$BUILDDIR"
     wget -O dpdk.tar.xz "https://fast.dpdk.org/rel/dpdk-$DPDK_RELEASE.tar.xz"
     tar xf dpdk.tar.xz
     rm dpdk.tar.xz
-    mv "dpdk-$DPDK_RELEASE" dpdk
+    mv "dpdk$DPDK_SUFFIX-$DPDK_RELEASE" dpdk
 
     echo 'export RTE_TARGET=x86_64-native-linuxapp-gcc' >> "$PATHSFILE"
     echo "export RTE_SDK=$BUILDDIR/dpdk" >> "$PATHSFILE"
@@ -96,19 +110,18 @@ popd
 # OCaml
 # =====
 
-sudo apt-get install -y opam m4
-
-# OCaml uses variables in its scripts without
-# defining them first - we're in strict mode!
-if [ -z ${PERL5LIB+x} ]; then
-  export PERL5LIB=''
-fi
-if [ -z ${MANPATH+x} ]; then
-  export MANPATH=''
-fi
+# we depend on an OCaml package that needs libgmp-dev
+sudo apt-get install -y opam m4 libgmp-dev
 
 opam init -y
-opam switch 4.06.0
+# Opam 1.x doesn't have "create", later versions require it but only the first time
+if opam --version | grep '^1.' >/dev/null ; then
+  opam switch 4.06.0
+else
+  if ! opam switch list | grep -q 4.06 ; then
+    opam switch create 4.06.0
+  fi
+fi
 
 if ! grep -q opam "$PATHSFILE"; then
   echo 'PATH='"$HOME/.opam/system/bin"':$PATH' >> "$PATHSFILE"
@@ -117,7 +130,7 @@ if ! grep -q opam "$PATHSFILE"; then
 fi
 
 # Codegenerator dependencies
-opam install goblint-cil core  -y
+opam install goblint-cil core -y
 
 
 

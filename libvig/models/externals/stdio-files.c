@@ -80,6 +80,9 @@ static char *FILE_CONTENT_HPINFO = (char *)-200;
 // Special case: Hugepage files
 static char *FILE_CONTENT_HUGEPAGE = (char *)-300;
 
+// Special case: File isn't really there
+static char *FILE_CONTENT_NOTPRESENT = (char *)-400;
+
 struct nfos_pci_nic *PCI_DEVICES;
 int NUM_PCI_DEVICES;
 
@@ -104,15 +107,25 @@ int access(const char *pathname, int mode) {
 }
 
 int stat(const char *path, struct stat *buf) {
-  // Nope, we don't have modules
-  if (!strcmp(path, "/sys/module")) {
-    return -1;
+  for (int n = 0; n < sizeof(FILES) / sizeof(FILES[0]); n++) {
+    if (FILES[n].path != NULL && !strcmp(path, FILES[n].path)) {
+      if (FILES[n].content == FILE_CONTENT_NOTPRESENT) {
+        return -1;
+      }
+      // DPDK doesn't seem to need *buf, so let's not set it but ensure it's not used
+      klee_forbid_access(buf, sizeof(struct stat), "stat buf");
+      return 0;
+    }
   }
 
   klee_abort();
 }
 
 int open(const char *file, int oflag, ...) {
+  if (!strcmp(file, "/sys/module/vfio/parameters/enable_unsafe_noiommu_mode") && oflag == O_RDONLY) {
+    return -1; // explicitly no VFIO
+  }
+
   if (!strcmp(file, "/proc/cpuinfo") && oflag == O_RDONLY) {
     return -1; // TODO
   }
@@ -132,6 +145,9 @@ int open(const char *file, int oflag, ...) {
   for (int n = 0; n < sizeof(FILES) / sizeof(FILES[0]); n++) {
     if (FILES[n].path != NULL && !strcmp(file, FILES[n].path) &&
         FILES[n].kind == desired_kind) {
+      if (FILES[n].content == FILE_CONTENT_NOTPRESENT) {
+        return -1;
+      }
       klee_assert(FILES[n].pos == POS_UNOPENED);
 
       FILES[n].pos = 0;
@@ -388,13 +404,11 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd,
 
   // We don't really care about flags, since we're single-threaded
 
-  // addr must be NULL, unless we're mmapping hugepages
-  // TODO check the address somehow when it's a hugepage
   if (FILES[fd].content == FILE_CONTENT_HUGEPAGE) {
     // if it's a hugepage, length is well-defined
     klee_assert(length % (2048 * 1024) == 0);
   } else {
-    klee_assert(addr == NULL);
+    // ignore 'addr', it's a hint anyway, the OS is free to not use it
     klee_assert(length >= strlen(FILES[fd].content));
   }
 
@@ -563,6 +577,8 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
     int driver_fd =
         stub_add_link(stub_pci_file(dev, "driver"), "/drivers/igb_uio");
 
+    stub_add_file(stub_pci_file(dev, "iommu/intel-iommu/cap"), FILE_CONTENT_NOTPRESENT);
+
     // 'uio' folder, itself containing an empty folder 'uioN' (where N is the
     // device number)
     char uio_name[32];
@@ -671,6 +687,12 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
   stub_add_file("/sys/devices/system/cpu/cpu0/topology/core_id",
                 "0"); // CPU 0 is core ID 0
   stub_add_folder("/sys/devices/system/node/node0/cpu0", 0);
+
+  // /sys/module has to be there for DPDK's modules check to not just fail;
+  // but we do not have VFIO
+  stub_add_file("/sys/module", "");
+  stub_add_file("/sys/module/vfio", FILE_CONTENT_NOTPRESENT);
+  stub_add_file("/sys/module/vfio_pci", FILE_CONTENT_NOTPRESENT);
 
   // /proc stuff
   stub_add_file(

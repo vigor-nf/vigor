@@ -1,7 +1,6 @@
  This folder contains patches and configuration files for dependencies of the Vigor toolchain, namely:
 - DPDK patches
   - `bugfixes` fixes bugs found in DPDK (all reported)
-  - `clean` contains minor cleanups that do not affect correctness, only ease of verification
   - `config` patches the DPDK default config
 - DPDK patches for the `ixgbe` driver:
   - `avoid_bit_bang` avoids unnecessary usage of bit-banging during initialization

@@ -4,19 +4,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <rte_common.h>
-#include <rte_ethdev.h>
-
-#include <cmdline_parse_etheraddr.h>
-#include <cmdline_parse_ipaddr.h>
-
 #include "nf.h"
 #include "nf-util.h"
 #include "nf-log.h"
+#include "nf-parse.h"
 
-#define PARSE_ERROR(format, ...)                                               \
-  nf_config_usage();                                                           \
-  rte_exit(EXIT_FAILURE, format, ##__VA_ARGS__);
+#define PARSE_ERROR(format, ...)          \
+  nf_config_usage();                      \
+  fprintf(stderr, format, ##__VA_ARGS__); \
+  exit(EXIT_FAILURE);
 
 void nf_config_init(int argc, char **argv) {
   uint16_t nb_devices = rte_eth_dev_count();
@@ -55,9 +51,7 @@ void nf_config_init(int argc, char **argv) {
         }
 
         optarg += 2;
-        if (cmdline_parse_etheraddr(NULL, optarg,
-                                    &(config.endpoint_macs[device]),
-                                    sizeof(int64_t)) < 0) {
+        if (!nf_parse_etheraddr(optarg, &(config.endpoint_macs[device]))) {
           PARSE_ERROR("Invalid MAC address: %s\n", optarg);
         }
         break;
@@ -70,17 +64,10 @@ void nf_config_init(int argc, char **argv) {
         }
         break;
 
-      case 'i':;
-        struct cmdline_token_ipaddr tk;
-        tk.ipaddr_data.flags = CMDLINE_IPADDR_V4;
-
-        struct cmdline_ipaddr res;
-        if (cmdline_parse_ipaddr((cmdline_parse_token_hdr_t *)&tk, optarg, &res,
-                                 sizeof(res)) < 0) {
+      case 'i':
+        if (!nf_parse_ipv4addr(optarg, &(config.external_addr))) {
           PARSE_ERROR("Invalid external IP address: %s\n", optarg);
         }
-
-        config.external_addr = res.addr.ipv4.s_addr;
         break;
 
       case 'l':

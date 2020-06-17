@@ -31,7 +31,6 @@ NF_DEFS += -DNFOS
 
 # NF
 NF_INCLUDES = -I $(SELF_DIR)
-NF_INCLUDES += -I $(RTE_SDK)/lib/librte_cmdline
 NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include
 NF_INCLUDES += -I /usr/local/include
 NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include-fixed
@@ -51,7 +50,6 @@ NF_COMMON_SOURCES := $(SELF_DIR)/nf.c \
 	$(SELF_DIR)/nf-util.c \
 	$(CONTAINERS_DIR)/vigor-time.c \
 	$(CONTAINERS_DIR)/packet-io.c \
-	$(wildcard $(RTE_SDK)/lib/librte_cmdline/*.c) \
 	$(CONTAINERS_DIR)/map.c \
 	$(CONTAINERS_DIR)/map-impl.c \
         $(CONTAINERS_DIR)/map-impl-pow2.c \
