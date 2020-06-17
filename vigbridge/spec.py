@@ -1,7 +1,7 @@
 from state import dyn_emap, stat_emap, dyn_vals
 EXP_TIME = 10 * 1000
 
-h = pop_header(rte_ether, on_mismatch=([],[]))
+h = pop_header(ether, on_mismatch=([],[]))
 
 dyn_emap.expire_all(now - EXP_TIME)
 
@@ -19,7 +19,7 @@ if stat_emap.has(static_key):
     if output_port == -2 or output_port == received_on_port:
         return ([],[])
     else:
-        return ([output_port], [rte_ether(h)])
+        return ([output_port], [ether(h)])
 else:
     if dyn_emap.has(h.daddr):
         idx = dyn_emap.get(h.daddr)
@@ -27,7 +27,7 @@ else:
         if (forward_to.output_port == received_on_port):
             return ([],[])
         else:
-            return ([forward_to.output_port], [rte_ether(h)])
+            return ([forward_to.output_port], [ether(h)])
     else:
-        return ([1-received_on_port], [rte_ether(h)]) # broadcast, TODO: generalize
+        return ([1-received_on_port], [ether(h)]) # broadcast, TODO: generalize
 

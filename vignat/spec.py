@@ -22,8 +22,8 @@ if a_packet_received:
     flow_emap.expire_all(now - EXP_TIME)
 
 h3 = pop_header(tcpudp, on_mismatch=([],[]))
-h2 = pop_header(rte_ipv4, on_mismatch=([],[]))
-h1 = pop_header(rte_ether, on_mismatch=([],[]))
+h2 = pop_header(ipv4, on_mismatch=([],[]))
+h1 = pop_header(ether, on_mismatch=([],[]))
 assert a_packet_received
 assert h1.type == 8 # big-endian 0x0800 -> IPv4
 assert h2.npid == 6 or h2.npid == 17 # 6/17 -> TCP/UDP
@@ -38,8 +38,8 @@ if received_on_port == EXT_PORT:
             return ([],[])
         else:
             return ([internal_flow.idev],
-                    [rte_ether(h1, saddr=..., daddr=...),
-                     rte_ipv4(h2, cksum=..., saddr=internal_flow.dip, daddr=internal_flow.sip),
+                    [ether(h1, saddr=..., daddr=...),
+                     ipv4(h2, cksum=..., saddr=internal_flow.dip, daddr=internal_flow.sip),
                      tcpudp(src_port=internal_flow.dp, dst_port=internal_flow.sp)])
     else:
         return ([],[])
@@ -49,8 +49,8 @@ else: # packet from the internal network
         idx = flow_emap.get(internal_flow_id)
         flow_emap.refresh_idx(idx, now)
         return ([EXT_PORT],
-                [rte_ether(h1, saddr=..., daddr=...),
-                 rte_ipv4(h2, cksum=..., saddr=EXT_IP_ADDR),
+                [ether(h1, saddr=..., daddr=...),
+                 ipv4(h2, cksum=..., saddr=EXT_IP_ADDR),
                  tcpudp(h3, src_port=idx + start_port)])
     else: # No flow in the table
         if flow_emap.full(): # flowtable overflow
@@ -59,6 +59,6 @@ else: # packet from the internal network
             idx = the_index_allocated
             flow_emap.add(internal_flow_id, idx, now)
             return ([EXT_PORT],
-                    [rte_ether(h1, saddr=..., daddr=...),
-                     rte_ipv4(h2, cksum=..., saddr=EXT_IP_ADDR),
+                    [ether(h1, saddr=..., daddr=...),
+                     ipv4(h2, cksum=..., saddr=EXT_IP_ADDR),
                      tcpudp(h3, src_port=idx + start_port)])
