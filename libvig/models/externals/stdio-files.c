@@ -103,6 +103,7 @@ int access(const char *pathname, int mode) {
     }
   }
 
+  klee_report_error(pathname, 1, pathname, "hi");
   klee_abort();
 }
 
@@ -687,6 +688,13 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
   stub_add_file("/sys/devices/system/cpu/cpu0/topology/core_id",
                 "0"); // CPU 0 is core ID 0
   stub_add_folder("/sys/devices/system/node/node0/cpu0", 0);
+
+  int length = 100;
+  for (int i = 1; i < 128; i++) {
+    char pathCPU[length];
+    sprintf(pathCPU, "/sys/devices/system/node/node0/cpu%d", i);
+    stub_add_folder(pathCPU, 0);
+  }
 
   // /sys/module has to be there for DPDK's modules check to not just fail;
   // but we do not have VFIO
