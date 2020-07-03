@@ -120,7 +120,7 @@ COMPILE_COMMAND := clang
 # also purge the pointless GNU linker warnings
 # so KLEE doesn't warn about module asm
 LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-uclibc.bca && \
-                rm -f sleep.os vfprintf.os socket.os exit.os fflush_unlocked.os fflush.os && \
+		rm -f sleep.os vfprintf.os socket.os fflush_unlocked.os fflush.os && \
                 llvm-link -o nf_raw.bc  *.os *.bc && \
                 llvm-dis -o nf_raw.ll nf_raw.bc && \
                 sed -i -e 's/module asm ".section .gnu.warning.*"//g' \
@@ -208,6 +208,10 @@ symbex: clean autogen
 VERIF_WITHDPDK_DEFS := -DRTE_COMPILE_TIME_CPUFLAGS=424242
 # Let hardware models know we want them
 VERIF_WITHDPDK_DEFS += -DVIGOR_MODEL_HARDWARE
+# Disable deprecation warnings
+VERIF_WITHDPDK_DEFS += -DALLOW_EXPERIMENTAL_API
+# Enable function versioning
+VERIF_WITHDPDK_DEFS += -DRTE_USE_FUNCTION_VERSIONING
 # We need librte_eal/common because eal_private.h is in there,
 # required by eal_thread.c...
 # We need bus/pci because the linuxapp PCI stuff requires a private.h file in there...
@@ -222,7 +226,7 @@ VERIF_WITHDPDK_INCLUDES += --include=libvig/models/builtin.h \
                            --include=rte_config.h
 # Platform-independent and Linux-specific EAL
 DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c \
-              $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c
+              $(RTE_SDK)/lib/librte_eal/linux/*.c
 # Default ring mempool driver
 DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 # Other libraries, except acl and distributor
@@ -230,7 +234,7 @@ DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 #                           but we don't need it)
 # and power has been broken for a while:
 # http://dpdk.org/ml/archives/dev/2016-February/033152.html
-DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power)/*.c
+DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power|librte_bpf|librte_metrics)/*.c
 # PCI driver support (for ixgbe driver)
 DPDK_FILES += $(RTE_SDK)/drivers/bus/pci/*.c $(RTE_SDK)/drivers/bus/pci/linux/*.c
 # ixgbe driver
