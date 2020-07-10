@@ -1,0 +1,14 @@
+diff --git a/config/common_base b/config/common_base
+index 7830535..f908cbb 100644
+--- a/config/common_base
++++ b/config/common_base
+@@ -42,7 +42,8 @@ CONFIG_RTE_TOOLCHAIN=
+ #
+ # Use intrinsics or assembly code for key routines
+ #
+-CONFIG_RTE_FORCE_INTRINSICS=n
++# Enable atomic intrinsics, otherwise it uses inline ASM which KLEE doesn't support
++CONFIG_RTE_FORCE_INTRINSICS=y
+ 
+ #
+ # Machine forces strict alignment constraints.

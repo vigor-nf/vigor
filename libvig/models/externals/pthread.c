@@ -58,3 +58,32 @@ int pthread_setname_np(pthread_t thread, const char *name) {
   // -- http://man7.org/linux/man-pages/man3/pthread_setname_np.3.html
   return 0;
 }
+
+int  pthread_barrier_init(pthread_barrier_t *barrier,
+       const pthread_barrierattr_t *attr, unsigned count) {
+  // "Upon successful completion, these functions shall return zero; otherwise, an error
+  // number shall be returned to indicate the error."
+  // -- https://linux.die.net/man/3/pthread_barrier_init
+  return 0;
+}
+
+int pthread_barrier_wait(pthread_barrier_t *barrier) {
+  // "Upon successful completion, the pthread_barrier_wait() function shall return
+  // PTHREAD_BARRIER_SERIAL_THREAD for a single (arbitrary) thread synchronized at the
+  // barrier and zero for each of the other threads."
+  // -- https://linux.die.net/man/3/pthread_barrier_wait
+  return 0;
+}
+
+int pthread_cancel(pthread_t thread) {
+  // "On success, pthread_cancel() returns 0;"
+  // -- https://linux.die.net/man/3/pthread_cancel
+  return 0;
+}
+
+int pthread_join(pthread_t thread, void **retval) {
+  // "On success, pthread_join() returns 0;"
+  // -- https://linux.die.net/man/3/pthread_join
+  return 0;
+}
+

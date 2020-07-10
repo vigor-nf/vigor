@@ -47,17 +47,7 @@ static inline int stub_sched_cpucount() {
   return 1;
 }
 
-#define pthread_barrier_init(barrier, attr, count) stub_return_0()
-
-#define pthread_barrier_wait(barrier) stub_return_0()
-
-#define pthread_cancel(thread) stub_return_0()
-
-#define pthread_join(thread, retval) stub_return_0()
-
-static inline int stub_return_0() {
-  return 0;
-}
+static int stub_return_0() {  return 0; }
 
 #define getrlimit(resource, rlim) stub_return_0()
 

@@ -24,6 +24,7 @@
 // Globals
 static const int POS_UNOPENED = -1;
 static const int POS_EOF = -2;
+static const char *ANON_MEM_NAME = "anonymous_memory";
 
 enum stub_file_kind { KIND_FILE, KIND_DIRECTORY, KIND_LINK };
 
@@ -90,16 +91,20 @@ const int MSR_FD = 1337;
 
 int access(const char *pathname, int mode) {
   if (mode == F_OK) {
+    // Other CPUs
+    const char *cpu_prefix = "/sys/devices/system/cpu/cpu";
+    const char *cpu0_prefix = "/sys/devices/sytem/cpu/cpu0";
+    if (!strncmp(pathname, cpu0_prefix, strlen(cpu0_prefix))) {
+      return 0;
+    }
+    if (!strncmp(pathname, cpu_prefix, strlen(cpu_prefix))) {
+      return -1; // TODO
+    }
+
     for (int n = 0; n < sizeof(FILES) / sizeof(FILES[0]); n++) {
       if (FILES[n].path != NULL && !strcmp(pathname, FILES[n].path)) {
         return 0;
       }
-    }
-
-    // Other CPUs
-    const char *cpu_prefix = "/sys/devices/system/cpu/cpu";
-    if (!strncmp(pathname, cpu_prefix, strlen(cpu_prefix))) {
-      return -1; // TODO
     }
   }
 
@@ -212,7 +217,7 @@ int ftruncate(int fd, off_t length) {
   klee_assert(FILES[fd].pos != POS_UNOPENED);
   klee_assert(FILES[fd].kind == KIND_FILE);
 
-  if (FILES[fd].content == FILE_CONTENT_HPINFO) {
+ // if (FILES[fd].content == FILE_CONTENT_HPINFO) {
     FILES[fd].content = (char *)malloc(length);
     memset(FILES[fd].content, 0, length);
 
@@ -220,9 +225,9 @@ int ftruncate(int fd, off_t length) {
     // appropriately.
     // -- https://linux.die.net/man/2/ftruncate
     return 0;
-  }
+ // }
 
-  klee_abort();
+ // klee_abort();
 }
 
 off_t lseek(int fd, off_t offset, int whence) {
@@ -380,6 +385,25 @@ ssize_t __getdents(int fd, char *buf, size_t nbytes) {
   return len;
 }
 
+
+static int file_counter;
+int stub_add_file(char *path, char *content) {
+  struct stub_file file;
+  memset(&file, 0, sizeof(struct stub_file));
+
+  file.path = path;
+  file.content = content;
+  file.pos = POS_UNOPENED;
+  file.kind = KIND_FILE;
+
+  int fd = file_counter;
+  file_counter++;
+
+  FILES[fd] = file;
+
+  return fd;
+}
+
 void *mmap(void *addr, size_t length, int prot, int flags, int fd,
            off_t offset) {
   // http://man7.org/linux/man-pages/man2/mmap.2.html
@@ -388,49 +412,60 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd,
   // NOTE: if they were, they'd need to be a multiple of PAGE_SIZE
   klee_assert(offset == 0);
 
-  klee_assert(FILES[fd].kind == KIND_FILE);
+  // Mapping an existing file
+  if (fd != -1) {
 
-  // First off, are we trying to mmap device memory?
-  for (int n = 0; n < NUM_PCI_DEVICES; n++) {
-    for (int i = 0; i < PCI_MAX_RESOURCE; i++) {
-      if ((void *)FILES[fd].content == PCI_DEVICES[n].resources[i].start) {
-        klee_assert(length == PCI_DEVICES[n].resources[i].size &&
-                    PCI_DEVICES[n].resources[i].is_mem);
+    klee_assert(FILES[fd].kind == KIND_FILE);
 
-        return PCI_DEVICES[n].resources[i].start;
+    // First off, are we trying to mmap device memory?
+    for (int n = 0; n < NUM_PCI_DEVICES; n++) {
+      for (int i = 0; i < PCI_MAX_RESOURCE; i++) {
+        if ((void *)FILES[fd].content == PCI_DEVICES[n].resources[i].start) {
+          klee_assert(length == PCI_DEVICES[n].resources[i].size &&
+                      PCI_DEVICES[n].resources[i].is_mem);
+
+          return PCI_DEVICES[n].resources[i].start;
+        }
       }
     }
-  }
 
-  // We don't really care about flags, since we're single-threaded
+    // We don't really care about flags, since we're single-threaded
 
-  if (FILES[fd].content == FILE_CONTENT_HUGEPAGE) {
-    // if it's a hugepage, length is well-defined
-    klee_assert(length % (2048 * 1024) == 0);
+    if (FILES[fd].content == FILE_CONTENT_HUGEPAGE) {
+      // if it's a hugepage, length is well-defined
+      klee_assert(length % (2048 * 1024) == 0);
+    } else {
+      // ignore 'addr', it's a hint anyway, the OS is free to not use it
+      klee_assert(length >= strlen(FILES[fd].content));
+    }
+
+    // Keep the same address if we're mmapping the same length again
+    // DPDK depends on this for hugepages mapping...
+    for (int m = 0; m < FILES[fd].mmaps_len; m++) {
+      if (FILES[fd].mmaps[m].mem_len == length) {
+        if (FILES[fd].mmaps[m].refcount == 0 && FILES[fd].mmaps[m].accessible) {
+          // freed mmap, need to re-allow access
+          klee_allow_access(FILES[fd].mmaps[m].actual_mem,
+                            FILES[fd].mmaps[m].actual_mem_len);
+        }
+
+        FILES[fd].mmaps[m].refcount++;
+        return FILES[fd].mmaps[m].mem;
+      }
+    }
+
+    // don't mmap too many times
+    klee_assert(FILES[fd].mmaps_len <
+                sizeof(FILES[0].mmaps) / sizeof(FILES[0].mmaps[0]));
+
   } else {
-    // ignore 'addr', it's a hint anyway, the OS is free to not use it
-    klee_assert(length >= strlen(FILES[fd].content));
-  }
-
-  // Keep the same address if we're mmapping the same length again
-  // DPDK depends on this for hugepages mapping...
-  for (int m = 0; m < FILES[fd].mmaps_len; m++) {
-    if (FILES[fd].mmaps[m].mem_len == length) {
-      if (FILES[fd].mmaps[m].refcount == 0 && FILES[fd].mmaps[m].accessible) {
-        // freed mmap, need to re-allow access
-        klee_allow_access(FILES[fd].mmaps[m].actual_mem,
-                          FILES[fd].mmaps[m].actual_mem_len);
-      }
-
-      FILES[fd].mmaps[m].refcount++;
-      return FILES[fd].mmaps[m].mem;
+    // Create an anonymous file.
+    fd = stub_add_file(ANON_MEM_NAME, NULL);
+    // Only allocate one MB at most otherwise we run out of memory.
+    if (length > 1024*1024) {
+	length = 1024*1024;
     }
   }
-
-  // don't mmap too many times
-  klee_assert(FILES[fd].mmaps_len <
-              sizeof(FILES[0].mmaps) / sizeof(FILES[0].mmaps[0]));
-
   // We need to align the returned value to the page size.
   // This is because we want "physical" addresses a.k.a. PAs (that we report) to
   // be the same as virtual addresses a.k.a. VAs; since PA = (PFN * PS) + (VA %
@@ -494,8 +529,10 @@ int munmap(void *addr, size_t length) {
   for (int n = 0; n < sizeof(FILES) / sizeof(FILES[0]); n++) {
     for (int m = 0; m < FILES[n].mmaps_len; m++) {
       if (FILES[n].mmaps[m].mem == addr) {
-        klee_assert(FILES[n].mmaps[m].mem_len == length);
 
+        if (FILES[n].path != ANON_MEM_NAME) {
+	  klee_assert(FILES[n].mmaps[m].mem_len == length);
+        }
         // We never free the mappings or decrease mmaps_len, since we keep old
         // mappings alive But we do ensure freed mmaps are not accessed
         FILES[n].mmaps[m].refcount--;
@@ -509,7 +546,23 @@ int munmap(void *addr, size_t length) {
     }
   }
 
+  // Sometimes DPDK unmaps memory it did not map, so cannot do klee_abort.
+  return -1;
+}
+
+int unlink(const char *pathname) {
+  for (int n = 0; n < sizeof(FILES) / sizeof(FILES[0]); n++) {
+    if(FILES[n].path != NULL && !strcmp(pathname, FILES[n].path)) {
+      return 0;
+    }
+  }
+
   klee_abort();
+}
+
+int madvise(void *addr, size_t length, int advice) {
+  // Ignore all advice
+  return 0;
 }
 
 int __libc_open(const char *pathname, int flags, mode_t mode) {
@@ -683,17 +736,26 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
   stub_add_folder("/sys/kernel/mm/hugepages", 1, huge_2048_fd);
 
   // /sys stuff
-  // TODO: We pretend CPU 0 / NUMA node 0 exist, but what about others?
+  // We pretend all CPUs on NUMA node 0 exist
   stub_add_file("/sys/devices/system/cpu/cpu0/topology/core_id",
                 "0"); // CPU 0 is core ID 0
-  stub_add_folder("/sys/devices/system/node/node0/cpu0", 0);
 
   int length = 50;
-  for (int i = 1; i < 128; i++) {
+  for (int i = 0; i < 128; i++) {
     char* pathCPU = (char *)malloc(length * sizeof(char));
     sprintf(pathCPU, "/sys/devices/system/node/node0/cpu%d", i);
     stub_add_folder(pathCPU, 0);
   }
+
+  int huge_free_node_fd =
+      stub_add_file("/sys/devices/system/node/node0/hugepages/hugepages-2048kB/free_hugepages",
+                    strdup(huge_free_value));
+
+  int huge_2048_node_fd =
+      stub_add_folder("/sys/devices/system/node/node0/hugepages/hugepages-2048kB", 1,
+                       huge_free_node_fd);
+
+  stub_add_folder("/sys/devices/system/node/node0/hugepages", 1, huge_2048_node_fd);
 
   // /sys/module has to be there for DPDK's modules check to not just fail;
   // but we do not have VFIO
@@ -785,24 +847,6 @@ char *stub_pci_addr(size_t addr) {
   }
 
   return strdup(buffer);
-}
-
-static int file_counter;
-int stub_add_file(char *path, char *content) {
-  struct stub_file file;
-  memset(&file, 0, sizeof(struct stub_file));
-
-  file.path = path;
-  file.content = content;
-  file.pos = POS_UNOPENED;
-  file.kind = KIND_FILE;
-
-  int fd = file_counter;
-  file_counter++;
-
-  FILES[fd] = file;
-
-  return fd;
 }
 
 int stub_add_link(char *path, char *content) {
