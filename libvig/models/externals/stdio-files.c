@@ -90,15 +90,11 @@ int NUM_PCI_DEVICES;
 const int MSR_FD = 1337;
 
 int access(const char *pathname, int mode) {
-  //klee_print_expr("path name=", pathname);
   if (mode == F_OK) {
     // Other CPUs
     const char *cpu_prefix = "/sys/devices/system/cpu/cpu";
     const char *cpu0_prefix = "/sys/devices/sytem/cpu/cpu0";
-    //if (!strncmp(pathname, cpu0_prefix, strlen(cpu0_prefix))) {
-      //klee_print_expr("first if statement",0);
-      //return 0;
-    //}
+
     if (pathname[strlen(cpu_prefix)] != '0'
         && !strncmp(pathname, cpu_prefix, strlen(cpu_prefix))) {
       return -1; // TODO
@@ -546,6 +542,7 @@ int munmap(void *addr, size_t length) {
         if (FILES[n].path != ANON_MEM_NAME) {
 	  klee_assert(FILES[n].mmaps[m].mem_len == length);
         }
+
         // We never free the mappings or decrease mmaps_len, since we keep old
         // mappings alive But we do ensure freed mmaps are not accessed
         FILES[n].mmaps[m].refcount--;
