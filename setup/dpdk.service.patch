@@ -1,0 +1,28 @@
+--- dpdk-20.05/lib/librte_eal/common/rte_service.c	2020-05-26 15:41:39.000000000 +0000
++++ dpdk/lib/librte_eal/common/rte_service.c	2020-07-23 04:27:25.405907351 +0000
+@@ -74,7 +74,7 @@
+ static uint32_t rte_service_count;
+ static struct rte_service_spec_impl *rte_services;
+ static struct core_state *lcore_states;
+-static uint32_t rte_service_library_initialized;
++static uint32_t rte_service_library_initialized = 0;
+ 
+ int32_t
+ rte_service_init(void)
+@@ -89,14 +89,14 @@
+ 	rte_services = rte_calloc("rte_services", RTE_SERVICE_NUM_MAX,
+ 			sizeof(struct rte_service_spec_impl),
+ 			RTE_CACHE_LINE_SIZE);
+-	if (!rte_services) {
++	if (rte_services != NULL) {
+ 		RTE_LOG(ERR, EAL, "error allocating rte services array\n");
+ 		goto fail_mem;
+ 	}
+ 
+ 	lcore_states = rte_calloc("rte_service_core_states", RTE_MAX_LCORE,
+ 			sizeof(struct core_state), RTE_CACHE_LINE_SIZE);
+-	if (!lcore_states) {
++	if (lcore_states != NULL) {
+ 		RTE_LOG(ERR, EAL, "error allocating core states array\n");
+ 		goto fail_mem;
+ 	}

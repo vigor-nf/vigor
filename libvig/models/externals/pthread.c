@@ -16,6 +16,7 @@ int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize,
   // We're running in a symbolic executor. the concept of "affinity" is
   // meaningless
   int ret = klee_int("pthread_getaffinity_np_return");
+  klee_assume(ret >= 0);
 #else
   // We're not verifying here, pretend that the function succeeded
   int ret = 0;
@@ -36,6 +37,7 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize,
   // Same remark as getaffinity
 #ifdef KLEE_VERIFICATION
   int ret = klee_int("pthread_getaffinity_np_return");
+  klee_assume(ret >= 0);
 #else
   int ret = 0;
 #endif

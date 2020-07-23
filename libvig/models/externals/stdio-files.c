@@ -24,7 +24,7 @@
 // Globals
 static const int POS_UNOPENED = -1;
 static const int POS_EOF = -2;
-static const char *ANON_MEM_NAME = "anonymous_memory";
+static char *ANON_MEM_NAME = "anonymous_memory";
 
 enum stub_file_kind { KIND_FILE, KIND_DIRECTORY, KIND_LINK };
 
@@ -90,15 +90,26 @@ int NUM_PCI_DEVICES;
 const int MSR_FD = 1337;
 
 int access(const char *pathname, int mode) {
+  //klee_print_expr("path name=", pathname);
   if (mode == F_OK) {
     // Other CPUs
     const char *cpu_prefix = "/sys/devices/system/cpu/cpu";
     const char *cpu0_prefix = "/sys/devices/sytem/cpu/cpu0";
-    if (!strncmp(pathname, cpu0_prefix, strlen(cpu0_prefix))) {
-      return 0;
-    }
-    if (!strncmp(pathname, cpu_prefix, strlen(cpu_prefix))) {
+    //if (!strncmp(pathname, cpu0_prefix, strlen(cpu0_prefix))) {
+      //klee_print_expr("first if statement",0);
+      //return 0;
+    //}
+    if (pathname[strlen(cpu_prefix)] != '0'
+        && !strncmp(pathname, cpu_prefix, strlen(cpu_prefix))) {
       return -1; // TODO
+    }
+
+    const char *node_prefix = "/sys/devices/system/node/node";
+    const char *node0_prefix = "/sys/devices/system/node/node0/cpu0";
+
+    if ( strncmp(pathname, node0_prefix, strlen(node0_prefix)) != 0
+        && !strncmp(pathname, node_prefix, strlen(node_prefix))) {
+      return -1;
     }
 
     for (int n = 0; n < sizeof(FILES) / sizeof(FILES[0]); n++) {
@@ -494,7 +505,9 @@ void *mmap(void *addr, size_t length, int prot, int flags, int fd,
   FILES[fd].mmaps[m].actual_mem_len = actual_length;
   FILES[fd].mmaps_len++;
 
-  if ((prot & PROT_WRITE) != PROT_WRITE) {
+  if ((prot & PROT_NONE) == PROT_NONE) {
+    FILES[fd].mmaps[m].accessible = true;
+  } else if ((prot & PROT_WRITE) != PROT_WRITE) {
     // Read-only memory, we enforce even stronger semantics by disallowing reads
     // with forbid_access
     klee_forbid_access(actual_mem, actual_length, "mmapped read-only memory");
@@ -540,7 +553,6 @@ int munmap(void *addr, size_t length) {
           klee_forbid_access(FILES[n].mmaps[m].actual_mem,
                              FILES[n].mmaps[m].actual_mem_len, "freed mmap");
         }
-
         return 0;
       }
     }
@@ -740,12 +752,7 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
   stub_add_file("/sys/devices/system/cpu/cpu0/topology/core_id",
                 "0"); // CPU 0 is core ID 0
 
-  int length = 50;
-  for (int i = 0; i < 128; i++) {
-    char* pathCPU = (char *)malloc(length * sizeof(char));
-    sprintf(pathCPU, "/sys/devices/system/node/node0/cpu%d", i);
-    stub_add_folder(pathCPU, 0);
-  }
+  stub_add_file("/sys/devices/system/node/node0/cpu0", 0);
 
   int huge_free_node_fd =
       stub_add_file("/sys/devices/system/node/node0/hugepages/hugepages-2048kB/free_hugepages",
