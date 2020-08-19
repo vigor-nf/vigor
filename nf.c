@@ -27,6 +27,11 @@
 #  define MAIN main
 #endif // NFOS
 
+// Unverified support for batching, useful for performance comparisons
+#ifndef VIGOR_BATCH_SIZE
+#  define VIGOR_BATCH_SIZE 1
+#endif
+
 // More elaborate loop shape with annotations for verification
 #ifdef KLEE_VERIFICATION
 #  define VIGOR_LOOP_BEGIN                                                        \
@@ -57,12 +62,18 @@
 #endif // KLEE_VERIFICATION
 
 
+#if VIGOR_BATCH_SIZE == 1
 // Queue sizes for receiving/transmitting packets
 // NOT powers of 2 so that ixgbe doesn't use vector stuff
 // but they have to be multiples of 8, and at least 32,
 // otherwise the driver refuses to work
 static const uint16_t RX_QUEUE_SIZE = 96;
 static const uint16_t TX_QUEUE_SIZE = 96;
+#else
+// Do the opposite: we want batching!
+static const uint16_t RX_QUEUE_SIZE = 128;
+static const uint16_t TX_QUEUE_SIZE = 128;
+#endif
 
 // Buffer count for mempools
 static const unsigned MEMPOOL_BUFFER_COUNT = 256;
@@ -136,6 +147,7 @@ static void worker_main(void) {
 
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
+#if VIGOR_BATCH_SIZE == 1
   VIGOR_LOOP_BEGIN
     struct rte_mbuf* mbuf;
     if (rte_eth_rx_burst(VIGOR_DEVICE, 0, &mbuf, 1) != 0) {
@@ -162,6 +174,45 @@ static void worker_main(void) {
       }
     }
   VIGOR_LOOP_END
+
+#else // if VIGOR_BATCH_SIZE != 1
+
+  if (rte_eth_dev_count() != 2) {
+    printf("We assume there will be exactly 2 devices for our simple batching implementation.");
+    exit(1);
+  }
+  NF_INFO("Running with batches, this code is unverified!");
+
+  while(1) {
+    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count();
+    for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
+      struct rte_mbuf* mbufs[VIGOR_BATCH_SIZE];
+      uint16_t rx_count = rte_eth_rx_burst(VIGOR_DEVICE, 0, mbufs, VIGOR_BATCH_SIZE);
+
+      struct rte_mbuf *mbufs_to_send[VIGOR_BATCH_SIZE];
+      uint16_t tx_count = 0;
+      for (uint16_t n = 0; n < rx_count; n++) {
+        uint8_t* data = rte_pktmbuf_mtod(mbufs[n], uint8_t*);
+        packet_state_total_length(data, &(mbufs[n]->pkt_len));
+        vigor_time_t VIGOR_NOW = current_time();
+        uint16_t dst_device = nf_process(mbufs[n]->port, data, mbufs[n]->pkt_len, VIGOR_NOW);
+        nf_return_all_chunks(data);
+
+        if (dst_device == VIGOR_DEVICE) {
+          rte_pktmbuf_free(mbufs[n]);
+        } else { // includes flood when 2 devices, which is equivalent to just a send
+          mbufs_to_send[tx_count] = mbufs[n];
+          tx_count++;
+       }
+     }
+
+      uint16_t sent_count = rte_eth_tx_burst(1 - VIGOR_DEVICE, 0, mbufs_to_send, tx_count);
+      for (uint16_t n = sent_count; n < tx_count; n++) {
+        rte_pktmbuf_free(mbufs[n]); // should not happen, but we're in the unverified case anyway
+      }
+    }
+  }
+#endif
 }
 
 
