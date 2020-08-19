@@ -20,11 +20,6 @@
 #  include <klee/klee.h>
 #endif // KLEE_VERIFICATION
 
-#ifdef VIGOR_DEBUG_PERF
-#  include <stdio.h>
-#  include "papi.h"
-#endif
-
 // NFOS declares its own main method
 #ifdef NFOS
 #  define MAIN nf_main
@@ -141,26 +136,7 @@ static void worker_main(void) {
 
   NF_INFO("Core %u forwarding packets.", rte_lcore_id());
 
-#ifdef VIGOR_DEBUG_PERF
-  NF_INFO("Counters: cycles, instructions, L1d, L1i, L2, L3");
-  int papi_events[] = {PAPI_TOT_CYC, PAPI_TOT_INS, PAPI_L1_DCM, PAPI_L1_ICM, PAPI_L2_TCM, PAPI_L3_TCM};
-  #define papi_events_count sizeof(papi_events)/sizeof(papi_events[0])
-  #define papi_batch_size 10000
-  long long papi_values[papi_batch_size][papi_events_count];
-  uint16_t batch_counters[papi_batch_size];
-  if (PAPI_start_counters(papi_events, papi_events_count) != PAPI_OK) {
-    rte_exit(EXIT_FAILURE, "Couldn't start PAPI counters.");
-  }
-  uint64_t papi_counter = 0;
-  uint64_t papi_total_counter = 0;
-#endif
-
   VIGOR_LOOP_BEGIN
-
-#ifdef VIGOR_DEBUG_PERF
-    PAPI_read_counters(papi_values[papi_counter], papi_events_count);
-#endif
-
     struct rte_mbuf* mbuf;
     if (rte_eth_rx_burst(VIGOR_DEVICE, 0, &mbuf, 1) != 0) {
       uint8_t* data = rte_pktmbuf_mtod(mbuf, uint8_t*);
@@ -176,7 +152,7 @@ static void worker_main(void) {
         // ensure we don't leak symbols into DPDK
         concretize_devices(&dst_device, rte_eth_dev_count());
         if (rte_eth_tx_burst(dst_device, 0, &mbuf, 1) != 1) {
-#ifdef VIGOR_DEBUG_PERF
+#ifdef VIGOR_ALLOW_DROPS
           rte_pktmbuf_free(mbuf); // OK, we're debugging
 #else
           printf("We assume the hardware will allways accept a packet to transmit.\n");
@@ -184,25 +160,6 @@ static void worker_main(void) {
 #endif
         }
       }
-
-#ifdef VIGOR_DEBUG_PERF
-      PAPI_read_counters(papi_values[papi_counter], papi_events_count);
-      papi_counter++;
-      papi_total_counter++;
-      if (papi_counter == papi_batch_size) {
-        for (uint64_t n = 0; n < papi_batch_size; n++) {
-          for (uint64_t e = 0; e < papi_events_count; e++) {
-            printf("%lld ", papi_values[n][e]);
-          }
-          printf("\n");
-        }
-        papi_counter = 0;
-        if (papi_total_counter >= VIGOR_DEBUG_PERF) {
-          exit(0);
-        }
-      }
-#endif
-
     }
   VIGOR_LOOP_END
 }
