@@ -39,10 +39,10 @@ struct stub_register {
   stub_register_write write; // possibly NULL
 };
 
-static struct stub_register REGISTERS[0x10161]; // index == address
+static struct stub_register REGISTERS[0x11060]; // index == address
 
 // Incremented at each delay; in nanoseconds.
-static uint64_t TIME;
+uint64_t TIME;
 
 // Checks for the traced_mbuf hack soundness
 static bool rx_called;
@@ -836,28 +836,6 @@ static uint32_t stub_register_msca_write(struct stub_device *dev,
   return new_value;
 }
 
-static uint32_t stub_register_rdrxctl_write(struct stub_device *dev,
-                                            uint32_t offset,
-                                            uint32_t new_value) {
-  // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
-  // (but the default is 0x0880, bits 7 and 11 set)
-  for (int n = 17; n <= 21; n++) {
-    klee_assert(GET_BIT(new_value, n) == 0);
-  }
-  SET_BIT(new_value, 7, 1);
-  SET_BIT(new_value, 11, 1);
-
-  // "Software should set [RSCACKC, bit 25] to 1"
-  klee_assert(GET_BIT(new_value, 25) == 1);
-  SET_BIT(new_value, 25, 0);
-
-  // "Software should set [FCOE_WRFIX, bit 26] to 1"
-  klee_assert(GET_BIT(new_value, 26) == 1);
-  SET_BIT(new_value, 26, 0);
-
-  return new_value;
-}
-
 static uint32_t stub_register_txdctl_write(struct stub_device *dev,
                                            uint32_t offset,
                                            uint32_t new_value) {
@@ -891,6 +869,27 @@ static uint32_t stub_register_tdh_write(struct stub_device *dev,
 static uint32_t stub_register_tdt_write(struct stub_device *dev,
                                         uint32_t offset, uint32_t new_value) {
   // SW wrote to TDT, meaning it has a packet for us
+
+
+  // In RDRXCTL:
+  uint32_t rdrxctl = DEV_REG(dev, 0x02F00);
+  // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
+  // (but the default is 0x0880, bits 7 and 11 set)
+  for (int n = 17; n <= 21; n++) {
+    klee_assert(GET_BIT(rdrxctl, n) == 0);
+  }
+  SET_BIT(rdrxctl, 7, 1);
+  SET_BIT(rdrxctl, 11, 1);
+
+  // "Software should set [RSCACKC, bit 25] to 1"
+  klee_assert(GET_BIT(rdrxctl, 25) == 1);
+  SET_BIT(rdrxctl, 25, 0);
+
+  // "Software should set [FCOE_WRFIX, bit 26] to 1"
+  klee_assert(GET_BIT(rdrxctl, 26) == 1);
+  SET_BIT(rdrxctl, 26, 0);
+
+
   // Get the address of the transmit descriptor for queue 0
   uint64_t tdba = ((uint64_t)DEV_REG(dev, 0x06000))            // TDBAL
                   | (((uint64_t)DEV_REG(dev, 0x06004)) << 32); // TDBAH
@@ -1471,7 +1470,6 @@ static void stub_registers_init(void) {
   // set this bit to 1b") 27-31: Reserved (0)
   REG(0x02F00, 0b00000000000100001000100000001000,
       0b00000110001111100000000000001110);
-  REGISTERS[0x02F00].write = stub_register_rdrxctl_write;
 
   // page 702
   // Receive Queue Statistic Mapping Registers — RQSMR[n] (0x02300 + 4*n,
@@ -2269,6 +2267,65 @@ static void stub_registers_init(void) {
     REG(0x08704 + 0x8 * n, 0b00000000000000000000000000000000,
         0b00000000000000000000000000000000);
   }
+
+
+  // --- Below are registers used by TinyNF but not DPDK ---
+
+  // Section 8.2.3.9.1 DMA Tx TCP Max Allow Size Requests (DTXMXSZRQ)
+  // Bits 0-11: max allowed number of requests, init val 0x10
+  REG(0x08100u,0b10000,
+      0b111111111111);
+
+  // Section 8.2.3.3.4 Flow Control Receive Threshold High
+  // Bits 5-18: Receive Threshold High n, default 0
+  for (int n = 0; n < 8; n++) {
+    REG(0x03260u + 4u*(n), 0, 0);
+  }
+
+  // Section 8.2.3.7.19 Five tuple Queue Filter
+  // Bit 31, Enable, default X, must be set to 0
+  for (int n = 0; n < 128; n++) {
+    REG(0x0E600u + 4u*(n), 0, 0);
+  }
+
+  // Section 8.2.3.4.12 PCIe Control Extended Register
+  // Bit 30, buffers clear func, during master disable
+  // TODO check master disable
+  REG(0x11050u, 0, 0b1000000000000000000000000000000);
+
+  // Section 8.2.3.22.34 MAC Flow Control Register
+  // Bit 3, default 0, Receive Flow Control Enable
+  // Indicates that the 82599 responds to the reception of link flow control packets. If autonegotiation
+  // is enabled, this bit should be set by software to the negotiated flow control
+  // value.
+  REG(0x04294u, 0, 0b1000);
+
+  // Section 8.2.3.8.9 Receive Packet Buffer Size
+  // Bits 10-19 can be set, default 0x200, rest are read-only
+  for (int n = 0; n < 8; n++) {
+    REG(0x03C00u + 4u*(n), 0b10000000000000000000,
+        0b11111111110000000000);
+  }
+
+  for (int n = 0; n < 128; n++) {
+    // Section 8.2.3.9.11 Tx Descriptor Completion Write Back Address High
+    REG(0x0603Cu + 0x40u*(n), 0, 0b11111111111111111111111111111111);
+
+    // Section 8.2.3.9.11 Tx Descriptor Completion Write Back Address Low
+    REG(0x06038u + 0x40u*(n), 0, 0b11111111111111111111111111111111);
+  }
+
+  // Section 8.2.3.9.13 Transmit Packet Buffer Size
+  // Bits 10-19 can be set, default 0xA0, rest are read-only
+  for (int n = 0; n < 8; n++) {
+    REG(0x0CC00u + 4u*(n), 0b101000000000000000, 0b11111111110000000000);
+  }
+
+  // Section 8.2.3.9.16 Tx Packet Buffer Threshold
+  // Bits 0-9 can be set, default 0x96 for 0 and 0 for others
+  for (int n = 0; n < 8; n++) {
+    REG(0x04950u + 4u*(n), (n == 0 ? 0b10010110 : 0), 0b1111111111);
+  }
 }
 
 static void stub_device_init(struct stub_device *dev) {
@@ -2449,7 +2506,11 @@ struct nfos_pci_nic *stub_hardware_get_nics(int *n) {
 }
 
 void stub_hardware_receive_packet(uint16_t device) {
-  stub_device_start(&(DEVICES[device]));
+  struct stub_device *dev = &(DEVICES[device]);
+
+  stub_device_start(dev);
+
+  dev->initial_rdt = DEV_REG(dev, 0x01018);
 }
 
 void stub_hardware_reset_receive(uint16_t device) {
@@ -2457,7 +2518,7 @@ void stub_hardware_reset_receive(uint16_t device) {
 
   // Reset descriptor ring
   DEV_REG(dev, 0x01010) = 0;
-  DEV_REG(dev, 0x01018) = 95;
+  DEV_REG(dev, 0x01018) = dev->initial_rdt;
 
   // Reset descriptor
   uint64_t rdba = ((uint64_t)DEV_REG(dev, 0x01000))            // RDBAL

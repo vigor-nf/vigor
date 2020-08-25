@@ -216,7 +216,19 @@ VERIF_WITHDPDK_INCLUDES := -I $(RTE_SDK)/$(RTE_TARGET)/include \
 			   -I $(RTE_SDK)/lib/librte_eal/common \
 			   -I $(RTE_SDK)/drivers/bus/pci \
 			   -I $(RTE_SDK)/drivers/net/ixgbe
-# And then some special DPDK includes: builtin models for built-ins DPDK uses,
+ifdef TINYNF_DIR
+# TinyNF includes
+VERIF_WITHDPDK_INCLUDES += -I $(TINYNF_DIR)/code
+# TinyNF files
+VERIF_WITHDPDK_FILES += $(TINYNF_DIR)/code/net/82599/ixgbe.c
+# TinyNF DPDK shim file with variables
+VERIF_WITHDPDK_FILES += $(TINYNF_DIR)/shims/dpdk/tn_dpdk.c
+# TinyNF environment models
+VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/tinynf-env/*.c
+# Hardware models
+VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/hardware.c
+else
+# Some special DPDK includes: builtin models for built-ins DPDK uses,
 # rte_config.h because many files forget to include it
 VERIF_WITHDPDK_INCLUDES += --include=libvig/models/builtin.h \
                            --include=rte_config.h
@@ -241,6 +253,7 @@ VERIF_WITHDPDK_FILES := $(DPDK_FILES) $(IXGBE_FILES) \
                         $(SELF_DIR)/libvig/models/hardware.c
 # Low-level models for specific functions
 VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/dpdk-low-level.c
+endif
 
 symbex-withdpdk: clean autogen
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) $(VERIF_INCLUDES) \

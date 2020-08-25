@@ -8,6 +8,7 @@
 
 #include "libvig/kernel/nfos_pci.h"
 
+extern uint64_t TIME;
 
 struct stub_device {
   char *name;
@@ -35,6 +36,9 @@ struct stub_device {
   // TODO can we remove this, and can we write down how we know interrupts are
   // disabled? I think it's a register...
   int interrupts_fd;
+
+  // used when resetting
+  uint32_t initial_rdt;
 };
 
 #ifdef VIGOR_MODEL_HARDWARE
