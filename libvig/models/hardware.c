@@ -152,7 +152,6 @@ static void stub_device_start(struct stub_device *dev) {
 
   // check both locations of the register... bit hacky cause we don't really support register mirrors
   if ((((DEV_REG(dev, 0x01014) >> 25) & 0b111) == 0) & (((DEV_REG(dev, 0x02100) >> 25) & 0b111) == 0)) {
-klee_print_expr("LEGRX",0);
     // Legacy descriptors, which TinyNF uses
 
     // First line unmodified
@@ -1312,7 +1311,7 @@ static void stub_registers_init(void) {
     int addr =
         n <= 15 ? (0x02100 + 4 * n)
                 : n <= 53 ? (0x01014 + 0x40 * n) : (0x0D014 + 0x40 * (n - 64));
-    REG(addr, 0b00000010000000000000010000000010,
+    REG(addr, 0b00000000000000000000010000000010,
         0b00010001110000000011111100011111);
   }
 
