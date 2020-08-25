@@ -941,6 +941,11 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   uint64_t buf_props = descr[1];
 
   uint16_t buf_len = buf_props & 0xFF;
+  if (buf_len == 0) {
+    // no packet
+    return new_value;
+  }
+
   if (((GET_BIT(buf_props, 20) != 1) | (GET_BIT(buf_props, 21) != 1) |
        (GET_BIT(buf_props, 22) != 0) | (GET_BIT(buf_props, 23) != 0))) {
     // Invalid descriptor type, assume it is not sending a packet
@@ -985,9 +990,8 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
 
   if (ret != 0) {
     // Write phase
-    descr[0] = 0;                   // Reserved
-    descr[1] = ((uint64_t)1) << 32; // Reserved, except bit 32 which is
-                                    // Descriptor Done and must be 1
+    // descr[0] is reserved, no change
+    descr[1] = descr[1] | ((uint64_t)1) << 32; // Set Descriptor Done, bit 32
   }
 
   return new_value;
@@ -1248,9 +1252,12 @@ static void stub_registers_init(void) {
   // 0x0D00C + 0x40*(n-64), n=64...127 / 0x02200 + 4*n, [n=0...15]; RW) NOTE:
   // "DCA_RXCTRL[0...15] are also mapped to address 0x02200... to maintain
   // compatibility with the 82598."
-  //       We do not implement the 0..15 at 0x0100C, which the ixgbe driver
-  //       doesn't use
   for (int n = 0; n <= 127; n++) {
+    if (n <= 15) {
+      REG(0x0100C + 0x40*n, 0b00000000000000001010001000000000,
+          0b11111111000000001010000000000000);
+    }
+
     int address =
         n <= 15 ? (0x02200 + 4 * n)
                 : n <= 63 ? (0x0100C + 0x40 * n) : (0x0D00C + 0x40 * (n - 64));
@@ -1273,8 +1280,8 @@ static void stub_registers_init(void) {
 
   // page 598-599
   // Split Receive Control Registers — SRRCTL[n] (0x01014 + 0x40*n, n=0...63 and
-  // 0x0D014 + 0x40*(n-64), n=64...127 / 0x02100 + 4*n, [n=0...15]; RW) NOTE: We
-  // do not model n <= 15 at 0x01014, since DPDK doesn't use them NOTE:
+  // 0x0D014 + 0x40*(n-64), n=64...127 / 0x02100 + 4*n, [n=0...15]; RW)
+  // NOTE:
   // "BSIZEHEADER must be bigger than zero if DESCTYPE is equal to 010b, 011b,
   // 100b or 101b"
 
@@ -1287,11 +1294,16 @@ static void stub_registers_init(void) {
   // Rx (001 - Advanced) 28: Drop Enabled (0 - not enabled) 29-31: Reserved
   // (000)
   for (int n = 0; n <= 127; n++) {
+    if (n <= 15) {
+          REG(0x01014 + 0x40*n, 0b00000010000000000000010000000010,
+              0b00010001110000000011111100011111);
+    }
+
     int addr =
         n <= 15 ? (0x02100 + 4 * n)
                 : n <= 53 ? (0x01014 + 0x40 * n) : (0x0D014 + 0x40 * (n - 64));
     REG(addr, 0b00000010000000000000010000000010,
-        0b00000001110000000011111100011111);
+        0b00010001110000000011111100011111);
   }
 
   // page 604
@@ -1807,7 +1819,7 @@ static void stub_registers_init(void) {
     // 26: Transmit Software Flush (0 - not enabled; note: "This bit is self
     // cleared by hardware") 27-31: Reserved (0)
     REG(0x06028 + 0x40 * n, 0b00000000000000000000000000000000,
-        0b00000110000000000000000001111111);
+        0b00000110011111110111111101111111);
     REGISTERS[0x06028 + 0x40 * n].write = stub_register_txdctl_write;
   }
 
