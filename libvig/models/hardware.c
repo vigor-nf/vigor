@@ -150,7 +150,9 @@ static void stub_device_start(struct stub_device *dev) {
   // Write the packet into the proper place
   memcpy((void *)mbuf_addr, mbuf_content, packet_len);
 
-  if (((DEV_REG(dev, 0x01014) >> 25) & 0b111) == 0) {
+  // check both locations of the register... bit hacky cause we don't really support register mirrors
+  if ((((DEV_REG(dev, 0x01014) >> 25) & 0b111) == 0) & (((DEV_REG(dev, 0x02100) >> 25) & 0b111) == 0)) {
+klee_print_expr("LEGRX",0);
     // Legacy descriptors, which TinyNF uses
 
     // First line unmodified
@@ -875,7 +877,10 @@ static uint32_t stub_register_tdh_write(struct stub_device *dev,
 
 static uint32_t stub_register_tdt_write(struct stub_device *dev,
                                         uint32_t offset, uint32_t new_value) {
-  // SW wrote to TDT, meaning it has a packet for us
+  // SW wrote to TDT, meaning it has a packet for us... unless it's 0
+  if (new_value == 0) {
+    return 0;
+  }
 
 
   // In RDRXCTL:
@@ -903,14 +908,6 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
 
   // Clear the head of the descriptor
   DEV_REG(dev, 0x06010) = 0; // TDH
-  // Make sure we have enough space
-  uint32_t tdt = new_value;
-  // VVV after the mem-pool fix (commit 5471336bf9), this value changes from 1
-  // to 0 on sending a packet.
-  //	if (tdt == 0) {
-  //		// No? Probably this is not to send a packet, then.
-  //		return new_value;
-  //	}
 
   // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
   // (which the NIC reads to know how to send a packet)
