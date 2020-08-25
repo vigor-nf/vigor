@@ -881,7 +881,6 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
     return 0;
   }
 
-
   // In RDRXCTL:
   uint32_t rdrxctl = DEV_REG(dev, 0x02F00);
   // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
@@ -900,13 +899,14 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   klee_assert(GET_BIT(rdrxctl, 26) == 1);
   SET_BIT(rdrxctl, 26, 0);
 
+  int n = (offset - 0x06018) / 0x40;
 
   // Get the address of the transmit descriptor for queue 0
-  uint64_t tdba = ((uint64_t)DEV_REG(dev, 0x06000))            // TDBAL
-                  | (((uint64_t)DEV_REG(dev, 0x06004)) << 32); // TDBAH
+  uint64_t tdba = ((uint64_t)DEV_REG(dev, 0x06000 + 0x40*n))            // TDBAL
+                  | (((uint64_t)DEV_REG(dev, 0x06004 + 0x40*n)) << 32); // TDBAH
 
   // Clear the head of the descriptor
-  DEV_REG(dev, 0x06010) = 0; // TDH
+  DEV_REG(dev, 0x06010 + 0x40*n) = 0; // TDH
 
   // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
   // (which the NIC reads to know how to send a packet)

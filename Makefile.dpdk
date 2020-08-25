@@ -228,7 +228,7 @@ VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/tinynf-env/*.c
 # Hardware models
 VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/hardware.c
 # TinyNF defs
-VERIF_WITHDPDK_DEFS += -DASSUME_ONE_WAY -DVIGOR_SYMBEX
+VERIF_WITHDPDK_DEFS += -DVIGOR_SYMBEX
 # Fake PCI devices
 NF_ARGS := 00:00.0 00:00.1 $(NF_ARGS)
 else
