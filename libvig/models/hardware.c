@@ -129,7 +129,46 @@ static void stub_device_start(struct stub_device *dev) {
     return;
   }
 
+  struct stub_mbuf_content *mbuf_content =
+    (struct stub_mbuf_content*) malloc(MBUF_MIN_SIZE);
+  if (mbuf_content == NULL) {
+    klee_abort();
+  }
+  // NOTE: validator depends on this specific name, "user_buf"
+  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
+
+  bool received_a_packet =
+      packet_receive(device_index, (void **)&mbuf_addr, &data_len);
+  klee_assert(received_a_packet);
+
+  // Soundness for hack
+  klee_assert(!rx_called);
+  rx_called = true;
+
   // Write phase
+
+  // Write the packet into the proper place
+  memcpy((void *)mbuf_addr, mbuf_content, packet_len);
+
+  if (((DEV_REG(dev, 0x01014) >> 25) & 0b111) == 0) {
+    // Legacy descriptors, which TinyNF uses
+
+    // First line unmodified
+
+    // Second Line
+    // 0-15: Length
+    // 16-31: Fragment Checksum
+    // 32: DD
+    // 33: EOP
+    // rest we don't care
+    uint64_t wb1 = (uint64_t)packet_len | (((uint64_t)0b11) << 32);
+    // "The 82599 writes back the receive descriptor immediately following the
+    // packet write into system memory."
+    descr[1] = wb1;
+    return;
+  }
+
+
 
   // First Line
   // 0-3: RSS Type (0 - no RSS)
@@ -149,13 +188,6 @@ static void stub_device_start(struct stub_device *dev) {
   uint64_t wb0 =
       0b0000000000000000000000000000000010000000000000000000000000000000;
 
-  struct stub_mbuf_content *mbuf_content =
-    (struct stub_mbuf_content*) malloc(MBUF_MIN_SIZE);
-  if (mbuf_content == NULL) {
-    klee_abort();
-  }
-  // NOTE: validator depends on this specific name, "user_buf"
-  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
 
 #  if __BYTE_ORDER == __BIG_ENDIAN
   bool is_ipv4 = mbuf_content->ether.ether_type == 0x0800;
@@ -249,33 +281,10 @@ static void stub_device_start(struct stub_device *dev) {
                          // anything
                          | is_ip_broadcast)));
 
-  // Write the packet into the proper place
-  memcpy((void *)mbuf_addr, mbuf_content, packet_len);
-
   // "The 82599 writes back the receive descriptor immediately following the
   // packet write into system memory."
   descr[0] = wb0;
   descr[1] = wb1;
-
-  // Get the DPDK packet type
-  uint32_t traced_ptype = 0;
-  traced_ptype |=
-      0x00000001; // ether; always - see TODO in definition of the ptype above
-  traced_ptype |= is_ipv4 * 0x00000010;
-  traced_ptype |= is_ipv4 * 0x00000040;
-  traced_ptype |= is_ipv4 * has_ip_ext * 0x00000030;
-  traced_ptype |= is_ipv6 * has_ip_ext * 0x000000c0;
-  traced_ptype |= is_udp * 0x00000200;
-  traced_ptype |= is_tcp * 0x00000100;
-  traced_ptype |= is_sctp * 0x00000400;
-
-  bool received_a_packet =
-      packet_receive(device_index, (void **)&mbuf_addr, &data_len);
-  klee_assert(received_a_packet);
-
-  // Soundness for hack
-  klee_assert(!rx_called);
-  rx_called = true;
 }
 
 // RW1C means a register can be read, and bits can be cleared by writing 1
@@ -918,61 +927,71 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   uint64_t buf_addr = descr[0];
 
   // Line 1: Properties
-  // 0-15: Buffer length
-  // 16-17: Reserved
-  // 18: Whetner LinkSec is applied
-  // 19: Whether the packet has an IEEE1588 timestamp
-  // 20-23: Descriptor type, must be 0011
-  // 24: End of Packet, should be 1 since we don't support multi-buffer packets
-  // 25: Insert FCS (should be 0)
-  // 26: Reserved
-  // 27: Report Status, whether SW wants HW to report DMA completion status in
-  // addition to an interrupt 28: Reserved 29: Descriptor Extension (must be 1)
-  // 30: VLAN Packet (should be 0)
-  // 31: Transmit Segmentation Enable (should be 0)
-  // 32: Descriptor Done (must be 0, we'll set to 1 once we're done)
-  // 33-35: Reserved
-  // 36-39: Irrelevant
-  // 40: Insert IP Checksum (should be 0)
-  // 41: Insert TCP/UDP Checksum (should be 0)
-  // 42: IPSEC offload request (should be 0)
-  // 43-45: Reserved
-  // 46-63: Payload length (== buffer length in our case)
   uint64_t buf_props = descr[1];
 
-  uint16_t buf_len = buf_props & 0xFF;
-  if (buf_len == 0) {
-    // no packet
-    return new_value;
+  uint16_t buf_len;
+  if (GET_BIT(buf_props, 29) == 0) {
+    // Legacy descriptors, which TinyNF uses
+    buf_len = buf_props & 0xFF;
+    if (buf_len == 0) {
+      // no packet
+      return new_value;
+    }
+
+    if ((GET_BIT(buf_props, 24) != 1) | (GET_BIT(buf_props, 24+1) != 1) |
+        (GET_BIT(buf_props, 32) != 0)) {
+      klee_abort();
+    }
+  } else {
+    // 0-15: Buffer length
+    // 16-17: Reserved
+    // 18: Whetner LinkSec is applied
+    // 19: Whether the packet has an IEEE1588 timestamp
+    // 20-23: Descriptor type, must be 0011
+    // 24: End of Packet, should be 1 since we don't support multi-buffer packets
+    // 25: Insert FCS (should be 0)
+    // 26: Reserved
+    // 27: Report Status, whether SW wants HW to report DMA completion status in
+    // addition to an interrupt 28: Reserved 29: Descriptor Extension (must be 1)
+    // 30: VLAN Packet (should be 0)
+    // 31: Transmit Segmentation Enable (should be 0)
+    // 32: Descriptor Done (must be 0, we'll set to 1 once we're done)
+    // 33-35: Reserved
+    // 36-39: Irrelevant
+    // 40: Insert IP Checksum (should be 0)
+    // 41: Insert TCP/UDP Checksum (should be 0)
+    // 42: IPSEC offload request (should be 0)
+    // 43-45: Reserved
+    // 46-63: Payload length (== buffer length in our case)
+    buf_len = buf_props & 0xFF;
+    if (((GET_BIT(buf_props, 20) != 1) | (GET_BIT(buf_props, 21) != 1) |
+         (GET_BIT(buf_props, 22) != 0) | (GET_BIT(buf_props, 23) != 0))) {
+      // Invalid descriptor type, assume it is not sending a packet
+      return new_value;
+    }
+
+    klee_assert(GET_BIT(buf_props, 18) == 0);
+    klee_assert(GET_BIT(buf_props, 19) == 0);
+
+    klee_assert(GET_BIT(buf_props, 20) == 1);
+    klee_assert(GET_BIT(buf_props, 21) == 1);
+    klee_assert(GET_BIT(buf_props, 22) == 0);
+    klee_assert(GET_BIT(buf_props, 23) == 0);
+
+    klee_assert(GET_BIT(buf_props, 24) == 1);
+    klee_assert(GET_BIT(buf_props, 25) == 1);
+    klee_assert(GET_BIT(buf_props, 27) == 0);
+    klee_assert(GET_BIT(buf_props, 29) == 1);
+    klee_assert(GET_BIT(buf_props, 30) == 0);
+    klee_assert(GET_BIT(buf_props, 31) == 0);
+    klee_assert(GET_BIT(buf_props, 32) == 0);
+    klee_assert(GET_BIT(buf_props, 40) == 0);
+    klee_assert(GET_BIT(buf_props, 41) == 0);
+    klee_assert(GET_BIT(buf_props, 42) == 0);
+
+    uint32_t payload_len = buf_props >> 46;
+    klee_assert(buf_len == payload_len);
   }
-
-  if (((GET_BIT(buf_props, 20) != 1) | (GET_BIT(buf_props, 21) != 1) |
-       (GET_BIT(buf_props, 22) != 0) | (GET_BIT(buf_props, 23) != 0))) {
-    // Invalid descriptor type, assume it is not sending a packet
-    return new_value;
-  }
-
-  klee_assert(GET_BIT(buf_props, 18) == 0);
-  klee_assert(GET_BIT(buf_props, 19) == 0);
-
-  klee_assert(GET_BIT(buf_props, 20) == 1);
-  klee_assert(GET_BIT(buf_props, 21) == 1);
-  klee_assert(GET_BIT(buf_props, 22) == 0);
-  klee_assert(GET_BIT(buf_props, 23) == 0);
-
-  klee_assert(GET_BIT(buf_props, 24) == 1);
-  klee_assert(GET_BIT(buf_props, 25) == 1);
-  klee_assert(GET_BIT(buf_props, 27) == 0);
-  klee_assert(GET_BIT(buf_props, 29) == 1);
-  klee_assert(GET_BIT(buf_props, 30) == 0);
-  klee_assert(GET_BIT(buf_props, 31) == 0);
-  klee_assert(GET_BIT(buf_props, 32) == 0);
-  klee_assert(GET_BIT(buf_props, 40) == 0);
-  klee_assert(GET_BIT(buf_props, 41) == 0);
-  klee_assert(GET_BIT(buf_props, 42) == 0);
-
-  uint32_t payload_len = buf_props >> 46;
-  klee_assert(buf_len == payload_len);
 
   // Get device index
   int device_index = 0;
@@ -980,19 +999,15 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
     device_index++;
   }
 
-
   packet_send((void *)buf_addr, device_index);
-  uint8_t ret = 1;
 
   // Soundness check
   klee_assert(!tx_completed);
   tx_completed = true;
 
-  if (ret != 0) {
-    // Write phase
-    // descr[0] is reserved, no change
-    descr[1] = descr[1] | ((uint64_t)1) << 32; // Set Descriptor Done, bit 32
-  }
+  // Write phase
+  // descr[0] is reserved, no change
+  descr[1] = descr[1] | ((uint64_t)1) << 32; // Set Descriptor Done, bit 32
 
   return new_value;
 }
@@ -2291,7 +2306,7 @@ static void stub_registers_init(void) {
   // Section 8.2.3.3.4 Flow Control Receive Threshold High
   // Bits 5-18: Receive Threshold High n, default 0
   for (int n = 0; n < 8; n++) {
-    REG(0x03260u + 4u*(n), 0, 0);
+    REG(0x03260u + 4u*(n), 0, 0b1111111111111100000);
   }
 
   // Section 8.2.3.7.19 Five tuple Queue Filter
