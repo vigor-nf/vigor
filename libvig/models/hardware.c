@@ -168,8 +168,6 @@ static void stub_device_start(struct stub_device *dev) {
     return;
   }
 
-
-
   // First Line
   // 0-3: RSS Type (0 - no RSS)
   // 4-16: Packet Type
@@ -931,6 +929,10 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
 
   uint16_t buf_len;
   if (GET_BIT(buf_props, 29) == 0) {
+    klee_assert(GET_BIT(buf_props, 24) == 1);
+    klee_assert(GET_BIT(buf_props, 24+1) == 1);
+    klee_assert(GET_BIT(buf_props, 32) == 0);
+
     // Legacy descriptors, which TinyNF uses
     buf_len = buf_props & 0xFF;
     if (buf_len == 0) {
@@ -938,10 +940,6 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
       return new_value;
     }
 
-    if ((GET_BIT(buf_props, 24) != 1) | (GET_BIT(buf_props, 24+1) != 1) |
-        (GET_BIT(buf_props, 32) != 0)) {
-      klee_abort();
-    }
   } else {
     // 0-15: Buffer length
     // 16-17: Reserved
@@ -1306,11 +1304,11 @@ static void stub_registers_init(void) {
   // for Header Buffer, in 64-byte resolution (0x4 - default; "Value can be from
   // 64 bytes to 1024 bytes") 14-21: Reserved (0) 22-24: Receive Descriptor
   // Minimum Threshold Size (0 - default) 25-27: Define the descriptor type in
-  // Rx (001 - Advanced) 28: Drop Enabled (0 - not enabled) 29-31: Reserved
+  // Rx (000 - Legacy) 28: Drop Enabled (0 - not enabled) 29-31: Reserved
   // (000)
   for (int n = 0; n <= 127; n++) {
     if (n <= 15) {
-          REG(0x01014 + 0x40*n, 0b00000010000000000000010000000010,
+          REG(0x01014 + 0x40*n, 0b00000000000000000000010000000010,
               0b00010001110000000011111100011111);
     }
 
