@@ -876,37 +876,12 @@ static uint32_t stub_register_tdh_write(struct stub_device *dev,
 
 static uint32_t stub_register_tdt_write(struct stub_device *dev,
                                         uint32_t offset, uint32_t new_value) {
-  // SW wrote to TDT, meaning it has a packet for us... unless it's 0
-  if (new_value == 0) {
-    return 0;
-  }
-
-  // In RDRXCTL:
-  uint32_t rdrxctl = DEV_REG(dev, 0x02F00);
-  // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
-  // (but the default is 0x0880, bits 7 and 11 set)
-  for (int n = 17; n <= 21; n++) {
-    klee_assert(GET_BIT(rdrxctl, n) == 0);
-  }
-  SET_BIT(rdrxctl, 7, 1);
-  SET_BIT(rdrxctl, 11, 1);
-
-  // "Software should set [RSCACKC, bit 25] to 1"
-  klee_assert(GET_BIT(rdrxctl, 25) == 1);
-  SET_BIT(rdrxctl, 25, 0);
-
-  // "Software should set [FCOE_WRFIX, bit 26] to 1"
-  klee_assert(GET_BIT(rdrxctl, 26) == 1);
-  SET_BIT(rdrxctl, 26, 0);
-
+  // SW wrote to TDT, meaning it has a packet for us
   int n = (offset - 0x06018) / 0x40;
 
   // Get the address of the transmit descriptor for queue 0
   uint64_t tdba = ((uint64_t)DEV_REG(dev, 0x06000 + 0x40*n))            // TDBAL
                   | (((uint64_t)DEV_REG(dev, 0x06004 + 0x40*n)) << 32); // TDBAH
-
-  // Clear the head of the descriptor
-  DEV_REG(dev, 0x06010 + 0x40*n) = 0; // TDH
 
   // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
   // (which the NIC reads to know how to send a packet)
@@ -924,12 +899,17 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   uint64_t buf_props = descr[1];
 
   uint16_t buf_len;
+  // Legacy descriptors (TinyNF) or advanced ones (DPDK)?
   if (GET_BIT(buf_props, 29) == 0) {
+    // this should be outside of the if, but our DPDK patches write 0 to TDT for simplicity...
+    if (new_value == 0) {
+      return 0;
+    }
+
     klee_assert(GET_BIT(buf_props, 24) == 1);
     klee_assert(GET_BIT(buf_props, 24+1) == 1);
     klee_assert(GET_BIT(buf_props, 32) == 0);
 
-    // Legacy descriptors, which TinyNF uses
     buf_len = buf_props & 0xFF;
     if (buf_len == 0) {
       // no packet
@@ -986,6 +966,25 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
     uint32_t payload_len = buf_props >> 46;
     klee_assert(buf_len == payload_len);
   }
+
+  // Clear the head of the descriptor
+  DEV_REG(dev, 0x06010 + 0x40*n) = 0; // TDH
+
+  // In RDRXCTL:
+  uint32_t rdrxctl = DEV_REG(dev, 0x02F00);
+  // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
+  // (but the default is 0x0880, bits 7 and 11 set)
+  for (int n = 17; n <= 21; n++) {
+    klee_assert(GET_BIT(rdrxctl, n) == 0);
+  }
+  SET_BIT(rdrxctl, 7, 1);
+  SET_BIT(rdrxctl, 11, 1);
+  // "Software should set [RSCACKC, bit 25] to 1"
+  klee_assert(GET_BIT(rdrxctl, 25) == 1);
+  SET_BIT(rdrxctl, 25, 0);
+  // "Software should set [FCOE_WRFIX, bit 26] to 1"
+  klee_assert(GET_BIT(rdrxctl, 26) == 1);
+  SET_BIT(rdrxctl, 26, 0);
 
   // Get device index
   int device_index = 0;
@@ -1305,14 +1304,14 @@ static void stub_registers_init(void) {
   for (int n = 0; n <= 127; n++) {
     if (n <= 15) {
           REG(0x01014 + 0x40*n, 0b00000000000000000000010000000010,
-              0b00010001110000000011111100011111);
+              0b00010011110000000011111100011111);
     }
 
     int addr =
         n <= 15 ? (0x02100 + 4 * n)
                 : n <= 53 ? (0x01014 + 0x40 * n) : (0x0D014 + 0x40 * (n - 64));
     REG(addr, 0b00000000000000000000010000000010,
-        0b00010001110000000011111100011111);
+        0b00010011110000000011111100011111);
   }
 
   // page 604
