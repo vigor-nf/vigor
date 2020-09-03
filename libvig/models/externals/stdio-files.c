@@ -791,7 +791,7 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
 
   // HACK those files exist but are not bound to their folder (defined above)...
   stub_add_file("/dev/hugepages/rte", FILE_CONTENT_HUGEPAGE);
-  for (int n = 0; n < STUB_HUGEPAGES_COUNT; n++) {
+  for (int n = 0; n < STUB_HUGEPAGES_COUNT * 2; n++) {
     char hugepage_file_name[1024];
     snprintf(hugepage_file_name, sizeof(hugepage_file_name),
              "/dev/hugepages/rtemap_%d", n);

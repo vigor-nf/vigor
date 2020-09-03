@@ -2160,7 +2160,9 @@ static void stub_registers_init(void) {
     0x0242C, // FCOE DWord Received Count — FCOEDWRC
     0x08784, // FCoE Packets Transmitted Count — FCOEPTC
     0x08788, // FCoE DWord Transmitted Count — FCOEDWTC
-    0x0EE58, // Flow Director Filters Match Statistics — FDIRMATCH (page 657)
+    0x0EE50, // Flow Director Filters Usage Statistics - FDIRUSTAT (page 657)
+    0x0EE54, // Flow Director Filters Failed Usage Statistics - FDIRFSTAT
+    0x0EE58, // Flow Director Filters Match Statistics — FDIRMATCH
     0x0EE5C, // Flow Director Filters Miss Match Statistics — FDIRMISS (page
              // 657)
     // starting on page 639
