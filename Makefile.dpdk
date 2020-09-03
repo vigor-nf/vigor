@@ -239,7 +239,8 @@ DPDK_FILES += $(RTE_SDK)/lib/!(librte_acl|librte_distributor|librte_power|librte
 DPDK_FILES += $(RTE_SDK)/drivers/bus/pci/*.c $(RTE_SDK)/drivers/bus/pci/linux/*.c
 # ixgbe driver
 IXGBE_FILES := $(RTE_SDK)/drivers/net/ixgbe/ixgbe_{fdir,flow,ethdev,ipsec,pf,rxtx,tm}.c \
-               $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_{api,common,phy,82599}.c
+               $(RTE_SDK)/drivers/net/ixgbe/base/ixgbe_{api,common,phy,82599}.c \
+	       $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c
 # DPDK, ixgbe, hardware models
 VERIF_WITHDPDK_FILES := $(DPDK_FILES) $(IXGBE_FILES) \
                         $(SELF_DIR)/libvig/models/hardware.c
