@@ -222,7 +222,7 @@ VERIF_WITHDPDK_INCLUDES += -I $(TINYNF_DIR)/code
 # TinyNF files
 VERIF_WITHDPDK_FILES += $(TINYNF_DIR)/code/net/82599/ixgbe.c
 # TinyNF DPDK shim file with variables
-VERIF_WITHDPDK_FILES += $(TINYNF_DIR)/shims/dpdk/tn_dpdk.c
+VERIF_WITHDPDK_FILES += $(RTE_SDK)/tn_dpdk.c
 # TinyNF environment models
 VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/tinynf-env/*.c
 # Hardware models

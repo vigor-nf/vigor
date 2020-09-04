@@ -2346,6 +2346,14 @@ static void stub_registers_init(void) {
   for (int n = 0; n < 8; n++) {
     REG(0x04950u + 4u*(n), (n == 0 ? 0b10010110 : 0), 0b1111111111);
   }
+
+  // Section 8.2.3.3.7 Flow Control Configuration
+  // Bits 3-4 can be set for the flow control stuff, but bit 4 should only be set in DCB mode
+  REG(0x03D00, 0, 0b01000);
+
+  // Section 8.2.3.10.14 DCB Transmit Descriptor Plane T1 Config
+  // All bits could be set but should be 0 outside of virtualization mode
+  REG(0x04908, 0, 0);
 }
 
 static void stub_device_init(struct stub_device *dev) {
