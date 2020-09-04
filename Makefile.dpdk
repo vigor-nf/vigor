@@ -229,6 +229,9 @@ VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/tinynf-env/*.c
 VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/hardware.c
 # TinyNF defs
 VERIF_WITHDPDK_DEFS += -DVIGOR_SYMBEX
+ifeq ($(NF_DEVICES),2)
+VERIF_WITHDPDK_DEFS += -DASSUME_ONE_WAY
+endif
 # Fake PCI devices
 NF_ARGS := $(shell for i in $$(seq 1 $(NF_DEVICES)); do printf '00:00.%d ' $$(echo "$$i-1" | bc); done) $(NF_ARGS)
 else
