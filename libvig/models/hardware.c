@@ -20,8 +20,8 @@
 
 
 struct stub_mbuf_content {
-  struct rte_ether_hdr rte_ether;
-  struct rte_ipv4_hdr rte_ipv4;
+  struct rte_ether_hdr ether;
+  struct rte_ipv4_hdr ipv4;
 };
 
 
@@ -39,10 +39,10 @@ struct stub_register {
   stub_register_write write; // possibly NULL
 };
 
-static struct stub_register REGISTERS[0x10161]; // index == address
+static struct stub_register REGISTERS[0x11060]; // index == address
 
 // Incremented at each delay; in nanoseconds.
-static uint64_t TIME;
+uint64_t TIME;
 
 // Checks for the traced_mbuf hack soundness
 static bool rx_called;
@@ -129,7 +129,45 @@ static void stub_device_start(struct stub_device *dev) {
     return;
   }
 
+  struct stub_mbuf_content *mbuf_content =
+    (struct stub_mbuf_content*) malloc(MBUF_MIN_SIZE);
+  if (mbuf_content == NULL) {
+    klee_abort();
+  }
+  // NOTE: validator depends on this specific name, "user_buf"
+  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
+
+  bool received_a_packet =
+      packet_receive(device_index, (void **)&mbuf_addr, &data_len);
+  klee_assert(received_a_packet);
+
+  // Soundness for hack
+  klee_assert(!rx_called);
+  rx_called = true;
+
   // Write phase
+
+  // Write the packet into the proper place
+  memcpy((void *)mbuf_addr, mbuf_content, packet_len);
+
+  // check both locations of the register... bit hacky cause we don't really support register mirrors
+  if ((((DEV_REG(dev, 0x01014) >> 25) & 0b111) == 0) & (((DEV_REG(dev, 0x02100) >> 25) & 0b111) == 0)) {
+    // Legacy descriptors, which TinyNF uses
+
+    // First line unmodified
+
+    // Second Line
+    // 0-15: Length
+    // 16-31: Fragment Checksum
+    // 32: DD
+    // 33: EOP
+    // rest we don't care
+    uint64_t wb1 = (uint64_t)packet_len | (((uint64_t)0b11) << 32);
+    // "The 82599 writes back the receive descriptor immediately following the
+    // packet write into system memory."
+    descr[1] = wb1;
+    return;
+  }
 
   // First Line
   // 0-3: RSS Type (0 - no RSS)
@@ -149,25 +187,18 @@ static void stub_device_start(struct stub_device *dev) {
   uint64_t wb0 =
       0b0000000000000000000000000000000010000000000000000000000000000000;
 
-  struct stub_mbuf_content *mbuf_content =
-    (struct stub_mbuf_content*) malloc(MBUF_MIN_SIZE);
-  if (mbuf_content == NULL) {
-    klee_abort();
-  }
-  // NOTE: validator depends on this specific name, "user_buf"
-  klee_make_symbolic(mbuf_content, MBUF_MIN_SIZE, "user_buf");
 
 #  if __BYTE_ORDER == __BIG_ENDIAN
-  bool is_ipv4 = mbuf_content->rte_ether.ether_type == 0x0800;
-  bool is_ipv6 = mbuf_content->rte_ether.ether_type == 0x86DD;
+  bool is_ipv4 = mbuf_content->ether.ether_type == 0x0800;
+  bool is_ipv6 = mbuf_content->ether.ether_type == 0x86DD;
 #  else
-  bool is_ipv4 = mbuf_content->rte_ether.ether_type == 0x0008;
-  bool is_ipv6 = mbuf_content->rte_ether.ether_type == 0xDD86;
+  bool is_ipv4 = mbuf_content->ether.ether_type == 0x0008;
+  bool is_ipv6 = mbuf_content->ether.ether_type == 0xDD86;
 #  endif
 
-  bool is_tcp = is_ipv4 & (mbuf_content->rte_ipv4.next_proto_id == 6);
-  bool is_udp = is_ipv4 & (mbuf_content->rte_ipv4.next_proto_id == 17);
-  bool is_sctp = is_ipv4 & (mbuf_content->rte_ipv4.next_proto_id == 132);
+  bool is_tcp = is_ipv4 & (mbuf_content->ipv4.next_proto_id == 6);
+  bool is_udp = is_ipv4 & (mbuf_content->ipv4.next_proto_id == 17);
+  bool is_sctp = is_ipv4 & (mbuf_content->ipv4.next_proto_id == 132);
 
   // NOTE: Allowing all of those to be symbols means the symbex takes
   // suuuuper-long... worth doing sometimes, but not all the time
@@ -239,43 +270,20 @@ static void stub_device_start(struct stub_device *dev) {
           (is_ipv4 & (
   // Multicast addr?
 #  if __BYTE_ORDER == __BIG_ENDIAN
-                         ((mbuf_content->rte_ipv4.dst_addr >= 0xE0000000) &
-                          (mbuf_content->rte_ipv4.dst_addr < 0xF0000000))
+                         ((mbuf_content->ipv4.dst_addr >= 0xE0000000) &
+                          (mbuf_content->ipv4.dst_addr < 0xF0000000))
 #  else
-                         (((mbuf_content->rte_ipv4.dst_addr & 0xFF) >= 0xE0) &
-                          ((mbuf_content->rte_ipv4.dst_addr & 0xFF) < 0xF0))
+                         (((mbuf_content->ipv4.dst_addr & 0xFF) >= 0xE0) &
+                          ((mbuf_content->ipv4.dst_addr & 0xFF) < 0xF0))
 #  endif
                          // Or just a broadcast, which can be pretty much
                          // anything
                          | is_ip_broadcast)));
 
-  // Write the packet into the proper place
-  memcpy((void *)mbuf_addr, mbuf_content, packet_len);
-
   // "The 82599 writes back the receive descriptor immediately following the
   // packet write into system memory."
   descr[0] = wb0;
   descr[1] = wb1;
-
-  // Get the DPDK packet type
-  uint32_t traced_ptype = 0;
-  traced_ptype |=
-      0x00000001; // ether; always - see TODO in definition of the ptype above
-  traced_ptype |= is_ipv4 * 0x00000010;
-  traced_ptype |= is_ipv4 * 0x00000040;
-  traced_ptype |= is_ipv4 * has_ip_ext * 0x00000030;
-  traced_ptype |= is_ipv6 * has_ip_ext * 0x000000c0;
-  traced_ptype |= is_udp * 0x00000200;
-  traced_ptype |= is_tcp * 0x00000100;
-  traced_ptype |= is_sctp * 0x00000400;
-
-  bool received_a_packet =
-      packet_receive(device_index, (void **)&mbuf_addr, &data_len);
-  klee_assert(received_a_packet);
-
-  // Soundness for hack
-  klee_assert(!rx_called);
-  rx_called = true;
 }
 
 // RW1C means a register can be read, and bits can be cleared by writing 1
@@ -836,28 +844,6 @@ static uint32_t stub_register_msca_write(struct stub_device *dev,
   return new_value;
 }
 
-static uint32_t stub_register_rdrxctl_write(struct stub_device *dev,
-                                            uint32_t offset,
-                                            uint32_t new_value) {
-  // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
-  // (but the default is 0x0880, bits 7 and 11 set)
-  for (int n = 17; n <= 21; n++) {
-    klee_assert(GET_BIT(new_value, n) == 0);
-  }
-  SET_BIT(new_value, 7, 1);
-  SET_BIT(new_value, 11, 1);
-
-  // "Software should set [RSCACKC, bit 25] to 1"
-  klee_assert(GET_BIT(new_value, 25) == 1);
-  SET_BIT(new_value, 25, 0);
-
-  // "Software should set [FCOE_WRFIX, bit 26] to 1"
-  klee_assert(GET_BIT(new_value, 26) == 1);
-  SET_BIT(new_value, 26, 0);
-
-  return new_value;
-}
-
 static uint32_t stub_register_txdctl_write(struct stub_device *dev,
                                            uint32_t offset,
                                            uint32_t new_value) {
@@ -891,20 +877,11 @@ static uint32_t stub_register_tdh_write(struct stub_device *dev,
 static uint32_t stub_register_tdt_write(struct stub_device *dev,
                                         uint32_t offset, uint32_t new_value) {
   // SW wrote to TDT, meaning it has a packet for us
-  // Get the address of the transmit descriptor for queue 0
-  uint64_t tdba = ((uint64_t)DEV_REG(dev, 0x06000))            // TDBAL
-                  | (((uint64_t)DEV_REG(dev, 0x06004)) << 32); // TDBAH
+  int n = (offset - 0x06018) / 0x40;
 
-  // Clear the head of the descriptor
-  DEV_REG(dev, 0x06010) = 0; // TDH
-  // Make sure we have enough space
-  uint32_t tdt = new_value;
-  // VVV after the mem-pool fix (commit 5471336bf9), this value changes from 1
-  // to 0 on sending a packet.
-  //	if (tdt == 0) {
-  //		// No? Probably this is not to send a packet, then.
-  //		return new_value;
-  //	}
+  // Get the address of the transmit descriptor for queue 0
+  uint64_t tdba = ((uint64_t)DEV_REG(dev, 0x06000 + 0x40*n))            // TDBAL
+                  | (((uint64_t)DEV_REG(dev, 0x06004 + 0x40*n)) << 32); // TDBAH
 
   // Descriptor is 128 bits, see page 353, table 7-39 "Descriptor Read Format"
   // (which the NIC reads to know how to send a packet)
@@ -919,56 +896,95 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   uint64_t buf_addr = descr[0];
 
   // Line 1: Properties
-  // 0-15: Buffer length
-  // 16-17: Reserved
-  // 18: Whetner LinkSec is applied
-  // 19: Whether the packet has an IEEE1588 timestamp
-  // 20-23: Descriptor type, must be 0011
-  // 24: End of Packet, should be 1 since we don't support multi-buffer packets
-  // 25: Insert FCS (should be 0)
-  // 26: Reserved
-  // 27: Report Status, whether SW wants HW to report DMA completion status in
-  // addition to an interrupt 28: Reserved 29: Descriptor Extension (must be 1)
-  // 30: VLAN Packet (should be 0)
-  // 31: Transmit Segmentation Enable (should be 0)
-  // 32: Descriptor Done (must be 0, we'll set to 1 once we're done)
-  // 33-35: Reserved
-  // 36-39: Irrelevant
-  // 40: Insert IP Checksum (should be 0)
-  // 41: Insert TCP/UDP Checksum (should be 0)
-  // 42: IPSEC offload request (should be 0)
-  // 43-45: Reserved
-  // 46-63: Payload length (== buffer length in our case)
   uint64_t buf_props = descr[1];
 
-  uint16_t buf_len = buf_props & 0xFF;
-  if (((GET_BIT(buf_props, 20) != 1) | (GET_BIT(buf_props, 21) != 1) |
-       (GET_BIT(buf_props, 22) != 0) | (GET_BIT(buf_props, 23) != 0))) {
-    // Invalid descriptor type, assume it is not sending a packet
-    return new_value;
+  uint16_t buf_len;
+  // Legacy descriptors (TinyNF) or advanced ones (DPDK)?
+  if (GET_BIT(buf_props, 29) == 0) {
+    // this should be outside of the if, but our DPDK patches write 0 to TDT for simplicity...
+    if (new_value == 0) {
+      return 0;
+    }
+
+    klee_assert(GET_BIT(buf_props, 24) == 1);
+    klee_assert(GET_BIT(buf_props, 24+1) == 1);
+    klee_assert(GET_BIT(buf_props, 32) == 0);
+
+    buf_len = buf_props & 0xFF;
+    if (buf_len == 0) {
+      // no packet
+      return new_value;
+    }
+
+  } else {
+    // 0-15: Buffer length
+    // 16-17: Reserved
+    // 18: Whetner LinkSec is applied
+    // 19: Whether the packet has an IEEE1588 timestamp
+    // 20-23: Descriptor type, must be 0011
+    // 24: End of Packet, should be 1 since we don't support multi-buffer packets
+    // 25: Insert FCS (should be 0)
+    // 26: Reserved
+    // 27: Report Status, whether SW wants HW to report DMA completion status in
+    // addition to an interrupt 28: Reserved 29: Descriptor Extension (must be 1)
+    // 30: VLAN Packet (should be 0)
+    // 31: Transmit Segmentation Enable (should be 0)
+    // 32: Descriptor Done (must be 0, we'll set to 1 once we're done)
+    // 33-35: Reserved
+    // 36-39: Irrelevant
+    // 40: Insert IP Checksum (should be 0)
+    // 41: Insert TCP/UDP Checksum (should be 0)
+    // 42: IPSEC offload request (should be 0)
+    // 43-45: Reserved
+    // 46-63: Payload length (== buffer length in our case)
+    buf_len = buf_props & 0xFF;
+    if (((GET_BIT(buf_props, 20) != 1) | (GET_BIT(buf_props, 21) != 1) |
+         (GET_BIT(buf_props, 22) != 0) | (GET_BIT(buf_props, 23) != 0))) {
+      // Invalid descriptor type, assume it is not sending a packet
+      return new_value;
+    }
+
+    klee_assert(GET_BIT(buf_props, 18) == 0);
+    klee_assert(GET_BIT(buf_props, 19) == 0);
+
+    klee_assert(GET_BIT(buf_props, 20) == 1);
+    klee_assert(GET_BIT(buf_props, 21) == 1);
+    klee_assert(GET_BIT(buf_props, 22) == 0);
+    klee_assert(GET_BIT(buf_props, 23) == 0);
+
+    klee_assert(GET_BIT(buf_props, 24) == 1);
+    klee_assert(GET_BIT(buf_props, 25) == 1);
+    klee_assert(GET_BIT(buf_props, 27) == 0);
+    klee_assert(GET_BIT(buf_props, 29) == 1);
+    klee_assert(GET_BIT(buf_props, 30) == 0);
+    klee_assert(GET_BIT(buf_props, 31) == 0);
+    klee_assert(GET_BIT(buf_props, 32) == 0);
+    klee_assert(GET_BIT(buf_props, 40) == 0);
+    klee_assert(GET_BIT(buf_props, 41) == 0);
+    klee_assert(GET_BIT(buf_props, 42) == 0);
+
+    uint32_t payload_len = buf_props >> 46;
+    klee_assert(buf_len == payload_len);
   }
 
-  klee_assert(GET_BIT(buf_props, 18) == 0);
-  klee_assert(GET_BIT(buf_props, 19) == 0);
+  // Clear the head of the descriptor
+  DEV_REG(dev, 0x06010 + 0x40*n) = 0; // TDH
 
-  klee_assert(GET_BIT(buf_props, 20) == 1);
-  klee_assert(GET_BIT(buf_props, 21) == 1);
-  klee_assert(GET_BIT(buf_props, 22) == 0);
-  klee_assert(GET_BIT(buf_props, 23) == 0);
+  // In RDRXCTL (Section: 8.2.3.8.8):
+  uint32_t rdrxctl = DEV_REG(dev, 0x02F00);
+  // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
+  // (but the default is 0x0880, bits 7 and 11 set)
+  for (int n = 17; n <= 21; n++) {
+    klee_assert(GET_BIT(rdrxctl, n) == 0);
+  }
 
-  klee_assert(GET_BIT(buf_props, 24) == 1);
-  klee_assert(GET_BIT(buf_props, 25) == 1);
-  klee_assert(GET_BIT(buf_props, 27) == 0);
-  klee_assert(GET_BIT(buf_props, 29) == 1);
-  klee_assert(GET_BIT(buf_props, 30) == 0);
-  klee_assert(GET_BIT(buf_props, 31) == 0);
-  klee_assert(GET_BIT(buf_props, 32) == 0);
-  klee_assert(GET_BIT(buf_props, 40) == 0);
-  klee_assert(GET_BIT(buf_props, 41) == 0);
-  klee_assert(GET_BIT(buf_props, 42) == 0);
+  // "Software should set [RSCACKC, bit 25] to 1"
+  uint32_t rscctl = DEV_REG(dev, 0x0102c + 0x40*n);
+  klee_assert(GET_BIT(rscctl, 0) == 0);
 
-  uint32_t payload_len = buf_props >> 46;
-  klee_assert(buf_len == payload_len);
+  klee_assert((GET_BIT(rdrxctl, 25) == 1) || (GET_BIT(rscctl, 0) == 0) );
+  // "Software should set [FCOE_WRFIX, bit 26] to 1"
+  klee_assert(GET_BIT(rdrxctl, 26) == 1);
 
   // Get device index
   int device_index = 0;
@@ -976,20 +992,15 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
     device_index++;
   }
 
-
   packet_send((void *)buf_addr, device_index);
-  uint8_t ret = 1;
 
   // Soundness check
   klee_assert(!tx_completed);
   tx_completed = true;
 
-  if (ret != 0) {
-    // Write phase
-    descr[0] = 0;                   // Reserved
-    descr[1] = ((uint64_t)1) << 32; // Reserved, except bit 32 which is
-                                    // Descriptor Done and must be 1
-  }
+  // Write phase
+  // descr[0] is reserved, no change
+  descr[1] = descr[1] | ((uint64_t)1) << 32; // Set Descriptor Done, bit 32
 
   return new_value;
 }
@@ -1081,6 +1092,17 @@ static void stub_registers_init(void) {
                                    .write = NULL };                            \
       REGISTERS[addr] = reg;                                                   \
     } while (0);
+
+  // Section 8.2.3.22.34
+  // MAC Flow Control Register — MFLCN (0x04294; RW)
+  // 0: Pass MAC Control Frames (0 - filter unrecognized)
+  // 1: Discard Pause Frame (0 - pause frames sent to host)
+  // 2: Receive Priority Flow Control Enable. This bit should not be set if bit 3 is set.
+  // 3: Receive Flow Control Enable. This bit should not be set if bit 2 is set.
+  // 4-31: Reserved(0)
+
+  //REG(0x04294, 0b00000000000000000000000000000000,
+    //  0b00000000000000000000000000001111);
 
   // page 543
   // Device Control Register — CTRL (0x00000 / 0x00004; RW)
@@ -1249,9 +1271,12 @@ static void stub_registers_init(void) {
   // 0x0D00C + 0x40*(n-64), n=64...127 / 0x02200 + 4*n, [n=0...15]; RW) NOTE:
   // "DCA_RXCTRL[0...15] are also mapped to address 0x02200... to maintain
   // compatibility with the 82598."
-  //       We do not implement the 0..15 at 0x0100C, which the ixgbe driver
-  //       doesn't use
   for (int n = 0; n <= 127; n++) {
+    if (n <= 15) {
+      REG(0x0100C + 0x40*n, 0b00000000000000001010001000000000,
+          0b11111111000000001010000000000000);
+    }
+
     int address =
         n <= 15 ? (0x02200 + 4 * n)
                 : n <= 63 ? (0x0100C + 0x40 * n) : (0x0D00C + 0x40 * (n - 64));
@@ -1274,8 +1299,8 @@ static void stub_registers_init(void) {
 
   // page 598-599
   // Split Receive Control Registers — SRRCTL[n] (0x01014 + 0x40*n, n=0...63 and
-  // 0x0D014 + 0x40*(n-64), n=64...127 / 0x02100 + 4*n, [n=0...15]; RW) NOTE: We
-  // do not model n <= 15 at 0x01014, since DPDK doesn't use them NOTE:
+  // 0x0D014 + 0x40*(n-64), n=64...127 / 0x02100 + 4*n, [n=0...15]; RW)
+  // NOTE:
   // "BSIZEHEADER must be bigger than zero if DESCTYPE is equal to 010b, 011b,
   // 100b or 101b"
 
@@ -1285,14 +1310,19 @@ static void stub_registers_init(void) {
   // for Header Buffer, in 64-byte resolution (0x4 - default; "Value can be from
   // 64 bytes to 1024 bytes") 14-21: Reserved (0) 22-24: Receive Descriptor
   // Minimum Threshold Size (0 - default) 25-27: Define the descriptor type in
-  // Rx (001 - Advanced) 28: Drop Enabled (0 - not enabled) 29-31: Reserved
+  // Rx (000 - Legacy) 28: Drop Enabled (0 - not enabled) 29-31: Reserved
   // (000)
   for (int n = 0; n <= 127; n++) {
+    if (n <= 15) {
+          REG(0x01014 + 0x40*n, 0b00000000000000000000010000000010,
+              0b00010011110000000011111100011111);
+    }
+
     int addr =
         n <= 15 ? (0x02100 + 4 * n)
                 : n <= 53 ? (0x01014 + 0x40 * n) : (0x0D014 + 0x40 * (n - 64));
-    REG(addr, 0b00000010000000000000010000000010,
-        0b00000001110000000011111100011111);
+    REG(addr, 0b00000000000000000000010000000010,
+        0b00010011110000000011111100011111);
   }
 
   // page 604
@@ -1470,8 +1500,7 @@ static void stub_registers_init(void) {
   // Fix (0 - default; "FCOE_WRFIX is reserved for internal use. Software should
   // set this bit to 1b") 27-31: Reserved (0)
   REG(0x02F00, 0b00000000000100001000100000001000,
-      0b00000110001111100000000000001110);
-  REGISTERS[0x02F00].write = stub_register_rdrxctl_write;
+      0b00000110001111100000000000001010);
 
   // page 702
   // Receive Queue Statistic Mapping Registers — RQSMR[n] (0x02300 + 4*n,
@@ -1809,7 +1838,7 @@ static void stub_registers_init(void) {
     // 26: Transmit Software Flush (0 - not enabled; note: "This bit is self
     // cleared by hardware") 27-31: Reserved (0)
     REG(0x06028 + 0x40 * n, 0b00000000000000000000000000000000,
-        0b00000110000000000000000001111111);
+        0b00000110011111110111111101111111);
     REGISTERS[0x06028 + 0x40 * n].write = stub_register_txdctl_write;
   }
 
@@ -2069,6 +2098,7 @@ static void stub_registers_init(void) {
     0x04034, // MAC Local Fault Count — MLFC
     0x04038, // MAC Remote Fault Count — MRFC
     0x04040, // Receive Length Error Count — RLEC
+    0x04292, // MAC Flow Control Register - MFLCN
     0x08780, // Switch Security Violation Packet Count — SSVPC
     0x03F60, // Link XON Transmitted Count — LXONTXC
     0x041A4, // Link XON Received Count — LXONRXCNT
@@ -2165,6 +2195,7 @@ static void stub_registers_init(void) {
     0x0EE58, // Flow Director Filters Match Statistics — FDIRMATCH
     0x0EE5C, // Flow Director Filters Miss Match Statistics — FDIRMISS (page
              // 657)
+    0x03D00, // Flow Control Configuration - FCCFG
     // starting on page 639
     0x08F64, // LinkSec Rx Packet OK — LSECRXOK[0]
     0x08F68, // LinkSec Rx Packet OK — LSECRXOK[1]
@@ -2270,6 +2301,81 @@ static void stub_registers_init(void) {
   for (int n = 0; n <= 15; n++) {
     REG(0x08704 + 0x8 * n, 0b00000000000000000000000000000000,
         0b00000000000000000000000000000000);
+  }
+
+  // Section 8.2.3.3.3 Flow Control Receive Threshold Low
+  // Bits 5-18: Receive Threshold Low n, default 0
+  for (int n = 0; n < 8; n++) {
+    REG(0x03220u + 4u*(n), 0, 0b1111111111111100000);
+  }
+
+  // Section 8.2.3.3.2 Flow Control Transmit Timer Value
+  // Bits 0-15: Transmit timer value 2n
+  // Bits 16-31: Transmit timer value 2n +1
+  for (int n = 0; n < 4; n++) {
+    REG(0x03200u + 4u*(n), 0, 0b11111111111111111111111111111111);
+  }
+
+  // Section 8.2.3.3.5 Flow Control Refresh Threshold Value
+  // Bits 0-15: Flow Control Refresh Threshold.
+    REG(0x032a0, 0, 0b1111111111111111);
+
+  // --- Below are registers used by TinyNF but not DPDK ---
+
+  // Section 8.2.3.9.1 DMA Tx TCP Max Allow Size Requests (DTXMXSZRQ)
+  // Bits 0-11: max allowed number of requests, init val 0x10
+  REG(0x08100u,0b10000,
+      0b111111111111);
+
+  // Section 8.2.3.3.4 Flow Control Receive Threshold High
+  // Bits 5-18: Receive Threshold High n, default 0
+  for (int n = 0; n < 8; n++) {
+    REG(0x03260u + 4u*(n), 0, 0b1111111111111100000);
+  }
+
+  // Section 8.2.3.7.19 Five tuple Queue Filter
+  // Bit 31, Enable, default X, must be set to 0
+  for (int n = 0; n < 128; n++) {
+    REG(0x0E600u + 4u*(n), 0, 0);
+  }
+
+  // Section 8.2.3.4.12 PCIe Control Extended Register
+  // Bit 30, buffers clear func, during master disable
+  // TODO check master disable
+  REG(0x11050u, 0, 0b1000000000000000000000000000000);
+
+  // Section 8.2.3.22.34 MAC Flow Control Register
+  // Bit 3, default 0, Receive Flow Control Enable
+  // Indicates that the 82599 responds to the reception of link flow control packets. If autonegotiation
+  // is enabled, this bit should be set by software to the negotiated flow control
+  // value.
+  REG(0x04294u, 0, 0b1111);
+
+  // Section 8.2.3.8.9 Receive Packet Buffer Size
+  // Bits 10-19 can be set, default 0x200, rest are read-only
+  for (int n = 0; n < 8; n++) {
+    REG(0x03C00u + 4u*(n), 0b10000000000000000000,
+        0b11111111110000000000);
+  }
+
+  for (int n = 0; n < 128; n++) {
+    // Section 8.2.3.9.11 Tx Descriptor Completion Write Back Address High
+    REG(0x0603Cu + 0x40u*(n), 0, 0b11111111111111111111111111111111);
+
+    // Section 8.2.3.9.11 Tx Descriptor Completion Write Back Address Low
+    REG(0x06038u + 0x40u*(n), 0, 0b11111111111111111111111111111111);
+  }
+
+  // Section 8.2.3.9.13 Transmit Packet Buffer Size
+  // Bits 10-19 can be set, default 0xA0, rest are read-only
+  for (int n = 0; n < 8; n++) {
+    REG(0x0CC00u + 4u*(n), 0b101000000000000000, 0b11111111110000000000);
+  }
+
+  // Section 8.2.3.9.16 Tx Packet Buffer Threshold
+  // Bits 0-9 can be set, default 0x96 for 0 and 0 for others
+  for (int n = 0; n < 8; n++) {
+    REG(0x04950u + 4u*(n), (n == 0 ? 0b10010110 : 0), 0b1111111111);
   }
 }
 
@@ -2451,7 +2557,11 @@ struct nfos_pci_nic *stub_hardware_get_nics(int *n) {
 }
 
 void stub_hardware_receive_packet(uint16_t device) {
-  stub_device_start(&(DEVICES[device]));
+  struct stub_device *dev = &(DEVICES[device]);
+
+  stub_device_start(dev);
+
+  dev->initial_rdt = DEV_REG(dev, 0x01018);
 }
 
 void stub_hardware_reset_receive(uint16_t device) {
@@ -2459,7 +2569,7 @@ void stub_hardware_reset_receive(uint16_t device) {
 
   // Reset descriptor ring
   DEV_REG(dev, 0x01010) = 0;
-  DEV_REG(dev, 0x01018) = 95;
+  DEV_REG(dev, 0x01018) = dev->initial_rdt;
 
   // Reset descriptor
   uint64_t rdba = ((uint64_t)DEV_REG(dev, 0x01000))            // RDBAL

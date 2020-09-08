@@ -78,6 +78,17 @@ static inline int stub_compare_exchange_n(volatile void* ptr, volatile void* exp
  	 }
 }
 
+// This built-in function implements an atomic exchange operation. It writes val into *ptr,
+// and returns the previous contents of *ptr.
+#define __atomic_exchange_n(ptr, val, memorder) stub_atomic64_exchange(ptr, val)
+
+static inline uint64_t stub_atomic64_exchange(volatile void* dst, uint64_t val) {
+	volatile uint64_t *dst_i = (volatile uint64_t *) dst;
+	uint64_t prev = *dst_i;
+	*dst_i = val;
+	return prev;
+}
+
 // Despite it being called test_and_set, GCC docs describe it as "not a
 // traditional test-and-set operation, but rather an atomic exchange operation"
 static inline int32_t stub_test_and_set(volatile int32_t *ptr, int32_t value) {

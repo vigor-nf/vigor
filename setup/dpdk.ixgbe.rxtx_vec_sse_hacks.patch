@@ -1,0 +1,24 @@
+--- a/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-05-26 15:41:39.000000000 +0000
++++ b/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-09-08 09:38:04.071017898 +0000
+@@ -650,8 +650,10 @@
+ 	/* cross rx_thresh boundary is not allowed */
+ 	nb_pkts = RTE_MIN(nb_pkts, txq->tx_rs_thresh);
+ 
++#ifndef KLEE_VERIFICATION
+ 	if (txq->nb_tx_free < txq->tx_free_thresh)
+ 		ixgbe_tx_free_bufs(txq);
++#endif
+ 
+ 	nb_commit = nb_pkts = (uint16_t)RTE_MIN(txq->nb_tx_free, nb_pkts);
+ 	if (unlikely(nb_pkts == 0))
+@@ -695,7 +697,10 @@
+ 			txq->tx_rs_thresh);
+ 	}
+ 
++	txq->tx_tail = 0;
++#ifndef KLEE_VERIFICATION
+ 	txq->tx_tail = tx_id;
++#endif
+ 
+ 	IXGBE_PCI_REG_WRITE(txq->tdt_reg_addr, txq->tx_tail);
+ 

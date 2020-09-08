@@ -1,0 +1,15 @@
+--- a/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-03 06:50:58.737244902 +0000
++++ b/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-07 10:12:58.934164416 +0000
+@@ -5169,6 +5169,12 @@
+ 		else
+ 			rdrxctl |= IXGBE_RDRXCTL_CRCSTRIP;
+ 		rdrxctl &= ~IXGBE_RDRXCTL_RSCFRSTSIZE;
++		// Section 8.2.3.8.8
++		// "Software should set [RSCACKC, bit 25] to 1"
++		rdrxctl |= IXGBE_RDRXCTL_RSCACKC;
++		// "Software should set [FCOE_WRFIX, bit 26] to 1"
++		rdrxctl |= IXGBE_RDRXCTL_FCOE_WRFIX;
++
+ 		IXGBE_WRITE_REG(hw, IXGBE_RDRXCTL, rdrxctl);
+ 	}
+ 
