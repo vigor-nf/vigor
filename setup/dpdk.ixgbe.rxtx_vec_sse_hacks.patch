@@ -11,6 +11,16 @@
  
  	nb_commit = nb_pkts = (uint16_t)RTE_MIN(txq->nb_tx_free, nb_pkts);
  	if (unlikely(nb_pkts == 0))
+@@ -663,7 +663,9 @@
+ 	txdp = &txq->tx_ring[tx_id];
+ 	txep = &txq->sw_ring_v[tx_id];
+ 
++#ifndef KLEE_VERIFICATION
+ 	txq->nb_tx_free = (uint16_t)(txq->nb_tx_free - nb_pkts);
++#endif
+ 
+ 	n = (uint16_t)(txq->nb_tx_desc - tx_id);
+ 	if (nb_commit >= n) {
 @@ -695,7 +697,10 @@
  			txq->tx_rs_thresh);
  	}
