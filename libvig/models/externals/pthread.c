@@ -13,7 +13,7 @@ pthread_t pthread_self(void) {
 // Simple cache
 static pthread_t thread_get, thread_set;
 static size_t css_get, css_set;
-static cpu_set_t *cpuset_set;
+static cpu_set_t cpuset_set;
 static int ret_get, ret_set;
 
 int pthread_getaffinity_np(pthread_t thread, size_t cpusetsize,
@@ -51,7 +51,7 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize,
                            const cpu_set_t *cpuset) {
   // Same remark as getaffinity
   int ret;
-  if (thread == thread_set && cpusetsize == css_set && CPU_EQUAL(cpuset, cpuset_set)) {
+  if (thread == thread_set && cpusetsize == css_set && CPU_EQUAL(cpuset, &cpuset_set)) {
      ret = ret_set;
    } else {
 #ifdef KLEE_VERIFICATION
@@ -62,7 +62,7 @@ int pthread_setaffinity_np(pthread_t thread, size_t cpusetsize,
 #endif
     thread_set = thread;
     css_set = cpusetsize;
-    cpuset_set = cpuset;
+    cpuset_set = *cpuset;
     ret_set = ret;
   }
   return ret;

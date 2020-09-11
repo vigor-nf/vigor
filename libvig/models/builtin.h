@@ -34,24 +34,18 @@
 // idem than add, but with sub
 #define __sync_fetch_and_sub(ptr, value) (*(ptr) -= (value))
 
-#define __atomic_fetch_sub(ptr, value, flag) (*(ptr) -= (value))
+// "An atomic operation can both constrain code motion and be mapped to hardware
+// instructions for synchronization between threads (e.g., a fence). To which extent
+// this happens is controlled by the memory orders"
+// --https://gcc.gnu.org/onlinedocs/gcc/_005f_005fatomic-Builtins.html
+// We do not care about inter-thread synchronization, so can ignore memorder param.
+#define __atomic_fetch_sub(ptr, value, memorder) (*(ptr) -= (value))
+
 // We are single threaded, no need to support thread-local storage
 #define __thread
 
 // This function is only available on ARM processors
 #define __builtin___clear_cache
-
-#define __sched_cpucount(setsize, setp) stub_sched_cpucount()
-
-static inline int stub_sched_cpucount() {
-  return 1;
-}
-
-static int stub_return_0() {  return 0; }
-
-#define getrlimit(resource, rlim) stub_return_0()
-
-#define setrlimit(resouce, rlim) stub_return_0()
 
 // "This built-in function implements an atomic compare and exchange operation.
 //  This compares the contents of *ptr with the contents of *expected.
