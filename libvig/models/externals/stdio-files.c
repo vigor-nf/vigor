@@ -224,7 +224,11 @@ int ftruncate(int fd, off_t length) {
   klee_assert(FILES[fd].pos != POS_UNOPENED);
   klee_assert(FILES[fd].kind == KIND_FILE);
 
- // if (FILES[fd].content == FILE_CONTENT_HPINFO) {
+  // DPDK want to also truncate rtemap_* files which are tagged with
+  // FILE_CONTENT_HUGEPAGE
+  if (FILES[fd].content == FILE_CONTENT_HPINFO
+      || FILES[fd].content == FILE_CONTENT_HUGEPAGE) {
+
     FILES[fd].content = (char *)malloc(length);
     memset(FILES[fd].content, 0, length);
 
@@ -232,9 +236,9 @@ int ftruncate(int fd, off_t length) {
     // appropriately.
     // -- https://linux.die.net/man/2/ftruncate
     return 0;
- // }
+  }
 
- // klee_abort();
+  klee_abort();
 }
 
 off_t lseek(int fd, off_t offset, int whence) {
@@ -791,7 +795,7 @@ void stub_stdio_files_init(struct nfos_pci_nic *devs, int n) {
 
   // HACK those files exist but are not bound to their folder (defined above)...
   stub_add_file("/dev/hugepages/rte", FILE_CONTENT_HUGEPAGE);
-  for (int n = 0; n < STUB_HUGEPAGES_COUNT * 2; n++) {
+  for (int n = 0; n < STUB_HUGEPAGES_COUNT; n++) {
     char hugepage_file_name[1024];
     snprintf(hugepage_file_name, sizeof(hugepage_file_name),
              "/dev/hugepages/rtemap_%d", n);
