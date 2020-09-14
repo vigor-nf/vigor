@@ -970,7 +970,7 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   // Clear the head of the descriptor
   DEV_REG(dev, 0x06010 + 0x40*n) = 0; // TDH
 
-  // In RDRXCTL (Section: 8.2.3.8.8):
+  // In RDRXCTL:
   uint32_t rdrxctl = DEV_REG(dev, 0x02F00);
   // "Software should set [RSCFRSTSIZE, bits 17 to 21] to 0x0"
   // (but the default is 0x0880, bits 7 and 11 set)
@@ -978,11 +978,12 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
     klee_assert(GET_BIT(rdrxctl, n) == 0);
   }
 
-  // "Software should set [RSCACKC, bit 25] to 1"
+  // "Software should set [RSCACKC, bit 25] to 1" only makes sense
+  //  if RSC is enabled.
   uint32_t rscctl = DEV_REG(dev, 0x0102c + 0x40*n);
-  klee_assert(GET_BIT(rscctl, 0) == 0);
 
-  klee_assert((GET_BIT(rdrxctl, 25) == 1) || (GET_BIT(rscctl, 0) == 0) );
+  klee_assert((GET_BIT(rdrxctl, 25) == 1) || (GET_BIT(rscctl, 0) == 0));
+  SET_BIT(rdrxctl, 25, 0);
   // "Software should set [FCOE_WRFIX, bit 26] to 1"
   klee_assert(GET_BIT(rdrxctl, 26) == 1);
 
@@ -1092,17 +1093,6 @@ static void stub_registers_init(void) {
                                    .write = NULL };                            \
       REGISTERS[addr] = reg;                                                   \
     } while (0);
-
-  // Section 8.2.3.22.34
-  // MAC Flow Control Register — MFLCN (0x04294; RW)
-  // 0: Pass MAC Control Frames (0 - filter unrecognized)
-  // 1: Discard Pause Frame (0 - pause frames sent to host)
-  // 2: Receive Priority Flow Control Enable. This bit should not be set if bit 3 is set.
-  // 3: Receive Flow Control Enable. This bit should not be set if bit 2 is set.
-  // 4-31: Reserved(0)
-
-  //REG(0x04294, 0b00000000000000000000000000000000,
-    //  0b00000000000000000000000000001111);
 
   // page 543
   // Device Control Register — CTRL (0x00000 / 0x00004; RW)
@@ -2345,11 +2335,14 @@ static void stub_registers_init(void) {
   REG(0x11050u, 0, 0b1000000000000000000000000000000);
 
   // Section 8.2.3.22.34 MAC Flow Control Register
+  // 0: Pass MAC Control Frames (0 - filter unrecognized)
+  // 1: Discard Pause Frame (0 - pause frames sent to host)
+  // 2: Receive Priority Flow Control Enable. This bit should not be set if bit 3 is set.
   // Bit 3, default 0, Receive Flow Control Enable
   // Indicates that the 82599 responds to the reception of link flow control packets. If autonegotiation
   // is enabled, this bit should be set by software to the negotiated flow control
   // value.
-  REG(0x04294u, 0, 0b1111);
+  REG(0x04294u, 0, 0b1011);
 
   // Section 8.2.3.8.9 Receive Packet Buffer Size
   // Bits 10-19 can be set, default 0x200, rest are read-only
