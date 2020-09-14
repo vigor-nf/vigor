@@ -72,6 +72,7 @@ let parse_int str =
   (* As another hack: handle -300 in 64bits. *)
   else if (String.equal str "18446744073709551316") then Some (-300)
   else if (String.equal str "18446744073709551556") then Some (-60)
+  else if (String.equal str "18446744073709551578") then Some (-38)
   else if (String.equal str "18446744073709551596") then Some (-20)
   else if (String.equal str "18446744063709551616") then Some (-10000000000)
   else if (String.equal str "18446744073709551562") then Some (-54)
@@ -499,6 +500,7 @@ let get_sint_in_bounds v =
   else if (String.equal v "18446744073709551316") then -300
   (* and -60 *)
   else if (String.equal v "18446744073709551556") then -60
+  else if (String.equal v "18446744073709551578") then -38
   (* and -20 *)
   else if (String.equal v "18446744073709551596") then -20
   (* and -10 000 000 000 in 128bit *)
