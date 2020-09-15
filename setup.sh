@@ -154,7 +154,7 @@ sudo apt-get install -y libz-dev
 if [ ! -e "$BUILDDIR/fastclick" ]; then
   git clone https://github.com/tbarbette/fastclick "$BUILDDIR/fastclick"
   pushd "$BUILDDIR/fastclick"
-    git checkout e77376fef6d982fef59517ddd3f1533b9dffc000
+    git checkout e14b85d5ee801f92c762a11614802ee6af6b6316
     cp elements/etherswitch/etherswitch.* elements/ethernet/. # more convenient
   popd
   cp -r "$BUILDDIR/fastclick" "$BUILDDIR/fastclick-batch"
