@@ -233,7 +233,7 @@ static void read_static_ft_from_array(struct Map *stat_map,
     struct StaticKey *key = 0;
     vector_borrow(stat_keys, count, (void **)&key);
 
-    int result = nf_parse_rte_etheraddr(static_rules[idx].mac_addr, &key->addr);
+    int result = nf_parse_etheraddr(static_rules[idx].mac_addr, &key->addr);
     if (result < 0) {
       NF_INFO("Invalid MAC address: %s, skip", static_rules[idx].mac_addr);
       continue;
