@@ -1,5 +1,5 @@
---- dpdk-20.05-ref/config/common_base	2020-05-26 15:41:39.000000000 +0000
-+++ dpdk/config/common_base	2020-07-23 10:17:36.120975853 +0000
+--- a/config/common_base	2020-05-26 15:41:39.000000000 +0000
++++ b/config/common_base	2020-07-23 10:17:36.120975853 +0000
 @@ -42,7 +42,8 @@
  #
  # Use intrinsics or assembly code for key routines
@@ -10,13 +10,3 @@
  
  #
  # Machine forces strict alignment constraints.
-@@ -81,7 +82,8 @@
- CONFIG_RTE_MAX_LCORE=128
- CONFIG_RTE_MAX_NUMA_NODES=8
- CONFIG_RTE_MAX_HEAPS=32
--CONFIG_RTE_MAX_MEMSEG_LISTS=64
-+# We do not need as much memory, reducing it makes validation faster
-+CONFIG_RTE_MAX_MEMSEG_LISTS=1
- # each memseg list will be limited to either RTE_MAX_MEMSEG_PER_LIST pages
- # or RTE_MAX_MEM_MB_PER_LIST megabytes worth of memory, whichever is smaller
- CONFIG_RTE_MAX_MEMSEG_PER_LIST=8192

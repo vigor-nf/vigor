@@ -1,5 +1,5 @@
---- dpdk-20.05-ref/lib/librte_eal/linux/eal_memalloc.c	2020-05-26 15:41:39.000000000 +0000
-+++ dpdk-20.05-patches/lib/librte_eal/linux/eal_memalloc.c	2020-08-19 05:04:17.338501112 +0000
+--- a/lib/librte_eal/linux/eal_memalloc.c	2020-05-26 15:41:39.000000000 +0000
++++ b/lib/librte_eal/linux/eal_memalloc.c	2020-08-19 05:04:17.338501112 +0000
 @@ -565,11 +565,11 @@
  		 */
  		goto unmapped;
