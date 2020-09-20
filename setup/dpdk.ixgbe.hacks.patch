@@ -1,5 +1,5 @@
---- a/drivers/net/ixgbe/ixgbe_rxtx.c	2020-05-26 15:41:39.000000000 +0000
-+++ b/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-14 12:03:46.617265288 +0000
+--- a/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-20 12:08:34.572132233 +0000
++++ b/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-20 12:05:50.143740047 +0000
 @@ -1572,9 +1572,11 @@
  	}
  
@@ -97,7 +97,7 @@
  		}
  		if (rxq->rx_nb_avail) {
 --- a/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-05-26 15:41:39.000000000 +0000
-+++ b/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-09-14 13:15:49.015346242 +0000
++++ b/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-09-20 12:05:50.075743194 +0000
 @@ -650,8 +650,10 @@
  	/* cross rx_thresh boundary is not allowed */
  	nb_pkts = RTE_MIN(nb_pkts, txq->tx_rs_thresh);
@@ -130,3 +130,15 @@
  
  	IXGBE_PCI_REG_WRITE(txq->tdt_reg_addr, txq->tx_tail);
  
+--- a/lib/librte_mbuf/rte_mbuf.h	2020-05-26 15:41:39.000000000 +0000
++++ b/lib/librte_mbuf/rte_mbuf.h	2020-09-20 12:05:50.083742823 +0000
+@@ -612,7 +612,9 @@
+ 	RTE_ASSERT(m->next == NULL);
+ 	RTE_ASSERT(m->nb_segs == 1);
+ 	__rte_mbuf_sanity_check(m, 0);
++#ifndef KLEE_VERIFICATION
+ 	rte_mempool_put(m->pool, m);
++#endif
+ }
+ 
+ /**
