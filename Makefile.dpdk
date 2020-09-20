@@ -120,7 +120,7 @@ COMPILE_COMMAND := clang
 # also purge the pointless GNU linker warnings
 # so KLEE doesn't warn about module asm
 LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-uclibc.bca && \
-		rm -f sleep.os vfprintf.os socket.os fflush_unlocked.os fflush.os && \
+                rm -f sleep.os vfprintf.os socket.os fflush_unlocked.os fflush.os && \
                 llvm-link -o nf_raw.bc  *.os *.bc && \
                 llvm-dis -o nf_raw.ll nf_raw.bc && \
                 sed -i -e 's/module asm ".section .gnu.warning.*"//g' \
