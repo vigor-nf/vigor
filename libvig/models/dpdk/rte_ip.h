@@ -4,12 +4,12 @@
 
 #include <stdint.h>
 
-#define IPV4_HDR_IHL_MASK 0x0F
-#define IPV4_IHL_MULTIPLIER 4
+#define RTE_IPV4_HDR_IHL_MASK 0x0F
+#define RTE_IPV4_IHL_MULTIXPLIER 4
 
 #define PKT_TX_TCP_SEG (1ULL << 50)
 
-struct ipv4_hdr {
+struct rte_ipv4_hdr {
   uint8_t version_ihl;
   uint8_t type_of_service;
   uint16_t total_length;

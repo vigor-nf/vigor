@@ -5,6 +5,8 @@
 
 #  include <klee/klee.h>
 
+uint8_t rte_rtm_supported;
+
 int rte_cpu_get_flag_enabled(enum rte_cpu_flag_t feature) {
   // Sentinel value - see makefile
   if (feature == (enum rte_cpu_flag_t)424242) {

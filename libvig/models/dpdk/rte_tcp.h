@@ -4,7 +4,7 @@
 
 #include <stdint.h>
 
-struct tcp_hdr {
+struct rte_tcp_hdr {
   uint16_t src_port;
   uint16_t dst_port;
   uint32_t sent_seq;

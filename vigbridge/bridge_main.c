@@ -36,10 +36,10 @@ int bridge_expire_entries(vigor_time_t time) {
                                  mac_tables->dyn_map, last_time);
 }
 
-int bridge_get_device(struct ether_addr *dst, uint16_t src_device) {
+int bridge_get_device(struct rte_ether_addr *dst, uint16_t src_device) {
   int device = -1;
   struct StaticKey k;
-  memcpy(&k.addr, dst, sizeof(struct ether_addr));
+  memcpy(&k.addr, dst, sizeof(struct rte_ether_addr));
   k.device = src_device;
   int present = map_get(mac_tables->st_map, &k, &device);
   if (present) {
@@ -61,10 +61,10 @@ int bridge_get_device(struct ether_addr *dst, uint16_t src_device) {
   return -1;
 }
 
-void bridge_put_update_entry(struct ether_addr *src, uint16_t src_device,
+void bridge_put_update_entry(struct rte_ether_addr *src, uint16_t src_device,
                              vigor_time_t time) {
   int index = -1;
-  int hash = ether_addr_hash(src);
+  int hash = rte_ether_addr_hash(src);
   int present = map_get(mac_tables->dyn_map, src, &index);
   if (present) {
     dchain_rejuvenate_index(mac_tables->dyn_heap, index, time);
@@ -75,11 +75,11 @@ void bridge_put_update_entry(struct ether_addr *src, uint16_t src_device,
       NF_INFO("No more space in the dynamic table");
       return;
     }
-    struct ether_addr *key = 0;
+    struct rte_ether_addr *key = 0;
     struct DynamicValue *value = 0;
     vector_borrow(mac_tables->dyn_keys, index, (void **)&key);
     vector_borrow(mac_tables->dyn_vals, index, (void **)&value);
-    memcpy(key, src, sizeof(struct ether_addr));
+    memcpy(key, src, sizeof(struct rte_ether_addr));
     value->device = src_device;
     map_put(mac_tables->dyn_map, key, index);
     // the other half of the key is in the map
@@ -255,7 +255,7 @@ bool nf_init(void) {
   unsigned capacity = config.dyn_capacity;
   assert(stat_capacity < CAPACITY_UPPER_LIMIT - 1);
 
-  mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count());
+  mac_tables = alloc_state(capacity, stat_capacity, rte_eth_dev_count_avail());
   if (mac_tables == NULL) {
     return false;
   }
@@ -269,13 +269,13 @@ bool nf_init(void) {
   return true;
 }
 
-int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
-  struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
+int nf_process(uint16_t device, uint8_t* buffer, uint16_t buffer_length, vigor_time_t now) {
+  struct rte_ether_hdr *rte_ether_header = nf_then_get_rte_ether_header(buffer);
 
   bridge_expire_entries(now);
-  bridge_put_update_entry(&ether_header->s_addr, device, now);
+  bridge_put_update_entry(&rte_ether_header->s_addr, device, now);
 
-  int forward_to = bridge_get_device(&ether_header->d_addr, device);
+  int forward_to = bridge_get_device(&rte_ether_header->d_addr, device);
 
   if (forward_to == -1) {
     return FLOOD_FRAME;

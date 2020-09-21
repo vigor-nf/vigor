@@ -33,8 +33,8 @@
                                     int dev_count,
                                     unsigned int lcore_id,
                                     vigor_time_t time) =
-              mapp<ether_addri>(dyn_map, ether_addrp, _ether_addr_hash, nop_true, mapc(capacity, ?_dyn_map, ?_dyn_map_addrs)) &*&
-              vectorp<ether_addri>(dyn_keys, ether_addrp, ?_dyn_keys, ?_dyn_keys_addrs) &*&
+              mapp<rte_ether_addri>(dyn_map, rte_ether_addrp, _rte_ether_addr_hash, nop_true, mapc(capacity, ?_dyn_map, ?_dyn_map_addrs)) &*&
+              vectorp<rte_ether_addri>(dyn_keys, rte_ether_addrp, ?_dyn_keys, ?_dyn_keys_addrs) &*&
               length(_dyn_keys) == capacity &*&
               vectorp<DynamicValuei>(dyn_vals, DynamicValuep, ?_dyn_vals, ?_dyn_vals_addrs) &*&
               true == forall(_dyn_vals, is_one) &*&
@@ -51,7 +51,7 @@
               capacity < INT_MAX &*&
               stat_capacity < INT_MAX &*&
               dev_count < INT_MAX &*&
-              map_vec_chain_coherent<ether_addri>(_dyn_map, _dyn_keys, _dyn_heap) &*&
+              map_vec_chain_coherent<rte_ether_addri>(_dyn_map, _dyn_keys, _dyn_heap) &*&
               true == forall2(_dyn_keys, _dyn_keys_addrs, (kkeeper)(_dyn_map_addrs)) &*&
               lcore_id == 0 &*&
               last_time(time);

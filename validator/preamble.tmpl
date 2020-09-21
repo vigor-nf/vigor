@@ -9,15 +9,15 @@
 #include <rte_ether.h>
 
 /*@
-  inductive ether_hdri = ether_hdrc(ether_addri, ether_addri, int);
-  predicate ether_hdrp(struct ether_hdr *ether; ether_hdri hdr) =
-    ether_addrp(&ether->d_addr, ?daddr) &*&
-    ether_addrp(&ether->s_addr, ?saddr) &*&
-    ether->ether_type |-> ?et &*&
-    hdr == ether_hdrc(saddr, daddr, et);
+  inductive rte_ether_hdri = rte_ether_hdrc(rte_ether_addri, rte_ether_addri, int);
+  predicate rte_ether_hdrp(struct rte_ether_hdr *rte_ether; rte_ether_hdri hdr) =
+    rte_ether_addrp(&rte_ether->d_addr, ?daddr) &*&
+    rte_ether_addrp(&rte_ether->s_addr, ?saddr) &*&
+    rte_ether->ether_type |-> ?et &*&
+    hdr == rte_ether_hdrc(saddr, daddr, et);
 
-  inductive ipv4_hdri = ipv4_hdrc(int, int, int, int, int, int, int, int, int, int);
-  predicate ipv4_hdrp(struct ipv4_hdr* hdr; ipv4_hdri val) =
+  inductive rte_ipv4_hdri = rte_ipv4_hdrc(int, int, int, int, int, int, int, int, int, int);
+  predicate rte_ipv4_hdrp(struct rte_ipv4_hdr* hdr; rte_ipv4_hdri val) =
     hdr->version_ihl |-> ?vihl &*&
     hdr->type_of_service |-> ?tos &*&
     hdr->total_length |-> ?len &*&
@@ -28,7 +28,7 @@
     hdr->hdr_checksum |-> ?cksum &*&
     hdr->src_addr |-> ?saddr &*&
     hdr->dst_addr |-> ?daddr &*&
-    val == ipv4_hdrc(vihl, tos, len, pid, foff, ttl, npid, cksum, saddr, daddr);
+    val == rte_ipv4_hdrc(vihl, tos, len, pid, foff, ttl, npid, cksum, saddr, daddr);
 
   inductive tcpudp_hdri = tcpudp_hdrc(int, int);
   predicate tcpudp_hdrp(struct tcpudp_hdr* hdr; tcpudp_hdri val) =
@@ -36,17 +36,17 @@
     hdr->dst_port |-> ?dstp &*&
     val == tcpudp_hdrc(srcp, dstp);
 
-  inductive phdr = ether_hdr(ether_hdri)
-                 | ipv4_hdr(ipv4_hdri)
+  inductive phdr = rte_ether_hdr(rte_ether_hdri)
+                 | rte_ipv4_hdr(rte_ipv4_hdri)
                  | tcpudp_hdr(tcpudp_hdri);
 
-  lemma list<phdr> add_ether_header(list<phdr> prev, void* chunk);
-  requires ether_hdrp(chunk, ?eh);
-  ensures ether_hdrp(chunk, eh) &*& result == cons(ether_hdr(eh), prev);
+  lemma list<phdr> add_rte_ether_header(list<phdr> prev, void* chunk);
+  requires rte_ether_hdrp(chunk, ?eh);
+  ensures rte_ether_hdrp(chunk, eh) &*& result == cons(rte_ether_hdr(eh), prev);
 
-  lemma list<phdr> add_ipv4_header(list<phdr> prev, void* chunk);
-  requires ipv4_hdrp(chunk, ?ih);
-  ensures ipv4_hdrp(chunk, ih) &*& result == cons(ipv4_hdr(ih), prev);
+  lemma list<phdr> add_rte_ipv4_header(list<phdr> prev, void* chunk);
+  requires rte_ipv4_hdrp(chunk, ?ih);
+  ensures rte_ipv4_hdrp(chunk, ih) &*& result == cons(rte_ipv4_hdr(ih), prev);
 
   lemma list<phdr> add_tcpudp_header(list<phdr> prev, void* chunk);
   requires tcpudp_hdrp(chunk, ?th);
@@ -84,14 +84,14 @@ ensures forall_(int i; i < 0 || i % 2 == 0 || i % 2 == 1);
 }
 @*/
 
-void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr* ip_header,
+void nf_set_rte_ipv4_udptcp_checksum(struct rte_ipv4_hdr* ip_header,
                                  struct tcpudp_hdr* l4_header,
                                  void* packet);
-/*@ requires ipv4_hdrp(ip_header, ipv4_hdrc(?vihl, ?tos, ?len, ?pid, ?foff,
+/*@ requires rte_ipv4_hdrp(ip_header, rte_ipv4_hdrc(?vihl, ?tos, ?len, ?pid, ?foff,
                                             ?ttl, ?npid, _, ?saddr, ?daddr)) &*&
              tcpudp_hdrp(l4_header, tcpudp_hdrc(?srcp, ?dstp)) &*&
              packetp(packet, ?payload_len, ?x); @*/
-/*@ ensures ipv4_hdrp(ip_header, ipv4_hdrc(vihl, tos, len, pid, foff,
+/*@ ensures rte_ipv4_hdrp(ip_header, rte_ipv4_hdrc(vihl, tos, len, pid, foff,
                                            ttl, npid, _, saddr, daddr)) &*&
              tcpudp_hdrp(l4_header, tcpudp_hdrc(srcp, dstp)) &*&
              packetp(packet, payload_len, x); @*/

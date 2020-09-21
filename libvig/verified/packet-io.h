@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-#include <rte_ether.h> //for sizeof(struct ether_hdr)
+#include <rte_ether.h> //for sizeof(struct rte_ether_hdr)
 
 struct rte_mempool;
 
@@ -58,7 +58,7 @@ bool packet_receive(uint16_t src_device, void **p, uint32_t *len);
 /*@ requires *p |-> _ &*& *len |-> ?length; @*/
 /*@ ensures result ? *p |-> ?pp &*&
                      packetp(pp, ?unread, nil) &*&
-                     sizeof(struct ether_hdr) <= length(unread) &*&
+                     sizeof(struct rte_ether_hdr) <= length(unread) &*&
                      *len |-> length &*&
                      length == length(unread)
                    : *p |-> _ &*& *len |-> length; @*/

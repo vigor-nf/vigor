@@ -1,8 +1,6 @@
-diff --git a/config/common_base b/config/common_base
-index 7830535..f908cbb 100644
---- a/config/common_base
-+++ b/config/common_base
-@@ -57,7 +57,8 @@ CONFIG_RTE_TOOLCHAIN=
+--- a/config/common_base	2020-05-26 15:41:39.000000000 +0000
++++ b/config/common_base	2020-07-23 10:17:36.120975853 +0000
+@@ -42,7 +42,8 @@
  #
  # Use intrinsics or assembly code for key routines
  #
@@ -12,12 +10,3 @@ index 7830535..f908cbb 100644
  
  #
  # Machine forces strict alignment constraints.
-@@ -195,7 +195,7 @@ CONFIG_RTE_LIBRTE_IXGBE_DEBUG_TX=n
- CONFIG_RTE_LIBRTE_IXGBE_DEBUG_TX_FREE=n
- CONFIG_RTE_LIBRTE_IXGBE_DEBUG_DRIVER=n
- CONFIG_RTE_LIBRTE_IXGBE_PF_DISABLE_STRIP_CRC=n
--CONFIG_RTE_IXGBE_INC_VECTOR=y
-+CONFIG_RTE_IXGBE_INC_VECTOR=n
- CONFIG_RTE_LIBRTE_IXGBE_BYPASS=n
- 
- #

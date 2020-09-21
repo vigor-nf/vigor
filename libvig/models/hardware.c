@@ -20,8 +20,8 @@
 
 
 struct stub_mbuf_content {
-  struct ether_hdr ether;
-  struct ipv4_hdr ipv4;
+  struct rte_ether_hdr ether;
+  struct rte_ipv4_hdr ipv4;
 };
 
 
@@ -977,14 +977,15 @@ static uint32_t stub_register_tdt_write(struct stub_device *dev,
   for (int n = 17; n <= 21; n++) {
     klee_assert(GET_BIT(rdrxctl, n) == 0);
   }
-  SET_BIT(rdrxctl, 7, 1);
-  SET_BIT(rdrxctl, 11, 1);
-  // "Software should set [RSCACKC, bit 25] to 1"
-  klee_assert(GET_BIT(rdrxctl, 25) == 1);
+
+  // "Software should set [RSCACKC, bit 25] to 1" only makes sense
+  //  if RSC is enabled.
+  uint32_t rscctl = DEV_REG(dev, 0x0102c + 0x40*n);
+
+  klee_assert((GET_BIT(rdrxctl, 25) == 1) || (GET_BIT(rscctl, 0) == 0));
   SET_BIT(rdrxctl, 25, 0);
   // "Software should set [FCOE_WRFIX, bit 26] to 1"
   klee_assert(GET_BIT(rdrxctl, 26) == 1);
-  SET_BIT(rdrxctl, 26, 0);
 
   // Get device index
   int device_index = 0;
@@ -1489,7 +1490,7 @@ static void stub_registers_init(void) {
   // Fix (0 - default; "FCOE_WRFIX is reserved for internal use. Software should
   // set this bit to 1b") 27-31: Reserved (0)
   REG(0x02F00, 0b00000000000100001000100000001000,
-      0b00000110001111100000000000001110);
+      0b00000110001111100000000000001010);
 
   // page 702
   // Receive Queue Statistic Mapping Registers — RQSMR[n] (0x02300 + 4*n,
@@ -2087,6 +2088,7 @@ static void stub_registers_init(void) {
     0x04034, // MAC Local Fault Count — MLFC
     0x04038, // MAC Remote Fault Count — MRFC
     0x04040, // Receive Length Error Count — RLEC
+    0x04292, // MAC Flow Control Register - MFLCN
     0x08780, // Switch Security Violation Packet Count — SSVPC
     0x03F60, // Link XON Transmitted Count — LXONTXC
     0x041A4, // Link XON Received Count — LXONRXCNT
@@ -2178,9 +2180,12 @@ static void stub_registers_init(void) {
     0x0242C, // FCOE DWord Received Count — FCOEDWRC
     0x08784, // FCoE Packets Transmitted Count — FCOEPTC
     0x08788, // FCoE DWord Transmitted Count — FCOEDWTC
-    0x0EE58, // Flow Director Filters Match Statistics — FDIRMATCH (page 657)
+    0x0EE50, // Flow Director Filters Usage Statistics - FDIRUSTAT (page 657)
+    0x0EE54, // Flow Director Filters Failed Usage Statistics - FDIRFSTAT
+    0x0EE58, // Flow Director Filters Match Statistics — FDIRMATCH
     0x0EE5C, // Flow Director Filters Miss Match Statistics — FDIRMISS (page
              // 657)
+    0x03D00, // Flow Control Configuration - FCCFG
     // starting on page 639
     0x08F64, // LinkSec Rx Packet OK — LSECRXOK[0]
     0x08F68, // LinkSec Rx Packet OK — LSECRXOK[1]
@@ -2288,6 +2293,22 @@ static void stub_registers_init(void) {
         0b00000000000000000000000000000000);
   }
 
+  // Section 8.2.3.3.3 Flow Control Receive Threshold Low
+  // Bits 5-18: Receive Threshold Low n, default 0
+  for (int n = 0; n < 8; n++) {
+    REG(0x03220u + 4u*(n), 0, 0b1111111111111100000);
+  }
+
+  // Section 8.2.3.3.2 Flow Control Transmit Timer Value
+  // Bits 0-15: Transmit timer value 2n
+  // Bits 16-31: Transmit timer value 2n +1
+  for (int n = 0; n < 4; n++) {
+    REG(0x03200u + 4u*(n), 0, 0b11111111111111111111111111111111);
+  }
+
+  // Section 8.2.3.3.5 Flow Control Refresh Threshold Value
+  // Bits 0-15: Flow Control Refresh Threshold.
+    REG(0x032a0, 0, 0b1111111111111111);
 
   // --- Below are registers used by TinyNF but not DPDK ---
 
@@ -2314,11 +2335,14 @@ static void stub_registers_init(void) {
   REG(0x11050u, 0, 0b1000000000000000000000000000000);
 
   // Section 8.2.3.22.34 MAC Flow Control Register
+  // 0: Pass MAC Control Frames (0 - filter unrecognized)
+  // 1: Discard Pause Frame (0 - pause frames sent to host)
+  // 2: Receive Priority Flow Control Enable. This bit should not be set if bit 3 is set.
   // Bit 3, default 0, Receive Flow Control Enable
   // Indicates that the 82599 responds to the reception of link flow control packets. If autonegotiation
   // is enabled, this bit should be set by software to the negotiated flow control
   // value.
-  REG(0x04294u, 0, 0b1000);
+  REG(0x04294u, 0, 0b1011);
 
   // Section 8.2.3.8.9 Receive Packet Buffer Size
   // Bits 10-19 can be set, default 0x200, rest are read-only

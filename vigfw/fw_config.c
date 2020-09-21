@@ -14,7 +14,7 @@
   exit(EXIT_FAILURE);
 
 void nf_config_init(int argc, char **argv) {
-  uint16_t nb_devices = rte_eth_dev_count();
+  uint16_t nb_devices = rte_eth_dev_count_avail();
 
   struct option long_options[] = { { "eth-dest", required_argument, NULL, 'm' },
                                    { "expire", required_argument, NULL, 't' },
@@ -23,8 +23,8 @@ void nf_config_init(int argc, char **argv) {
                                    { "wan", required_argument, NULL, 'w' },
                                    { NULL, 0, NULL, 0 } };
 
-  config.device_macs = calloc(nb_devices, sizeof(struct ether_addr));
-  config.endpoint_macs = calloc(nb_devices, sizeof(struct ether_addr));
+  config.device_macs = calloc(nb_devices, sizeof(struct rte_ether_addr));
+  config.endpoint_macs = calloc(nb_devices, sizeof(struct rte_ether_addr));
 
   // Set the devices' own MACs
   for (uint16_t device = 0; device < nb_devices; device++) {
@@ -96,7 +96,7 @@ void nf_config_print(void) {
 
   NF_INFO("WAN device: %" PRIu16, config.wan_device);
 
-  uint16_t nb_devices = rte_eth_dev_count();
+  uint16_t nb_devices = rte_eth_dev_count_avail();
   for (uint16_t dev = 0; dev < nb_devices; dev++) {
     char *dev_mac_str = nf_mac_to_str(&(config.device_macs[dev]));
     char *end_mac_str = nf_mac_to_str(&(config.endpoint_macs[dev]));

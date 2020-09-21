@@ -38,7 +38,7 @@
     unsigned _vigor_lcore_id = 0; /* no multicore support for now */              \
     vigor_time_t _vigor_start_time = start_time();                                \
     int _vigor_loop_termination = klee_int("loop_termination");                   \
-    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count();                           \
+    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count_avail();                           \
     while (klee_induce_invariants() & _vigor_loop_termination) {                  \
       nf_loop_iteration_border(_vigor_lcore_id, _vigor_start_time);               \
       vigor_time_t VIGOR_NOW = current_time();                                    \
@@ -54,7 +54,7 @@
 #  define VIGOR_LOOP_BEGIN                                                                   \
     while (1) {                                                                              \
       vigor_time_t VIGOR_NOW = current_time();                                               \
-      unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count();                                    \
+      unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count_avail();                                    \
       for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
 #  define VIGOR_LOOP_END                                                                     \
       }                                                                                      \
@@ -101,7 +101,7 @@ static int nf_init_device(uint16_t device, struct rte_mempool* mbuf_pool) {
 
   // device_conf passed to rte_eth_dev_configure cannot be NULL
   struct rte_eth_conf device_conf = {0};
-  device_conf.rxmode.hw_strip_crc = 1;
+  //device_conf.rxmode.hw_strip_crc = 1;
 
   // Configure the device (1, 1 == number of RX/TX queues)
   retval = rte_eth_dev_configure(device, 1, 1, &device_conf);
@@ -162,7 +162,7 @@ static void worker_main(void) {
         flood(mbuf, VIGOR_DEVICES_COUNT);
       } else {
         // ensure we don't leak symbols into DPDK
-        concretize_devices(&dst_device, rte_eth_dev_count());
+        concretize_devices(&dst_device, rte_eth_dev_count_avail());
         if (rte_eth_tx_burst(dst_device, 0, &mbuf, 1) != 1) {
 #ifdef VIGOR_ALLOW_DROPS
           rte_pktmbuf_free(mbuf); // OK, we're debugging
@@ -231,7 +231,7 @@ int MAIN(int argc, char** argv) {
   nf_config_print();
 
   // Create a memory pool
-  unsigned nb_devices = rte_eth_dev_count();
+  unsigned nb_devices = rte_eth_dev_count_avail();
   struct rte_mempool *mbuf_pool = rte_pktmbuf_pool_create(
       "MEMPOOL", // name
       MEMPOOL_BUFFER_COUNT * nb_devices, // #elements

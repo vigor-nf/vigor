@@ -62,6 +62,16 @@ long get_mempolicy(int *policy, const unsigned long *nmask,
     // errno is set to indicate the error.
     return 0;
   }
-
+  if ((flags & MPOL_F_ADDR) == MPOL_F_ADDR && (flags & MPOL_F_NODE) == MPOL_F_NODE) {
+    // "If flags specifies both MPOL_F_NODE and MPOL_F_ADDR, get_mempolicy()
+    // will return the node ID of the node on which the address addr is
+    // allocated into the location pointed to by mode. If no page has yet
+    // been allocated for the specified address, get_mempolicy() will
+    // allocate a page as if the thread had performed a read (load) access
+    // to that address, and return the ID of the node where that page was
+    // allocated."
+    // The only node we can ever allocate memory on is 0
+    return 0;
+  }
   klee_abort();
 }

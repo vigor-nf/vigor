@@ -45,7 +45,7 @@ endif
 
 # Define this for the dpdk and nfos makefiles
 # Strip spaces in case NF_DPDK_ARGS is not used
-NF_ARGS := $(strip --no-shconf $(NF_DPDK_ARGS) -- $(NF_ARGS))
+NF_ARGS := $(strip --no-shconf --no-telemetry $(NF_DPDK_ARGS) -- $(NF_ARGS))
 
 ifeq (click,$(findstring click,$(shell pwd)))
 # Click baselines

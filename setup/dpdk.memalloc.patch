@@ -1,0 +1,19 @@
+--- a/lib/librte_eal/linux/eal_memalloc.c	2020-05-26 15:41:39.000000000 +0000
++++ b/lib/librte_eal/linux/eal_memalloc.c	2020-08-19 05:04:17.338501112 +0000
+@@ -565,11 +565,11 @@
+ 		 */
+ 		goto unmapped;
+ 	}
+-	if (va != addr) {
+-		RTE_LOG(DEBUG, EAL, "%s(): wrong mmap() address\n", __func__);
+-		munmap(va, alloc_sz);
+-		goto resized;
+-	}
++
++	/* According to the manual, addr parameter to mmap is a hint anyway
++	 * so we should take the address we are given.
++	 */
++	addr = va;
+ 
+ 	/* In linux, hugetlb limitations, like cgroup, are
+ 	 * enforced at fault time instead of mmap(), even

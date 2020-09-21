@@ -10,7 +10,7 @@ struct nf_config {
   uint16_t backend_count;
 
   // MAC addresses of the devices the backends are connected to
-  struct ether_addr *device_macs;
+  struct rte_ether_addr *device_macs;
 
   // Size of the flow table
   uint32_t flow_capacity;

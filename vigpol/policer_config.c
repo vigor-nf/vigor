@@ -27,7 +27,7 @@ void nf_config_init(int argc, char **argv) {
   config.burst = DEFAULT_BURST;           // B
   config.dyn_capacity = DEFAULT_CAPACITY; // MAC addresses
 
-  unsigned nb_devices = rte_eth_dev_count();
+  unsigned nb_devices = rte_eth_dev_count_avail();
 
   struct option long_options[] = { { "lan", required_argument, NULL, 'l' },
                                    { "wan", required_argument, NULL, 'w' },

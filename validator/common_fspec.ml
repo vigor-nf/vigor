@@ -9,11 +9,11 @@ let vector_struct = Ir.Str ("Vector", [] )
 let dchain_struct = Ir.Str ("DoubleChain", [] )
 let lpm_struct = Ir.Str ("lpm", [])
 
-let ether_addr_struct = Ir.Str ( "ether_addr", ["addr_bytes", Array Uint8;])
-let ether_hdr_struct = Ir.Str ("ether_hdr", ["d_addr", ether_addr_struct;
-                                             "s_addr", ether_addr_struct;
+let rte_ether_addr_struct = Ir.Str ( "rte_ether_addr", ["addr_bytes", Array Uint8;])
+let rte_ether_hdr_struct = Ir.Str ("rte_ether_hdr", ["d_addr", rte_ether_addr_struct;
+                                             "s_addr", rte_ether_addr_struct;
                                              "ether_type", Uint16;])
-let ipv4_hdr_struct = Ir.Str ("ipv4_hdr", ["version_ihl", Uint8;
+let rte_ipv4_hdr_struct = Ir.Str ("rte_ipv4_hdr", ["version_ihl", Uint8;
                                            "type_of_service", Uint8;
                                            "total_length", Uint16;
                                            "packet_id", Uint16;
@@ -105,10 +105,10 @@ let common_fun_types =
    "packet_borrow_next_chunk", {ret_type = Static Void;
                                 arg_types = [Static (Ptr Sint8);
                                              Static Uint32;
-                                             Dynamic ["ether_hdr",
-                                                      Ptr (Ptr ether_hdr_struct);
-                                                      "ipv4_hdr",
-                                                      Ptr (Ptr ipv4_hdr_struct);
+                                             Dynamic ["rte_ether_hdr",
+                                                      Ptr (Ptr rte_ether_hdr_struct);
+                                                      "rte_ipv4_hdr",
+                                                      Ptr (Ptr rte_ipv4_hdr_struct);
                                                       "tcpudp_hdr",
                                                       Ptr (Ptr tcpudp_hdr_struct);
                                                       "ipv4_options",
@@ -116,10 +116,10 @@ let common_fun_types =
                                                      ]];
                                 extra_ptr_types =
                                   ["the_chunk",
-                                   Dynamic ["ether_hdr",
-                                            Ptr ether_hdr_struct;
-                                            "ipv4_hdr",
-                                            Ptr ipv4_hdr_struct;
+                                   Dynamic ["rte_ether_hdr",
+                                            Ptr rte_ether_hdr_struct;
+                                            "rte_ipv4_hdr",
+                                            Ptr rte_ipv4_hdr_struct;
                                             "tcpudp_hdr",
                                             Ptr tcpudp_hdr_struct;
                                             "ipv4_options",
@@ -137,22 +137,22 @@ let common_fun_types =
                                   );
                                   (fun {args;arg_types;_} ->
                                      match List.nth_exn arg_types 2 with
-                                     | Ptr (Ptr (Str ("ether_hdr", _))) ->
+                                     | Ptr (Ptr (Str ("rte_ether_hdr", _))) ->
                                        "//@ recv_headers = \
-                                        add_ether_header(recv_headers, *" ^
+                                        add_rte_ether_header(recv_headers, *" ^
                                        (List.nth_exn args 2) ^ ");\n" ^
-                                       "//@ open ether_hdrp(*" ^
+                                       "//@ open rte_ether_hdrp(*" ^
                                        (List.nth_exn args 2) ^
                                        ", _);\n\
-                                        //@ open ether_addrp((" ^
+                                        //@ open rte_ether_addrp((" ^
                                        (List.nth_exn args 2) ^
                                        "->s_addr), _);\n\
-                                        //@ open ether_addrp((" ^
+                                        //@ open rte_ether_addrp((" ^
                                        (List.nth_exn args 2) ^
                                        "->d_addr), _);\n"
-                                     | Ptr (Ptr (Str ("ipv4_hdr", _))) ->
+                                     | Ptr (Ptr (Str ("rte_ipv4_hdr", _))) ->
                                        "//@ recv_headers = \
-                                        add_ipv4_header(recv_headers, *" ^
+                                        add_rte_ipv4_header(recv_headers, *" ^
                                        (List.nth_exn args 2) ^ ");\n"
                                      | Ptr (Ptr (Str ("tcpudp_hdr", _))) ->
                                        "//@ recv_headers = \
@@ -166,10 +166,10 @@ let common_fun_types =
                                   )];};
    "packet_return_chunk", {ret_type = Static Void;
                            arg_types = [Static (Ptr Sint8);
-                                        Dynamic ["ether_hdr",
-                                                 Ptr ether_hdr_struct;
-                                                 "ipv4_hdr",
-                                                 Ptr ipv4_hdr_struct;
+                                        Dynamic ["rte_ether_hdr",
+                                                 Ptr rte_ether_hdr_struct;
+                                                 "rte_ipv4_hdr",
+                                                 Ptr rte_ipv4_hdr_struct;
                                                  "tcpudp_hdr",
                                                  Ptr tcpudp_hdr_struct;
                                                  "ipv4_options",
@@ -179,23 +179,23 @@ let common_fun_types =
                            lemmas_before = [
                              (fun {arg_exps;arg_types;_} ->
                                 match List.nth_exn arg_types 1 with
-                                | Ptr (Str ("ether_hdr", _)) ->
+                                | Ptr (Str ("rte_ether_hdr", _)) ->
                                   "//@ sent_headers = \
-                                   add_ether_header(sent_headers, " ^
+                                   add_rte_ether_header(sent_headers, " ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ");\n\
-                                   //@ open ether_hdrp(" ^
+                                   //@ open rte_ether_hdrp(" ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ", _);\n\
-                                   //@ open ether_addrp(&(" ^
+                                   //@ open rte_ether_addrp(&(" ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   "->s_addr), _);\n\
-                                   //@ open ether_addrp(&(" ^
+                                   //@ open rte_ether_addrp(&(" ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   "->d_addr), _);\n"
-                                | Ptr (Str ("ipv4_hdr", _)) ->
+                                | Ptr (Str ("rte_ipv4_hdr", _)) ->
                                   "//@ sent_headers = \
-                                   add_ipv4_header(sent_headers, " ^
+                                   add_rte_ipv4_header(sent_headers, " ^
                                   (render_tterm (List.nth_exn arg_exps 1)) ^
                                   ");\n"
                                 | Ptr (Str ("tcpudp_hdr", _)) ->
@@ -833,7 +833,7 @@ let construct_record var tt =
        (List.map fields ~f:(fun (name,ft) ->
             match ft with
             | Array _ -> (* HACK: we know that the only arrays in use are the
-                            ether_addr ones that have exactly 6 cells. so we
+                            rte_ether_addr ones that have exactly 6 cells. so we
                             hardcode it here. The right way to go about this is
                             to add another type StaticArray that would keep
                             track of the array size.*)
@@ -1427,9 +1427,9 @@ let map_size_spec =
    lemmas_before = [];
    lemmas_after = [];}
 
-let nf_set_ipv4_udptcp_checksum_spec =
+let nf_set_rte_ipv4_udptcp_checksum_spec =
   {ret_type = Static Void;
-   arg_types = stt [Ptr ipv4_hdr_struct;
+   arg_types = stt [Ptr rte_ipv4_hdr_struct;
                     Ptr tcpudp_hdr_struct;
                     Ptr Sint8];
    extra_ptr_types = [];
@@ -1523,9 +1523,9 @@ let gen_preamble nf_loop containers =
    //@ list<phdr> recv_headers = nil; \n\
    //@ list<phdr> sent_headers = nil; \n\
    //@ list<uint16_t> sent_on_ports = nil; \n\
-   //@ assume(sizeof(struct ether_hdr) == 14);\n\
+   //@ assume(sizeof(struct rte_ether_hdr) == 14);\n\
    //@ assume(sizeof(struct tcpudp_hdr) == 4);\n\
-   //@ assume(sizeof(struct ipv4_hdr) == 20);\
+   //@ assume(sizeof(struct rte_ipv4_hdr) == 20);\
    //TODO: handle all this sizeof's explicitly\n"
   ^
   "int vector_allocation_order = 0;\n\
@@ -1623,7 +1623,7 @@ let fun_types containers records =
      "map_erase", (map_erase_spec (gen_map_params containers records));
      "map_size", map_size_spec;
      "cht_fill_cht", cht_fill_cht_spec;
-     "nf_set_ipv4_udptcp_checksum", nf_set_ipv4_udptcp_checksum_spec;
+     "nf_set_rte_ipv4_udptcp_checksum", nf_set_rte_ipv4_udptcp_checksum_spec;
      "cht_find_preferred_available_backend",
      cht_find_preferred_available_backend_spec;
      "vector_allocate", (vector_alloc_spec

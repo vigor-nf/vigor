@@ -104,18 +104,18 @@ bool policer_check_tb(uint32_t dst, uint16_t size, vigor_time_t time) {
 
 bool nf_init(void) {
   unsigned capacity = config.dyn_capacity;
-  dynamic_ft = alloc_state(capacity, rte_eth_dev_count());
+  dynamic_ft = alloc_state(capacity, rte_eth_dev_count_avail());
   return dynamic_ft != NULL;
 }
 
 int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_time_t now) {
   NF_DEBUG("Received packet");
-  struct ether_hdr *ether_header = nf_then_get_ether_header(buffer);
+  struct rte_ether_hdr *rte_ether_header = nf_then_get_rte_ether_header(buffer);
 
   uint8_t *ip_options;
-  struct ipv4_hdr *ipv4_header =
-      nf_then_get_ipv4_header(ether_header, buffer, &ip_options);
-  if (ipv4_header == NULL) {
+  struct rte_ipv4_hdr *rte_ipv4_header =
+      nf_then_get_rte_ipv4_header(rte_ether_header, buffer, &ip_options);
+  if (rte_ipv4_header == NULL) {
     NF_DEBUG("Not IPv4, dropping");
     return device;
   }
@@ -128,7 +128,7 @@ int nf_process(uint16_t device, uint8_t* buffer, uint16_t packet_length, vigor_t
     return config.wan_device;
   } else if (device == config.wan_device) {
     // Police incoming packets.
-    bool fwd = policer_check_tb(ipv4_header->dst_addr, packet_length, now);
+    bool fwd = policer_check_tb(rte_ipv4_header->dst_addr, packet_length, now);
 
     if (fwd) {
       NF_DEBUG("Incoming packet within policed rate. Forwarding.");

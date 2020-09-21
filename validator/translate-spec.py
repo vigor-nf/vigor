@@ -55,7 +55,8 @@ def renderHeaderConstructor(expr):
     setFields = dict(map(lambda kw : (kw.arg, kw.value), expr.keywords))
     for f in setFields.keys():
         assert f in protocolHeaders[expr.func.id]
-    result = expr.func.id + "_hdr(" + expr.func.id + "_hdrc("
+    prefix = "rte_" if expr.func.id != 'tcpudp' else ""  
+    result = prefix + expr.func.id + "_hdr(" + prefix + expr.func.id + "_hdrc("
     first = True
     for f in protocolHeaders[expr.func.id]:
         if first:
@@ -202,19 +203,21 @@ def translatePopHeader(binding, body, declaredVars):
     headerStack = headerStackTail
     indentPrint("switch({}) {{".format(header))
     protocol = binding.value.args[0].id
+    prefix = "rte_" if protocol != 'tcpudp' else ""
     assert protocol in protocolHeaders
     for p in protocolHeaders.keys():
         if p != protocol:
-            indentPrint("case {}(dummy): {}".format(p + '_hdr', onMismatch))
+            pre = "rte_" if p != 'tcpudp' else ""
+            indentPrint("case {}(dummy): {}".format(pre + p + '_hdr', onMismatch))
     obj = binding.targets[0].id
     fields = protocolHeaders[protocol]
     fieldInstances = list(map(lambda f : obj + '_' + f, fields))
     objects[obj] = dict(zip(fields, fieldInstances))
-    hdrName = protocol + '_hdr_shell'
+    hdrName = prefix + protocol + '_hdr_shell'
     indentPrint("case {}({}): switch({}) {{".\
-                format(protocol + '_hdr', hdrName, hdrName))
+                format(prefix + protocol + '_hdr', hdrName, hdrName))
     indentPrint("case {}({}): ".\
-                format(protocol + '_hdrc', ", ".join(fieldInstances)))
+                format(prefix + protocol + '_hdrc', ", ".join(fieldInstances)))
     translate(body, declaredVars)
     headerStack = prevHeaderStack
     indentPrint("}}}")

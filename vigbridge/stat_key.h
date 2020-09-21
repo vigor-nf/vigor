@@ -5,7 +5,7 @@
 #include <rte_ether.h>
 
 struct StaticKey {
-  struct ether_addr addr;
+  struct rte_ether_addr addr;
   uint16_t device;
 };
 

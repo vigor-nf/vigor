@@ -5,7 +5,7 @@
 #define PAGE_SIZE 4096
 
 #define STUB_FILES_COUNT 1024
-#define STUB_HUGEPAGES_COUNT 4
+#define STUB_HUGEPAGES_COUNT 8
 
 // note: we only support 1 pipe
 #define STUB_PIPE_FD_READ (STUB_FILES_COUNT + 1)

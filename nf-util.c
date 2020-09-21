@@ -18,11 +18,11 @@
 void *chunks_borrowed[MAX_N_CHUNKS];
 size_t chunks_borrowed_num = 0;
 
-bool nf_has_ipv4_header(struct ether_hdr *header) {
-  return header->ether_type == rte_be_to_cpu_16(ETHER_TYPE_IPv4);
+bool nf_has_rte_ipv4_header(struct rte_ether_hdr *header) {
+  return header->ether_type == rte_be_to_cpu_16(RTE_ETHER_TYPE_IPV4);
 }
 
-bool nf_has_tcpudp_header(struct ipv4_hdr *header) {
+bool nf_has_tcpudp_header(struct rte_ipv4_hdr *header) {
   // NOTE: Use non-short-circuiting version of OR, so that symbex doesn't fork
   //       since here we only care of it's UDP or TCP, not if it's a specific
   //       one
@@ -31,7 +31,7 @@ bool nf_has_tcpudp_header(struct ipv4_hdr *header) {
 }
 
 #ifdef KLEE_VERIFICATION
-void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
+void nf_set_rte_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet) {
   klee_trace_ret();
   klee_trace_param_u64((uint64_t)ip_header, "ip_header");
@@ -42,7 +42,7 @@ void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
   ip_header->hdr_checksum = klee_int("checksum");
 }
 #else  // KLEE_VERIFICATION
-void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
+void nf_set_rte_ipv4_udptcp_checksum(struct rte_ipv4_hdr *ip_header,
                                  struct tcpudp_hdr *l4_header, void *packet) {
   // Make sure the packet pointer points to the TCPUDP continuation
   // This check is exercised during verification, no need to repeat it.
@@ -52,11 +52,11 @@ void nf_set_ipv4_udptcp_checksum(struct ipv4_hdr *ip_header,
 
   ip_header->hdr_checksum = 0; // Assumed by cksum calculation
   if (ip_header->next_proto_id == IPPROTO_TCP) {
-    struct tcp_hdr *tcp_header = (struct tcp_hdr *)l4_header;
+    struct rte_tcp_hdr *tcp_header = (struct rte_tcp_hdr *)l4_header;
     tcp_header->cksum = 0; // Assumed by cksum calculation
     tcp_header->cksum = rte_ipv4_udptcp_cksum(ip_header, tcp_header);
   } else if (ip_header->next_proto_id == IPPROTO_UDP) {
-    struct udp_hdr *udp_header = (struct udp_hdr *)l4_header;
+    struct rte_udp_hdr *udp_header = (struct rte_udp_hdr *)l4_header;
     udp_header->dgram_cksum = 0; // Assumed by cksum calculation
     udp_header->dgram_cksum = rte_ipv4_udptcp_cksum(ip_header, udp_header);
   }
@@ -77,7 +77,7 @@ uintmax_t nf_util_parse_int(const char *str, const char *name, int base,
   return result;
 }
 
-char *nf_mac_to_str(struct ether_addr *addr) {
+char *nf_mac_to_str(struct rte_ether_addr *addr) {
   // format is xx:xx:xx:xx:xx:xx\0
   uint16_t buffer_size = 6 * 2 + 5 + 1; // FIXME: why dynamic alloc here?
   char *buffer = (char *)calloc(buffer_size, sizeof(char));
@@ -93,13 +93,13 @@ char *nf_mac_to_str(struct ether_addr *addr) {
   return buffer;
 }
 
-char *nf_ipv4_to_str(uint32_t addr) {
+char *nf_rte_ipv4_to_str(uint32_t addr) {
   // format is xxx.xxx.xxx.xxx\0
   uint16_t buffer_size = 4 * 3 + 3 + 1;
   char *buffer = (char *)calloc(buffer_size,
                                 sizeof(char)); // FIXME: why dynamic alloc here?
   if (buffer == NULL) {
-    rte_exit(EXIT_FAILURE, "Out of memory in nf_ipv4_to_str!");
+    rte_exit(EXIT_FAILURE, "Out of memory in nf_rte_ipv4_to_str!");
   }
 
   snprintf(buffer, buffer_size, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8,

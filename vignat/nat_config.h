@@ -15,10 +15,10 @@ struct nf_config {
   uint32_t external_addr;
 
   // MAC addresses of devices
-  struct ether_addr *device_macs;
+  struct rte_ether_addr *device_macs;
 
   // MAC addresses of the endpoints the devices are linked to
-  struct ether_addr *endpoint_macs;
+  struct rte_ether_addr *endpoint_macs;
 
   // External port at which to start allocating flows
   // i.e. ports will be allocated in [start_port, start_port + max_flows]

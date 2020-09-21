@@ -1,29 +1,6 @@
-diff --git a/drivers/net/ixgbe/ixgbe_rxtx.c b/drivers/net/ixgbe/ixgbe_rxtx.c
-index 9bc8462..f9807d5 100644
---- a/drivers/net/ixgbe/ixgbe_rxtx.c
-+++ b/drivers/net/ixgbe/ixgbe_rxtx.c
-@@ -278,8 +278,10 @@ tx_xmit_pkts(void *tx_queue, struct rte_mbuf **tx_pkts,
- 	if (unlikely(nb_pkts == 0))
- 		return 0;
- 
-+#ifndef KLEE_VERIFICATION
- 	/* Use exactly nb_pkts descriptors */
- 	txq->nb_tx_free = (uint16_t)(txq->nb_tx_free - nb_pkts);
-+#endif
- 
- 	/*
- 	 * At this point, we know there are enough descriptors in the
-@@ -333,7 +335,9 @@ tx_xmit_pkts(void *tx_queue, struct rte_mbuf **tx_pkts,
- 	 * Check for wrap-around. This would only happen if we used
- 	 * up to the last descriptor in the ring, no more, no less.
- 	 */
-+#ifndef KLEE_VERIFICATION
- 	if (txq->tx_tail >= txq->nb_tx_desc)
-+#endif
- 		txq->tx_tail = 0;
- 
- 	/* update tail pointer */
-@@ -1595,9 +1599,11 @@ ixgbe_rx_scan_hw_ring(struct ixgbe_rx_queue *rxq)
+--- a/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-20 12:08:34.572132233 +0000
++++ b/drivers/net/ixgbe/ixgbe_rxtx.c	2020-09-20 12:05:50.143740047 +0000
+@@ -1572,9 +1572,11 @@
  	}
  
  	/* clear software ring entries so we can cleanup correctly */
@@ -35,7 +12,7 @@ index 9bc8462..f9807d5 100644
  
  
  	return nb_rx;
-@@ -1685,7 +1691,9 @@ rx_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+@@ -1662,7 +1664,9 @@
  	/* update internal queue state */
  	rxq->rx_next_avail = 0;
  	rxq->rx_nb_avail = nb_rx;
@@ -45,7 +22,7 @@ index 9bc8462..f9807d5 100644
  
  	/* if required, allocate new buffers to replenish descriptors */
  	if (rxq->rx_tail > rxq->rx_free_trigger) {
-@@ -1719,8 +1727,10 @@ rx_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+@@ -1696,8 +1700,10 @@
  					    cur_free_trigger);
  	}
  
@@ -56,7 +33,7 @@ index 9bc8462..f9807d5 100644
  
  	/* received any packets this loop? */
  	if (rxq->rx_nb_avail)
-@@ -1863,7 +1873,9 @@ ixgbe_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+@@ -1840,7 +1846,9 @@
  		}
  
  		rxm = rxe->mbuf;
@@ -66,7 +43,7 @@ index 9bc8462..f9807d5 100644
  		dma_addr =
  			rte_cpu_to_le_64(rte_mbuf_data_iova_default(nmb));
  		rxdp->read.hdr_addr = 0;
-@@ -1921,7 +1933,9 @@ ixgbe_recv_pkts(void *rx_queue, struct rte_mbuf **rx_pkts,
+@@ -1898,7 +1906,9 @@
  		 */
  		rx_pkts[nb_rx++] = rxm;
  	}
@@ -76,7 +53,7 @@ index 9bc8462..f9807d5 100644
  
  	/*
  	 * If the number of free RX descriptors is greater than the RX free
-@@ -2164,13 +2178,18 @@ ixgbe_recv_pkts_lro(void *rx_queue, struct rte_mbuf **rx_pkts, uint16_t nb_pkts,
+@@ -2140,13 +2150,18 @@
  			 * Update RX descriptor with the physical address of the
  			 * new data buffer of the new allocated mbuf.
  			 */
@@ -96,7 +73,7 @@ index 9bc8462..f9807d5 100644
  
  		/*
  		 * Set data length & data buffer address of mbuf.
-@@ -2266,10 +2285,12 @@ ixgbe_recv_pkts_lro(void *rx_queue, struct rte_mbuf **rx_pkts, uint16_t nb_pkts,
+@@ -2242,10 +2257,12 @@
  		rx_pkts[nb_rx++] = first_seg;
  	}
  
@@ -109,7 +86,7 @@ index 9bc8462..f9807d5 100644
  
  	/*
  	 * If the number of free RX descriptors is greater than the RX free
-@@ -2666,7 +2687,9 @@ ixgbe_rx_queue_release_mbufs(struct ixgbe_rx_queue *rxq)
+@@ -2804,7 +2821,9 @@
  		for (i = 0; i < rxq->nb_rx_desc; i++) {
  			if (rxq->sw_ring[i].mbuf != NULL) {
  				rte_pktmbuf_free_seg(rxq->sw_ring[i].mbuf);
@@ -119,11 +96,43 @@ index 9bc8462..f9807d5 100644
  			}
  		}
  		if (rxq->rx_nb_avail) {
-diff --git a/lib/librte_mbuf/rte_mbuf.h b/lib/librte_mbuf/rte_mbuf.h
-index ce8a05d..3e6b0b7 100644
---- a/lib/librte_mbuf/rte_mbuf.h
-+++ b/lib/librte_mbuf/rte_mbuf.h
-@@ -905,7 +905,9 @@ rte_mbuf_raw_free(struct rte_mbuf *m)
+--- a/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-05-26 15:41:39.000000000 +0000
++++ b/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c	2020-09-20 12:05:50.075743194 +0000
+@@ -650,8 +650,10 @@
+ 	/* cross rx_thresh boundary is not allowed */
+ 	nb_pkts = RTE_MIN(nb_pkts, txq->tx_rs_thresh);
+ 
++#ifndef KLEE_VERIFICATION
+ 	if (txq->nb_tx_free < txq->tx_free_thresh)
+ 		ixgbe_tx_free_bufs(txq);
++#endif
+ 
+ 	nb_commit = nb_pkts = (uint16_t)RTE_MIN(txq->nb_tx_free, nb_pkts);
+ 	if (unlikely(nb_pkts == 0))
+@@ -661,7 +663,9 @@
+ 	txdp = &txq->tx_ring[tx_id];
+ 	txep = &txq->sw_ring_v[tx_id];
+ 
++#ifndef KLEE_VERIFICATION
+ 	txq->nb_tx_free = (uint16_t)(txq->nb_tx_free - nb_pkts);
++#endif
+ 
+ 	n = (uint16_t)(txq->nb_tx_desc - tx_id);
+ 	if (nb_commit >= n) {
+@@ -695,7 +699,10 @@
+ 			txq->tx_rs_thresh);
+ 	}
+ 
++	txq->tx_tail = 0;
++#ifndef KLEE_VERIFICATION
+ 	txq->tx_tail = tx_id;
++#endif
+ 
+ 	IXGBE_PCI_REG_WRITE(txq->tdt_reg_addr, txq->tx_tail);
+ 
+--- a/lib/librte_mbuf/rte_mbuf.h	2020-05-26 15:41:39.000000000 +0000
++++ b/lib/librte_mbuf/rte_mbuf.h	2020-09-20 12:05:50.083742823 +0000
+@@ -612,7 +612,9 @@
  	RTE_ASSERT(m->next == NULL);
  	RTE_ASSERT(m->nb_segs == 1);
  	__rte_mbuf_sanity_check(m, 0);
@@ -132,4 +141,4 @@ index ce8a05d..3e6b0b7 100644
 +#endif
  }
  
- /* compat with older versions */
+ /**
