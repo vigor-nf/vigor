@@ -1,17 +1,16 @@
-diff --git a/drivers/net/ixgbe/base/ixgbe_82599.c b/drivers/net/ixgbe/base/ixgbe_82599.c
-index d9d11a8..7166d04 100644
---- a/drivers/net/ixgbe/base/ixgbe_82599.c
-+++ b/drivers/net/ixgbe/base/ixgbe_82599.c
-@@ -44,6 +44,8 @@ POSSIBILITY OF SUCH DAMAGE.
+--- a/drivers/net/ixgbe/base/ixgbe_82599.c	2020-08-08 06:08:20.000000000 +0000
++++ b/drivers/net/ixgbe/base/ixgbe_82599.c	2020-09-22 14:32:43.049321736 +0000
+@@ -15,6 +15,9 @@
  #define IXGBE_82599_VFT_TBL_SIZE  128
  #define IXGBE_82599_RX_PB_SIZE	  512
  
 +STATIC s32 ixgbe_get_mac_addr_82599(struct ixgbe_hw *hw,
 +				    u8 *mac_addr);
++
  STATIC s32 ixgbe_setup_copper_link_82599(struct ixgbe_hw *hw,
  					 ixgbe_link_speed speed,
  					 bool autoneg_wait_to_complete);
-@@ -342,6 +344,7 @@ s32 ixgbe_init_ops_82599(struct ixgbe_hw *hw)
+@@ -313,6 +316,7 @@
  	mac->ops.read_analog_reg8 = ixgbe_read_analog_reg8_82599;
  	mac->ops.write_analog_reg8 = ixgbe_write_analog_reg8_82599;
  	mac->ops.start_hw = ixgbe_start_hw_82599;
@@ -19,7 +18,7 @@ index d9d11a8..7166d04 100644
  	mac->ops.get_san_mac_addr = ixgbe_get_san_mac_addr_generic;
  	mac->ops.set_san_mac_addr = ixgbe_set_san_mac_addr_generic;
  	mac->ops.get_device_caps = ixgbe_get_device_caps_generic;
-@@ -2127,6 +2130,35 @@ s32 ixgbe_start_hw_82599(struct ixgbe_hw *hw)
+@@ -2106,6 +2110,35 @@
  }
  
  /**
@@ -52,14 +51,59 @@ index d9d11a8..7166d04 100644
 +}
 +
 +/**
-  *  ixgbe_identify_phy_82599 - Get physical layer module
-  *  @hw: pointer to hardware structure
+  * ixgbe_identify_phy_82599 - Get physical layer module
+  * @hw: pointer to hardware structure
   *
-diff --git a/drivers/net/ixgbe/base/ixgbe_type.h b/drivers/net/ixgbe/base/ixgbe_type.h
-index af90462..98af4ea 100644
---- a/drivers/net/ixgbe/base/ixgbe_type.h
-+++ b/drivers/net/ixgbe/base/ixgbe_type.h
-@@ -409,6 +409,8 @@ struct ixgbe_thermal_sensor_data {
+--- a/drivers/net/ixgbe/base/ixgbe_common.c	2020-08-08 06:08:20.000000000 +0000
++++ b/drivers/net/ixgbe/base/ixgbe_common.c	2020-09-22 14:38:43.172656627 +0000
+@@ -2373,15 +2373,15 @@
+ 	 * so save everything except the lower 16 bits that hold part
+ 	 * of the address and the address valid bit.
+ 	 */
+-	rar_high = IXGBE_READ_REG(hw, IXGBE_RAH(index));
++	rar_high = IXGBE_READ_REG(hw, IXGBE_RAH_82599(index));
+ 	rar_high &= ~(0x0000FFFF | IXGBE_RAH_AV);
+ 	rar_high |= ((u32)addr[4] | ((u32)addr[5] << 8));
+ 
+ 	if (enable_addr != 0)
+ 		rar_high |= IXGBE_RAH_AV;
+ 
+-	IXGBE_WRITE_REG(hw, IXGBE_RAL(index), rar_low);
+-	IXGBE_WRITE_REG(hw, IXGBE_RAH(index), rar_high);
++	IXGBE_WRITE_REG(hw, IXGBE_RAL_82599(index), rar_low);
++	IXGBE_WRITE_REG(hw, IXGBE_RAH_82599(index), rar_high);
+ 
+ 	return IXGBE_SUCCESS;
+ }
+@@ -2412,11 +2412,11 @@
+ 	 * so save everything except the lower 16 bits that hold part
+ 	 * of the address and the address valid bit.
+ 	 */
+-	rar_high = IXGBE_READ_REG(hw, IXGBE_RAH(index));
++	rar_high = IXGBE_READ_REG(hw, IXGBE_RAH_82599(index));
+ 	rar_high &= ~(0x0000FFFF | IXGBE_RAH_AV);
+ 
+-	IXGBE_WRITE_REG(hw, IXGBE_RAL(index), 0);
+-	IXGBE_WRITE_REG(hw, IXGBE_RAH(index), rar_high);
++	IXGBE_WRITE_REG(hw, IXGBE_RAL_82599(index), 0);
++	IXGBE_WRITE_REG(hw, IXGBE_RAH_82599(index), rar_high);
+ 
+ 	/* clear VMDq pool/queue selection for this RAR */
+ 	hw->mac.ops.clear_vmdq(hw, index, IXGBE_CLEAR_VMDQ_ALL);
+@@ -2476,8 +2476,8 @@
+ 	/* Zero out the other receive addresses. */
+ 	DEBUGOUT1("Clearing RAR[1-%d]\n", rar_entries - 1);
+ 	for (i = 1; i < rar_entries; i++) {
+-		IXGBE_WRITE_REG(hw, IXGBE_RAL(i), 0);
+-		IXGBE_WRITE_REG(hw, IXGBE_RAH(i), 0);
++		IXGBE_WRITE_REG(hw, IXGBE_RAL_82599(i), 0);
++		IXGBE_WRITE_REG(hw, IXGBE_RAH_82599(i), 0);
+ 	}
+ 
+ 	/* Clear the MTA */
+--- a/drivers/net/ixgbe/base/ixgbe_type.h	2020-08-08 06:08:20.000000000 +0000
++++ b/drivers/net/ixgbe/base/ixgbe_type.h	2020-09-22 14:33:50.450202742 +0000
+@@ -419,6 +419,8 @@
  				 (0x0A200 + ((_i) * 8)))
  #define IXGBE_RAH(_i)		(((_i) <= 15) ? (0x05404 + ((_i) * 8)) : \
  				 (0x0A204 + ((_i) * 8)))

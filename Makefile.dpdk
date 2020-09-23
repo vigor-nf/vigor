@@ -210,6 +210,8 @@ VERIF_WITHDPDK_DEFS := -DRTE_COMPILE_TIME_CPUFLAGS=424242
 VERIF_WITHDPDK_DEFS += -DVIGOR_MODEL_HARDWARE
 # Disable deprecation warnings
 VERIF_WITHDPDK_DEFS += -DALLOW_EXPERIMENTAL_API
+# Disable internal warnings
+VERIF_WITHDPDK_DEFS += -DALLOW_INTERNAL_API
 # Enable function versioning
 VERIF_WITHDPDK_DEFS += -DRTE_USE_FUNCTION_VERSIONING
 # We need librte_eal/common because eal_private.h is in there,
@@ -245,7 +247,9 @@ VERIF_WITHDPDK_INCLUDES += --include=libvig/models/builtin.h \
                            --include=rte_config.h
 # Platform-independent and Linux-specific EAL
 DPDK_FILES += $(RTE_SDK)/lib/librte_eal/common/*.c \
-              $(RTE_SDK)/lib/librte_eal/linux/*.c
+              $(RTE_SDK)/lib/librte_eal/linux/*.c \
+              $(RTE_SDK)/lib/librte_eal/unix/*.c
+
 # Default ring mempool driver
 DPDK_FILES += $(RTE_SDK)/drivers/mempool/ring/rte_mempool_ring.c
 # Other libraries, except acl and distributor

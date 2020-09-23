@@ -22,8 +22,6 @@ void connect() { abort(); }
 
 void dlerror() { abort(); }
 
-void dlopen() { abort(); }
-
 void epoll_create() { abort(); }
 
 void epoll_ctl() { abort(); }
