@@ -75,7 +75,7 @@ if [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
   sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
 fi
 
-DPDK_RELEASE='20.05'
+DPDK_RELEASE='20.08'
 DPDK_SUFFIX='' # e.g. for LTS releases '-stable', for non-LTS ''
 pushd "$BUILDDIR"
   if [ ! -f dpdk/.version ] || \
@@ -97,7 +97,7 @@ pushd "$BUILDDIR"
         patch -p1 < "$p"
       done
 
-      make install -j$(nproc) T=x86_64-native-linuxapp-gcc DESTDIR=.
+      make install -j$(nproc) T=x86_64-native-linuxapp-gcc DESTDIR=. MAKE_PAUSE=n
 
       echo "$DPDK_RELEASE" > .version
     popd
