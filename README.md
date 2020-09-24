@@ -5,7 +5,7 @@ This repository contains the Vigor verification toolchain and network functions 
 Our scripts assume you are using Ubuntu 18.04, with an active Internet connection to download dependencies.
 Older Ubuntus, or other Debian-based distros, may work but have not been tested.
 
-As an alternative to installing the dependencies on your own machine, we provide a Docker image: `dslabepfl/vigor-20.05`.
+As an alternative to installing the dependencies on your own machine, we provide a Docker image: `dslabepfl/vigor-20.08`.
 However, you must still use Ubuntu 18.04 as a host, since the guest uses the host's kernel and DPDK needs kernel headers to compile.
 This image can be generated with the `./Docker-build.sh` script.
 
