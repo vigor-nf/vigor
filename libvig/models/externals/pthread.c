@@ -113,3 +113,37 @@ int pthread_join(pthread_t thread, void **retval) {
   return 0;
 }
 
+#ifndef KLEE_VERIFICATION
+// NFOS only
+int pthread_mutex_lock(pthread_mutex_t *mutex)
+{
+  return 0;
+}
+int pthread_mutex_unlock(pthread_mutex_t *mutex)
+{
+  return 0;
+}
+
+int pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
+{
+  return 0;
+}
+int pthread_cond_timedwait(pthread_cond_t *restrict cond, pthread_mutex_t *restrict mutex, const struct timespec *restrict abstime)
+{
+  return 0;
+}
+int pthread_cond_signal(pthread_cond_t *cond)
+{
+  return 0;
+}
+
+int pthread_getname_np(pthread_t thread, char *name, size_t len)
+{
+  return 0;
+}
+
+int pthread_detach(pthread_t thread)
+{
+  return 0;
+}
+#endif

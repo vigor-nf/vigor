@@ -33,6 +33,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "libvig/kernel/nfos_serial.h"
 #include "libvig/kernel/nfos_vga.h"
@@ -753,6 +754,23 @@ int snprintf(char *buffer, unsigned long count, const char *format, ...) {
 int vsnprintf(char *buffer, unsigned long count, const char *format,
               va_list va) {
   return _vsnprintf(_out_buffer, buffer, count, format, va);
+}
+
+// Added later - DPDK now needs this
+int vasprintf(char **strp, const char *fmt, va_list ap)
+{
+  int size = 4096; // should be enough
+  *strp = malloc(size);
+  int ret = vsnprintf(*strp, size, fmt, ap);
+  return ret;
+}
+int asprintf(char **strp, const char *fmt, ...)
+{
+  va_list va;
+  va_start(va, fmt);
+  int ret = vasprintf(strp, fmt, va);
+  va_end(va);
+  return ret;
 }
 
 #ifndef KLEE_VERIFICATION

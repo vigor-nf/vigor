@@ -6,6 +6,8 @@
 
 #include <stdlib.h>
 
+uint64_t TIME; // from hardware models, not DPDK
+
 int __fxstat() { abort(); }
 
 void __libc_fcntl() { abort(); }
@@ -30,6 +32,10 @@ void epoll_wait() { abort(); }
 
 void eventfd() { abort(); }
 
+void fallocate() { abort(); }
+
+void getcwd() { abort(); }
+
 void getdtablesize() { abort(); }
 
 void getegid() { abort(); }
@@ -48,11 +54,13 @@ void inw() { abort(); }
 
 void ioctl() { abort(); }
 
+void memfd_create() { abort(); }
+
+void mkdir() { abort(); }
+
 void mknod() { abort(); }
 
 void mlock() { abort(); }
-
-int nanosleep() { abort(); }
 
 void numa_set_localalloc() { abort(); }
 
@@ -85,8 +93,6 @@ void set_mempolicy() { abort(); }
 void siglongjmp() { abort(); }
 
 void timerfd_settime() { abort(); }
-
-void unlink() { abort(); }
 
 void unlinkat() { abort(); }
 

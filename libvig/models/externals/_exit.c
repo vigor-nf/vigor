@@ -3,10 +3,8 @@
 #  include "nfos_halt.h"
 #  include <stdio.h>
 
-extern void exit(int exit_code);
-
-void exit(int exit_code) {
-  printf("\n\nexit(%d) called", exit_code);
+void _exit(int status) {
+  printf("\n\n_exit(%d) called", status);
   nfos_halt();
 }
 

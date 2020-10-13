@@ -71,6 +71,7 @@ DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_eal/common
 DPDK_INCLUDES += -I $(RTE_SDK)/drivers/bus/pci
 DPDK_INCLUDES += -I $(RTE_SDK)/drivers/net/ixgbe
 DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_kni
+DPDK_INCLUDES += -I $(RTE_SDK)/lib/librte_net
 DPDK_INCLUDES += --include=$(STUBS_DIR)/builtin.h --include=rte_config.h
 
 DPDK_DEFS := -D__linux__ -U_FORTIFY_SOURCE
@@ -87,24 +88,29 @@ DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_RDRAND
 DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_FSGSBASE
 DPDK_DEFS += -DRTE_MACHINE_CPUFLAG_F16C
 DPDK_DEFS += -DRTE_COMPILE_TIME_CPUFLAGS=RTE_CPUFLAG_SSE,RTE_CPUFLAG_SSE2,RTE_CPUFLAG_SSE3,RTE_CPUFLAG_SSSE3,RTE_CPUFLAG_SSE4_1,RTE_CPUFLAG_SSE4_2,RTE_CPUFLAG_AES,RTE_CPUFLAG_PCLMULQDQ,RTE_CPUFLAG_AVX,RTE_CPUFLAG_RDRAND,RTE_CPUFLAG_FSGSBASE,RTE_CPUFLAG_F16C
+DPDK_DEFS += -DALLOW_EXPERIMENTAL_API -DALLOW_INTERNAL_API
+DPDK_DEFS += -DRTE_USE_FUNCTION_VERSIONING
 
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/common/*.c)
-DPDK_SRCS += $(RTE_SDK)/lib/librte_eal/common/arch/x86/rte_cycles.c
-DPDK_SRCS += $(RTE_SDK)/lib/librte_eal/common/arch/x86/rte_cpuflags.c
-DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/linuxapp/eal/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/x86/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/linux/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_eal/unix/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_ether/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_ethdev/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_hash/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_kvargs/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_mempool/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_mbuf/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_net/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_pci/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_ring/*.c)
+DPDK_SRCS += $(wildcard $(RTE_SDK)/lib/librte_telemetry/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/mempool/ring/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/bus/pci/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/bus/pci/linux/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/*.c)
 DPDK_SRCS += $(wildcard $(RTE_SDK)/drivers/net/ixgbe/base/*.c)
 DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_82599_bypass.c, $(DPDK_SRCS))
-DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_sse.c, $(DPDK_SRCS))
 DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_bypass.c, $(DPDK_SRCS))
 DPDK_SRCS := $(filter-out $(RTE_SDK)/drivers/net/ixgbe/ixgbe_rxtx_vec_neon.c, $(DPDK_SRCS))
 

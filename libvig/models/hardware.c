@@ -2586,14 +2586,4 @@ void stub_hardware_reset_receive(uint16_t device) {
   free_called = false;
 }
 
-#else // VIGOR_MODEL_HARDWARE
-
-#  include <assert.h>
-
-/* With "real" hardware these should never be called */
-void stub_hardware_init(void) { assert(0); }
-struct nfos_pci_nic *stub_hardware_get_nics(int *n) {
-  assert(0);
-}
-
 #endif // VIGOR_MODEL_HARDWARE
