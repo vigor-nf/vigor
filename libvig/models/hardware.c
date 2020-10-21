@@ -2185,7 +2185,6 @@ static void stub_registers_init(void) {
     0x0EE58, // Flow Director Filters Match Statistics — FDIRMATCH
     0x0EE5C, // Flow Director Filters Miss Match Statistics — FDIRMISS (page
              // 657)
-    0x03D00, // Flow Control Configuration - FCCFG
     // starting on page 639
     0x08F64, // LinkSec Rx Packet OK — LSECRXOK[0]
     0x08F68, // LinkSec Rx Packet OK — LSECRXOK[1]

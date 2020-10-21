@@ -29,6 +29,11 @@ KERNEL_DIR = $(SELF_DIR)/libvig/kernel
 NF_DEFS := -D_GNU_SOURCE
 NF_DEFS += -DNFOS
 
+# Same silly workaround as in Makefile.dpdk
+ifneq (,$(shell grep -A 1 get_mempolicy /usr/include/numaif.h | grep 'unsigned flags'))
+NF_DEFS += -DNUMA_GET_MEMPOLICY_UNSIGNED_FLAGS
+endif
+
 # NF
 NF_INCLUDES = -I $(SELF_DIR)
 NF_INCLUDES += -I /usr/lib/gcc/x86_64-linux-gnu/5/include

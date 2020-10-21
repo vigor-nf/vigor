@@ -131,11 +131,12 @@ LINK_COMMAND := llvm-ar x $(KLEE_BUILD_PATH)/Release+Debug+Asserts/lib/klee-ucli
 # Optimization; analyze and remove as much provably dead code as possible
 # (exceptions are models;
 #  also, mem* functions, not sure why it DCEs them since they are used...
+#  and sscanf, which is accessed via its __isoc99_sscanf alias
 #  maybe related to LLVM having intrinsics for them?)
 # We tried adding '-constprop -ipconstprop -ipsccp -correlated-propagation
 #                  -loop-deletion -dce -die -dse -adce -deadargelim -instsimplify';
 # this works but the traced prefixes seem messed up :(
-OPT_EXCEPTIONS := memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,stub_hardware_write,stub_prefetch,stub_rdtsc,stub_socket,stub_strerror,stub_delay
+OPT_EXCEPTIONS := sscanf,memset,memcpy,memmove,stub_abort,stub_free,stub_hardware_read,stub_hardware_write,stub_prefetch,stub_rdtsc,stub_socket,stub_strerror,stub_delay
 OPT_COMMAND := opt -basicaa -basiccg -internalize \
                    -internalize-public-api-list=main,$(OPT_EXCEPTIONS) \
                    -globaldce nf_raw.bc \
@@ -176,6 +177,10 @@ VERIF_FLAGS := -c -g -emit-llvm -fsanitize=signed-integer-overflow -Wno-unused-v
 VERIF_INCLUDES := -I $(SELF_DIR) -I $(KLEE_INCLUDE)
 # Basic defines
 VERIF_DEFS := -D_GNU_SOURCE -DKLEE_VERIFICATION
+# Silly workaround for numaif.h changing between Ubuntu 18.04 and 20.04
+ifneq (,$(shell grep -A 1 get_mempolicy /usr/include/numaif.h | grep 'unsigned flags'))
+VERIF_DEFS += -DNUMA_GET_MEMPOLICY_UNSIGNED_FLAGS
+endif
 # Number of devices
 VERIF_DEFS += -DSTUB_DEVICES_COUNT=$(NF_DEVICES)
 # NF base

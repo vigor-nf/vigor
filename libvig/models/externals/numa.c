@@ -44,8 +44,19 @@ void numa_bitmask_free(struct bitmask *bmp) {
   free(bmp);
 }
 
-long get_mempolicy(int *policy, const unsigned long *nmask,
-                   unsigned long maxnode, void *addr, int flags) {
+// The constness of 'nmask' and type of 'flags' changed between Ubuntu 18.04 and Ubuntu 20.04
+long get_mempolicy(int *policy,
+#ifndef NUMA_GET_MEMPOLICY_UNSIGNED_FLAGS
+const
+#endif
+                   unsigned long *nmask,
+                   unsigned long maxnode, void *addr,
+#ifdef NUMA_GET_MEMPOLICY_UNSIGNED_FLAGS
+unsigned flags
+#else
+int flags
+#endif
+) {
   // http://man7.org/linux/man-pages/man2/get_mempolicy.2.html
   if (flags == 0) {
     // When flags is 0, addr must be specified as NULL.

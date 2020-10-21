@@ -30,7 +30,7 @@ int fflush(FILE *stream) {
   return 0;
 }
 
-int vfprintf(FILE *stream, const char *format, _G_va_list __arg) {
+int vfprintf(FILE *stream, const char *format, va_list __arg) {
   klee_assert(stream == stderr || stream == stdout ||
               (stream != NULL && stream == fopencookie_ret));
 #if (defined NFOS) && (!defined KLEE_VERIFICATION)

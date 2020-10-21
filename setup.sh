@@ -61,15 +61,26 @@ if [ ! -f "$PATHSFILE" ]; then
 fi
 
 sudo apt-get update
-sudo apt-get install -y ca-certificates software-properties-common \
+sudo DEBIAN_FRONTEND=noninteractive \
+     apt-get install -y ca-certificates software-properties-common \
                         patch wget build-essential git cloc
+
+# If there is a single version of GCC and it's a single digit, as in e.g. GCC 9 on Ubuntu 20.04,
+# our clang won't detect it because it expects a version in the format x.y.z with all components
+# so let's create a symlink
+# note '2' in the test because of the \0
+if [ $(ls -1 '/usr/lib/gcc/x86_64-linux-gnu/' | wc -c) -eq 2 ] ; then
+  sudo ln -s "$(ls -1d /usr/lib/gcc/x86_64-linux-gnu/*)" "$(ls -1d /usr/lib/gcc/x86_64-linux-gnu/*).0.0"
+fi
+
 
 
 # ====
 # DPDK
 # ====
 
-sudo apt-get install -y libpcap-dev libnuma-dev
+sudo DEBIAN_FRONTEND=noninteractive \
+     apt-get install -y libpcap-dev libnuma-dev
 
 # Install the right headers
 if [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
@@ -79,8 +90,7 @@ if [ "$OS" = 'linux' -o "$OS" = 'docker' ]; then
       echo " so the guest should be able to install headers for the host's kernel..."
   fi
 
-  sudo apt-get install -y "linux-headers-$KERNEL_VER"
-  sudo apt-get install -y "linux-headers-${KERNEL_VER}-generic"
+  sudo apt-get install -y "linux-headers-$KERNEL_VER" "linux-headers-${KERNEL_VER}-generic"
 fi
 
 DPDK_RELEASE='20.08'
@@ -119,14 +129,17 @@ popd
 # =====
 
 # we depend on an OCaml package that needs libgmp-dev
-sudo apt-get install -y opam m4 libgmp-dev
+sudo DEBIAN_FRONTEND=noninteractive \
+     apt-get install -y opam m4 libgmp-dev
 
 opam init -y
+eval "$(opam env)"
 # Opam 1.x doesn't have "create", later versions require it but only the first time
 if opam --version | grep '^1.' >/dev/null ; then
   opam switch 4.06.0
 else
-  if ! opam switch list | grep -q 4.06 ; then
+  opam switch list
+  if ! opam switch list 2>&1 | grep -Fq 4.06 ; then
     opam switch create 4.06.0
   fi
 fi
@@ -146,7 +159,8 @@ opam install goblint-cil core -y
 # Python
 # ======
 
-sudo apt-get install -y python3.6
+sudo DEBIAN_FRONTEND=noninteractive \
+     apt-get install -y python3.6
 
 
 
@@ -154,7 +168,8 @@ sudo apt-get install -y python3.6
 # FastClick
 # =========
 
-sudo apt-get install -y libz-dev
+sudo DEBIAN_FRONTEND=noninteractive \
+     apt-get install -y libz-dev
 
 # We make two folders,
 # one configured with batching and the other without,
@@ -195,7 +210,8 @@ fi
 # =======
 
 # the libmoon readme doesn't mention libtbb2, but libmoon fails without it
-sudo apt-get install -y libtbb2 lshw cmake
+sudo DEBIAN_FRONTEND=noninteractive \
+     apt-get install -y libtbb2 lshw cmake
 
 if [ ! -e "$BUILDDIR/libmoon" ]; then
   git clone https://github.com/libmoon/libmoon "$BUILDDIR/libmoon"
@@ -219,7 +235,7 @@ fi
 sudo DEBIAN_FRONTEND=noninteractive \
      apt-get install -yq qemu-system-x86 build-essential wget bison flex \
                          libgmp3-dev libmpc-dev libmpfr-dev texinfo \
-                         libcloog-isl-dev libisl-0.18-dev gnupg \
+                         gnupg \
                          xorriso nasm git grub-pc
 
 NFOS_TARGET=x86_64-elf
@@ -286,6 +302,11 @@ popd
 sudo apt-get install -y bison flex zlib1g-dev libncurses5-dev \
                         libcap-dev subversion python2.7
 
+# Python2 needs to be available as python for some configure scripts, which is not the case in Ubuntu 20.04
+if [ ! -e /usr/bin/python ] ; then
+  sudo ln -s /usr/bin/python2.7 /usr/bin/python
+fi
+
 if [ ! -e "$BUILDDIR/llvm" ]; then
   svn co https://llvm.org/svn/llvm-project/llvm/tags/RELEASE_342/final "$BUILDDIR/llvm"
   svn co https://llvm.org/svn/llvm-project/cfe/tags/RELEASE_342/final "$BUILDDIR/llvm/tools/clang"
@@ -314,6 +335,11 @@ if [ ! -e "$BUILDDIR/klee-uclibc-binary" ]; then
     # Use our minimalistic config
     cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
+    # Use our patches
+    for f in "$VNDSDIR/setup/uclibc/"* ; do
+      cat "$f" >> "libc/stdio/$(basename "$f")"
+    done
+
     make clean
     make -j$(nproc)
   popd
@@ -341,7 +367,7 @@ if [ ! -e "$BUILDDIR/z3" ]; then
   git clone --depth 1 --branch z3-4.5.0 \
             https://github.com/Z3Prover/z3 "$BUILDDIR/z3"
   pushd "$BUILDDIR/z3"
-    python scripts/mk_make.py --ml -p "$BUILDDIR/z3/build"
+    python2 scripts/mk_make.py --ml -p "$BUILDDIR/z3/build"
     pushd build
       make -k -j$(nproc) || true
       # -jN here may break the make (hidden deps or something)
@@ -408,6 +434,11 @@ if [ ! -e "$BUILDDIR/klee-uclibc" ]; then
     # Use our minimalistic config
     cp "$VNDSDIR/setup/klee-uclibc.config" '.config'
 
+    # Use our patches
+    for f in "$VNDSDIR/setup/uclibc/"* ; do
+      cat "$f" >> "libc/stdio/$(basename "$f")"
+    done
+
     make -j$(nproc)
   popd
 fi
@@ -431,7 +462,7 @@ if [ ! -e "$BUILDDIR/klee" ]; then
        -DENABLE_SOLVER_Z3=ON \
        -DENABLE_KLEE_UCLIBC=ON \
        -DKLEE_UCLIBC_PATH="$BUILDDIR/klee-uclibc" \
-       -DENABLE_POSIX_RUNTIME=ON \
+       -DENABLE_POSIX_RUNTIME=OFF \
        ..
       make -j$(nproc)
       echo 'PATH='"$BUILDDIR/klee/build/bin"':$PATH' >> "$PATHSFILE"
