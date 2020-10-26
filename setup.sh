@@ -29,7 +29,15 @@ PATHSFILE="$BUILDDIR/paths.sh"
 
 
 OS='linux'
-if grep docker /proc/1/cgroup -qa; then OS='docker'; fi
+if grep docker /proc/1/cgroup -qa; then
+  OS='docker'
+fi
+
+# might not have sudo, especially in Docker, install it for simplicity so that scripts work in either case
+if [ "$(which sudo)" = '' ] ; then
+  apt-get update
+  apt-get install -y sudo
+fi
 
 
 if [ "$BUILDDIR" -ef "$VNDSDIR" ] && [ "$OS" != "docker" ]; then
