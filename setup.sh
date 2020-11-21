@@ -68,11 +68,10 @@ sudo DEBIAN_FRONTEND=noninteractive \
 # If there is a single version of GCC and it's a single digit, as in e.g. GCC 9 on Ubuntu 20.04,
 # our clang won't detect it because it expects a version in the format x.y.z with all components
 # so let's create a symlink
-# note '2' in the test because of the \0
-if [ $(ls -1 '/usr/lib/gcc/x86_64-linux-gnu/' | wc -c) -eq 2 ] ; then
-  sudo ln -s "$(ls -1d /usr/lib/gcc/x86_64-linux-gnu/*)" "$(ls -1d /usr/lib/gcc/x86_64-linux-gnu/*).0.0"
-fi
-
+# 0 -> nothing, 2 -> a single dot (because there is also \0)
+GCC_VER=$(ls -1 /usr/lib/gcc/x86_64-linux-gnu/ | sort -V | tail -n 1)
+if [ $(echo $GCC_VER | grep -Fo . | wc -c) -eq 0 ]; then sudo ln -s "/usr/lib/gcc/x86_64-linux-gnu/$GCC_VER" "/usr/lib/gcc/x86_64-linux-gnu/$GCC_VER.0.0" ; fi
+if [ $(echo $GCC_VER | grep -Fo . | wc -c) -eq 2 ]; then sudo ln -s "/usr/lib/gcc/x86_64-linux-gnu/$GCC_VER" "/usr/lib/gcc/x86_64-linux-gnu/$GCC_VER.0" ; fi
 
 
 # ====
