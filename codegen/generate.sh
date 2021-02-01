@@ -23,9 +23,11 @@ for FILE_PATH in $@; do
   $CODEGENDIR/_build/main.byte $FILE_PATH
   swap $FILE_PATH $PREPROC_FILE_PATH
   rm $PREPROC_FILE_PATH
-  # Check the generated file
-  if ! verifast -I $CODEGENDIR/.. -I $CODEGENDIR/../libvig/models/dpdk -c $FILE_PATH.gen.c > /dev/null; then
-    echo 'Oh no! The generated code does not verify!'
-    exit 1
+  # Check the generated file if possible
+  if command -v verifast >/dev/null 2>&1 ; then
+    if ! verifast -I $CODEGENDIR/.. -I $CODEGENDIR/../libvig/models/dpdk -c $FILE_PATH.gen.c > /dev/null; then
+      echo 'Oh no! The generated code does not verify!'
+      exit 1
+    fi
   fi
 done
