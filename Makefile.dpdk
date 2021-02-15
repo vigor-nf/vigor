@@ -89,7 +89,7 @@ VERIFAST_COMMAND := verifast -I $(SELF_DIR) \
                              -I $(SELF_DIR)/libvig/models/dpdk \
                              -allow_assume -shared
 VERIFAST_CLEAN_COMMAND := rm -rf $(SELF_DIR)/**/*.vfmanifest
-verifast: autogen
+verifast:
 	@printf '\n\n!!!\n\n'
 	@printf 'This is gonna take a while, go make a nice cup of tea...\n\n'
 	@printf 'Note that we are verifying the code twice,\n'
@@ -112,7 +112,7 @@ verifast: autogen
 
 # Cleanup
 CLEAN_BUILD_ARTIFACTS_COMMAND := rm -rf *.bc *.os *.ll
-CLEAN_ALL_COMMAND := $(CLEAN_BUILD_ARTIFACTS_COMMAND) && rm -rf {loop,state}.{c,h} *.gen.{c,h}
+CLEAN_ALL_COMMAND := $(CLEAN_BUILD_ARTIFACTS_COMMAND)
 # Compilation
 COMPILE_COMMAND := clang
 # Linking with klee-uclibc, but without some methods we are modeling
@@ -160,7 +160,7 @@ clean: clean-vigor
 
 # Built-in DPDK default target, make it aware of autogen,
 # and make it clean every time because our dependency tracking is nonexistent...
-all: clean autogen
+all: clean
 
 
 
@@ -193,7 +193,7 @@ VERIF_FILES += $(SELF_DIR)/libvig/models/verified/*.c \
 
 # The only thing we don't put in variables is the DPDK model headers,
 # since we don't want to use those for the other symbex targets
-symbex: clean autogen
+symbex: clean
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_INCLUDES) \
 	                    -I $(SELF_DIR)/libvig/models/dpdk \
 	                    $(VERIF_FILES) $(VERIF_FLAGS)
@@ -276,7 +276,7 @@ VERIF_WITHDPDK_FILES := $(DPDK_FILES) $(IXGBE_FILES) \
 VERIF_WITHDPDK_FILES += $(SELF_DIR)/libvig/models/dpdk-low-level.c
 endif
 
-symbex-withdpdk: clean autogen
+symbex-withdpdk: clean
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) $(VERIF_INCLUDES) \
 	                    $(VERIF_WITHDPDK_INCLUDES) $(VERIF_FILES) \
 	                    $(VERIF_WITHDPDK_FILES) $(VERIF_FLAGS)
@@ -299,7 +299,7 @@ dquote := \"
 space := $(null) #
 comma := ,
 NF_ARGUMENTS_MACRO := -DNF_ARGUMENTS=\"$(subst $(space),$(dquote)$(comma)$(dquote),nf.bc $(NF_ARGS))\"
-symbex-withnfos: clean autogen
+symbex-withnfos: clean
 	@$(COMPILE_COMMAND) $(VERIF_DEFS) $(VERIF_WITHDPDK_DEFS) \
 	                    $(NF_ARGUMENTS_MACRO) -DNFOS $(VERIF_INCLUDES) \
 	                    $(VERIF_WITHDPDK_INCLUDES) $(VERIF_FILES) \
@@ -316,7 +316,7 @@ symbex-withnfos: clean autogen
 # Validation
 # ==========
 
-validate: autogen
+validate:
 	@cd $(SELF_DIR)/validator && make $(notdir $(shell pwd))
 
 

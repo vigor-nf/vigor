@@ -28,11 +28,7 @@ TAGS
 .vagrant
 klee-*/
 klee-last
-*/*.gen.*
-*/loop.*
-*/state.*
 .DS_Store
 *.swp
 .vscode/*
 *.vfmanifest
-fspec_gen.ml
