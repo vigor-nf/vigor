@@ -177,14 +177,14 @@ static void worker_main(void) {
 
 #else // if VIGOR_BATCH_SIZE != 1
 
-  if (rte_eth_dev_count() != 2) {
+  if (rte_eth_dev_count_avail() != 2) {
     printf("We assume there will be exactly 2 devices for our simple batching implementation.");
     exit(1);
   }
   NF_INFO("Running with batches, this code is unverified!");
 
   while(1) {
-    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count();
+    unsigned VIGOR_DEVICES_COUNT = rte_eth_dev_count_avail();
     for (uint16_t VIGOR_DEVICE = 0; VIGOR_DEVICE < VIGOR_DEVICES_COUNT; VIGOR_DEVICE++) {
       struct rte_mbuf* mbufs[VIGOR_BATCH_SIZE];
       uint16_t rx_count = rte_eth_rx_burst(VIGOR_DEVICE, 0, mbufs, VIGOR_BATCH_SIZE);
